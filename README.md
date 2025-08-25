@@ -60,6 +60,8 @@ ng build --configuration production
 npm test
 ```
 
+---
+
 ## Contributors
 
 - David Núñez Franco
@@ -68,3 +70,5 @@ npm test
 - Alexia Alvarado Alfaro
 - Kendra Artavia Caballero
 - William Rodríguez Campos
+
+---
