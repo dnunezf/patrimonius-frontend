@@ -1,21 +1,28 @@
+
+<app-nav
+  [brandTitle]="'Patrimonius'"
+  [brandSubtitle]="'Museo Nacional de Costa Rica'"
+  [logo]="'assets/logos/logo.png'"
+  [items]="items"
+  [loginItem]="{ label:'Iniciar Sesión', path:'/login' }"
+  (loginClick)="open.set(true)">
+</app-nav>
+
+
 <main class="container hero">
-  <!-- Título -->
   <h1 class="h1 hero__title">
     Bienvenido a <span class="text-blue-3015">Patrimonius</span>
   </h1>
 
-  <!-- Subtítulo -->
   <p class="hero__subtitle">
     Sistema de gestión documental del Museo Nacional de Costa Rica
   </p>
 
-  <!-- Párrafo lead -->
   <p class="hero__lead">
     Patrimonius permite crear, organizar, firmar y preservar documentos digitales con seguridad y trazabilidad,
     conforme a la normativa archivística nacional e internacional.
   </p>
 
-  <!-- Highlight card -->
   <section class="highlight" aria-label="Gestión Documental Digital">
     <div class="highlight__icon" aria-hidden="true">
       <img src="assets/icons/document-signed.png" alt="Gestión documental digital" />
@@ -25,8 +32,6 @@
     </div>
   </section>
 
-
-  <!-- Features grid -->
   <section class="features" aria-label="Funciones principales">
     <article class="feature">
       <div class="feature__icon">
@@ -69,3 +74,11 @@
     </article>
   </section>
 </main>
+
+<!--
+<app-login-dialog
+  [open]="open()"
+  (submitLogin)="onLoginSubmit($event)"
+  (closed)="open.set(false)">
+</app-login-dialog>
+ -->
