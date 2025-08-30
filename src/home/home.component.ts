@@ -1,12 +1,13 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-// Corrige la ruta de importación de NavComponent
 import { NavComponent } from '../app/core/nav/nav.component';
+import { LoginDialogComponent } from '../app/auth/login-dialog.component';
+
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, NavComponent,], //LoginDialogComponent
+  imports: [CommonModule, NavComponent, LoginDialogComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })

@@ -1,0 +1,164 @@
+/* ===== Modal/backdrop ===== */
+/* Keep comments in English for maintainability */
+.modal{
+  position: fixed; inset: 0;
+  display: grid; place-items: center;
+  padding: 16px;
+  background: rgba(16,24,40,.45);      /* dim background */
+  z-index: 1200;
+  animation: fadeIn .12s ease-out;
+}
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+
+/* ===== Dialog card ===== */
+.dialog{
+  width: 100%; max-width: 420px;
+  background: #fff; color:#1d2939;
+  border: 1px solid #e6eaee;
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(16,24,40,.22);
+  padding: 18px 18px 12px;
+  position: relative;
+}
+
+/* Close (X) */
+.dialog__close{
+  position: absolute; top: 8px; right: 10px;
+  border: 0; background: transparent;
+  font-size: 20px; line-height: 1; cursor: pointer;
+  color:#344054;
+}
+.dialog__close:hover{ color:#111827; }
+
+/* Title + subtitle */
+.dialog__title{
+  margin: 4px 0 6px;
+  text-align: center;
+  font-family: "Neutraface Text", Verdana, sans-serif;
+  font-weight: 700; font-size: 1.25rem;
+}
+.dialog__subtitle{
+  margin: 0 8px 14px;
+  text-align: center;
+  color: #667085; font-size: .95rem;
+}
+
+/* ===== Form ===== */
+.form{ display: grid; gap: 10px; }
+
+.form__label{ font-weight: 700; font-size: .92rem; }
+.req{ color: var(--mncr-red-1795, #c33737); }
+
+/* Input with left icon and optional right toggle */
+.input{
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+}
+.input__icon{
+  text-align: center; color:#667085; font-size: 16px;
+}
+.input__control{
+  border: 0; background: transparent;
+  padding: 10px 8px; font: inherit; outline: none;
+}
+.input__toggle{
+  border: 0; background: transparent; cursor: pointer;
+  color:#667085; font-weight: 600; padding: 0 10px;
+}
+
+/* Focus visible ring */
+.input:has(.input__control:focus-visible){
+  outline: 3px solid var(--mncr-blue-639, #0091CD);
+  outline-offset: 2px;
+}
+
+/* Field error */
+.form__error{
+  color: var(--mncr-red-1795, #c33737);
+  font-size: .85rem;
+}
+
+/* Submit button (full width) */
+.btn{
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 14px; border-radius: 8px; font-weight: 700;
+  border: 1px solid transparent; cursor: pointer;
+}
+.btn--primary{
+  width: 100%;
+  background: var(--mncr-blue-639, #0091CD);
+  color: #fff;
+}
+.btn--primary:hover{ filter: brightness(.98); }
+.dialog__submit{ margin-top: 6px; }
+
+/* Footer link */
+.link{
+  display: block; width: 100%; text-align: center;
+  border: 0; background: transparent;
+  color: var(--mncr-blue-639, #0091CD);
+  padding: 8px 0; cursor: pointer; font-weight: 600;
+}
+.link:hover{ text-decoration: underline; }
+
+/* Small screens */
+@media (max-width: 480px){
+  .dialog{ max-width: 92vw; }
+}
+
+
+/* Layout del input con icono a la izquierda y botón opcional a la derecha */
+.input{
+  display: grid;
+  grid-template-columns: 36px 1fr auto;   /* 36px para alojar icono 16px con respiración */
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  min-height: 40px;                       /* alto mínimo cómodo */
+}
+
+/* Contenedor del icono */
+.input__icon{
+  display: grid;
+  place-items: center;
+  width: 36px; height: 36px;              /* caja consistente */
+}
+
+/* Imagen del icono: EXACTAMENTE 16x16 y sin deformación */
+.input__icon img{
+  width: 16px;
+  height: 16px;
+  display: block;
+  object-fit: contain;
+}
+
+/* Campo de texto: ocupa la columna central y nunca pisa el icono */
+.input__control{
+  border: 0;
+  background: transparent;
+  padding: 10px 8px;                       /* padding lateral suficiente */
+  font: inherit;
+  outline: none;
+  width: 100%;
+}
+
+/* Botón "Ver/Ocultar" pegado a la derecha */
+.input__toggle{
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color:#667085;
+  font-weight: 600;
+  padding: 0 10px;
+}
+
+/* Aro de foco accesible sin romper el layout */
+.input:has(.input__control:focus-visible){
+  outline: 3px solid var(--mncr-blue-639, #0091CD);
+  outline-offset: 2px;
+}
