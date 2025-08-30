@@ -1,2 +1,129 @@
-/* You can add global styles to this file, and also import other style files */
-@import "tailwindcss";
+/* Brand tokens (from MNCR manual) */
+:root {
+  --mncr-blue: #005baa;
+  --mncr-red: #ee3524;
+  --mncr-yellow: #fdb913;
+  --mncr-green: #00a94f;
+  --mncr-gray: #e5e7eb;
+  --mncr-ink: #111827;
+  --radius: 14px;
+
+  /* Typography */
+  --font-title: "Neutraface", "Inter Tight", system-ui;
+  --font-body: Verdana, system-ui, Arial;
+}
+
+html,
+body {
+  height: 100%;
+}
+body {
+  font-family: var(--font-body);
+  color: var(--mncr-ink);
+  background: #f9fafb;
+  margin: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Components */
+.card {
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.row {
+  display: grid;
+  gap: 16px;
+}
+.row.cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.row.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+}
+
+.btn {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.btn:hover {
+  background: #f8fafc;
+}
+.btn.active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+.btn:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+}
+
+/* Badges */
+.badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+}
+.badge.success {
+  background: #e8f8ef;
+  color: #05603a;
+}
+.badge.warn {
+  background: #fff7ed;
+  color: #9a3412;
+}
+.badge.info {
+  background: #eef2ff;
+  color: #3730a3;
+}
+.badge.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Typography */
+h1,
+h2 {
+  font-family: var(--font-title);
+  letter-spacing: -0.02em;
+}
+
+/* Responsive */
+@media (max-width: 1280px) {
+  .row.cols-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 1024px) {
+  .row.cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .container {
+    padding: 16px;
+  }
+  .row.cols-4,
+  .row.cols-3 {
+    grid-template-columns: 1fr;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+  }
+}
