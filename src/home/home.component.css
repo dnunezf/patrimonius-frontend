@@ -1,0 +1,88 @@
+.hero {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.hero__title {
+  font-family: "Neutraface Text", Verdana, sans-serif;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.hero__subtitle {
+  color: #475467;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.hero__lead {
+  color: #667085;
+  font-size: 1.1rem;
+  max-width: 800px;
+  margin: 0 auto 2rem;
+}
+
+/* Highlight card */
+.highlight {
+  display: flex;
+  flex-direction: column;   /* stack vertically */
+  align-items: center;      /* center horizontally */
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem auto;
+  padding: 2rem 1.5rem;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(85,185,220,.15), rgba(233,160,50,.15));
+  max-width: 600px;
+  text-align: center;       /* ensure text under icon is centered */
+}
+
+.highlight__icon img {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 0.5rem;    /* space between icon and text */
+}
+
+.highlight__text h3 {
+  margin: 0;
+  font-family: "Neutraface Text", Verdana, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1d2939;
+}
+
+
+/* Features grid */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.feature {
+  text-align: center;
+  padding: 1.5rem;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.feature__icon img {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 0.75rem;
+}
+
+.feature__title {
+  font-family: "Neutraface Text", Verdana, sans-serif;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature__desc {
+  color: #667085;
+  font-size: 0.95rem;
+}
