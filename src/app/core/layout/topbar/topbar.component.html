@@ -1,0 +1,47 @@
+<header class="card" style="border-radius: 0; border-left: 0; border-right: 0">
+  <div
+    class="container"
+    style="
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      justify-content: space-between;
+      padding: 0;
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div class="icon" aria-hidden="true">
+        <!-- simple circle logo -->
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" fill="var(--mncr-red)" />
+        </svg>
+      </div>
+      <strong>Patrimonius</strong>
+      <nav style="display: flex; gap: 8px; margin-left: 12px">
+        <a
+          routerLink="/admin/dashboard"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="btn"
+          >Dashboard</a
+        >
+
+        <a
+          routerLink="/admin/notifications"
+          routerLinkActive="active"
+          class="btn"
+        >
+          Notificaciones
+          <span class="badge danger" style="margin-left: 6px">{{
+            noticeCount()
+          }}</span>
+        </a>
+      </nav>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <span style="font-size: 12px; color: #6b7280">admin@gmail.com</span>
+      <span class="badge">Administrador</span>
+      <button class="btn">Salir</button>
+    </div>
+  </div>
+</header>

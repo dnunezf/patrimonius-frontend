@@ -1,0 +1,60 @@
+<main class="container">
+  <h1 style="margin: 0 0 6px 0">Notificaciones del Sistema</h1>
+  <p style="margin: 0 0 16px 0; color: #6b7280">
+    Alertas y eventos importantes que requieren atención administrativa
+  </p>
+
+  <section class="row" style="gap: 14px">
+    <article
+      class="card"
+      *ngFor="let n of notices"
+      style="
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        border-left: 6px solid var(--mncr-blue);
+      "
+    >
+      <div class="icon" aria-hidden="true" style="margin-top: 2px">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 2 2 22h20L12 2z"
+            [attr.fill]="
+              n.level === 'high'
+                ? '#fee2e2'
+                : n.level === 'medium'
+                ? '#ffedd5'
+                : '#e0e7ff'
+            "
+          ></path>
+        </svg>
+      </div>
+      <div style="flex: 1">
+        <div
+          style="
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+          "
+        >
+          <strong>{{ n.title }}</strong>
+          <div style="display: flex; gap: 6px">
+            <span
+              class="badge"
+              [class.warn]="n.level === 'medium'"
+              [class.success]="n.level === 'low'"
+              >{{ n.level | titlecase }}</span
+            >
+            <span class="badge info" *ngIf="n.fresh">Nueva</span>
+            <button class="btn">Marcar como leída</button>
+            <button class="btn">Ver en Bitácora</button>
+          </div>
+        </div>
+        <p style="margin: 8px 0; color: #374151">{{ n.body }}</p>
+        <div style="font-size: 12px; color: #6b7280">🗓 {{ n.time }}</div>
+      </div>
+    </article>
+  </section>
+</main>
