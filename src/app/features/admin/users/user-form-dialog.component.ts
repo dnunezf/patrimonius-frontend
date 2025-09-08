@@ -1,7 +1,22 @@
-import { Component, EventEmitter, Input, Output, computed, OnChanges } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  computed,
+  OnChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { UpsertUserDto, AdminUser } from '../../../../core/services/admin-users.service';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  Validators,
+  FormGroup,
+} from '@angular/forms';
+import {
+  UpsertUserDto,
+  AdminUser,
+} from '../../../../core/services/admin-users.service';
 import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
 
 @Component({
@@ -38,7 +53,7 @@ export class UserFormDialogComponent implements OnChanges {
   }
 
   /** When role is Editor, show permission checkboxes */
-  readonly isEditor = computed(() => this.form.value['rolId'] === this.EDITOR_ID);
+  readonly isEditor = () => this.form.get('rolId')?.value === this.EDITOR_ID;
 
   ngOnChanges(): void {
     if (this.editing) {
@@ -68,19 +83,31 @@ export class UserFormDialogComponent implements OnChanges {
   }
 
   backdrop(e: MouseEvent) {
-    if ((e.target as HTMLElement).classList.contains('modal')) this.close.emit();
+    if ((e.target as HTMLElement).classList.contains('modal'))
+      this.close.emit();
   }
 
   save() {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     const v = this.form.value as any;
     const editorPermissions =
       v.rolId === this.EDITOR_ID
-        ? ([v.edit ? 'EDIT' : null, v.sign ? 'SIGN' : null].filter(Boolean) as ('EDIT'|'SIGN')[])
+        ? ([v.edit ? 'EDIT' : null, v.sign ? 'SIGN' : null].filter(Boolean) as (
+            | 'EDIT'
+            | 'SIGN'
+          )[])
         : [];
     const dto: UpsertUserDto = {
-      nombre: v.nombre, apellido1: v.apellido1, apellido2: v.apellido2 || '',
-      email: v.email, rolId: v.rolId, unidadId: v.unidadId, editorPermissions,
+      nombre: v.nombre,
+      apellido1: v.apellido1,
+      apellido2: v.apellido2 || '',
+      email: v.email,
+      rolId: v.rolId,
+      unidadId: v.unidadId,
+      editorPermissions,
     };
     this.submit.emit({ id: this.editing?.id ?? undefined, data: dto });
   }

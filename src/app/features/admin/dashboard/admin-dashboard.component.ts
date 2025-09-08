@@ -43,7 +43,7 @@ export class AdminDashboardComponent {
       description: 'Gestión de usuarios y accesos...',
       status: 'available',
       statsLabel: 'Estado',
-      statsValue: 'HU-001 + HU-002 Completo',
+      statsValue: 'HU-001 Completo',
       features: [
         'Gestionar usuarios',
         'Control de accesos',

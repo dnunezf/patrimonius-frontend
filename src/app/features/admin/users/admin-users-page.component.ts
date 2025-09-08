@@ -32,7 +32,7 @@ export class AdminUsersPageComponent {
   readonly query = signal<string>('');
   readonly roleFilter = signal<number | 'all'>('all');
   readonly showForm = signal<boolean>(false);
-  readonly editing: Signal<AdminUser | null> = signal<AdminUser | null>(null);
+  readonly editing = signal<AdminUser | null>(null);
 
   readonly filtered = computed(() => {
     const q = this.query().toLowerCase().trim();
@@ -76,11 +76,11 @@ export class AdminUsersPageComponent {
   }
 
   openCreate(): void {
-    (this.editing as any).set(null);
+    this.editing.set(null);
     this.showForm.set(true);
   }
   openEdit(u: AdminUser): void {
-    (this.editing as any).set(u);
+    this.editing.set(u);
     this.showForm.set(true);
   }
 

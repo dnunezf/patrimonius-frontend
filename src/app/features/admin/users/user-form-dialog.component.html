@@ -29,24 +29,28 @@
       <h3 class="section__title">Información Personal</h3>
 
       <div class="grid grid-2">
-        <label class="form__label">Nombre *</label>
-        <label class="form__label">Primer apellido *</label>
+        <label class="form__label" for="nombre">Nombre *</label>
+        <label class="form__label" for="apellido1">Primer apellido *</label>
+
         <div class="input with-icon">
           <span class="input__icon" aria-hidden="true">
             <img src="assets/icons/user.png" alt="" />
           </span>
           <input
+            id="nombre"
             class="input__control"
             type="text"
             placeholder="Nombre del usuario"
             formControlName="nombre"
           />
         </div>
+
         <div class="input with-icon">
           <span class="input__icon" aria-hidden="true">
             <img src="assets/icons/user.png" alt="" />
           </span>
           <input
+            id="apellido1"
             class="input__control"
             type="text"
             placeholder="Primer apellido"
@@ -55,12 +59,15 @@
         </div>
       </div>
 
-      <label class="form__label">Segundo apellido (opcional)</label>
+      <label class="form__label" for="apellido2"
+        >Segundo apellido (opcional)</label
+      >
       <div class="input with-icon">
         <span class="input__icon" aria-hidden="true">
           <img src="assets/icons/user.png" alt="" />
         </span>
         <input
+          id="apellido2"
           class="input__control"
           type="text"
           placeholder="Segundo apellido"
@@ -68,12 +75,13 @@
         />
       </div>
 
-      <label class="form__label">Correo electrónico *</label>
+      <label class="form__label" for="email">Correo electrónico *</label>
       <div class="input with-icon">
         <span class="input__icon" aria-hidden="true">
           <img src="assets/icons/email.png" alt="" />
         </span>
         <input
+          id="email"
           class="input__control"
           type="email"
           placeholder="usuario@museocr.go.cr"
@@ -85,16 +93,20 @@
       <!-- ===== Organization information ===== -->
       <h3 class="section__title">Información Organizacional</h3>
 
-      <label class="form__label">Rol en el sistema *</label>
+      <label class="form__label" for="rolId">Rol en el sistema *</label>
       <div class="select">
-        <select class="select__control" formControlName="rolId">
+        <select id="rolId" class="select__control" formControlName="rolId">
           <option *ngFor="let r of ROLES" [value]="r.id">{{ r.label }}</option>
         </select>
       </div>
 
-      <label class="form__label">Unidad organizacional *</label>
+      <label class="form__label" for="unidadId">Unidad organizacional *</label>
       <div class="select">
-        <select class="select__control" formControlName="unidadId">
+        <select
+          id="unidadId"
+          class="select__control"
+          formControlName="unidadId"
+        >
           <option *ngFor="let u of UNIDADES" [value]="u.id">
             {{ u.label }}
           </option>
@@ -102,21 +114,22 @@
       </div>
 
       <!-- Editor permissions -->
-      <div *ngIf="isEditor()" class="editor-perms">
-        <div class="perm-title">Permisos del Editor</div>
-        <label class="switch">
-          <input type="checkbox" formControlName="edit" />
+      <div *ngIf="isEditor()" class="editor-perms" aria-labelledby="permTitle">
+        <div id="permTitle" class="perm-title">Permisos del Editor</div>
+        <label class="switch" for="permEdit">
+          <input id="permEdit" type="checkbox" formControlName="edit" />
           <span>Edición</span>
         </label>
-        <label class="switch">
-          <input type="checkbox" formControlName="sign" />
+        <label class="switch" for="permSign">
+          <input id="permSign" type="checkbox" formControlName="sign" />
           <span>Firma</span>
         </label>
       </div>
 
       <!-- Notes (UI only, optional) -->
-      <label class="form__label">Notas adicionales</label>
+      <label class="form__label" for="notes">Notas adicionales</label>
       <textarea
+        id="notes"
         class="textarea"
         rows="3"
         placeholder="Información adicional sobre el usuario (opcional)"
