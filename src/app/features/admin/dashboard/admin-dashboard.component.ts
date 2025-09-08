@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { NgFor } from '@angular/common';
+import { RouterLink } from '@angular/router'; // ← ADD THIS
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [NgFor], // ← required for *ngFor
+  imports: [NgFor, RouterLink], // ← ADD RouterLink here
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.css'],
 })
@@ -35,11 +36,11 @@ export class AdminDashboardComponent {
       icon: 'clock',
     },
   ];
+
   moduleCards = [
     {
       title: 'Módulo de Administración',
-      description:
-        'Gestión de usuarios y accesos por confidencialidad y unidad.',
+      description: 'Gestión de usuarios y accesos...',
       status: 'available',
       statsLabel: 'Estado',
       statsValue: 'HU-001 + HU-002 Completo',
@@ -49,6 +50,7 @@ export class AdminDashboardComponent {
         'Acceso organizacional',
       ],
       icon: 'gear',
+      link: '/admin/module', // Solo una vez
     },
     {
       title: 'Carga de Documentos',

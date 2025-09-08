@@ -1,0 +1,107 @@
+<div *ngIf="open" class="modal" (click)="backdrop($event)">
+  <div class="dialog" role="dialog" aria-modal="true">
+    <button
+      class="dialog__close"
+      type="button"
+      aria-label="Cerrar"
+      (click)="close.emit()"
+    >
+      ×
+    </button>
+    <h2 class="dialog__title">
+      {{ editing ? "Editar Usuario" : "Crear Nuevo Usuario" }}
+    </h2>
+    <p class="dialog__subtitle">
+      Complete the form to {{ editing ? "update" : "create" }} a user.
+    </p>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="save()">
+      <!-- Personal -->
+      <div class="form__group">
+        <label class="form__label">Nombre <span class="req">*</span></label>
+        <input
+          class="form__control"
+          formControlName="nombre"
+          placeholder="Nombre"
+        />
+      </div>
+
+      <div class="two">
+        <div class="form__group">
+          <label class="form__label"
+            >Primer Apellido <span class="req">*</span></label
+          >
+          <input
+            class="form__control"
+            formControlName="apellido1"
+            placeholder="Apellido 1"
+          />
+        </div>
+        <div class="form__group">
+          <label class="form__label">Segundo Apellido</label>
+          <input
+            class="form__control"
+            formControlName="apellido2"
+            placeholder="Apellido 2"
+          />
+        </div>
+      </div>
+
+      <div class="form__group">
+        <label class="form__label"
+          >Correo electrónico <span class="req">*</span></label
+        >
+        <input
+          class="form__control"
+          formControlName="email"
+          type="email"
+          placeholder="usuario@museocr.go.cr"
+        />
+      </div>
+
+      <!-- Organizational -->
+      <div class="two">
+        <div class="form__group">
+          <label class="form__label"
+            >Rol en el sistema <span class="req">*</span></label
+          >
+          <select class="form__control" formControlName="rolId">
+            <option *ngFor="let r of ROLES" [value]="r.id">
+              {{ r.label }}
+            </option>
+          </select>
+        </div>
+        <div class="form__group">
+          <label class="form__label"
+            >Unidad organizacional <span class="req">*</span></label
+          >
+          <select class="form__control" formControlName="unidadId">
+            <option *ngFor="let u of UNIDADES" [value]="u.id">
+              {{ u.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Editor permissions -->
+      <div *ngIf="isEditor()" class="perm-box">
+        <div class="perm-head">Permisos del Editor</div>
+        <label class="check"
+          ><input type="checkbox" formControlName="edit" /> Edición</label
+        >
+        <label class="check"
+          ><input type="checkbox" formControlName="sign" /> Firma</label
+        >
+      </div>
+
+      <div class="actions">
+        <button class="btn btn--primary" type="submit">
+          {{ editing ? "Guardar cambios" : "Crear Usuario" }}
+        </button>
+        <button class="btn btn--secondary" type="button" (click)="close.emit()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

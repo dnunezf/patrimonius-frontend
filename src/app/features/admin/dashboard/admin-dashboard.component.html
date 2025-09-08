@@ -38,8 +38,10 @@
     <article
       class="card"
       *ngFor="let m of moduleCards"
-      style="display: flex; flex-direction: column; gap: 10px"
+      [routerLink]="m.link || null"
+      style="display: flex; flex-direction: column; gap: 10px; cursor: pointer"
     >
+      > >
       <div class="module__head">
         <div class="module__title">
           <div class="icon" aria-hidden="true">

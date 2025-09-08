@@ -6,11 +6,25 @@ import { AdminNotificationsComponent } from './notifications/admin-notifications
 export const ADMIN_ROUTES: Routes = [
   {
     path: '',
-    component: AdminShellComponent, // topbar + outlet SOLO en /admin/**
+    component: AdminShellComponent,
     children: [
       { path: 'dashboard', component: AdminDashboardComponent },
       { path: 'notifications', component: AdminNotificationsComponent },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./users/admin-users-page.component').then(
+            (m) => m.AdminUsersPageComponent
+          ),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      {
+        path: 'module',
+        loadComponent: () =>
+          import('./module/admin-module-page.component').then(
+            (m) => m.AdminModulePageComponent
+          ),
+      },
     ],
   },
 ];

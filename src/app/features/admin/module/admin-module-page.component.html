@@ -1,0 +1,31 @@
+<main class="container">
+  <header class="head">
+    <a routerLink="/admin/dashboard" class="back">← Volver al Dashboard</a>
+    <h1>Módulo de Administración</h1>
+    <p class="sub">Gestión integral de usuarios, permisos y configuraciones.</p>
+  </header>
+
+  <section class="grid">
+    <article
+      class="card"
+      *ngFor="let m of submodules"
+      [routerLink]="m.link || null"
+    >
+      <div class="row1">
+        <div class="icon" aria-hidden="true"></div>
+        <span class="badge" [class.ok]="m.status === 'available'">
+          {{ m.status === "available" ? "Disponible" : "En desarrollo" }}
+        </span>
+      </div>
+      <h3 class="title">{{ m.title }}</h3>
+      <p class="desc">{{ m.desc }}</p>
+
+      <div class="features">
+        <strong>Funciones principales:</strong>
+        <ul>
+          <li *ngFor="let b of m.bullets">{{ b }}</li>
+        </ul>
+      </div>
+    </article>
+  </section>
+</main>

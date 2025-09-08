@@ -9,13 +9,10 @@ import { NavComponent } from '../app/core/nav/nav.component';
   standalone: true,
   imports: [CommonModule, LoginDialogComponent, NavComponent],
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css']
+  styleUrls: ['./home.component.css'],
 })
 export class HomeComponent {
-
-
   open = signal(false);
-
 
   items = [
     { label: 'Inicio', path: '/' },
@@ -23,7 +20,9 @@ export class HomeComponent {
 
   constructor(public auth: AuthService) {}
 
-  openLogin() { this.open.set(true); }
+  openLogin() {
+    this.open.set(true);
+  }
 
   onLoginSubmit({ email, password }: { email: string; password: string }) {
     this.auth.login(email, password).subscribe({
@@ -35,7 +34,7 @@ export class HomeComponent {
         console.error('Login error', e);
 
         alert(e?.error?.message || 'Credenciales inválidas.');
-      }
+      },
     });
   }
 }
