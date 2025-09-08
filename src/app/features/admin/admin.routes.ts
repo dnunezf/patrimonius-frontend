@@ -5,4 +5,5 @@ import { AdminNotificationsComponent } from './notifications/admin-notifications
 export const ADMIN_ROUTES: Routes = [
   { path: 'dashboard', component: AdminDashboardComponent },
   { path: 'notifications', component: AdminNotificationsComponent },
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 ];

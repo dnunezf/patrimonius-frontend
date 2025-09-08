@@ -1,4 +1,3 @@
-
 <app-nav
   [brandTitle]="'Patrimonius'"
   [brandSubtitle]="'Museo Nacional de Costa Rica'"
@@ -7,7 +6,6 @@
   [loginItem]="{ label:'Iniciar Sesión', path:'/login' }"
   (loginClick)="open.set(true)">
 </app-nav>
-
 
 <main class="container hero">
   <h1 class="h1 hero__title">
@@ -81,4 +79,3 @@
   (submitLogin)="onLoginSubmit($event)"
   (closed)="open.set(false)">
 </app-login-dialog>
-
