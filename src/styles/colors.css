@@ -1,0 +1,93 @@
+/* ================================================== */
+/* Museo Nacional de Costa Rica - Official Colors      */
+/* Extracted from Identity Manual (2018)               */
+/* ================================================== */
+
+/* Primary Colors */
+:root {
+  /* Primary */
+  --mncr-yellow: #E9A032;  /* Pantone 1375 M */
+  --mncr-brown:  #4B1E0B;  /* Pantone 4975 M  */
+
+  /* Secondary */
+  --mncr-blue-3015:   #00649B; /* Pantone 3015 M */
+  --mncr-blue-639:    #0091CD; /* Pantone 639 M  */
+  --mncr-celeste-306: #55B9DC; /* Pantone 306 M  */
+  --mncr-green-376:   #78AF46; /* Pantone 376 M  */
+  --mncr-green-355:   #008C46; /* Pantone 355 M  */
+  --mncr-red-1795:    #C33737; /* Pantone 1795 M */
+  --mncr-red-1788:    #D75A46; /* Pantone 1788 M */
+  --mncr-orange-165:  #E18246; /* Pantone 165 M  */
+
+  /* Text contrast helpers (WCAG AA suggestion) */
+  --mncr-white: #ffffff;
+  --mncr-black: #111111;
+}
+
+
+
+/* ---------- Text color utilities ---------- */
+.text-yellow   { color: var(--mncr-yellow); }
+.text-brown    { color: var(--mncr-brown); }
+
+.text-blue-3015   { color: var(--mncr-blue-3015); }
+.text-blue-639    { color: var(--mncr-blue-639); }
+.text-celeste-306 { color: var(--mncr-celeste-306); }
+.text-green-376   { color: var(--mncr-green-376); }
+.text-green-355   { color: var(--mncr-green-355); }
+.text-red-1795    { color: var(--mncr-red-1795); }
+.text-red-1788    { color: var(--mncr-red-1788); }
+.text-orange-165  { color: var(--mncr-orange-165); }
+
+/* ---------- Border color utilities ---------- */
+.border-yellow   { border-color: var(--mncr-yellow) !important; }
+.border-brown    { border-color: var(--mncr-brown) !important; }
+
+.border-blue-3015   { border-color: var(--mncr-blue-3015) !important; }
+.border-blue-639    { border-color: var(--mncr-blue-639) !important; }
+.border-celeste-306 { border-color: var(--mncr-celeste-306) !important; }
+.border-green-376   { border-color: var(--mncr-green-376) !important; }
+.border-green-355   { border-color: var(--mncr-green-355) !important; }
+.border-red-1795    { border-color: var(--mncr-red-1795) !important; }
+.border-red-1788    { border-color: var(--mncr-red-1788) !important; }
+.border-orange-165  { border-color: var(--mncr-orange-165) !important; }
+
+/* Optional: simple badges/buttons using brand colors */
+.badge { display:inline-block; padding:4px 8px; border-radius:4px; font-weight:700; }
+.badge-yellow   { background:var(--mncr-yellow);  color:var(--mncr-brown); }
+.badge-brown    { background:var(--mncr-brown);   color:var(--mncr-white); }
+.badge-blue     { background:var(--mncr-blue-639); color:var(--mncr-white); }
+.badge-green    { background:var(--mncr-green-355);color:var(--mncr-white); }
+.badge-red      { background:var(--mncr-red-1795); color:var(--mncr-white); }
+.badge-orange   { background:var(--mncr-orange-165);color:var(--mncr-brown); }
+
+
+/* ---------- Background color utilities (ALL brand colors) ---------- */
+/* Use these classes to set background colors consistently across UI */
+
+.bg-yellow        { background-color: var(--mncr-yellow); }
+.bg-brown         { background-color: var(--mncr-brown); }
+
+.bg-blue-3015     { background-color: var(--mncr-blue-3015); }
+.bg-blue-639      { background-color: var(--mncr-blue-639); }
+.bg-celeste-306   { background-color: var(--mncr-celeste-306); }
+.bg-green-376     { background-color: var(--mncr-green-376); }
+.bg-green-355     { background-color: var(--mncr-green-355); }
+.bg-red-1795      { background-color: var(--mncr-red-1795); }
+.bg-red-1788      { background-color: var(--mncr-red-1788); }
+.bg-orange-165    { background-color: var(--mncr-orange-165); }
+
+
+/* ---------- Text color helpers for readability (WCAG AA suggestion) ---------- */
+/* Combine bg + readable text in one shot */
+.bg-yellow.text-on { color: var(--mncr-brown); }
+.bg-brown.text-on  { color: var(--mncr-white); }
+
+.bg-blue-3015.text-on   { color: var(--mncr-white); }
+.bg-blue-639.text-on     { color: var(--mncr-white); }
+.bg-celeste-306.text-on  { color: var(--mncr-black); }
+.bg-green-376.text-on    { color: var(--mncr-black); }
+.bg-green-355.text-on    { color: var(--mncr-white); }
+.bg-red-1795.text-on     { color: var(--mncr-white); }
+.bg-red-1788.text-on     { color: var(--mncr-white); }
+.bg-orange-165.text-on   { color: var(--mncr-brown); }

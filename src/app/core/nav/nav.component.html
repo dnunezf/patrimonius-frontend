@@ -1,0 +1,77 @@
+<header class="topbar" role="banner">
+  <!-- Brand -->
+  <a class="brand" [routerLink]="'/'" aria-label="Ir a inicio">
+    <img class="brand__logo" [src]="logo" alt="Museo Nacional - Logotipo" />
+    <span class="brand__text">
+      <strong>{{ brandTitle }}</strong>
+      <small>{{ brandSubtitle }}</small>
+    </span>
+  </a>
+
+  <!-- Desktop nav (right) -->
+  <nav class="nav" role="navigation" aria-label="Principal">
+    <ul class="nav__list">
+      <li class="nav__item" *ngFor="let it of items">
+        <!-- interno -->
+        <a *ngIf="!it.external"
+           class="nav__link"
+           [routerLink]="it.path"
+           [routerLinkActive]="'is-active'"
+           [routerLinkActiveOptions]="{ exact: !!it.exact }">
+          <img *ngIf="it.iconSrc" [src]="it.iconSrc" alt="" class="nav__icon" aria-hidden="true">
+          {{ it.label }}
+        </a>
+        <!-- externo -->
+        <a *ngIf="it.external"
+           class="nav__link"
+           [href]="it.path" target="_blank" rel="noopener">
+          <img *ngIf="it.iconSrc" [src]="it.iconSrc" alt="" class="nav__icon" aria-hidden="true">
+          {{ it.label }}
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Right actions -->
+  <div class="actions">
+    <!-- botón login DESKTOP (no navega; abre modal) -->
+    <button *ngIf="loginItem"
+            type="button"
+            class="btn btn--ghost actions__login"
+            (click)="loginClick.emit()">
+      {{ loginItem.label }}
+    </button>
+
+    <!-- Hamburger -->
+    <button class="hamburger" type="button"
+            (click)="toggle()"
+            aria-controls="mobile-menu"
+            [attr.aria-expanded]="isOpen()"
+            aria-label="Abrir menú">☰</button>
+  </div>
+
+  <!-- Mobile menu -->
+  <nav class="mobile" [class.is-open]="isOpen()" id="mobile-menu" aria-label="Menú móvil">
+    <ul class="mobile__list">
+      <li class="mobile__item" *ngFor="let it of items" (click)="close()">
+        <a *ngIf="!it.external" class="mobile__link"
+           [routerLink]="it.path"
+           [routerLinkActive]="'is-active'"
+           [routerLinkActiveOptions]="{ exact: !!it.exact }">
+          {{ it.label }}
+        </a>
+        <a *ngIf="it.external" class="mobile__link" [href]="it.path" target="_blank" rel="noopener">
+          {{ it.label }}
+        </a>
+      </li>
+
+      <!-- botón login en el menú móvil -->
+      <li class="mobile__item" *ngIf="loginItem">
+        <button class="btn btn--primary mobile__btn" type="button"
+                (click)="loginClick.emit(); close()">
+          {{ loginItem.label }}
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>

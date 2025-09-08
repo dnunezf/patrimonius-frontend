@@ -1,0 +1,55 @@
+<!-- Backdrop -->
+<div *ngIf="open" class="modal" (click)="onBackdropClick($event)">
+  <!-- Dialog -->
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <button class="dialog__close" type="button" aria-label="Cerrar" (click)="close()">×</button>
+
+    <h2 id="loginTitle" class="dialog__title">Iniciar Sesión</h2>
+    <p class="dialog__subtitle">
+      Acceda al sistema Patrimonius con sus credenciales institucionales.
+    </p>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+      <!-- Email -->
+      <label class="form__label">Correo electrónico <span class="req">*</span></label>
+      <div class="input">
+        <span class="input__icon" aria-hidden="true">
+          <img src="assets/icons/email.png" alt="">
+        </span>
+        <input class="input__control"
+               type="email"
+               placeholder="ejemplo@gmail.com"
+               formControlName="email"
+               autocomplete="username" />
+      </div>
+      <div class="form__error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+        Ingrese un correo válido.
+      </div>
+
+      <!-- Password -->
+      <label class="form__label">Contraseña <span class="req">*</span></label>
+      <div class="input">
+        <span class="input__icon" aria-hidden="true">
+          <img src="assets/icons/lock.png" alt="">
+        </span>
+        <input class="input__control"
+               [type]="showPassword() ? 'text' : 'password'"
+               placeholder="•••••••"
+               formControlName="password"
+               autocomplete="current-password" />
+        <button class="input__toggle" type="button"
+                (click)="showPassword.set(!showPassword())">
+          {{ showPassword() ? 'Ocultar' : 'Ver' }}
+        </button>
+      </div>
+      <div class="form__error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
+        La contraseña es obligatoria.
+      </div>
+
+      <!-- Submit -->
+      <button class="btn btn--primary dialog__submit" type="submit">INGRESAR</button>
+    </form>
+
+    <button class="link" type="button" (click)="forgot.emit()">¿Olvidaste tu contraseña?</button>
+  </div>
+</div>
