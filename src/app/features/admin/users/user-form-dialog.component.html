@@ -1,5 +1,12 @@
+<!-- Modal/backdrop -->
 <div *ngIf="open" class="modal" (click)="backdrop($event)">
-  <div class="dialog" role="dialog" aria-modal="true">
+  <!-- Dialog -->
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dlgTitle"
+  >
     <button
       class="dialog__close"
       type="button"
@@ -8,97 +15,119 @@
     >
       ×
     </button>
-    <h2 class="dialog__title">
+
+    <h2 id="dlgTitle" class="dialog__title">
       {{ editing ? "Editar Usuario" : "Crear Nuevo Usuario" }}
     </h2>
     <p class="dialog__subtitle">
-      Complete the form to {{ editing ? "update" : "create" }} a user.
+      Complete la información para {{ editing ? "actualizar" : "crear" }} un
+      usuario en el sistema
     </p>
 
     <form class="form" [formGroup]="form" (ngSubmit)="save()">
-      <!-- Personal -->
-      <div class="form__group">
-        <label class="form__label">Nombre <span class="req">*</span></label>
+      <!-- ===== Personal information ===== -->
+      <h3 class="section__title">Información Personal</h3>
+
+      <div class="grid grid-2">
+        <label class="form__label">Nombre *</label>
+        <label class="form__label">Primer apellido *</label>
+        <div class="input with-icon">
+          <span class="input__icon" aria-hidden="true">
+            <img src="assets/icons/user.png" alt="" />
+          </span>
+          <input
+            class="input__control"
+            type="text"
+            placeholder="Nombre del usuario"
+            formControlName="nombre"
+          />
+        </div>
+        <div class="input with-icon">
+          <span class="input__icon" aria-hidden="true">
+            <img src="assets/icons/user.png" alt="" />
+          </span>
+          <input
+            class="input__control"
+            type="text"
+            placeholder="Primer apellido"
+            formControlName="apellido1"
+          />
+        </div>
+      </div>
+
+      <label class="form__label">Segundo apellido (opcional)</label>
+      <div class="input with-icon">
+        <span class="input__icon" aria-hidden="true">
+          <img src="assets/icons/user.png" alt="" />
+        </span>
         <input
-          class="form__control"
-          formControlName="nombre"
-          placeholder="Nombre"
+          class="input__control"
+          type="text"
+          placeholder="Segundo apellido"
+          formControlName="apellido2"
         />
       </div>
 
-      <div class="two">
-        <div class="form__group">
-          <label class="form__label"
-            >Primer Apellido <span class="req">*</span></label
-          >
-          <input
-            class="form__control"
-            formControlName="apellido1"
-            placeholder="Apellido 1"
-          />
-        </div>
-        <div class="form__group">
-          <label class="form__label">Segundo Apellido</label>
-          <input
-            class="form__control"
-            formControlName="apellido2"
-            placeholder="Apellido 2"
-          />
-        </div>
-      </div>
-
-      <div class="form__group">
-        <label class="form__label"
-          >Correo electrónico <span class="req">*</span></label
-        >
+      <label class="form__label">Correo electrónico *</label>
+      <div class="input with-icon">
+        <span class="input__icon" aria-hidden="true">
+          <img src="assets/icons/email.png" alt="" />
+        </span>
         <input
-          class="form__control"
-          formControlName="email"
+          class="input__control"
           type="email"
           placeholder="usuario@museocr.go.cr"
+          autocomplete="username"
+          formControlName="email"
         />
       </div>
 
-      <!-- Organizational -->
-      <div class="two">
-        <div class="form__group">
-          <label class="form__label"
-            >Rol en el sistema <span class="req">*</span></label
-          >
-          <select class="form__control" formControlName="rolId">
-            <option *ngFor="let r of ROLES" [value]="r.id">
-              {{ r.label }}
-            </option>
-          </select>
-        </div>
-        <div class="form__group">
-          <label class="form__label"
-            >Unidad organizacional <span class="req">*</span></label
-          >
-          <select class="form__control" formControlName="unidadId">
-            <option *ngFor="let u of UNIDADES" [value]="u.id">
-              {{ u.label }}
-            </option>
-          </select>
-        </div>
+      <!-- ===== Organization information ===== -->
+      <h3 class="section__title">Información Organizacional</h3>
+
+      <label class="form__label">Rol en el sistema *</label>
+      <div class="select">
+        <select class="select__control" formControlName="rolId">
+          <option *ngFor="let r of ROLES" [value]="r.id">{{ r.label }}</option>
+        </select>
+      </div>
+
+      <label class="form__label">Unidad organizacional *</label>
+      <div class="select">
+        <select class="select__control" formControlName="unidadId">
+          <option *ngFor="let u of UNIDADES" [value]="u.id">
+            {{ u.label }}
+          </option>
+        </select>
       </div>
 
       <!-- Editor permissions -->
-      <div *ngIf="isEditor()" class="perm-box">
-        <div class="perm-head">Permisos del Editor</div>
-        <label class="check"
-          ><input type="checkbox" formControlName="edit" /> Edición</label
-        >
-        <label class="check"
-          ><input type="checkbox" formControlName="sign" /> Firma</label
-        >
+      <div *ngIf="isEditor()" class="editor-perms">
+        <div class="perm-title">Permisos del Editor</div>
+        <label class="switch">
+          <input type="checkbox" formControlName="edit" />
+          <span>Edición</span>
+        </label>
+        <label class="switch">
+          <input type="checkbox" formControlName="sign" />
+          <span>Firma</span>
+        </label>
       </div>
 
-      <div class="actions">
-        <button class="btn btn--primary" type="submit">
-          {{ editing ? "Guardar cambios" : "Crear Usuario" }}
+      <!-- Notes (UI only, optional) -->
+      <label class="form__label">Notas adicionales</label>
+      <textarea
+        class="textarea"
+        rows="3"
+        placeholder="Información adicional sobre el usuario (opcional)"
+      ></textarea>
+
+      <!-- Footer actions -->
+      <div class="footer">
+        <button class="btn btn--success" type="submit">
+          {{ editing ? "Guardar Cambios" : "Crear Usuario" }}
         </button>
-        <button class="btn btn--secondary" type="button" (click)="close.emit()">
+        <button class="btn btn--ghost" type="button" (click)="close.emit()">
           Cancelar
         </button>
       </div>

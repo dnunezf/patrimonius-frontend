@@ -1,12 +1,12 @@
-<main class="container">
+<main class="container users">
   <header class="page-head">
     <a routerLink="/admin/dashboard" class="link-back">← Volver al Dashboard</a>
     <h1>Gestión de Usuarios</h1>
     <p class="sub">Administración de usuarios y roles personalizados</p>
   </header>
 
-  <!-- Top metrics (lightweight, local counters) -->
-  <section class="grid kpis">
+  <!-- KPIs -->
+  <section class="kpis">
     <div class="kpi">
       <div class="kpi__title">Total Usuarios</div>
       <div class="kpi__value">{{ totalCount() }}</div>
@@ -37,7 +37,7 @@
       <option *ngFor="let r of ROLES" [ngValue]="r.id">{{ r.label }}</option>
     </select>
 
-    <button class="btn btn--primary" (click)="openCreate()">
+    <button class="btn btn--primary cta" (click)="openCreate()">
       + Crear Usuario
     </button>
   </section>
@@ -68,9 +68,9 @@
                 *ngIf="u.rolId === EDITOR_ID && u.editorPermissions?.length"
                 class="chips"
               >
-                <span class="chip" *ngFor="let p of u.editorPermissions">{{
-                  p === "SIGN" ? "Firma" : "Edición"
-                }}</span>
+                <span class="chip" *ngFor="let p of u.editorPermissions">
+                  {{ p === "SIGN" ? "Firma" : "Edición" }}
+                </span>
               </div>
             </div>
           </td>
@@ -79,8 +79,12 @@
               class="role-badge"
               [class.admin]="u.rolId === 1"
               [class.editor]="u.rolId === 2"
-              >{{ u.rol }}</span
+              [class.arch]="u.rolId === 3"
+              [class.user]="u.rolId === 4"
+              [class.ext]="u.rolId === 5"
             >
+              {{ u.rol }}
+            </span>
           </td>
           <td>{{ u.unidad }}</td>
           <td class="actions">
@@ -96,12 +100,11 @@
     </table>
   </section>
 
-  <!-- Create/Edit dialog -->
+  <!-- Dialog -->
   <app-user-form-dialog
     [open]="showForm()"
     [editing]="editing()"
     (close)="showForm.set(false)"
     (submit)="onSubmit($event.data, $event.id)"
-  >
-  </app-user-form-dialog>
+  ></app-user-form-dialog>
 </main>
