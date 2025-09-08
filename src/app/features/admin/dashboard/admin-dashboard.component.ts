@@ -4,7 +4,7 @@ import { NgFor } from '@angular/common';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [NgFor],
+  imports: [NgFor], // ← required for *ngFor
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.css'],
 })

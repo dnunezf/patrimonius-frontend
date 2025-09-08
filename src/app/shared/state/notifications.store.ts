@@ -1,9 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 
+/** UI-only store for header badge. Replace with real API later. */
 @Injectable({ providedIn: 'root' })
 export class NotificationsStore {
-  // UI-only demo state
-  private _count = signal(4);
+  private readonly _count = signal(4);
   count = this._count.asReadonly();
   setCount(n: number) {
     this._count.set(Math.max(0, n));

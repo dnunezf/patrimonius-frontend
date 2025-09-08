@@ -1,18 +1,26 @@
 <main class="container">
   <section style="margin-bottom: 18px">
     <h1>Panel de Administración</h1>
-    <p style="margin:0; color:#6b7280">
-      Gestione usuarios, configuraciones y supervise el sistema completo de Patrimonius
+    <p style="margin: 0; color: #6b7280">
+      Gestione usuarios, configuraciones y supervise el sistema completo de
+      Patrimonius
     </p>
   </section>
 
   <!-- Top stats -->
-  <section class="row cols-4" style="margin-bottom:20px">
+  <section class="row cols-4" style="margin-bottom: 20px">
     <div class="card" *ngFor="let s of statCards">
-      <div style="display:flex; gap:12px; align-items:center">
+      <div style="display: flex; gap: 12px; align-items: center">
         <div class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">
-            <rect x="4" y="4" width="16" height="16" rx="4" fill="var(--mncr-blue-3015)"></rect>
+            <rect
+              x="4"
+              y="4"
+              width="16"
+              height="16"
+              rx="4"
+              fill="var(--mncr-blue-3015)"
+            ></rect>
           </svg>
         </div>
         <div>
@@ -27,16 +35,22 @@
   <!-- Module cards -->
   <h2>Módulos Administrativos</h2>
   <section class="row cols-3">
-    <article class="card" *ngFor="let m of moduleCards" style="display:flex; flex-direction:column; gap:10px">
+    <article
+      class="card"
+      *ngFor="let m of moduleCards"
+      style="display: flex; flex-direction: column; gap: 10px"
+    >
       <div class="module__head">
         <div class="module__title">
           <div class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#f1f5f9"/></svg>
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="#f1f5f9" />
+            </svg>
           </div>
           <strong>{{ m.title }}</strong>
         </div>
         <span class="badge" [class.success]="m.status === 'available'">
-          {{ m.status === 'available' ? 'Disponible' : 'En desarrollo' }}
+          {{ m.status === "available" ? "Disponible" : "En desarrollo" }}
         </span>
       </div>
 
@@ -47,7 +61,9 @@
         <strong class="module__stats-value">{{ m.statsValue }}</strong>
       </div>
 
-      <ul style="margin:0; padding-left:18px; color:#374151; font-size:14px">
+      <ul
+        style="margin: 0; padding-left: 18px; color: #374151; font-size: 14px"
+      >
         <li *ngFor="let f of m.features">{{ f }}</li>
       </ul>
     </article>
