@@ -22,6 +22,7 @@
   /* Text contrast helpers (WCAG AA suggestion) */
   --mncr-white: #ffffff;
   --mncr-black: #111111;
+  --mncr-gray: #6c757d;
 }
 
 

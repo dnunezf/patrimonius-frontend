@@ -27,7 +27,13 @@
   <!-- Module cards -->
   <h2>Módulos Administrativos</h2>
   <section class="row cols-3">
-    <article class="card" *ngFor="let m of moduleCards" style="display:flex; flex-direction:column; gap:10px">
+    <article
+      class="card"
+      *ngFor="let m of moduleCards"
+      style="display:flex; flex-direction:column; gap:10px"
+      [routerLink]="m.title === 'Consultas de Bitácoras' ? '/bitacoras' : null"
+      style="cursor: pointer;"
+    >
       <div class="module__head">
         <div class="module__title">
           <div class="icon" aria-hidden="true">
