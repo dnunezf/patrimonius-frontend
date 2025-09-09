@@ -1,0 +1,18 @@
+<div class="container">
+  <h1>Gestión de Roles</h1>
+
+  <div class="form-container">
+    <h3>Crear Nuevo Rol</h3>
+    <input [(ngModel)]="newRole.nombre" placeholder="Nombre del Rol" />
+    <button (click)="createRole()">Crear Rol</button>
+  </div>
+
+  <div class="roles-list">
+    <h3>Roles Existentes</h3>
+    <div *ngFor="let role of roles" class="role-card">
+      <p>{{ role.nombre }}</p>
+      <button (click)="editRole(role)">Editar</button>
+      <button (click)="deleteRole(role.id)">Eliminar</button>
+    </div>
+  </div>
+</div>

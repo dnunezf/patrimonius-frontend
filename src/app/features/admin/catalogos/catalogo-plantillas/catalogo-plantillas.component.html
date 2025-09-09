@@ -1,0 +1,19 @@
+<div class="container">
+  <h1>Gestión de Plantillas</h1>
+
+  <div class="form-container">
+    <h3>Subir Nueva Plantilla</h3>
+    <input [(ngModel)]="newPlantilla.nombre" placeholder="Nombre de la Plantilla" />
+    <input [(ngModel)]="newPlantilla.ruta_archivo" placeholder="Ruta del Archivo" />
+    <button (click)="uploadTemplate()">Subir Plantilla</button>
+  </div>
+
+  <div class="plantillas-list">
+    <h3>Plantillas Existentes</h3>
+    <div *ngFor="let plantilla of plantillas" class="plantilla-card">
+      <p>{{ plantilla.nombre }}</p>
+      <button (click)="editTemplate(plantilla)">Editar</button>
+      <button (click)="deleteTemplate(plantilla.id)">Eliminar</button>
+    </div>
+  </div>
+</div>

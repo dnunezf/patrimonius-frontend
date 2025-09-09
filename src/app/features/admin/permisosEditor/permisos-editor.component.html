@@ -1,0 +1,16 @@
+<div class="container">
+  <h1>Permisos del Editor</h1>
+
+  <div class="card">
+    <h3>Asignar Permisos de Editor</h3>
+    <form>
+      <label for="editPermission">Permiso de Edición</label>
+      <input type="checkbox" id="editPermission" [(ngModel)]="editPermission" name="editPermission">
+
+      <label for="signPermission">Permiso de Firma</label>
+      <input type="checkbox" id="signPermission" [(ngModel)]="signPermission" name="signPermission">
+
+      <button (click)="assignPermissions()">Asignar Permisos</button>
+    </form>
+  </div>
+</div>

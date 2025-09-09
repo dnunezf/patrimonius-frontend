@@ -1,0 +1,18 @@
+<div class="container">
+  <h1>Gestión de Unidades Organizacionales</h1>
+
+  <div class="form-container">
+    <h3>Crear Nueva Unidad</h3>
+    <input [(ngModel)]="newUnidad.nombre" placeholder="Nombre de la Unidad" />
+    <button (click)="createUnidad()">Crear Unidad</button>
+  </div>
+
+  <div class="unidades-list">
+    <h3>Unidades Existentes</h3>
+    <div *ngFor="let unidad of unidades" class="unidad-card">
+      <p>{{ unidad.nombre }}</p>
+      <button (click)="editUnidad(unidad)">Editar</button>
+      <button (click)="deleteUnidad(unidad.id)">Eliminar</button>
+    </div>
+  </div>
+</div>
