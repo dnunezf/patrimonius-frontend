@@ -1,0 +1,29 @@
+<div class="bitacora-container">
+  <!-- Title and Description Section -->
+  <section class="header-section">
+    <button class="back-button" routerLink="/admin/dashboard">Volver</button>
+    <h2>Consultas de Bitácoras</h2>
+    <p>Seleccione el tipo de bitácora que desea consultar para auditoría del sistema.</p>
+  </section>
+
+  <!-- Bitacora Cards Section -->
+  <div class="bitacora-cards">
+    <div class="bitacora-card" *ngFor="let bitacora of bitacoras">
+      <div class="bitacora-icon">
+        <img [src]="getIconPath(bitacora.icon)" alt="{{ bitacora.title }}" />
+      </div>
+      <div class="bitacora-info">
+        <h3>{{ bitacora.title }}</h3>
+        <p>{{ bitacora.description }}</p>
+
+        <!-- Display the list of "Funciones principales" -->
+        <div class="bitacora-card-details">
+          <strong>Funciones principales:</strong>
+          <ul>
+            <li *ngFor="let funcion of bitacora.funciones">{{ funcion }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

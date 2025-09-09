@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
 import { NgFor } from '@angular/common';
+import { RouterLink } from '@angular/router'; // Import RouterLink
+import {TopbarComponent} from '../../../core/layout/topbar/topbar.component';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [NgFor],
+  imports: [NgFor, RouterLink, TopbarComponent], // Add RouterLink here
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.css'],
 })

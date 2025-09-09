@@ -60,7 +60,7 @@
 
 /* Responsive */
 @media (max-width: 900px) {
-  .nav { display: none; }              /* ocultar menú desktop */
-  .hamburger { display: inline-block; margin-left: auto; } /* hamburguesa a la derecha */
-  .actions__login { display: none; }   /* ocultar botón login duplicado en móvil */
+  .nav { display: none; }
+  .hamburger { display: inline-block; margin-left: auto; }
+  .actions__login { display: none; }
 }

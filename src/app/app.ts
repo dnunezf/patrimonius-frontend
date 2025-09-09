@@ -1,11 +1,11 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { TopbarComponent } from './core/layout/topbar/topbar.component';
+import { RouterModule } from '@angular/router'; // Import RouterModule for routing
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, TopbarComponent], // <-- necesario
+  imports: [RouterOutlet, RouterModule],  // Import RouterModule for routing
   templateUrl: './app.html',
   styleUrls: ['./app.css'],
 })
