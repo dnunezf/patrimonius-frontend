@@ -95,6 +95,7 @@ export class AdminDashboardComponent {
       statsValue: '1,234 eventos',
       features: ['Filtrar eventos', 'Exportar XML', 'Análisis gráfico'],
       icon: 'activity',
+      link: '/bitacoras',
     },
   ];
 }
