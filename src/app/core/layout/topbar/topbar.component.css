@@ -1,0 +1,101 @@
+/* Topbar shell */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--mncr-white);
+  border-bottom: 1px solid #eef2f7;
+}
+.topbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Nav with “pill” active */
+.nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.nav__btn {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: #0f172a;
+  text-decoration: none;
+}
+.nav__btn:hover {
+  background: #f8fafc;
+}
+.nav__btn.active {
+  background: #ffe4e6;
+  color: var(--mncr-red-1795);
+  box-shadow: inset 0 0 0 1px rgba(195, 55, 55, 0.18);
+}
+
+/* Badge */
+.nav__btn--notif {
+  padding-right: 22px;
+}
+.nav__badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--mncr-red-1795);
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Session */
+.session {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.role {
+  font-size: 12px;
+  color: #111827;
+}
+.role-sub {
+  font-size: 11px;
+  color: #6b7280;
+}
+.btn-exit {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(195, 55, 55, 0.25);
+  background: #fff;
+  color: var(--mncr-red-1795);
+  cursor: pointer;
+}
+.btn-exit:hover {
+  background: #fff1f2;
+}
+
+/* Small screens */
+@media (max-width: 640px) {
+  .topbar__inner {
+    gap: 8px;
+  }
+  .session {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

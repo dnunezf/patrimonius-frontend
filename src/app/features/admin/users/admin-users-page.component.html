@@ -1,0 +1,110 @@
+<main class="container users">
+  <header class="page-head">
+    <a routerLink="/admin/dashboard" class="link-back">← Volver al Dashboard</a>
+    <h1>Gestión de Usuarios</h1>
+    <p class="sub">Administración de usuarios y roles personalizados</p>
+  </header>
+
+  <!-- KPIs -->
+  <section class="kpis">
+    <div class="kpi">
+      <div class="kpi__title">Total Usuarios</div>
+      <div class="kpi__value">{{ totalCount() }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__title">Editores</div>
+      <div class="kpi__value">{{ editorsCount() }}</div>
+    </div>
+  </section>
+
+  <!-- Toolbar -->
+  <section class="toolbar">
+    <div class="search">
+      <input
+        type="search"
+        placeholder="Nombre, correo o unidad..."
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+      />
+    </div>
+
+    <select
+      class="select"
+      [ngModel]="roleFilter()"
+      (ngModelChange)="roleFilter.set($event)"
+    >
+      <option [ngValue]="'all'">Todos los roles</option>
+      <option *ngFor="let r of ROLES" [ngValue]="r.id">{{ r.label }}</option>
+    </select>
+
+    <button class="btn btn--primary cta" (click)="openCreate()">
+      + Crear Usuario
+    </button>
+  </section>
+
+  <!-- Table -->
+  <section class="card">
+    <div *ngIf="loading()" class="muted">Cargando...</div>
+    <div *ngIf="error()" class="error">{{ error() }}</div>
+
+    <table class="table" *ngIf="!loading()">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Unidad Organizacional</th>
+          <th style="width: 180px">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of filtered()">
+          <td>
+            <div class="usr">
+              <strong
+                >{{ u.nombre }} {{ u.apellido1 }} {{ u.apellido2 }}</strong
+              >
+              <div class="email">{{ u.email }}</div>
+              <div
+                *ngIf="u.rolId === EDITOR_ID && u.editorPermissions?.length"
+                class="chips"
+              >
+                <span class="chip" *ngFor="let p of u.editorPermissions">
+                  {{ p === "SIGN" ? "Firma" : "Edición" }}
+                </span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span
+              class="role-badge"
+              [class.admin]="u.rolId === 1"
+              [class.editor]="u.rolId === 2"
+              [class.arch]="u.rolId === 3"
+              [class.user]="u.rolId === 4"
+              [class.ext]="u.rolId === 5"
+            >
+              {{ u.rol }}
+            </span>
+          </td>
+          <td>{{ u.unidad }}</td>
+          <td class="actions">
+            <button class="btn btn--secondary" (click)="openEdit(u)">
+              Editar
+            </button>
+            <button class="btn btn--danger" (click)="delete(u)">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Dialog -->
+  <app-user-form-dialog
+    [open]="showForm()"
+    [editing]="editing()"
+    (close)="showForm.set(false)"
+    (submit)="onSubmit($event.data, $event.id)"
+  ></app-user-form-dialog>
+</main>

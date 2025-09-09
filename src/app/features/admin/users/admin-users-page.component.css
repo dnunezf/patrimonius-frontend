@@ -1,0 +1,195 @@
+/* Header */
+.users .page-head {
+  margin-bottom: 12px;
+}
+.users .link-back {
+  color: var(--mncr-blue-3015);
+  text-decoration: none;
+}
+.users .link-back:hover {
+  text-decoration: underline;
+}
+.users .page-head h1 {
+  margin: 6px 0;
+}
+.users .page-head .sub {
+  margin: 0;
+  color: #6b7280;
+}
+
+/* KPI cards */
+.users .kpis {
+  display: grid;
+  gap: 16px;
+  margin: 12px 0 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.users .kpi {
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.04);
+}
+.users .kpi__title {
+  font-size: 12px;
+  color: #6b7280;
+}
+.users .kpi__value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Toolbar */
+.users .toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+}
+.users .search input {
+  width: 100%;
+  border: 1px solid #d0d5dd;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+.users .select {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px 12px;
+  font: inherit;
+}
+.users .cta {
+  justify-self: end;
+}
+
+/* Card + Table */
+.users .card {
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.04);
+}
+.users .table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.users .table th,
+.users .table td {
+  padding: 12px;
+  text-align: left;
+}
+.users .table thead th {
+  color: #6b7280;
+  font-weight: 700;
+  border-bottom: 1px solid #eef2f7;
+}
+.users .table tbody tr + tr td {
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Usuario + chips */
+.users .usr .email {
+  color: #6b7280;
+  font-size: 12px;
+}
+.users .chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.users .chip {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+/* Role badges */
+.users .role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #eef2f7;
+  color: #374151;
+}
+.users .role-badge.admin {
+  background: #ffe4e6;
+  color: var(--mncr-red-1795);
+}
+.users .role-badge.editor {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.users .role-badge.arch {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+.users .role-badge.user {
+  background: #fff7ed;
+  color: #9a3412;
+}
+.users .role-badge.ext {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.users .actions {
+  display: flex;
+  gap: 8px;
+}
+.users .muted {
+  color: #6b7280;
+}
+.users .error {
+  color: var(--mncr-red-1795);
+  font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .users .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .users .toolbar {
+    grid-template-columns: 1fr;
+  }
+  .users .cta {
+    justify-self: stretch;
+  }
+}
+@media (max-width: 640px) {
+  .users .kpis {
+    grid-template-columns: 1fr;
+  }
+  .users .table thead {
+    display: none;
+  }
+  .users .table tbody tr {
+    display: grid;
+    gap: 8px;
+    padding: 12px 0;
+  }
+  .users .table tbody tr td {
+    border: 0;
+    padding: 4px 0;
+  }
+  .users .actions {
+    justify-content: flex-start;
+  }
+}

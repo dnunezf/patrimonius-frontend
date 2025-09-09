@@ -1,26 +1,19 @@
-import { Component } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
-import { TitleCasePipe } from '@angular/common';
-
-interface Notice {
-  title: string;
-  level: 'low' | 'medium' | 'high';
-  fresh: boolean;
-  body: string;
-  time: string;
-}
+import { Component, inject } from '@angular/core';
+import { NgFor, NgIf, NgClass, TitleCasePipe } from '@angular/common';
+import { NotificationsStore } from '../../../shared/state/notifications.store';
 
 @Component({
   selector: 'app-admin-notifications',
   standalone: true,
-  imports: [NgFor, NgIf, TitleCasePipe],
+  // Enable *ngFor, *ngIf, [ngClass], and titlecase pipe
+  imports: [NgFor, NgIf, NgClass, TitleCasePipe],
   templateUrl: './admin-notifications.component.html',
   styleUrls: ['./admin-notifications.component.css'],
 })
-
 export class AdminNotificationsComponent {
+  private readonly store = inject(NotificationsStore);
   /*test data*/
-  notices: Notice[] = [
+  notices = [
     {
       title: 'Intento de edición denegado',
       level: 'medium',
@@ -57,4 +50,9 @@ export class AdminNotificationsComponent {
       time: '25/01/2025, 05:00',
     },
   ];
+
+  // UI: decrease header badge when marking as read
+  markRead(i: number) {
+    this.store.decrement();
+  }
 }

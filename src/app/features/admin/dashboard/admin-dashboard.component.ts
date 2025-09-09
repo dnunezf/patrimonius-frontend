@@ -3,13 +3,16 @@ import { NgFor } from '@angular/common';
 import { RouterLink } from '@angular/router'; // Import RouterLink
 import {TopbarComponent} from '../../../core/layout/topbar/topbar.component';
 
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [NgFor, RouterLink, TopbarComponent], // Add RouterLink here
+  imports: [NgFor, RouterLink, TopbarComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.css'],
 })
+
+
 export class AdminDashboardComponent {
   statCards = [
     {
@@ -37,20 +40,21 @@ export class AdminDashboardComponent {
       icon: 'clock',
     },
   ];
+
   moduleCards = [
     {
       title: 'Módulo de Administración',
-      description:
-        'Gestión de usuarios y accesos por confidencialidad y unidad.',
+      description: 'Gestión de usuarios y accesos...',
       status: 'available',
       statsLabel: 'Estado',
-      statsValue: 'HU-001 + HU-002 Completo',
+      statsValue: 'HU-001 Completo',
       features: [
         'Gestionar usuarios',
         'Control de accesos',
         'Acceso organizacional',
       ],
       icon: 'gear',
+      link: '/admin/module', // Solo una vez
     },
     {
       title: 'Carga de Documentos',
