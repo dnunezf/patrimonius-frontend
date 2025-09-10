@@ -1,5 +1,7 @@
-import { Routes } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 import { HomeComponent } from '../home/home.component';
+import { ConsultasBitacorasComponent } from './features/bitacoras/consultas-bitacoras/consultas-bitacoras.component';  // Adjust the import path
+import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
 import { LogQueriesComponent } from './features/logs/log-queries/log-queries.component';  // Adjust the import path
 
 export const routes: Routes = [
@@ -9,6 +11,8 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES),
   },
+  { path: 'bitacoras', component: ConsultasBitacorasComponent },
+  { path: 'access-exceptions', component: AccessExceptionsComponent },
   {
     path: 'logs',
     loadChildren: () =>

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { AdminShellComponent } from './admin-shell.component';
 import { AdminDashboardComponent } from './dashboard/admin-dashboard.component';
 import { AdminNotificationsComponent } from './notifications/admin-notifications.component';
+import { AccessExceptionsComponent } from './access-exceptions/access-exceptions.component';
 
 export const ADMIN_ROUTES: Routes = [
   {
@@ -10,6 +11,7 @@ export const ADMIN_ROUTES: Routes = [
     children: [
       { path: 'dashboard', component: AdminDashboardComponent },
       { path: 'notifications', component: AdminNotificationsComponent },
+      {path: 'access-exceptions', component: AccessExceptionsComponent},
       {
         path: 'users',
         loadComponent: () =>
