@@ -71,9 +71,15 @@
 }
 
 button.primary {
-  background: #22c55e;
-  border-color: #16a34a;
-  color: white;
+  background-color: #22c55e; /* Verde */
+  color: #000000 !important; /* Texto blanco */
+  border-color: #16a34a; /* Borde verde */
+}
+
+button.primary:disabled {
+  background-color: #d1d5db; /* Gris claro para deshabilitado */
+  color: #6b7280; /* Gris oscuro para el texto deshabilitado */
+  border-color: #cbd5e1; /* Borde gris para el deshabilitado */
 }
 
 button:disabled {
@@ -81,7 +87,10 @@ button:disabled {
   cursor: not-allowed;
 }
 
+
 .error { color: #b91c1c; margin-bottom: 8px; }
 .loading, .empty { text-align: center; padding: 18px; color: #475569; }
 
 .u-name { font-weight: 600; }
+
+

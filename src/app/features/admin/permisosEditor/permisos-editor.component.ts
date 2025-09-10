@@ -2,6 +2,7 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+
 import { AdminUsersService,EditorPermission,AdminUser } from '../../../../core/services/admin-users.service';
 
 type Perm = 'EDIT' | 'SIGN';
@@ -21,7 +22,6 @@ interface EditorRow {
   saving?: boolean;
 }
 
-
 @Component({
   selector: 'app-permisos-editor',
   standalone: true,
@@ -30,29 +30,42 @@ interface EditorRow {
   styleUrls: ['./permisos-editor.component.css'],
 })
 export class PermisosEditorComponent implements OnInit {
+  // estado
   loading = signal(true);
   error = signal<string | null>(null);
   filter = signal('');
   rows = signal<EditorRow[]>([]);
   savingAll = signal(false);
 
+  // vistas derivadas
   filtered = computed(() => {
     const q = this.filter().trim().toLowerCase();
     if (!q) return this.rows();
-    return this.rows().filter(r =>
-      `${r.nombre} ${r.apellido1} ${r.apellido2 ?? ''} ${r.email}`.toLowerCase().includes(q)
+    return this.rows().filter((r) =>
+      `${r.nombre} ${r.apellido1} ${r.apellido2 ?? ''} ${r.email}`
+        .toLowerCase()
+        .includes(q)
     );
   });
 
+  hasDirty = computed(() => {
+    // Verifica si alguna fila tiene cambios no guardados
+    return this.rows().some((r) => r.dirty && !r.saving);
+  });
+
+
   constructor(private usersApi: AdminUsersService) {}
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.load();
+  }
 
   private mapApiUser(u: AdminUser): EditorRow | null {
     const rolId = (u as any).rolId ?? (u as any).rol_id;
     if (rolId !== EDITOR_ID) return null;
 
     const perms = (u.editorPermissions ?? []) as EditorPermission[];
+
     return {
       id: u.id,
       nombre: u.nombre,
@@ -73,14 +86,14 @@ export class PermisosEditorComponent implements OnInit {
     this.error.set(null);
 
     this.usersApi.list().subscribe({
-      next: (data) => {
+      next: (data: AdminUser[]) => {
         const mapped = (data || [])
-          .map(u => this.mapApiUser(u))
+          .map((u: AdminUser) => this.mapApiUser(u))
           .filter(Boolean) as EditorRow[];
         this.rows.set(mapped);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         console.error(err);
         this.error.set('No se pudieron cargar los usuarios.');
         this.loading.set(false);
@@ -88,39 +101,84 @@ export class PermisosEditorComponent implements OnInit {
     });
   }
 
-  toggle(row: EditorRow, key: 'edit' | 'sign') { row[key] = !row[key]; row.dirty = true; }
-  setAll(val: boolean) { this.rows.update(list => list.map(r => ({ ...r, edit: val, sign: val, dirty: true }))); }
-  habilitar(row: EditorRow) { row.edit = row.sign = true; row.dirty = true; }
-  deshabilitar(row: EditorRow) { row.edit = row.sign = false; row.dirty = true; }
-
-  private buildPayload(row: EditorRow) {
-    const permisos: EditorPermission[] = [];
-    if (row.edit) permisos.push('EDIT');
-    if (row.sign) permisos.push('SIGN');
-    return { editorPermissions: permisos }; // <- nombre del DTO en tu AdminUsersService
+  toggle(row: EditorRow, key: 'edit' | 'sign') {
+    row[key] = !row[key];
+    row.dirty = true;
   }
+
+  setAll(val: boolean) {
+    this.rows.update((list) =>
+      list.map((r) => ({ ...r, edit: val, sign: val, dirty: true }))
+    );
+  }
+
+  habilitar(row: EditorRow) {
+    row.edit = true;
+    row.sign = true;
+    row.dirty = true; // Marcar como sucio (cambiado)
+  }
+
+  deshabilitar(row: EditorRow) {
+    row.edit = false;
+    row.sign = false;
+    row.dirty = true; // Marcar como sucio (cambiado)
+  }
+
 
   guardarFila(row: EditorRow) {
     row.saving = true;
-    this.usersApi.update(row.id, this.buildPayload(row)).subscribe({
-      next: () => { row.dirty = false; row.saving = false; },
-      error: (err) => { console.error(err); row.saving = false; alert('Error al guardar permisos del usuario.'); },
+    const payload = this.buildPayload(row);
+
+    this.usersApi.update(row.id, payload).subscribe({
+      next: () => {
+        row.dirty = false;
+        row.saving = false;
+      },
+      error: (err) => {
+        console.error(err);
+        row.saving = false;
+        alert('Error al guardar permisos del usuario.');
+      },
     });
   }
 
+  private buildPayload(row: EditorRow) {
+    const permisos: Perm[] = [];
+    if (row.edit) permisos.push('EDIT');
+    if (row.sign) permisos.push('SIGN');
+    // Asegúrate de enviar el formato esperado
+    return { permisosEditor: permisos };
+  }
+
+
   guardarTodos() {
-    const sucios = this.rows().filter(r => r.dirty && !r.saving);
+    const sucios = this.rows().filter((r) => r.dirty && !r.saving);
     if (!sucios.length) return;
+
     this.savingAll.set(true);
 
     const saveNext = (i: number) => {
-      if (i >= sucios.length) { this.savingAll.set(false); return; }
-      const r = sucios[i]; r.saving = true;
+      if (i >= sucios.length) {
+        this.savingAll.set(false);
+        return;
+      }
+      const r = sucios[i];
+      r.saving = true;
       this.usersApi.update(r.id, this.buildPayload(r)).subscribe({
-        next: () => { r.dirty = false; r.saving = false; saveNext(i + 1); },
-        error: (err) => { console.error(err); r.saving = false; this.savingAll.set(false); alert(`Error al guardar permisos de ${r.nombre}.`); },
+        next: () => {
+          r.dirty = false;
+          r.saving = false;
+          saveNext(i + 1);
+        },
+        error: (err: unknown) => {
+          console.error(err);
+          r.saving = false;
+          this.savingAll.set(false);
+          alert(`Error al guardar permisos de ${r.nombre}.`);
+        },
       });
     };
+
     saveNext(0);
   }
 }
