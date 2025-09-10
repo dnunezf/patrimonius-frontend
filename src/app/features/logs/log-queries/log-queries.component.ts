@@ -22,7 +22,8 @@ export class LogQueriesComponent {
         'Filtrar eventos',
         'Exportar XML',
         'Ver historial detallado'
-      ]
+      ],
+      link: '/logs/document-cycle',
     },
     {
       title: 'Bitácora de Seguridad',
@@ -32,7 +33,8 @@ export class LogQueriesComponent {
         'Monitorear accesos',
         'Detectar anomalías',
         'Reportes de seguridad'
-      ]
+      ],
+      link: 'document-cycle', // Example link, adjust as needed
     },
     {
       title: 'Bitácora de Actividad de Usuario',
@@ -42,7 +44,8 @@ export class LogQueriesComponent {
         'Analizar comportamiento',
         'Estadísticas de uso',
         'Patrones de navegación'
-      ]
+      ],
+      link: 'document-cycle', // Example link, adjust as needed
     }
   ];
 
@@ -51,3 +54,5 @@ export class LogQueriesComponent {
     return `assets/icons/${iconName}`;
   }
 }
+
+
