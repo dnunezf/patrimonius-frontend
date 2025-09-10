@@ -1,49 +1,87 @@
-.container {
-  padding: 20px;
-}
-
-.card {
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 20px;
-  max-width: 450px;
-  margin: 20px auto;
-  background-color: #f9f9f9;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
+.page-title {
   text-align: center;
-  margin-bottom: 20px;
-  color: #333;
+  margin: 12px 0 18px;
 }
 
-form {
+.toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px auto 10px;
+  max-width: 1050px;
 }
 
-label {
-  font-weight: bold;
-  margin-bottom: 5px;
+.toolbar input[type="text"] {
+  flex: 1;
+  min-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
 }
 
-input[type="checkbox"] {
-  margin-right: 8px;
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-button {
-  margin-top: 10px;
-  padding: 10px 20px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
+.link {
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  text-decoration: none;
+  background: #f8fafc;
+}
+
+.panel {
+  max-width: 1050px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.table th {
+  text-align: left;
+  background: #fafafa;
+}
+
+.center { text-align: center; }
+
+.actions button,
+.toolbar-actions button {
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
 }
 
-button:hover {
-  background-color: #45a049;
+button.primary {
+  background: #22c55e;
+  border-color: #16a34a;
+  color: white;
 }
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error { color: #b91c1c; margin-bottom: 8px; }
+.loading, .empty { text-align: center; padding: 18px; color: #475569; }
+
+.u-name { font-weight: 600; }

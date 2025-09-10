@@ -2,12 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {FormsModule} from '@angular/forms';
+import {CommonModule} from '@angular/common';
 
 @Component({
   selector: 'app-catalogo-roles',
   templateUrl: './catalogo-roles.component.html',
   imports: [
-    FormsModule
+    CommonModule,FormsModule
   ],
   styleUrls: ['./catalogo-roles.component.css']
 })

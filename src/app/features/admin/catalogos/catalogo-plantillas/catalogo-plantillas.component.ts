@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {FormsModule} from '@angular/forms';
+import {CommonModule} from '@angular/common';
 
 @Component({
   selector: 'app-catalogo-plantillas',
   templateUrl: './catalogo-plantillas.component.html',
   imports: [
-    FormsModule
+    CommonModule,FormsModule
   ],
   styleUrls: ['./catalogo-plantillas.component.css']
 })
