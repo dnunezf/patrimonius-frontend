@@ -126,7 +126,6 @@
     </section>
 
     <!-- Tabla de Excepciones Activas -->
-    <!-- Tabla de Excepciones Activas -->
     <section class="exceptions-section">
       <h2>Excepciones Activas</h2>
       <table class="exceptions-table">
@@ -141,18 +140,15 @@
         </thead>
         <tbody>
         <tr *ngFor="let exception of activeExceptions">
-          <td>{{ exception.user }}</td> <!-- Cambiado a "user" -->
-          <td>{{ exception.document }}</td> <!-- Cambiado a "document" -->
-          <td>{{ exception.permission }}</td> <!-- Cambiado a "permission" -->
-          <td>{{ exception.date }}</td> <!-- Cambiado a "date" -->
+          <td>{{ exception.user }}</td>
+          <td>{{ exception.document }}</td>
+          <td>{{ exception.permission }}</td>
+          <td>{{ exception.date }}</td>
           <td>
-            <button class="btn-secondary" (click)="deleteException(exception)">
-              Eliminar
-            </button>
+            <button class="btn-secondary" (click)="deleteException(exception)">Eliminar</button>
           </td>
         </tr>
         </tbody>
-
       </table>
     </section>
   </div>
