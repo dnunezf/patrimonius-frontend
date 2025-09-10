@@ -1,7 +1,5 @@
-/* log-queries.component.css */
-
-/* Container for the bitacora cards */
-.bitacora-container {
+/* ====== Container for the log cards ====== */
+.logs-container {
   padding: 20px;
   background-color: var(--mncr-white);
   display: flex;
@@ -9,21 +7,19 @@
   align-items: center;
 }
 
-/* Section for title and description */
+/* ====== Header: title + description ====== */
 .header-section {
   width: 100%;
   position: relative;
   margin-bottom: 30px;
   padding: 0 20px;
 }
-
 .header-section h2 {
   font-size: 24px;
   color: var(--mncr-black);
   margin-bottom: 5px;
   text-align: center;
 }
-
 .header-section p {
   font-size: 16px;
   color: var(--mncr-gray);
@@ -31,29 +27,28 @@
   text-align: center;
 }
 
-/* Back button */
+/* ====== Back button (outline style) ====== */
 .back-button {
   background-color: transparent;
   color: var(--mncr-blue-639);
-  font-weight: bold;
-  padding: 5px 10px;
+  font-weight: 700;
+  padding: 6px 12px;
   border: 2px solid var(--mncr-blue-639);
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  position: absolute;
+  position: absolute;    /* floating inside header */
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
   text-decoration: none;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color .2s ease, color .2s ease;
 }
-
 .back-button:hover {
   background-color: var(--mncr-blue-639);
-  color: #fff;
+  color: var(--mncr-white);
 }
 
-/* Audit system icon */
+/* ====== (Optional) audit system icon placeholder on header right ====== */
 .audit-system-icon {
   position: absolute;
   right: 20px;
@@ -65,19 +60,26 @@
   gap: 5px;
 }
 
-/* Styling for bitacora cards */
-.bitacora-cards {
+/* ====== Card grid ====== */
+.logs-cards {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   justify-content: center;
 }
 
-.bitacora-card {
+/* ====== Card (anchor behaves like a block card) ====== */
+.log-card,
+.log-card:hover {
+  text-decoration: none;   /* prevent underline on entire anchor */
+  color: inherit;
+}
+
+.log-card {
   background-color: var(--mncr-white);
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 400px; /* Increased width for more space */
+  box-shadow: 0 4px 6px rgba(0,0,0,.1);
+  width: 400px;
   text-align: left;
   padding: 20px;
   margin-bottom: 20px;
@@ -85,56 +87,63 @@
   flex-direction: column;
   justify-content: flex-start;
   border: 2px solid var(--mncr-gray);
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  will-change: transform;          /* improve hover rendering */
+  transform: translateZ(0);
 }
-
-.bitacora-card:hover {
-  transform: scale(1.05);
+.log-card:hover {
+  transform: scale(1.02);          /* small scale to avoid text artifacts */
   border-color: var(--mncr-black);
+  box-shadow: 0 4px 14px rgba(0,0,0,.10);
 }
+.logs-cards { overflow: visible; }  /* avoid clipping during scale */
 
-.bitacora-icon img {
+/* ====== Card pieces ====== */
+.log-card__icon img {
   width: 60px;
   height: auto;
   margin-bottom: 15px;
 }
 
-/* Info inside the card */
-.bitacora-info h3 {
+.log-card__info h3 {
   font-size: 18px;
   color: var(--mncr-black);
   margin-bottom: 10px;
 }
-
-.bitacora-info p {
+.log-card__info p {
   font-size: 14px;
   color: var(--mncr-gray);
   margin-bottom: 15px;
+  line-height: 1.5;                /* keep descenders from “cutting” */
 }
 
-/* Card Details  */
-.bitacora-card-details {
+/* ====== Card details (functions list) ====== */
+.log-card__details {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   font-size: 12px;
   color: var(--mncr-black);
-  margin-top: 15px; /* Add space before functions list */
+  margin-top: 15px;
 }
-
-.bitacora-card-details strong {
-  font-weight: bold;
+.log-card__details strong {
+  font-weight: 700;
   margin-bottom: 5px;
 }
-
-.bitacora-card-details ul {
+.log-card__details ul {
   list-style: none;
   padding: 0;
   margin: 0;
   text-align: left;
 }
-
-.bitacora-card-details li {
+.log-card__details li {
   font-size: 12px;
-  color: var(--mncr-gray); /* Use gray for the list items */
+  color: var(--mncr-gray);
+  line-height: 1.5;
+}
+
+/* ====== Disabled state (no link available) ====== */
+.log-card.is-disabled {
+  pointer-events: none;
+  opacity: .6;
 }

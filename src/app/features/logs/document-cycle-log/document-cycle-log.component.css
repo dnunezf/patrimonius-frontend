@@ -1,6 +1,4 @@
-/* ===== Base layout ===== */
-
-
+/* Layout base */
 .page .header .back-link { color: var(--mncr-blue-639); display: inline-block; margin-bottom: 8px; }
 .page .subtitle { color: var(--mncr-gray); margin: 0 0 8px; }
 .page .status { display: flex; gap: 8px; align-items: center; }
@@ -11,32 +9,12 @@
   padding: 16px;
   background: var(--mncr-white);
 }
+.card__title { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
 .muted { color: var(--mncr-gray); }
 .bold { font-weight: 700; }
 .nowrap { white-space: nowrap; }
 
-/* ===== Header (centered title with left-aligned back button) ===== */
-
-.section.header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr; /* left | center | right */
-  align-items: center;
-  gap: 12px;
-}
-
-/* Back button pinned to the left cell */
-.section.header .back-button {
-  justify-self: start;
-}
-
-/* Title perfectly centered in the middle cell */
-.section.header h1 {
-  justify-self: center;
-  margin: 0;
-  text-align: center;
-}
-
-/* ===== Filters grid ===== */
+/* Filters grid (aprovecha clases .form, .form__group, etc.) */
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(180px, 1fr));
@@ -55,7 +33,7 @@
   .filters-grid { grid-template-columns: 1fr; }
 }
 
-/* ===== Table ===== */
+/* Tabla */
 .table-wrapper { overflow-x: auto; }
 .tbl {
   width: 100%;
@@ -75,7 +53,58 @@
 .codes { display: flex; gap: 6px; margin-top: 6px; }
 .pager { padding: 8px; text-align: center; }
 
-/* ===== Buttons ===== */
+
+.section.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* distribuye back-button a la izquierda y el resto a la derecha */
+  flex-wrap: wrap; /* para que no choque en pantallas pequeñas */
+  gap: 12px;
+}
+
+.back-button {
+  position: relative; /* quita absolute */
+  left: unset;
+  top: unset;
+  transform: none;
+  margin-right: auto; /* lo empuja a la izquierda */
+  background-color: transparent;
+  color: var(--mncr-blue-639);
+  font-weight: bold;
+  padding: 5px 10px;
+  border: 2px solid var(--mncr-blue-639);
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+
+.back-button:hover {
+  background-color: var(--mncr-blue-639);
+  color: var(--mncr-white);
+}
+.back-button:active { filter: brightness(.95); }
+.back-button:focus-visible {
+  outline: 3px solid var(--mncr-blue-639);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .section.header {
+    padding-left: 16px;
+    padding-top: 48px;
+  }
+  .back-button {
+    left: 16px;
+    top: 12px;
+    transform: none;
+    position: absolute;
+  }
+}
+
+
+
 .button-outline {
   background-color: transparent;
   color: var(--mncr-blue-639);
@@ -90,6 +119,7 @@
   align-items: center;
   gap: 6px;
 }
+
 .button-outline:hover {
   background-color: var(--mncr-blue-639);
   color: var(--mncr-white);
@@ -99,132 +129,9 @@
   outline: 3px solid var(--mncr-blue-639);
   outline-offset: 2px;
 }
+
+
 .button-outline[disabled] {
   opacity: .6;
   cursor: not-allowed;
 }
-
-/* Back button uses same visual language as outline buttons */
-.back-button {
-  background-color: transparent;
-  color: var(--mncr-blue-639);
-  font-weight: 700;
-  padding: 6px 12px;
-  border: 2px solid var(--mncr-blue-639);
-  border-radius: 6px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background-color .2s ease, color .2s ease, filter .2s ease;
-}
-.back-button:hover {
-  background-color: var(--mncr-blue-639);
-  color: var(--mncr-white);
-}
-.back-button:active { filter: brightness(.95); }
-.back-button:focus-visible {
-  outline: 3px solid var(--mncr-blue-639);
-  outline-offset: 2px;
-}
-
-/* ===== Cards title ===== */
-.card__title {
-  display: flex;
-  justify-content: center;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 16px;
-  text-align: center;
-}
-.card__title .h3 { margin: 0; }
-
-
-@media (max-width: 600px) {
-  .section.header {
-    position: relative;
-    grid-template-columns: 1fr; /* stack */
-    padding-top: 40px;          /* room for the back button */
-  }
-  .section.header .back-button {
-    position: absolute;
-    left: 16px;
-    top: 8px;
-  }
-  .section.header h1 {
-    justify-self: center;
-    text-align: center;
-  }
-}
-
-/* --- Modal styles --- */
-/* Backdrop that darkens the page behind the dialog */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.35); /* subtle dark */
-  z-index: 1000;
-}
-
-/* Centered dialog container */
-.modal {
-  position: fixed;
-  z-index: 1001;
-  inset: 0;
-  margin: auto;
-  width: min(720px, 92vw);
-  max-height: 85vh;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.25);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Header with title and close button */
-.modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal__close {
-  border: none;
-  background: transparent;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-/* Body content scrollable if needed */
-.modal__body {
-  padding: 16px;
-  overflow: auto;
-}
-
-/* Footer with actions */
-.modal__footer {
-  padding: 12px 16px;
-  border-top: 1px solid #eee;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* Grid for pairs of fields in detail */
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(160px, 1fr));
-  gap: 12px 16px;
-}
-
-@media (max-width: 700px) {
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Multi-line description block */
-.detail-block { margin-top: 12px; }
-.prewrap { white-space: pre-wrap; }
