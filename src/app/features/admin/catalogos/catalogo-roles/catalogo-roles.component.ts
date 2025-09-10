@@ -1,83 +1,56 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import {FormsModule} from '@angular/forms';
-import {CommonModule} from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { CatalogosService, Rol } from '../catalogos.service';
 
 @Component({
   selector: 'app-catalogo-roles',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './catalogo-roles.component.html',
-  imports: [
-    CommonModule,FormsModule
-  ],
-  styleUrls: ['./catalogo-roles.component.css']
+  styleUrls: ['./catalogo-roles.css'],
 })
 export class CatalogoRolesComponent implements OnInit {
-  roles: any[] = []; // Lista de roles
-  newRole: any = {}; // Para crear un nuevo rol
+  roles: Rol[] = [];
+  form: Partial<Rol> = { nombre: '', descripcion: '' };
+  editing: Rol | null = null;
+  loading = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private api: CatalogosService) {}
 
-  ngOnInit(): void {
-    this.loadRoles(); // Cargar los roles al inicio
-  }
+  ngOnInit() { this.load(); }
 
-  // Cargar roles desde el backend
-  loadRoles(): void {
-    this.http.get<any[]>('/api/admin/roles').subscribe((data) => {
-      this.roles = data; // Asignar los roles obtenidos
+  load() {
+    this.loading = true;
+    this.api.getRoles().subscribe({
+      next: (d) => { this.roles = d; this.loading = false; },
+      error: () => { this.loading = false; alert('Error cargando roles'); },
     });
   }
 
-  // Crear un nuevo rol
-  createRole(): void {
-    if (!this.newRole.nombre) {
-      alert('El nombre del rol es obligatorio');
-      return;
-    }
-
-    this.http.post('/api/admin/roles', this.newRole).subscribe(
-      (response) => {
-        this.roles.push(response); // Agregar el nuevo rol a la lista
-        this.newRole = {}; // Limpiar el formulario
-      },
-      (error) => {
-        alert('Hubo un error al crear el rol');
-        console.error(error);
-      }
-    );
-  }
-
-  // Editar un rol existente
-  editRole(role: any): void {
-    const updatedRole = prompt('Nuevo nombre para el rol', role.nombre);
-    if (updatedRole && updatedRole !== role.nombre) {
-      const updatedData = { ...role, nombre: updatedRole };
-
-      this.http.patch(`/api/admin/roles/${role.id}`, updatedData).subscribe(
-        (response) => {
-          role.nombre = updatedRole; // Actualizar el nombre del rol en la lista
-        },
-        (error) => {
-          alert('Hubo un error al actualizar el rol');
-          console.error(error);
-        }
-      );
+  submit() {
+    if (!this.form.nombre?.trim()) return;
+    if (this.editing) {
+      this.api.updateRol(this.editing.id, this.form).subscribe({
+        next: (r) => { Object.assign(this.editing!, r); this.cancel(); },
+        error: () => alert('Error actualizando rol'),
+      });
+    } else {
+      this.api.createRol(this.form).subscribe({
+        next: (r) => { this.roles.push(r); this.form = { nombre: '', descripcion: '' }; },
+        error: () => alert('Error creando rol'),
+      });
     }
   }
 
-  // Eliminar un rol
-  deleteRole(roleId: number): void {
-    if (confirm('¿Estás seguro de que deseas eliminar este rol?')) {
-      this.http.delete(`/api/admin/roles/${roleId}`).subscribe(
-        () => {
-          this.roles = this.roles.filter((role) => role.id !== roleId); // Eliminar el rol de la lista
-        },
-        (error) => {
-          alert('Hubo un error al eliminar el rol');
-          console.error(error);
-        }
-      );
-    }
+  edit(r: Rol) { this.editing = r; this.form = { nombre: r.nombre, descripcion: r.descripcion }; }
+  cancel() { this.editing = null; this.form = { nombre: '', descripcion: '' }; }
+
+  remove(id: number) {
+    if (!confirm('¿Eliminar rol?')) return;
+    this.api.deleteRol(id).subscribe({
+      next: () => this.roles = this.roles.filter(x => x.id !== id),
+      error: () => alert('No se pudo eliminar (quizá está referenciado)'),
+    });
   }
 }

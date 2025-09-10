@@ -1,82 +1,56 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import {FormsModule} from '@angular/forms';
-import {CommonModule} from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { CatalogosService, Unidad } from '../catalogos.service';
 
 @Component({
   selector: 'app-catalogo-unidad',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './catalogo-unidad.component.html',
-  imports: [
-    CommonModule,FormsModule
-  ],
-  styleUrls: ['./catalogo-unidad.component.css']
+  styleUrls: ['./catalogo-unidad.component.css'],
 })
 export class CatalogoUnidadComponent implements OnInit {
-  unidades: any[] = []; // Lista de unidades organizacionales
-  newUnidad: any = {};  // Para crear una nueva unidad
+  unidades: Unidad[] = [];
+  form: Partial<Unidad> = { nombre: '', descripcion: '' };
+  editing: Unidad | null = null;
+  loading = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private api: CatalogosService) {}
 
-  ngOnInit(): void {
-    this.loadUnidades(); // Cargar las unidades al inicio
-  }
+  ngOnInit() { this.load(); }
 
-  // Cargar unidades organizacionales desde el backend
-  loadUnidades(): void {
-    this.http.get<any[]>('/api/admin/unidades').subscribe((data) => {
-      this.unidades = data; // Asignar las unidades obtenidas
+  load() {
+    this.loading = true;
+    this.api.getUnidades().subscribe({
+      next: (d) => { this.unidades = d; this.loading = false; },
+      error: () => { this.loading = false; alert('Error cargando unidades'); },
     });
   }
 
-  // Crear una nueva unidad organizacional
-  createUnidad(): void {
-    if (!this.newUnidad.nombre) {
-      alert('El nombre de la unidad es obligatorio');
-      return;
-    }
-
-    this.http.post('/api/admin/unidades', this.newUnidad).subscribe(
-      (response) => {
-        this.unidades.push(response); // Agregar la nueva unidad a la lista
-        this.newUnidad = {}; // Limpiar el formulario
-      },
-      (error) => {
-        alert('Hubo un error al crear la unidad');
-        console.error(error);
-      }
-    );
-  }
-
-  // Editar una unidad organizacional
-  editUnidad(unidad: any): void {
-    const updatedUnidad = prompt('Nuevo nombre para la unidad', unidad.nombre);
-    if (updatedUnidad && updatedUnidad !== unidad.nombre) {
-      const updatedData = { ...unidad, nombre: updatedUnidad };
-
-      this.http.patch(`/api/admin/unidades/${unidad.id}`, updatedData).subscribe(
-        (response) => {
-          unidad.nombre = updatedUnidad; // Actualizar el nombre de la unidad en la lista
-        },
-        (error) => {
-          alert('Hubo un error al actualizar la unidad');
-          console.error(error);
-        }
-      );
+  submit() {
+    if (!this.form.nombre?.trim()) return;
+    if (this.editing) {
+      this.api.updateUnidad(this.editing.id, this.form).subscribe({
+        next: (u) => { Object.assign(this.editing!, u); this.cancel(); },
+        error: () => alert('Error actualizando unidad'),
+      });
+    } else {
+      this.api.createUnidad(this.form).subscribe({
+        next: (u) => { this.unidades.push(u); this.form = { nombre: '', descripcion: '' }; },
+        error: () => alert('Error creando unidad'),
+      });
     }
   }
 
-  // Eliminar una unidad organizacional
-  deleteUnidad(unidadId: number): void {
-    if (confirm('¿Estás seguro de que deseas eliminar esta unidad?')) {
-      this.http.delete(`/api/admin/unidades/${unidadId}`).subscribe(
-        () => {
-          this.unidades = this.unidades.filter((unidad) => unidad.id !== unidadId); // Eliminar la unidad de la lista
-        },
-        (error) => {
-          alert('Hubo un error al eliminar la unidad');
-          console.error(error);
-        }
-      );
-    }
+  edit(u: Unidad) { this.editing = u; this.form = { nombre: u.nombre, descripcion: u.descripcion }; }
+  cancel() { this.editing = null; this.form = { nombre: '', descripcion: '' }; }
+
+  remove(id: number) {
+    if (!confirm('¿Eliminar unidad?')) return;
+    this.api.deleteUnidad(id).subscribe({
+      next: () => this.unidades = this.unidades.filter(x => x.id !== id),
+      error: () => alert('No se pudo eliminar (quizá está referenciada)'),
+    });
   }
 }
