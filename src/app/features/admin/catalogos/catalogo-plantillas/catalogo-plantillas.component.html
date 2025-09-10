@@ -1,19 +1,56 @@
 <div class="container">
-  <h1>Gestión de Plantillas</h1>
+  <h2>Gestión de Plantillas</h2>
 
-  <div class="form-container">
-    <h3>Subir Nueva Plantilla</h3>
-    <input [(ngModel)]="newPlantilla.nombre" placeholder="Nombre de la Plantilla" />
-    <input [(ngModel)]="newPlantilla.ruta_archivo" placeholder="Ruta del Archivo" />
-    <button (click)="uploadTemplate()">Subir Plantilla</button>
-  </div>
+  <div class="grid">
+    <!-- Formulario de subida -->
+    <form (ngSubmit)="upload()" #f="ngForm" class="panel">
+      <h3>Nueva Plantilla (.doc/.docx)</h3>
 
-  <div class="plantillas-list">
-    <h3>Plantillas Existentes</h3>
-    <div *ngFor="let plantilla of plantillas" class="plantilla-card">
-      <p>{{ plantilla.nombre }}</p>
-      <button (click)="editTemplate(plantilla)">Editar</button>
-      <button (click)="deleteTemplate(plantilla.id)">Eliminar</button>
+      <label>Nombre</label>
+      <input name="nombre" [(ngModel)]="form.nombre" required />
+
+      <label>Versión</label>
+      <input name="version" [(ngModel)]="form.version" required />
+
+      <label>Descripción</label>
+      <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
+
+      <label>Archivo</label>
+      <input type="file" (change)="onFile($event)" accept=".doc,.docx" />
+
+      <div class="row">
+        <button type="submit" class="primary">Subir Plantilla</button>
+      </div>
+    </form>
+
+    <!-- Listado -->
+    <div class="panel">
+      <h3>Listado</h3>
+      <div *ngIf="loading">Cargando…</div>
+      <table *ngIf="!loading">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Versión</th>
+          <th>Archivo</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let p of plantillas">
+          <td>{{ p.id }}</td>
+          <td>{{ p.nombre }}</td>
+          <td>{{ p.version }}</td>
+          <td>{{ p.ruta_archivo }}</td>
+          <td class="actions">
+            <button (click)="rename(p)">Renombrar</button>
+            <button (click)="remove(p.id)">Eliminar</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
+
 </div>

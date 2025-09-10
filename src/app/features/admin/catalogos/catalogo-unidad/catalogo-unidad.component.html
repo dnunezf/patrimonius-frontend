@@ -1,18 +1,53 @@
 <div class="container">
-  <h1>Gestión de Unidades Organizacionales</h1>
+  <h2>Gestión de Unidades Organizacionales</h2>
 
-  <div class="form-container">
-    <h3>Crear Nueva Unidad</h3>
-    <input [(ngModel)]="newUnidad.nombre" placeholder="Nombre de la Unidad" />
-    <button (click)="createUnidad()">Crear Unidad</button>
-  </div>
+  <div class="grid">
+    <!-- Formulario de creación/edición -->
+    <form (ngSubmit)="submit()" #f="ngForm" class="panel">
+      <h3>{{ editing ? 'Editar Unidad' : 'Nueva Unidad' }}</h3>
 
-  <div class="unidades-list">
-    <h3>Unidades Existentes</h3>
-    <div *ngFor="let unidad of unidades" class="unidad-card">
-      <p>{{ unidad.nombre }}</p>
-      <button (click)="editUnidad(unidad)">Editar</button>
-      <button (click)="deleteUnidad(unidad.id)">Eliminar</button>
+      <label>Nombre</label>
+      <input name="nombre" [(ngModel)]="form.nombre" required />
+
+      <label>Descripción</label>
+      <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
+
+      <div class="row">
+        <button type="submit" class="primary">
+          {{ editing ? 'Guardar cambios' : 'Crear Unidad' }}
+        </button>
+        <button type="button" (click)="cancel()" *ngIf="editing">
+          Cancelar
+        </button>
+      </div>
+    </form>
+
+    <!-- Listado -->
+    <div class="panel">
+      <h3>Listado</h3>
+      <div *ngIf="loading">Cargando…</div>
+      <table *ngIf="!loading">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let u of unidades">
+          <td>{{ u.id }}</td>
+          <td>{{ u.nombre }}</td>
+          <td>{{ u.descripcion || '—' }}</td>
+          <td class="actions">
+            <button (click)="edit(u)">Editar</button>
+            <button (click)="remove(u.id)">Eliminar</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
+
 </div>

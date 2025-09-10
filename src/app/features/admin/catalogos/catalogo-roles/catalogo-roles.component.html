@@ -1,18 +1,41 @@
 <div class="container">
-  <h1>Gestión de Roles</h1>
+  <h2>Gestión de Roles</h2>
 
-  <div class="form-container">
-    <h3>Crear Nuevo Rol</h3>
-    <input [(ngModel)]="newRole.nombre" placeholder="Nombre del Rol" />
-    <button (click)="createRole()">Crear Rol</button>
-  </div>
+  <div class="grid">
+    <form (ngSubmit)="submit()" #f="ngForm" class="panel">
+      <h3>{{ editing ? 'Editar Rol' : 'Nuevo Rol' }}</h3>
 
-  <div class="roles-list">
-    <h3>Roles Existentes</h3>
-    <div *ngFor="let role of roles" class="role-card">
-      <p>{{ role.nombre }}</p>
-      <button (click)="editRole(role)">Editar</button>
-      <button (click)="deleteRole(role.id)">Eliminar</button>
+      <label>Nombre</label>
+      <input name="nombre" [(ngModel)]="form.nombre" required />
+
+      <label>Descripción</label>
+      <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
+
+      <div class="row">
+        <button type="submit" class="primary">{{ editing ? 'Guardar' : 'Crear' }}</button>
+        <button type="button" (click)="cancel()" *ngIf="editing">Cancelar</button>
+      </div>
+    </form>
+
+    <div class="panel">
+      <h3>Listado</h3>
+      <div *ngIf="loading">Cargando…</div>
+      <table *ngIf="!loading">
+        <thead>
+        <tr><th>ID</th><th>Nombre</th><th>Descripción</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let r of roles">
+          <td>{{ r.id }}</td>
+          <td>{{ r.nombre }}</td>
+          <td>{{ r.descripcion || '—' }}</td>
+          <td class="actions">
+            <button (click)="edit(r)">Editar</button>
+            <button (click)="remove(r.id)">Eliminar</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

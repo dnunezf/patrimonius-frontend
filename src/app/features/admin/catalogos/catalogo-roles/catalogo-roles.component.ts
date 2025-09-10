@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CatalogosService, Rol } from '../catalogos.service';
+import { CatalogosService, Rol } from '../../../../../core/services/catalogos.service';
 
 @Component({
   selector: 'app-catalogo-roles',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './catalogo-roles.component.html',
-  styleUrls: ['./catalogo-roles.css'],
+  styleUrls: ['./catalogo-roles.component.css'],
 })
 export class CatalogoRolesComponent implements OnInit {
   roles: Rol[] = [];

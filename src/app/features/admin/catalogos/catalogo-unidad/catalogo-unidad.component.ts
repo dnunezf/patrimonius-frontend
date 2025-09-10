@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CatalogosService, Unidad } from '../catalogos.service';
+import { CatalogosService, Unidad } from '../../../../../core/services/catalogos.service';
 
 @Component({
   selector: 'app-catalogo-unidad',
