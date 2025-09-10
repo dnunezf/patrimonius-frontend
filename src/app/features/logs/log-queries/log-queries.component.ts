@@ -1,17 +1,17 @@
-// consultas-bitacoras.component.ts
+// log-queries.component.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router'; // Import RouterLink
 
 
 @Component({
-  selector: 'app-consultas-bitacoras',
+  selector: 'app-log-queries',
   standalone: true,
   imports: [CommonModule, RouterLink], // Add RouterLink here
-  templateUrl: './consultas-bitacoras.component.html',
-  styleUrls: ['./consultas-bitacoras.component.css']
+  templateUrl: './log-queries.component.html',
+  styleUrls: ['./log-queries.component.css']
 })
-export class ConsultasBitacorasComponent {
+export class LogQueriesComponent {
   // Array for storing bitacora data including image filenames and functions
   bitacoras = [
     {
