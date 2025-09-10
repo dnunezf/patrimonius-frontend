@@ -1,36 +1,29 @@
-<div class="logs-container">
+<div class="bitacora-container">
   <!-- Title and Description Section -->
   <section class="header-section">
-    <button class="back-button" routerLink="/admin/dashboard"> ←  Volver</button>
+    <button class="back-button" routerLink="/admin/dashboard">Volver</button>
     <h2>Consultas de Bitácoras</h2>
     <p>Seleccione el tipo de bitácora que desea consultar para auditoría del sistema.</p>
   </section>
 
-  <!-- Log Cards Section -->
-  <div class="logs-cards">
-    <a
-      class="log-card"
-      *ngFor="let log of bitacoras"
-      [routerLink]="log.link"
-      [class.is-disabled]="!log.link"
-      tabindex="0"
-      role="button"
-    >
-      <div class="log-card__icon">
-        <img [src]="getIconPath(log.icon)" alt="{{ log.title }}" />
+  <!-- Bitacora Cards Section -->
+  <div class="bitacora-cards">
+    <div class="bitacora-card" *ngFor="let bitacora of bitacoras">
+      <div class="bitacora-icon">
+        <img [src]="getIconPath(bitacora.icon)" alt="{{ bitacora.title }}" />
       </div>
+      <div class="bitacora-info">
+        <h3>{{ bitacora.title }}</h3>
+        <p>{{ bitacora.description }}</p>
 
-      <div class="log-card__info">
-        <h3>{{ log.title }}</h3>
-        <p>{{ log.description }}</p>
-
-        <div class="log-card__details">
+        <!-- Display the list of "Funciones principales" -->
+        <div class="bitacora-card-details">
           <strong>Funciones principales:</strong>
           <ul>
-            <li *ngFor="let fn of log.funciones">{{ fn }}</li>
+            <li *ngFor="let funcion of bitacora.funciones">{{ funcion }}</li>
           </ul>
         </div>
       </div>
-    </a>
+    </div>
   </div>
 </div>
