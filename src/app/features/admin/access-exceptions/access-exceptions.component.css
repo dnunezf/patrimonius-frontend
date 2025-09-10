@@ -1,0 +1,339 @@
+/* Estilos generales */
+.container {
+  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
+  background-color: #f7fafc;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section-header {
+  margin-bottom: 24px;
+}
+
+h1 {
+  font-size: 1.75rem;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+p {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* Contenedor para dividir el formulario y la tabla */
+.content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: flex-start; /* Ajustar alineación vertical */
+}
+
+/* Estilo del formulario */
+.form-section {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.input-group-wrapper {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.input-group {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+/* Placeholder text for select elements */
+select option[value=""] {
+  color: #6b7280; /* Gray color for the placeholder text */
+  font-style: italic;
+}
+
+.input-group select {
+  width: 100%;
+  min-width: 200px;  /* Ajusta el ancho mínimo */
+}
+
+label {
+  font-weight: 600;
+  color: #333;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  margin-top: 8px;
+}
+
+textarea {
+  height: 120px;
+  resize: vertical;
+}
+/* Estilo para el texto de las opciones por defecto */
+input::placeholder, select option:disabled {
+  color: #6b7280;
+  font-style: italic;
+}
+
+select {
+  color: #6b7280; /* Gris para el texto predeterminado */
+}
+
+select {
+  color: #333;
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  margin-top: 8px;
+}
+
+select option:disabled {
+  color: #6b7280; /* Gris claro */
+}
+
+select:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+
+select option:enabled {
+  color: #333;
+}
+
+/* Estilo general para el input y select */
+input, select {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  margin-top: 8px;
+}
+/* Botón de Aplicar */
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+button:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+/* Ajustes para el ComboBox de Roles */
+.select-container {
+  display: flex;
+  gap: 12px;
+  align-items: center; /* Asegura que las cajas estén alineadas correctamente */
+}
+
+.role-select {
+  width: auto;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-top: 8px;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  color: #333;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dropdown li {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.dropdown li:hover {
+  background-color: #f1f1f1;
+}
+
+/* Mostrar roles entre paréntesis con color gris */
+.role {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* Permisos como botones */
+.permission-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.permission-buttons button {
+  background-color: #e5e7eb;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 150px;
+}
+
+.permission-buttons button.selected {
+  background-color: #2563eb;
+  color: white;
+}
+
+.permission-buttons button:hover:not(.selected) {
+  background-color: #ddd;
+}
+
+.emoji {
+  font-size: 1.2rem; /* Tamaño del emoji */
+}
+
+/* Tabla de Excepciones */
+.exceptions-section {
+  margin-top: 24px;
+}
+
+.exceptions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.exceptions-table th, .exceptions-table td {
+  padding: 14px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  font-size: 1rem;
+}
+
+.exceptions-table th {
+  background-color: #2563eb;
+  color: white;
+}
+
+.exceptions-table td {
+  background-color: #f9fafb;
+}
+
+.exceptions-table td button {
+  background-color: #ef4444;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.exceptions-table td button:hover {
+  background-color: #dc2626;
+}
+
+.exceptions-table td button:focus {
+  outline: none;
+}
+
+/* Estilo de botones secundarios */
+.btn-secondary {
+  background-color: #f97316;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+.btn-secondary:hover {
+  background-color: #ea580c;
+}
+.back {
+  font-size: 1.1rem;
+}
+
+
+/* Responsividad */
+@media screen and (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  .content-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .form-section, .exceptions-section {
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 1.25rem;
+  }
+  .input-group-wrapper {
+    gap: 20px;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .input-group select, .input-group input {
+    width: 100%;
+  }
+  table th, table td {
+    padding: 12px;
+  }
+}
