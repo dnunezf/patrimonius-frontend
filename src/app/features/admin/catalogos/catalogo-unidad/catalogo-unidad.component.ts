@@ -15,16 +15,26 @@ export class CatalogoUnidadComponent implements OnInit {
   form: Partial<Unidad> = { nombre: '', descripcion: '' };
   editing: Unidad | null = null;
   loading = false;
+  errorMessage: string = ''; // Nueva propiedad para manejar los mensajes de error
 
   constructor(private api: CatalogosService) {}
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.load();
+  }
 
   load() {
     this.loading = true;
+    this.errorMessage = ''; // Limpiar mensaje de error al cargar
     this.api.getUnidades().subscribe({
-      next: (d) => { this.unidades = d; this.loading = false; },
-      error: () => { this.loading = false; alert('Error cargando unidades'); },
+      next: (d) => {
+        this.unidades = d;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = 'Error cargando unidades'; // Mostrar el mensaje de error
+      }
     });
   }
 
@@ -32,25 +42,46 @@ export class CatalogoUnidadComponent implements OnInit {
     if (!this.form.nombre?.trim()) return;
     if (this.editing) {
       this.api.updateUnidad(this.editing.id, this.form).subscribe({
-        next: (u) => { Object.assign(this.editing!, u); this.cancel(); },
-        error: () => alert('Error actualizando unidad'),
+        next: (u) => {
+          Object.assign(this.editing!, u);
+          this.cancel();
+        },
+        error: () => {
+          this.errorMessage = 'Error actualizando unidad'; // Mostrar error
+        }
       });
     } else {
       this.api.createUnidad(this.form).subscribe({
-        next: (u) => { this.unidades.push(u); this.form = { nombre: '', descripcion: '' }; },
-        error: () => alert('Error creando unidad'),
+        next: (u) => {
+          this.unidades.push(u);
+          this.form = { nombre: '', descripcion: '' };
+        },
+        error: () => {
+          this.errorMessage = 'Error creando unidad'; // Mostrar error
+        }
       });
     }
   }
 
-  edit(u: Unidad) { this.editing = u; this.form = { nombre: u.nombre, descripcion: u.descripcion }; }
-  cancel() { this.editing = null; this.form = { nombre: '', descripcion: '' }; }
+  edit(u: Unidad) {
+    this.editing = u;
+    this.form = { nombre: u.nombre, descripcion: u.descripcion };
+  }
+
+  cancel() {
+    this.editing = null;
+    this.form = { nombre: '', descripcion: '' };
+  }
 
   remove(id: number) {
     if (!confirm('¿Eliminar unidad?')) return;
     this.api.deleteUnidad(id).subscribe({
-      next: () => this.unidades = this.unidades.filter(x => x.id !== id),
-      error: () => alert('No se pudo eliminar (quizá está referenciada)'),
+      next: () => {
+        this.unidades = this.unidades.filter(x => x.id !== id);
+      },
+      error: () => {
+        this.errorMessage = 'No se pudo eliminar la unidad'; // Mostrar error
+      }
     });
   }
 }

@@ -12,6 +12,11 @@
       <label>Descripción</label>
       <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
 
+      <!-- Mostrar el mensaje de error -->
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
       <div class="row">
         <button type="submit" class="primary">
           {{ editing ? 'Guardar cambios' : 'Crear Unidad' }}

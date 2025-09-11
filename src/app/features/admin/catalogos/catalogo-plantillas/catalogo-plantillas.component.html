@@ -1,8 +1,8 @@
 <div class="container">
   <h2>Gestión de Plantillas</h2>
 
+  <!-- Formulario de subida -->
   <div class="grid">
-    <!-- Formulario de subida -->
     <form (ngSubmit)="upload()" #f="ngForm" class="panel">
       <h3>Nueva Plantilla (.doc/.docx)</h3>
 
@@ -16,41 +16,45 @@
       <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
 
       <label>Archivo</label>
-      <input type="file" (change)="onFile($event)" accept=".doc,.docx" />
+      <input type="file" (change)="onFile($event)" accept=".doc,.docx" required />
 
       <div class="row">
-        <button type="submit" class="primary">Subir Plantilla</button>
+        <button type="submit" class="primary" [disabled]="loading">Subir Plantilla</button>
+      </div>
+
+      <!-- Mostrar el mensaje de error -->
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
       </div>
     </form>
-
-    <!-- Listado -->
-    <div class="panel">
-      <h3>Listado</h3>
-      <div *ngIf="loading">Cargando…</div>
-      <table *ngIf="!loading">
-        <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Versión</th>
-          <th>Archivo</th>
-          <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let p of plantillas">
-          <td>{{ p.id }}</td>
-          <td>{{ p.nombre }}</td>
-          <td>{{ p.version }}</td>
-          <td>{{ p.ruta_archivo }}</td>
-          <td class="actions">
-            <button (click)="rename(p)">Renombrar</button>
-            <button (click)="remove(p.id)">Eliminar</button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 
+  <!-- Listado de plantillas -->
+  <div class="panel">
+    <h3>Listado</h3>
+    <div *ngIf="loading">Cargando…</div>
+    <table *ngIf="!loading">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Versión</th>
+        <th>Archivo</th>
+        <th>Acciones</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let p of plantillas">
+        <td>{{ p.id }}</td>
+        <td>{{ p.nombre }}</td>
+        <td>{{ p.version }}</td>
+        <td>{{ p.ruta_archivo }}</td>
+        <td class="actions">
+          <button (click)="rename(p)">Renombrar</button>
+          <button (click)="remove(p.id)">Eliminar</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
 </div>

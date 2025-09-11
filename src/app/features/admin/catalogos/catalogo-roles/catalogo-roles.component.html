@@ -1,41 +1,55 @@
 <div class="container">
-  <h2>Gestión de Roles</h2>
+  <h1 class="page-title">Gestión de Catálogo de Roles</h1>
 
-  <div class="grid">
-    <form (ngSubmit)="submit()" #f="ngForm" class="panel">
-      <h3>{{ editing ? 'Editar Rol' : 'Nuevo Rol' }}</h3>
-
-      <label>Nombre</label>
-      <input name="nombre" [(ngModel)]="form.nombre" required />
-
-      <label>Descripción</label>
-      <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
-
-      <div class="row">
-        <button type="submit" class="primary">{{ editing ? 'Guardar' : 'Crear' }}</button>
-        <button type="button" (click)="cancel()" *ngIf="editing">Cancelar</button>
+  <!-- Formulario para crear un rol -->
+  <div class="form-container">
+    <h2>{{ editing ? 'Editar Rol' : 'Crear Nuevo Rol' }}</h2>
+    <form (ngSubmit)="submit()">
+      <div>
+        <label for="nombre">Nombre</label>
+        <input id="nombre" [(ngModel)]="form.nombre" name="nombre" required placeholder="Nombre del rol" />
       </div>
-    </form>
 
-    <div class="panel">
-      <h3>Listado</h3>
-      <div *ngIf="loading">Cargando…</div>
-      <table *ngIf="!loading">
-        <thead>
-        <tr><th>ID</th><th>Nombre</th><th>Descripción</th><th></th></tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let r of roles">
-          <td>{{ r.id }}</td>
-          <td>{{ r.nombre }}</td>
-          <td>{{ r.descripcion || '—' }}</td>
-          <td class="actions">
-            <button (click)="edit(r)">Editar</button>
-            <button (click)="remove(r.id)">Eliminar</button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
+      <div>
+        <label for="descripcion">Descripción</label>
+        <input id="descripcion" [(ngModel)]="form.descripcion" name="descripcion" placeholder="Descripción del rol" />
+      </div>
+
+      <button type="submit" [disabled]="loading || !form.nombre?.trim()">
+        {{ editing ? 'Actualizar Rol' : 'Crear Rol' }}
+      </button>
+      <button type="button" (click)="cancel()">Cancelar</button>
+    </form>
   </div>
+
+  <!-- Mostrar lista de roles -->
+  <div *ngIf="loading">Cargando...</div>
+
+  <!-- Tabla de roles -->
+  <table class="table" *ngIf="roles$ | async as roles; else vacio">
+    <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Descripción</th>
+      <th>Acciones</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let rol of roles">
+      <td>{{ rol.nombre }}</td>
+      <td>{{ rol.descripcion || '—' }}</td>
+      <td>
+        <button (click)="edit(rol)">Editar</button>
+        <button (click)="remove(rol.id)">Eliminar</button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <!-- Mensaje si no hay roles -->
+  <ng-template #vacio>
+    <div class="empty">No hay roles.</div>
+  </ng-template>
+
+
 </div>
