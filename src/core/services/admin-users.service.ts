@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { Observable } from 'rxjs';
+import {map, Observable} from 'rxjs';
 
 export type EditorPermission = 'EDIT' | 'SIGN';
 
@@ -49,4 +49,12 @@ export class AdminUsersService {
   remove(id: number): Observable<void> {
     return this.http.delete<void>(`${this.api}/admin/users/${id}`);
   }
+
+  listEmails(): Observable<string[]> {
+    return this.list().pipe(
+      map(users => Array.from(new Set(users.map(u => u.email))).sort())
+    );
+  }
 }
+
+
