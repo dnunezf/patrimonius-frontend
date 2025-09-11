@@ -15,32 +15,44 @@ export class CatalogoPlantillasComponent implements OnInit {
   form = { nombre: '', version: '', descripcion: '' };
   file?: File;
   loading = false;
-  errorMessage: string = ''; // Agregar variable para manejar errores
+  errorMessage: string = '';  // Mensaje de error
 
   constructor(private api: CatalogosService) {}
 
   ngOnInit() {
-    this.load();
+    this.load();  // Cargar las plantillas al inicio
   }
 
   load() {
     this.loading = true;
+    this.errorMessage = '';  // Limpiar mensaje de error al cargar
+
     this.api.getPlantillas().subscribe({
-      next: (d) => {
-        this.plantillas = Array.isArray(d) ? d : []; // Verifica si 'd' es un arreglo
+      next: (plantillas) => {
+        if (Array.isArray(plantillas)) {
+          // Aquí nos aseguramos que la respuesta sea un arreglo
+          this.plantillas = plantillas;
+        } else {
+          // Si no es un arreglo, mostramos el error
+          this.errorMessage = 'No se encontraron plantillas.';
+        }
         this.loading = false;
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
-        alert('Error cargando plantillas');
+        this.errorMessage = 'Error cargando plantillas';
+        console.error(err);  // Para que puedas ver el error en consola
       },
     });
   }
 
 
+
+
+
   onFile(e: Event) {
     const input = e.target as HTMLInputElement;
-    this.file = input.files?.[0];
+    this.file = input.files?.[0];  // Capturar el archivo seleccionado
   }
 
   upload() {
@@ -48,39 +60,32 @@ export class CatalogoPlantillasComponent implements OnInit {
       alert('Nombre, versión y archivo son obligatorios');
       return;
     }
-    this.errorMessage = '';  // Limpiar cualquier mensaje de error previo
     this.api.uploadPlantilla({ ...this.form, file: this.file }).subscribe({
       next: (p) => {
-        this.plantillas.push(p);
-        this.form = { nombre: '', version: '', descripcion: '' };
-        this.file = undefined;
+        this.plantillas.push(p);  // Agregar la nueva plantilla a la lista
+        this.form = { nombre: '', version: '', descripcion: '' };  // Limpiar el formulario
+        this.file = undefined;  // Limpiar el archivo
       },
-      error: (err) => {
-        this.errorMessage = 'Error subiendo plantilla: ' + err; // Mostrar el error
-      },
+      error: () => alert('Error subiendo plantilla'),
     });
   }
 
   rename(p: Plantilla) {
     const nuevo = prompt('Nuevo nombre', p.nombre);
     if (!nuevo || nuevo === p.nombre) return;
-    this.errorMessage = '';  // Limpiar cualquier mensaje de error previo
     this.api.updatePlantilla(p.id, { nombre: nuevo }).subscribe({
       next: (up) => Object.assign(p, up),
-      error: (err) => {
-        this.errorMessage = 'Error renombrando plantilla: ' + err; // Mostrar el error
-      },
+      error: () => alert('Error renombrando plantilla'),
     });
   }
 
   remove(id: number) {
     if (!confirm('¿Eliminar plantilla?')) return;
-    this.errorMessage = '';  // Limpiar cualquier mensaje de error previo
     this.api.deletePlantilla(id).subscribe({
-      next: () => (this.plantillas = this.plantillas.filter((x) => x.id !== id)),
-      error: (err) => {
-        this.errorMessage = 'No se pudo eliminar plantilla: ' + err;  // Mostrar el error
+      next: () => {
+        this.plantillas = this.plantillas.filter((x) => x.id !== id);  // Eliminar la plantilla de la lista
       },
+      error: () => alert('No se pudo eliminar plantilla'),
     });
   }
 }
