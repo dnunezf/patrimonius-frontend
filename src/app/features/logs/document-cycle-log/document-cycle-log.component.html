@@ -1,24 +1,19 @@
 <main class="container page">
-  <!-- Header  -->
+  <!-- Header -->
   <section class="section header">
     <a routerLink="/logs" class="back-button">← Volver a Bitácoras</a>
     <h1>Bitácora de Ciclo Documental</h1>
-    <p class="subtitle">Auditoría completa del ciclo documental con filtros y exportación.</p>
-    <div class="status">
-      <span class="badge badge-blue">Estado:</span>
-      <span class="badge badge-green">{{ events.length }} eventos</span>
-    </div>
+
+
   </section>
 
-
-  <!-- Filters Card -->
   <section class="section card">
     <div class="card__title">
       <h2 class="h3">Filtros y Búsqueda Avanzada</h2>
     </div>
 
     <form class="form filters-grid" (ngSubmit)="applyFilters()">
-      <!-- Row 1 -->
+
       <div class="form__group">
         <label class="form__label" for="q">Búsqueda General</label>
         <input id="q" class="form__control" type="text" [(ngModel)]="filters.q" name="q"
@@ -28,7 +23,7 @@
       <div class="form__group">
         <label class="form__label" for="user">Usuario</label>
         <select id="user" class="form__control" [(ngModel)]="filters.user" name="user">
-          <option [ngValue]="'All users'">Todos los usuarios</option>
+          <option [ngValue]="'Todos los usuarios'">Todos los usuarios</option>
           <option *ngFor="let u of users | slice:1" [ngValue]="u">{{ u }}</option>
         </select>
       </div>
@@ -36,22 +31,22 @@
       <div class="form__group">
         <label class="form__label" for="state">Estado del Documento</label>
         <select id="state" class="form__control" [(ngModel)]="filters.state" name="state">
-          <option *ngFor="let s of states" [ngValue]="s">{{ translateStateFilter(s) }}</option>
+          <option *ngFor="let s of states" [ngValue]="s">{{ s }}</option>
         </select>
       </div>
 
       <div class="form__group">
         <label class="form__label" for="action">Tipo de Acción</label>
         <select id="action" class="form__control" [(ngModel)]="filters.action" name="action">
-          <option *ngFor="let a of actions" [ngValue]="a">{{ translateActionFilter(a) }}</option>
+          <option *ngFor="let a of actions" [ngValue]="a">{{ a }}</option>
         </select>
       </div>
 
-      <!-- Row 2 -->
+      <!-- Fila 2 -->
       <div class="form__group">
         <label class="form__label" for="result">Resultado</label>
         <select id="result" class="form__control" [(ngModel)]="filters.result" name="result">
-          <option *ngFor="let r of results" [ngValue]="r">{{ translateResultFilter(r) }}</option>
+          <option *ngFor="let r of results" [ngValue]="r">{{ r }}</option>
         </select>
       </div>
 
@@ -61,21 +56,23 @@
                placeholder="Filtrar por nombre de documento…">
       </div>
 
-      <!-- Actions -->
+
       <div class="actions">
         <button type="button" class="button-outline" (click)="clearFilters()">Limpiar Filtros</button>
-        <button type="button" class="button-outline">Exportar CSV</button>
-        <button type="button" class="button-outline">Exportar XML</button>
+        <button type="submit" class="button-outline">Aplicar Filtros</button>
+        <button type="button" class="button-outline" (click)="export('csv')">Exportar CSV</button>
+        <button type="button" class="button-outline" (click)="export('xml')">Exportar XML</button>
       </div>
-
     </form>
+
+    <div *ngIf="loading" class="muted mt-8">Cargando eventos…</div>
+    <div *ngIf="error" class="form__error mt-8">{{ error }}</div>
   </section>
 
-  <!-- Audit Table -->
+
   <section class="section card">
     <div class="card__title">
       <h2 class="h3">Registro de Eventos de Auditoría</h2>
-      <small class="muted">{{ events.length }} evento(s) encontrado(s) • Ordenado por fecha descendente</small>
     </div>
 
     <div class="table-wrapper">
@@ -84,38 +81,44 @@
         <tr>
           <th>Fecha y hora</th>
           <th>Usuario</th>
-          <th>Documento (código único / código oficial)</th>
+          <th>Documento </th>
           <th>Acción solicitada</th>
           <th>Estado del documento</th>
           <th>Resultado</th>
           <th>Razón</th>
+          <th>Detalles</th>
         </tr>
         </thead>
         <tbody>
         <tr *ngFor="let e of events">
-          <td class="nowrap">{{ e.datetime }}</td>
+          <td class="nowrap">{{ e.fecha_hora }}</td>
+          <td><div class="bold">{{ e.usuario }}</div></td>
           <td>
-            <div class="bold">{{ e.userName }}</div>
-            <div class="muted">{{ e.userEmail }}</div>
-            <div class="muted">{{ translateRole(e.userRole) }}</div>
-          </td>
-          <td>
-            <div class="bold">{{ e.documentTitle }}</div>
+            <div class="bold">{{ e.documento_titulo || '—' }}</div>
             <div class="codes">
-              <span class="badge badge-blue">{{ e.documentCode }}</span>
-              <span *ngIf="e.documentOfficial" class="badge badge-green">{{ e.documentOfficial }}</span>
+              <span *ngIf="e.documento_codigo_unico" class="badge badge-blue">{{ e.documento_codigo_unico }}</span>
+              <span *ngIf="e.documento_codigo_oficial" class="badge badge-green">{{ e.documento_codigo_oficial }}</span>
             </div>
           </td>
-          <td>{{ translateAction(e.requestedAction) }}</td>
-          <td><span class="{{ stateClass(e.documentState) }}">{{ translateState(e.documentState) }}</span></td>
-          <td><span class="{{ resultClass(e.result) }}">{{ translateResult(e.result) }}</span></td>
-          <td>{{ e.reason }}</td>
+          <td>{{ e.accion_solicitada || '—' }}</td>
+          <td><span class="{{ stateClass(e.estado_documento) }}">{{ e.estado_documento || '—' }}</span></td>
+          <td><span class="{{ resultClass(e.resultado) }}">{{ e.resultado || '—' }}</span></td>
+          <td>{{ e.razon || '—' }}</td>
+          <td>
+            <button type="button" class="button-outline" (click)="openDetail(e)">Ver detalles</button>
+          </td>
         </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Pagination placeholder -->
-    <div class="pager muted">« Anterior · 1 · 2 · 3 · Siguiente »</div>
+    <div class="pager muted">
+      <button class="button-outline" [disabled]="page<=1" (click)="goPrev()">« Anterior</button>
+      <span class="mx-8">Página {{ page }} de {{ totalPages }}</span>
+      <button class="button-outline" [disabled]="page>=totalPages" (click)="goNext()">Siguiente »</button>
+    </div>
+
+
   </section>
+
 </main>
