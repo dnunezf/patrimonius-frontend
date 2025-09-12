@@ -1,26 +1,12 @@
-// src/app/features/logs/document-cycle-log/document-cycle-log.component.ts
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AuditService, AuditItem, AuditDetail } from '../../../../core/services/audit.service';
+import { AdminUsersService } from '../../../../core/services/admin-users.service';
 
-type DocState = 'Signed Complete' | 'Signed Partial' | 'Archived';
-type ActionType = 'Edit attempt' | 'Digital signature' | 'View/Download';
-type ResultType = 'Allowed' | 'Denied';
-
-interface AuditEvent {
-  datetime: string; // ISO or human for mock
-  userName: string;
-  userEmail: string;
-  userRole: 'Admin' | 'Editor' | 'Archivist' | 'External';
-  documentTitle: string;
-  documentCode: string;      // internal code
-  documentOfficial?: string; // official code
-  requestedAction: ActionType;
-  documentState: DocState;
-  result: ResultType;
-  reason: string;            // UI text in Spanish
-}
+type ResultType = 'Permitida' | 'Denegada';
+type ActionType = 'Creacion' | 'Edicion' | 'Firma' | 'Archivado' | 'Eliminacion' | 'Transferencia';
 
 @Component({
   selector: 'app-document-cycle-log',
@@ -29,151 +15,226 @@ interface AuditEvent {
   templateUrl: './document-cycle-log.component.html',
   styleUrls: ['./document-cycle-log.component.css'],
 })
-export class DocumentCycleLogComponent {
+export class DocumentCycleLogComponent implements OnInit {
 
-  // ----- Mock filters (UI labels shown in Spanish via helpers) -----
+  // Backend-fed combos
+  users: string[] = ['Todos los usuarios'];
+  states: string[] = ['Todos los estados'];
+
+  // Filters
   filters = {
     q: '',
-    user: 'All users',
-    state: 'All states',
-    action: 'All actions',
-    result: 'All results',
+    user: 'Todos los usuarios',
+    state: 'Todos los estados',
+    action: 'Todas las acciones',
+    result: 'Todos los resultados',
     document: ''
   };
 
-  users = [
-    'All users',
-    'carlos.rodriguez@mncr.go.cr',
-    'ana.garcia@mncr.go.cr',
-    'maria.lopez@mncr.go.cr',
-    'luis.mendez@mncr.go.cr',
-    'roberto.vega@mncr.go.cr'
+  // Static combos
+  actions: Array<'Todas las acciones' | ActionType> = [
+    'Todas las acciones', 'Creacion', 'Edicion', 'Firma', 'Archivado', 'Eliminacion', 'Transferencia'
   ];
-  states: Array<'All states' | DocState>   = ['All states','Signed Complete','Signed Partial','Archived'];
-  actions: Array<'All actions' | ActionType> = ['All actions','Edit attempt','Digital signature','View/Download'];
-  results: Array<'All results' | ResultType> = ['All results','Allowed','Denied'];
-
-  // ----- Mock data (UI reasons already in Spanish) -----
-  events: AuditEvent[] = [
-    {
-      datetime: '2025-01-25 10:51:32',
-      userName: 'Carlos Rodríguez',
-      userEmail: 'carlos.rodriguez@mncr.go.cr',
-      userRole: 'Editor',
-      documentTitle: 'Acta de Junta – Enero',
-      documentCode: 'DOC_001_2025',
-      documentOfficial: 'OFI_MNCR-DAF-AC-034-2025',
-      requestedAction: 'Edit attempt',
-      documentState: 'Signed Complete',
-      result: 'Denied',
-      reason: 'Documento ya firmado — no permite edición'
-    },
-    {
-      datetime: '2025-01-25 09:45:18',
-      userName: 'Ana García',
-      userEmail: 'ana.garcia@mncr.go.cr',
-      userRole: 'Editor',
-      documentTitle: 'Protocolo de Seguridad Institucional',
-      documentCode: 'DOC_007_2025',
-      documentOfficial: 'OFI_MNCR-DAF-AC-034-2025',
-      requestedAction: 'Digital signature',
-      documentState: 'Signed Complete',
-      result: 'Allowed',
-      reason: 'Última firma completada — documento terminado'
-    },
-    {
-      datetime: '2025-01-24 16:30:05',
-      userName: 'María López',
-      userEmail: 'maria.lopez@mncr.go.cr',
-      userRole: 'Editor',
-      documentTitle: 'Manual de Procedimientos',
-      documentCode: 'DOC_025_2024',
-      documentOfficial: 'OFI_MNCR-DAF-AC-025-2024',
-      requestedAction: 'Edit attempt',
-      documentState: 'Archived',
-      result: 'Denied',
-      reason: 'Documento archivado — solo lectura permitida'
-    },
-    {
-      datetime: '2025-01-24 14:22:11',
-      userName: 'Luis Méndez',
-      userEmail: 'luis.mendez@mncr.go.cr',
-      userRole: 'Editor',
-      documentTitle: 'Informe de Conservación',
-      documentCode: 'DOC_003_2024',
-      requestedAction: 'Digital signature',
-      documentState: 'Signed Partial',
-      result: 'Allowed',
-      reason: 'Firma parcial aplicada — faltan 1–2 firmas'
-    },
-    {
-      datetime: '2025-01-24 11:55:44',
-      userName: 'Roberto Vega',
-      userEmail: 'roberto.vega@mncr.go.cr',
-      userRole: 'Archivist',
-      documentTitle: 'Inventario General de Colecciones',
-      documentCode: 'DOC_033_2024',
-      documentOfficial: 'OFI_MNCR-DAF-AC-033-2024',
-      requestedAction: 'View/Download',
-      documentState: 'Archived',
-      result: 'Allowed',
-      reason: 'Acceso autorizado a documento archivado'
-    },
+  results: Array<'Todos los resultados' | ResultType> = [
+    'Todos los resultados', 'Permitida', 'Denegada'
   ];
 
-  // ----- UI actions (mock) -----
-  applyFilters() { /* UI only */ }
+  // Data/pagination
+  loading = false;
+  error: string | null = null;
+  page = 1;
+  pageSize = 25;
+  sortBy = 'fecha_hora';
+  sortDir: 'asc' | 'desc' = 'desc';
+  events: AuditItem[] = [];
+  totalItems = 0;
+  totalPages = 1;
+
+  // Detail modal state
+  showDetail = false;
+  detailLoading = false;
+  detailError: string | null = null;
+  detail: AuditDetail | null = null;
+
+  constructor(
+    private audit: AuditService,
+    private adminUsers: AdminUsersService
+  ) {}
+
+  ngOnInit() {
+    this.loadUsers();
+    this.loadStates();
+    this.fetch();
+  }
+
+  // Build query params for backend
+  private buildQuery() {
+    const qp: any = {
+      page: this.page,
+      pageSize: this.pageSize,
+      sortBy: this.sortBy,
+      sortDir: this.sortDir
+    };
+    if (this.filters.q?.trim()) qp.q = this.filters.q.trim();
+    if (this.filters.user !== 'Todos los usuarios') qp.usuario = this.filters.user;
+    if (this.filters.result !== 'Todos los resultados') qp.resultado = this.filters.result as ResultType;
+    if (this.filters.document?.trim()) qp.documento = this.filters.document.trim();
+
+    const dbState = this.mapUiLabelToDbState(this.filters.state);
+    if (dbState) qp.estado = dbState;
+
+    if (this.filters.action !== 'Todas las acciones') {
+      qp.q = `${qp.q ? qp.q + ' ' : ''}${this.filters.action}`;
+    }
+    return qp;
+  }
+
+  // Fetch data with pagination
+  fetch() {
+    this.loading = true;
+    this.error = null;
+    const params = this.buildQuery();
+    this.audit.listEvents(params).subscribe({
+      next: (res) => {
+        this.events = res.items;
+        this.totalItems = res.totalItems;
+        this.totalPages = res.totalPages;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Error cargando eventos de auditoría';
+        console.error(err);
+        this.loading = false;
+      }
+    });
+  }
+
+  applyFilters() { this.page = 1; this.fetch(); }
   clearFilters() {
-    this.filters = { q:'', user:'All users', state:'All states', action:'All actions', result:'All results', document:'' };
+    this.filters = {
+      q:'', user:'Todos los usuarios', state:'Todos los estados',
+      action:'Todas las acciones', result:'Todos los resultados', document:''
+    };
+    this.page = 1;
+    this.fetch();
   }
 
-  // ----- Badges helpers -----
-  stateClass(state: DocState) {
-    switch (state) {
-      case 'Signed Complete': return 'badge badge-green';
-      case 'Signed Partial':  return 'badge badge-blue';
-      case 'Archived':        return 'badge badge-brown';
-    }
-  }
-  resultClass(res: ResultType) {
-    return res === 'Allowed' ? 'badge badge-green' : 'badge badge-red';
+  goPrev() { if (this.page > 1) { this.page--; this.fetch(); } }
+  goNext() { if (this.page < this.totalPages) { this.page++; this.fetch(); } }
+
+  // Export functionality
+  export(format: 'csv' | 'xml') {
+    const params = this.buildQuery();
+    this.error = null;
+    this.audit.exportEvents(format, params).subscribe({
+      next: (res) => {
+        const blob = res.body!;
+        const cd = res.headers.get('Content-Disposition') || '';
+        const match = /filename="?([^"]+)"?/i.exec(cd);
+        const fallbackName = format === 'csv' ? 'eventos_auditoria.csv' : 'eventos_auditoria.xml';
+        const filename = (match && match[1]) ? match[1] : fallbackName;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      },
+      error: async (err) => {
+        try {
+          const blob = err?.error as Blob;
+          const text = await blob.text();
+          let msg = 'Error al exportar.';
+          try {
+            const json = JSON.parse(text);
+            if (json?.message) msg = json.message;
+          } catch {
+            if (text?.trim()) msg = text;
+          }
+          this.error = msg;
+        } catch {
+          this.error = 'Error al exportar.';
+        }
+      }
+    });
   }
 
-  // ----- Translation helpers (Spanish UI) -----
-  translateState(state: DocState): string {
-    switch (state) {
-      case 'Signed Complete': return 'Firmado Completo';
-      case 'Signed Partial':  return 'Firmado Parcial';
-      case 'Archived':        return 'Archivado';
-    }
+  // ---- Detail modal handlers ----
+  openDetail(e: AuditItem) {
+    if (!e?.id_evento) return;
+    this.showDetail = true;
+    this.detail = null;
+    this.detailError = null;
+    this.detailLoading = true;
+
+    this.audit.getEventDetail(e.id_evento).subscribe({
+      next: (d) => {
+        this.detail = d;
+        this.detailLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load detail', err);
+        this.detailError = 'No se pudo cargar el detalle del evento.';
+        this.detailLoading = false;
+      }
+    });
   }
-  translateAction(action: ActionType): string {
-    switch (action) {
-      case 'Edit attempt':      return 'Intento de edición';
-      case 'Digital signature': return 'Firma digital aplicada';
-      case 'View/Download':     return 'Consulta y descarga';
-    }
+
+  closeDetail() {
+    this.showDetail = false;
+    this.detail = null;
+    this.detailError = null;
+    this.detailLoading = false;
   }
-  translateResult(res: ResultType): string {
-    return res === 'Allowed' ? 'Permitida' : 'Denegada';
-  }
-  translateRole(role: 'Admin' | 'Editor' | 'Archivist' | 'External'): string {
-    switch (role) {
-      case 'Admin':     return 'Administrador';
-      case 'Editor':    return 'Editor';
-      case 'Archivist': return 'Archivista';
-      case 'External':  return 'Usuario Externo';
+
+  // ---- Helpers for state and badges ----
+  resultClass(res: string | null | undefined) {
+    switch ((res || '').toLowerCase()) {
+      case 'permitida': return 'badge badge-green';
+      case 'denegada':  return 'badge badge-red';
+      default:          return 'badge';
     }
   }
 
-  // For filter dropdown labels:
-  translateStateFilter(value: 'All states' | DocState): string {
-    return value === 'All states' ? 'Todos los estados' : this.translateState(value);
+  stateClass(state: string | null | undefined) {
+    const s = (state || '').trim().toLowerCase();
+    if (s === 'firmado completo') return 'badge badge-green';
+    if (s === 'firmado parcial')  return 'badge badge-blue';
+    if (s === 'archivado')        return 'badge badge-brown';
+    return 'badge';
   }
-  translateActionFilter(value: 'All actions' | ActionType): string {
-    return value === 'All actions' ? 'Todas las acciones' : this.translateAction(value);
+
+  private loadUsers() {
+    this.adminUsers.listEmails().subscribe({
+      next: (emails) => this.users = ['Todos los usuarios', ...emails],
+      error: () => this.users = ['Todos los usuarios']
+    });
   }
-  translateResultFilter(value: 'All results' | ResultType): string {
-    return value === 'All results' ? 'Todos los resultados' : this.translateResult(value);
+
+  private mapDbStateToUiLabel(dbValue: string): string {
+    const v = (dbValue || '').trim().toUpperCase();
+    if (v === 'ARCHIVADO') return 'Archivado';
+    if (v === 'FIRMADO' || v === 'FIRMA' || v === 'FIRMADO_COMPLETO') return 'Firmado Completo';
+    if (v === 'FIRMADO_PARCIAL' || v === 'FIRMA_PARCIAL') return 'Firmado Parcial';
+    return v ? v.charAt(0) + v.slice(1).toLowerCase() : '';
+  }
+
+  private mapUiLabelToDbState(uiValue: string): string | null {
+    const v = (uiValue || '').trim().toLowerCase();
+    if (!v || v === 'todos los estados') return null;
+    if (v === 'archivado') return 'ARCHIVADO';
+    if (v === 'firmado completo') return 'FIRMADO';
+    if (v === 'firmado parcial')  return 'FIRMADO_PARCIAL';
+    return v.toUpperCase();
+  }
+
+  private loadStates() {
+    this.audit.getDocumentStates().subscribe({
+      next: (dbStates) => {
+        const uiStates = Array.from(new Set((dbStates || []).map(s => this.mapDbStateToUiLabel(s)).filter(Boolean)));
+        const sorted = uiStates.sort((a, b) => a.localeCompare(b));
+        this.states = ['Todos los estados', ...sorted];
+      },
+      error: () => this.states = ['Todos los estados']
+    });
   }
 }
