@@ -53,6 +53,7 @@ export class AuditService {
 
   constructor(private http: HttpClient) {}
 
+
   listEvents(opts: {
     page?: number;
     pageSize?: number;
@@ -113,4 +114,11 @@ export class AuditService {
       .pipe(map(res => res.item));
   }
 
+
+
+  getActionTypes() {
+    return this.http
+      .get<{ items: string[] }>(`${this.base}/log/events`)
+      .pipe(map(res => res.items || []));
+  }
 }
