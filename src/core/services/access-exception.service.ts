@@ -7,22 +7,22 @@ import { environment } from '../../environments/environment';
   providedIn: 'root',
 })
 export class AccessExceptionService {
-  private apiUrl = `${environment.apiUrl}/excepciones`; // Cambia la URL según sea necesario
+  private rolUrl = `${environment.apiUrl}/rol/rol`;
+  private usersUrl = `${environment.apiUrl}/admin/users`;
+  private statesUrl = `${environment.apiUrl}/documentos/estados`;
 
   constructor(private http: HttpClient) {}
 
-  // Crear una nueva excepción de acceso
-  createException(exceptionData: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}`, exceptionData);
+  // Obtener roles desde el backend
+  getRoles(): Observable<string[]> {
+    return this.http.get<string[]>(this.rolUrl);
   }
-
-  // Listar todas las excepciones activas
-  getActiveExceptions(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}`);
+  // Obtener usuarios desde el backend
+  getUsers(): Observable<any[]> {
+    return this.http.get<any[]>(this.usersUrl);
   }
-
-  // Eliminar una excepción de acceso
-  deleteException(exceptionId: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/${exceptionId}`);
-  }
+  // Obtener estados desde el backend
+  // getStates(): Observable<string[]> {
+  //   return this.http.get<string[]>(this.statesUrl);
+  // }
 }

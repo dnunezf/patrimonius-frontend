@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
-import { Location } from '@angular/common';
+import { AccessExceptionService } from '../../../../core/services/access-exception.service';
+import { CategoriaService } from '../../../../core/services/categoria.service';
+import { AuditService } from '../../../../core/services/audit.service';
 
 @Component({
   selector: 'app-access-exceptions',
@@ -14,109 +16,178 @@ import { Location } from '@angular/common';
   providers: [DatePipe]
 
 })
-export class AccessExceptionsComponent {
-  constructor(
-    private datePipe: DatePipe,
-    private location: Location) {}
+export class AccessExceptionsComponent implements OnInit {
+  // Variables para categorías
+  categoriaSearchTerm: string = ''; // Término de búsqueda
+  categorias: any[] = []; // Lista de categorías
+  selectedCategoria: string = 'todos'; // Valor predeterminado de categoría seleccionada
+
+  // Variables para estados
+  selectedDocumentStatus: string = 'todos';
+  states: string[] = [];
+
+  // Variables para usuarios
+  userSearchTerm: string = '';
+  selectedUser: any = null;
+  selectedRole: string = 'todos';
+  roles: string[] = [];
+  users: any[] = [];
 
   // Variables para el formulario
-  userSearchTerm: string = '';
   documentSearchTerm: string = '';
-  selectedUser: any = null;
   selectedDocument: any = null;
   reason: string = '';
   permissions: { [key in 'visualizar' | 'editar' | 'firmar']: boolean } = {
     visualizar: false,
     editar: false,
-    firmar: false
+    firmar: false,
   };
-  selectedRole: string = 'todos';
+
   selectedDocumentType: string = 'todos';
-  selectedDocumentStatus: string = 'todos';
 
-  // Datos de ejemplo
-  users = [
-    { id: 1, name: 'Carlos Rodríguez', role: 'Editor' },
-    { id: 2, name: 'Ana Gómez', role: 'Administrador' },
-    { id: 3, name: 'Luis Fernández', role: 'Archivista' },
-  ];
+  activeExceptions: any[] = [];
+  filteredUsers: any[] = [];
+  filteredDocuments = [];
 
-  documents = [
-    { id: 1, title: 'Acta de Junta Directiva', status: 'En proceso' },
-    { id: 2, title: 'Manual de Procedimientos', status: 'Archivado' },
-    { id: 3, title: 'Informe Anual 2024', status: 'En proceso' },
-  ];
+  constructor(
+    private accessExceptionService: AccessExceptionService,
+    private datePipe: DatePipe,
+    private categoriaService: CategoriaService,
+    private auditService: AuditService
+  ) {}
 
-  // Excepciones activas (simuladas)
-  activeExceptions = [
-    { user: 'Carlos Rodríguez', document: 'Acta de Junta Directiva', permission: 'Firmar', date: '2025-01-25' },
-    { user: 'Ana Gómez', document: 'Manual de Procedimientos', permission: 'Editar', date: '2025-01-24' }
-  ];
+  ngOnInit() {
+    // Cargar roles desde el backend
+    this.accessExceptionService.getRoles().subscribe({
+      next: (roles) => {
+        this.roles = roles.map(role =>
+          role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, char => char.toUpperCase()) // Convierte a "proper case"
+        );
+      },
+      error: (err) => {
+        console.error('Error al cargar roles:', err);
+        this.roles = [];  // Si ocurre un error, solo usamos el valor por defecto
+      },
+    });
 
-  filteredUsers = this.users;
-  filteredDocuments = this.documents;
+    // Cargar usuarios desde el backend
+    this.accessExceptionService.getUsers().subscribe({
+      next: (users) => {
+        this.users = users.map(user => ({
+          ...user,
+          fullName: `${user.nombre} ${user.apellido1} ${user.apellido2} (${user.rol.replace(/_/g, ' ').toLowerCase()})` // Reemplazamos los _ por espacios
+        }));
+        this.filteredUsers = this.users; // Inicializamos los usuarios filtrados
+      },
+      error: (err) => {
+        console.error('Error al cargar usuarios:', err);
+        this.users = []; // Si ocurre un error, no hay usuarios
+        this.filteredUsers = [];  // Inicializamos la lista de usuarios filtrados
+      },
+    });
 
-  // Función para filtrar los usuarios según la búsqueda
+    // Cargar categorías desde el backend
+    this.categoriaService.getCategorias().subscribe({
+      next: (categorias) => {
+        this.categorias = categorias.map(categoria => ({
+          ...categoria,
+          nombre: categoria.nombre.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (char: string) => char.toUpperCase()) // Normalizamos la categoría
+        }));
+      },
+      error: (err) => {
+        console.error('Error al cargar categorías:', err);
+        this.categorias = [];  // Si ocurre un error, dejamos la lista vacía
+      },
+    });
+
+    // Cargar estados desde el backend
+    this.auditService.getDocumentStates().subscribe({
+      next: (states) => {
+        console.log('Estados cargados correctamente:', states); // Verificar que lleguen bien
+        this.states = states.map((state: string) =>
+          state
+            .replace(/_/g, ' ')
+            .toLowerCase()
+            .replace(/\b\w/g, (char: string) => char.toUpperCase())
+        );
+      },
+      error: (err) => {
+        console.error('Error al cargar estados:', err);
+        this.states = [];
+      }
+    });
+  }
+
+  // Función para filtrar categorías
+  filterCategorias() {
+    return this.categorias.filter(categoria =>
+      categoria.nombre.toLowerCase().includes(this.categoriaSearchTerm.toLowerCase()) ||
+      this.selectedCategoria === 'todos'
+    );
+  }
+
+  // Función para filtrar los usuarios según la búsqueda y el rol seleccionado
   filterUsers() {
-    this.filteredUsers = this.users.filter(user =>
-      user.name.toLowerCase().includes(this.userSearchTerm.toLowerCase()) &&
-      (this.selectedRole === 'todos' || user.role === this.selectedRole)
+    const selectedRoleNormalized = this.selectedRole === 'todos' ? 'todos' : this.selectedRole.replace(/ /g, '_').toLowerCase();
+    this.filteredUsers = this.users.filter(
+      (user) =>
+        (user.fullName.toLowerCase().includes(this.userSearchTerm.toLowerCase()) || user.email.toLowerCase().includes(this.userSearchTerm.toLowerCase())) &&
+        (selectedRoleNormalized === 'todos' || user.rol.toLowerCase().replace(/ /g, '_') === selectedRoleNormalized)
     );
   }
 
-  // Función para filtrar los documentos según la búsqueda
-  filterDocuments() {
-    this.filteredDocuments = this.documents.filter(doc =>
-      doc.title.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) &&
-      (this.selectedDocumentType === 'todos' || this.getDocumentType(doc) === this.selectedDocumentType) &&
-      (this.selectedDocumentStatus === 'todos' || doc.status === this.selectedDocumentStatus)
-    );
-  }
+  // // Función para filtrar los documentos según la búsqueda
+  // filterDocuments() {
+  //   this.filteredDocuments = this.documents.filter(
+  //     (doc) =>
+  //       doc.title.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) &&
+  //       (this.selectedDocumentType === 'todos' || this.getDocumentType(doc) === this.selectedDocumentType) &&
+  //       (this.selectedDocumentStatus === 'todos' || doc.status === this.selectedDocumentStatus)
+  //   );
+  // }
+  // filterDocuments() {
+  //   this.filteredDocuments = this.documents.filter(
+  //     (doc) =>
+  //       doc.title.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) &&
+  //       (this.selectedDocumentType === 'todos' || this.getDocumentType(doc) === this.selectedDocumentType) &&
+  //       (this.selectedDocumentStatus === 'todos' || doc.status === this.selectedDocumentStatus)
+  //   );
+  // }
+
 
   // Método para comprobar si el formulario es válido
   isFormValid(): boolean {
-    // Verificamos que haya al menos un permiso seleccionado
-    const permisosSeleccionados = this.permissions.visualizar || this.permissions.editar || this.permissions.firmar;
+    const permisosSeleccionados =
+      this.permissions.visualizar || this.permissions.editar || this.permissions.firmar;
 
-    // Verificar que al menos uno de los campos clave esté lleno
     const documentoLleno = this.selectedDocument || this.documentSearchTerm;
     const usuarioLleno = this.selectedUser || this.userSearchTerm;
     const motivoLleno = this.reason.trim().length > 0 || true;
 
-    // Validación de formulario
     return permisosSeleccionados && (documentoLleno || usuarioLleno);
   }
 
-  // Método que asigna un tipo de documento según el título
-  getDocumentType(doc: any): string {
-    // Aquí deberías definir la lógica para asignar un tipo basado en el título del documento
-    if (doc.title.includes('Acta')) return 'Acta';
-    if (doc.title.includes('Informe')) return 'Informe';
-    if (doc.title.includes('Protocolo')) return 'Protocolo';
-    if (doc.title.includes('Presupuesto')) return 'Presupuesto';
-    if (doc.title.includes('Manual')) return 'Manual';
-    if (doc.title.includes('Investigación')) return 'Investigación';
-    return 'Otros'; // Caso por defecto
-  }
+  // // Método para asignar un tipo de documento según el título
+  // getDocumentType(doc: any): string {
+  //   if (doc.title.includes('Acta')) return 'Acta';
+  //   if (doc.title.includes('Informe')) return 'Informe';
+  //   if (doc.title.includes('Protocolo')) return 'Protocolo';
+  //   if (doc.title.includes('Presupuesto')) return 'Presupuesto';
+  //   if (doc.title.includes('Manual')) return 'Manual';
+  //   if (doc.title.includes('Investigación')) return 'Investigación';
+  //   return 'Otros'; // Caso por defecto
+  // }
 
   // Método para seleccionar un usuario
   selectUser(user: any) {
     this.selectedUser = user;
-    this.userSearchTerm = user.name;  // Muestra el nombre seleccionado en el input
-  }
-
-  // Método para seleccionar un documento
-  selectDocument(doc: any) {
-    this.selectedDocument = doc;
-    this.documentSearchTerm = doc.title;  // Muestra el título seleccionado en el input
+    this.userSearchTerm = user.name;
   }
 
   // Método para manejar el cambio de estado de un permiso
   togglePermission(permission: 'visualizar' | 'editar' | 'firmar') {
     this.permissions[permission] = !this.permissions[permission];
   }
-
-
 
   // Método para obtener los permisos seleccionados
   getSelectedPermissions(): string {
@@ -130,51 +201,21 @@ export class AccessExceptionsComponent {
   // Método para aplicar la excepción
   applyException() {
     if (this.isFormValid()) {
-      const formattedDate = this.datePipe.transform(new Date(), 'dd-MM-yyyy');
       const exception = {
-        user: this.selectedUser.name,
+        user: this.selectedUser.fullName,
         document: this.selectedDocument.title,
         permission: this.getSelectedPermissions(),
-        date: new Date().toLocaleDateString()
+        date: new Date().toLocaleDateString(),
       };
 
-      // Guardar las excepciones activas en localStorage
       this.activeExceptions.push(exception);
       localStorage.setItem('activeExceptions', JSON.stringify(this.activeExceptions)); // Guardar en localStorage
-
-      // Guardar otros datos del formulario
       localStorage.setItem('selectedUser', JSON.stringify(this.selectedUser));
       localStorage.setItem('selectedDocument', JSON.stringify(this.selectedDocument));
       localStorage.setItem('permissions', JSON.stringify(this.permissions));
       localStorage.setItem('reason', this.reason);
 
       this.resetForm(); // Reiniciar el formulario
-    }
-  }
-
-  ngOnInit() {
-    // Cargar datos desde localStorage si existen
-    const savedUser = localStorage.getItem('selectedUser');
-    const savedDocument = localStorage.getItem('selectedDocument');
-    const savedPermissions = localStorage.getItem('permissions');
-    const savedReason = localStorage.getItem('reason');
-    const savedExceptions = localStorage.getItem('activeExceptions');
-
-    if (savedUser) {
-      this.selectedUser = JSON.parse(savedUser);
-    }
-    if (savedDocument) {
-      this.selectedDocument = JSON.parse(savedDocument);
-    }
-    if (savedPermissions) {
-      this.permissions = JSON.parse(savedPermissions);
-    }
-    if (savedReason) {
-      this.reason = savedReason;
-    }
-    // Si existen excepciones activas guardadas en localStorage, cargarlas
-    if (savedExceptions) {
-      this.activeExceptions = JSON.parse(savedExceptions);
     }
   }
 
@@ -187,7 +228,7 @@ export class AccessExceptionsComponent {
     this.userSearchTerm = '';
     this.documentSearchTerm = '';
     this.filteredUsers = this.users;
-    this.filteredDocuments = this.documents;
+    this.filteredDocuments = [];
   }
 
   // Método para eliminar una excepción activa
@@ -197,5 +238,4 @@ export class AccessExceptionsComponent {
       this.activeExceptions.splice(index, 1);
     }
   }
-
 }

@@ -24,13 +24,9 @@
                 name="userSearch"
                 (input)="filterUsers()"
               />
-              <select [(ngModel)]="selectedRole" name="userRole" class="role-select" (change)="filterUsers()">
-                <option value="todos">Todos los roles</option>
-                <option value="Administrador">Administrador</option>
-                <option value="Editor">Editor</option>
-                <option value="Archivista">Archivista</option>
-                <option value="Usuario">Usuario</option>
-                <option value="Usuario Externo">Usuario Externo</option>
+              <select [(ngModel)]="selectedRole" name="role" (change)="filterUsers()">
+                <option value="todos">Todos Los Roles</option>
+                <option *ngFor="let role of roles" [value]="role.toLowerCase()">{{ role }}</option>
               </select>
             </div>
           </div>
@@ -39,62 +35,80 @@
           <div class="input-group">
             <label>Selecciona el usuario</label>
             <select [(ngModel)]="selectedUser" name="user">
-              <option value="" disabled selected>Seleccionar usuario...</option>
+              <option value="" disabled selected>Seleccionar Usuario...</option>
               <option *ngFor="let user of filteredUsers" [ngValue]="user">
-                {{ user.name }} <span class="role">({{ user.role }})</span>
+                {{ user.fullName }}
               </option>
             </select>
           </div>
 
-          <!-- Documento a Consultar -->
+
+
+                    <!-- Documento a Consultar -->
+<!--          <div class="input-group">-->
+<!--            <label>Elige el documento que el usuario podrá consultar, editar o firmar</label>-->
+<!--            <input-->
+<!--              type="text"-->
+<!--              [(ngModel)]="documentSearchTerm"-->
+<!--              placeholder="Buscar documento..."-->
+<!--              name="documentSearch"-->
+<!--              (input)="filterDocuments()"-->
+<!--            />-->
+<!--          </div>-->
+
+          <!-- Filtro de búsqueda de categorías -->
           <div class="input-group">
-            <label>Elige el documento que el usuario podrá consultar, editar o firmar</label>
+            <label>Buscar documento por categoría</label>
             <input
               type="text"
-              [(ngModel)]="documentSearchTerm"
-              placeholder="Buscar documento..."
-              name="documentSearch"
-              (input)="filterDocuments()"
+              [(ngModel)]="categoriaSearchTerm"
+              placeholder="Buscar por nombre de categoría..."
+              name="categoriaSearch"
+              (input)="filterCategorias()"
             />
           </div>
-
-          <!-- Selección de Documento en línea -->
-          <div class="input-group-wrapper">
-            <div class="input-group">
-              <label>Selecciona el tipo de documento</label>
-              <select [(ngModel)]="selectedDocumentType" name="documentType" (change)="filterDocuments()">
-                <option value="todos">Todos los tipos</option>
-                <option value="Acta">Actas</option>
-                <option value="Informe">Informe</option>
-                <option value="Protocolo">Protocolo</option>
-                <option value="Presupuesto">Presupuesto</option>
-                <option value="Manual">Manual</option>
-                <option value="Investigación">Investigación</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label>Selecciona el estado del documento</label>
-              <select [(ngModel)]="selectedDocumentStatus" name="documentStatus" (change)="filterDocuments()">
-                <option value="todos">Todos los estados</option>
-                <option value="Borrador">Borrador</option>
-                <option value="En revisión">En revisión</option>
-                <option value="Aprobado">Aprobado</option>
-                <option value="Archivado">Archivado</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Documento Seleccionado -->
+          <!-- Selección de Categoría -->
           <div class="input-group">
-            <label>Selecciona el documento</label>
-            <select [(ngModel)]="selectedDocument" name="document">
-              <option value="" disabled selected>Seleccionar documento...</option>
-              <option *ngFor="let doc of filteredDocuments" [ngValue]="doc">
-                {{ doc.title }} <span class="status">({{ doc.status }})</span>
+            <label>Selecciona la categoría del documento</label>
+            <select [(ngModel)]="selectedCategoria" name="categoria">
+              <option value="todos">Todos los tipos</option>
+              <option *ngFor="let categoria of filterCategorias()" [value]="categoria.nombre">
+                {{ categoria.nombre }}
               </option>
             </select>
           </div>
+          <!-- Filtro de estados -->
+          <div class="input-group">
+            <label>Selecciona el estado del documento</label>
+            <select [(ngModel)]="selectedDocumentStatus" name="documentStatus">
+              <option value="todos">Todos los estados</option>
+              <option *ngFor="let state of states" [value]="state">{{ state }}</option>
+            </select>
+          </div>
+
+
+          <!--            <div class="input-group">-->
+<!--              <label>Selecciona el estado del documento</label>-->
+<!--              <select [(ngModel)]="selectedDocumentStatus" name="documentStatus" (change)="filterDocuments()">-->
+<!--                <option value="todos">Todos los estados</option>-->
+<!--                <option value="Borrador">Borrador</option>-->
+<!--                <option value="En revisión">En revisión</option>-->
+<!--                <option value="Aprobado">Aprobado</option>-->
+<!--                <option value="Archivado">Archivado</option>-->
+<!--              </select>-->
+<!--            </div>-->
+<!--          </div>-->
+
+<!--          &lt;!&ndash; Documento Seleccionado &ndash;&gt;-->
+<!--          <div class="input-group">-->
+<!--            <label>Selecciona el documento</label>-->
+<!--            <select [(ngModel)]="selectedDocument" name="document">-->
+<!--              <option value="" disabled selected>Seleccionar documento...</option>-->
+<!--              <option *ngFor="let doc of filteredDocuments" [ngValue]="doc">-->
+<!--                {{ doc.title }} <span class="status">({{ doc.status }})</span>-->
+<!--              </option>-->
+<!--            </select>-->
+<!--          </div>-->
 
 
           <!-- Tipo de Permiso -->
