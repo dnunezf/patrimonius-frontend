@@ -6,7 +6,7 @@ import { AuditService, AuditItem, AuditDetail } from '../../../../core/services/
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 
 type ResultType = 'Permitida' | 'Denegada';
-type ActionType = 'Creacion' | 'Edicion' | 'Firma' | 'Archivado' | 'Eliminacion' | 'Transferencia';
+type ActionType = 'Creacion' | 'Edicion' | 'Firma' | 'Firma Parcial' | 'Archivado' | 'Eliminacion' | 'Transferencia';
 
 @Component({
   selector: 'app-document-cycle-log',
@@ -19,22 +19,29 @@ export class DocumentCycleLogComponent implements OnInit {
 
   // Backend-fed combos
   users: string[] = ['Todos los usuarios'];
-  states: string[] = ['Todos los estados'];
+
+  // Static states and actions (hardcoded values, can be the same list)
+  statesAndActions: string[] = [
+    'Todos los estados',
+    'Creacion',
+    'Edicion',
+    'Firma',
+    'Firma Parcial',
+    'Archivado',
+    'Eliminacion',
+    'Transferencia'
+  ];
 
   // Filters
   filters = {
     q: '',
     user: 'Todos los usuarios',
-    state: 'Todos los estados',
-    action: 'Todas las acciones',
+    state: 'Todos los estados',  // Can also be used for action if needed
     result: 'Todos los resultados',
     document: ''
   };
 
-  // Static combos
-  actions: Array<'Todas las acciones' | ActionType> = [
-    'Todas las acciones', 'Creacion', 'Edicion', 'Firma', 'Archivado', 'Eliminacion', 'Transferencia'
-  ];
+  // Static combos for results
   results: Array<'Todos los resultados' | ResultType> = [
     'Todos los resultados', 'Permitida', 'Denegada'
   ];
@@ -62,9 +69,8 @@ export class DocumentCycleLogComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadUsers();
-    this.loadStates();
-    this.fetch();
+    this.loadUsers(); // Loads users
+    this.fetch(); // Fetch data from the backend
   }
 
   // Build query params for backend
@@ -83,9 +89,6 @@ export class DocumentCycleLogComponent implements OnInit {
     const dbState = this.mapUiLabelToDbState(this.filters.state);
     if (dbState) qp.estado = dbState;
 
-    if (this.filters.action !== 'Todas las acciones') {
-      qp.q = `${qp.q ? qp.q + ' ' : ''}${this.filters.action}`;
-    }
     return qp;
   }
 
@@ -113,7 +116,7 @@ export class DocumentCycleLogComponent implements OnInit {
   clearFilters() {
     this.filters = {
       q:'', user:'Todos los usuarios', state:'Todos los estados',
-      action:'Todas las acciones', result:'Todos los resultados', document:''
+      result:'Todos los resultados', document:''
     };
     this.page = 1;
     this.fetch();
@@ -225,16 +228,5 @@ export class DocumentCycleLogComponent implements OnInit {
     if (v === 'firmado completo') return 'FIRMADO';
     if (v === 'firmado parcial')  return 'FIRMADO_PARCIAL';
     return v.toUpperCase();
-  }
-
-  private loadStates() {
-    this.audit.getDocumentStates().subscribe({
-      next: (dbStates) => {
-        const uiStates = Array.from(new Set((dbStates || []).map(s => this.mapDbStateToUiLabel(s)).filter(Boolean)));
-        const sorted = uiStates.sort((a, b) => a.localeCompare(b));
-        this.states = ['Todos los estados', ...sorted];
-      },
-      error: () => this.states = ['Todos los estados']
-    });
   }
 }
