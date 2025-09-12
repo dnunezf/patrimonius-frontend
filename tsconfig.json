@@ -14,7 +14,7 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    "baseUrl": "./",
+    "baseUrl": "./src",
     "paths": {
       "src/*": ["src/*"]
     }
