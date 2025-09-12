@@ -6,7 +6,6 @@ import { AuditService, AuditItem, AuditDetail } from '../../../../core/services/
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 
 type ResultType = 'Permitida' | 'Denegada';
-type ActionType = 'Creacion' | 'Edicion' | 'Firma' | 'Firma Parcial' | 'Archivado' | 'Eliminacion' | 'Transferencia';
 
 @Component({
   selector: 'app-document-cycle-log',
@@ -20,33 +19,24 @@ export class DocumentCycleLogComponent implements OnInit {
   // Backend-fed combos
   users: string[] = ['Todos los usuarios'];
 
-  // Static states and actions (hardcoded values, can be the same list)
-  statesAndActions: string[] = [
-    'Todos los estados',
-    'Creacion',
-    'Edicion',
-    'Firma',
-    'Firma Parcial',
-    'Archivado',
-    'Eliminacion',
-    'Transferencia'
+  actions: string[] = []; // Array de acciones dinámico
+
+  results: Array<'Todos los resultados' | ResultType> = [
+    'Todos los resultados', 'Permitida', 'Denegada'
   ];
 
   // Filters
   filters = {
     q: '',
     user: 'Todos los usuarios',
-    state: 'Todos los estados',  // Can also be used for action if needed
+    state: 'Todos los estados',
     result: 'Todos los resultados',
-    document: ''
+    document: '',
+    action: 'Todas las acciones' // Se utilizará "Todas las acciones" por defecto
   };
 
-  // Static combos for results
-  results: Array<'Todos los resultados' | ResultType> = [
-    'Todos los resultados', 'Permitida', 'Denegada'
-  ];
+  states: string[] = [];
 
-  // Data/pagination
   loading = false;
   error: string | null = null;
   page = 1;
@@ -70,8 +60,12 @@ export class DocumentCycleLogComponent implements OnInit {
 
   ngOnInit() {
     this.loadUsers(); // Loads users
+    this.loadStates(); // Fetch the states from backend
+    this.loadActions(); // Load actions dynamically from the backend
     this.fetch(); // Fetch data from the backend
   }
+
+
 
   // Build query params for backend
   private buildQuery() {
@@ -112,11 +106,19 @@ export class DocumentCycleLogComponent implements OnInit {
     });
   }
 
-  applyFilters() { this.page = 1; this.fetch(); }
+  applyFilters() {
+    this.page = 1;
+    this.fetch();
+  }
+
   clearFilters() {
     this.filters = {
-      q:'', user:'Todos los usuarios', state:'Todos los estados',
-      result:'Todos los resultados', document:''
+      q: '',
+      user: 'Todos los usuarios',
+      state: 'Todos los estados',
+      result: 'Todos los resultados',
+      document: '',
+      action: 'Todas las acciones' // Default action value
     };
     this.page = 1;
     this.fetch();
@@ -189,7 +191,6 @@ export class DocumentCycleLogComponent implements OnInit {
     this.detailLoading = false;
   }
 
-  // ---- Helpers for state and badges ----
   resultClass(res: string | null | undefined) {
     switch ((res || '').toLowerCase()) {
       case 'permitida': return 'badge badge-green';
@@ -199,12 +200,20 @@ export class DocumentCycleLogComponent implements OnInit {
   }
 
   stateClass(state: string | null | undefined) {
+    const stateClasses = {
+      'firma': 'badge badge-green',
+      'firma parcial': 'badge badge-blue',
+      'archivado': 'badge badge-brown',
+      'creacion': 'badge badge-yellow',
+      'edicion': 'badge badge-orange',
+      'eliminacion': 'badge badge-red',
+      'transferencia': 'badge badge-purple'
+    };
+
     const s = (state || '').trim().toLowerCase();
-    if (s === 'firmado completo') return 'badge badge-green';
-    if (s === 'firmado parcial')  return 'badge badge-blue';
-    if (s === 'archivado')        return 'badge badge-brown';
-    return 'badge';
+    return stateClasses[s as keyof typeof stateClasses] || 'badge';
   }
+
 
   private loadUsers() {
     this.adminUsers.listEmails().subscribe({
@@ -213,20 +222,52 @@ export class DocumentCycleLogComponent implements OnInit {
     });
   }
 
-  private mapDbStateToUiLabel(dbValue: string): string {
-    const v = (dbValue || '').trim().toUpperCase();
-    if (v === 'ARCHIVADO') return 'Archivado';
-    if (v === 'FIRMADO' || v === 'FIRMA' || v === 'FIRMADO_COMPLETO') return 'Firmado Completo';
-    if (v === 'FIRMADO_PARCIAL' || v === 'FIRMA_PARCIAL') return 'Firmado Parcial';
-    return v ? v.charAt(0) + v.slice(1).toLowerCase() : '';
+  // Fetch the actions from backend
+  private loadActions() {
+    this.audit.getActionTypes().subscribe({
+      next: (actions) => {
+        this.actions = ['Todas las acciones', ...actions.map(this.formatToDisplay)];  // Adding "Todas las acciones" at the beginning
+      },
+      error: () => {
+        this.actions = ['Todas las acciones']; // Fallback in case of error
+      }
+    });
   }
 
+  // Fetch the states from backend
+  private loadStates() {
+    this.audit.getDocumentStates().subscribe({
+      next: (dbStates) => {
+        this.states = ['Todos los estados', ...dbStates.map(this.formatToDisplay)];  // Adding "Todos los estados" at the beginning
+      },
+      error: () => {
+        this.states = ['Todos los estados']; // Fallback in case of error
+      }
+    });
+  }
+
+
+  // Map UI state labels to backend values
   private mapUiLabelToDbState(uiValue: string): string | null {
     const v = (uiValue || '').trim().toLowerCase();
     if (!v || v === 'todos los estados') return null;
     if (v === 'archivado') return 'ARCHIVADO';
-    if (v === 'firmado completo') return 'FIRMADO';
-    if (v === 'firmado parcial')  return 'FIRMADO_PARCIAL';
-    return v.toUpperCase();
+    if (v === 'firma') return 'FIRMADO';
+    if (v === 'firma parcial') return 'FIRMADO_PARCIAL';
+    if (v === 'creacion') return 'CREACION';
+    if (v === 'edicion') return 'EDICION';
+    if (v === 'eliminacion') return 'ELIMINACION';
+    if (v === 'transferencia') return 'TRANSFERENCIA';
+
+    return null;
   }
+
+
+  private formatToDisplay(value: string): string {
+    return value
+      .toLowerCase()  // LOWERCASE
+      .replace(/_/g, ' ')  // replace underscores with spaces
+      .replace(/\b\w/g, (char) => char.toUpperCase());  // put first letter of each word to uppercase
+  }
+
 }
