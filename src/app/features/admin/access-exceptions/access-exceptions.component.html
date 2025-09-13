@@ -69,7 +69,7 @@
 
             <!-- Filtro de estados -->
             <div class="input-group">
-              <select [(ngModel)]="selectedDocumentStatus" name="documentStatus">
+              <select [(ngModel)]="selectedDocumentStatus" name="documentStatus" (change)="filterDocuments()">
                 <option value="todos">Todos los estados</option>
                 <option *ngFor="let state of states" [value]="state">{{ state }}</option>
               </select>

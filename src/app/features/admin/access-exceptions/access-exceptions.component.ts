@@ -123,26 +123,9 @@ export class AccessExceptionsComponent implements OnInit {
     // Cargar documentos desde el backend
     this.accessExceptionService.getDocuments().subscribe({
       next: (documents) => {
-        console.log('Documentos cargados:', documents);
-
-        // Asociar las categorías a los documentos
-        this.documents = documents.map(doc => {
-          const categoria = this.categorias.find(cat => cat.id === doc.categoria_id);
-          const estado = this.states.find(state => state === doc.estado);
-
-          return {
-            ...doc,
-            // Formatea la fecha
-            formattedDate: this.formatDate(doc.fecha),
-            // Formatea el estado
-            formattedState: this.formatState(doc.estado),
-            // Asignamos la categoría encontrada
-            categoria: this.formatCategory(doc.categoria_nombre || 'Sin categoría'),
-            estado: doc.estado || 'Estado no disponible'
-          };
-        });
-
-        this.filterDocuments(); // Filtra los documentos con base en la categoría y estado seleccionados
+        console.log("Documentos recibidos:", documents); // Verificar que los estados sean correctos
+        this.documents = documents;
+        this.filterDocuments(); // Filtra después de cargar los documentos
       },
       error: (err) => {
         console.error('Error al cargar documentos:', err);
@@ -176,10 +159,11 @@ export class AccessExceptionsComponent implements OnInit {
       return (
         doc.titulo.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) && // Filtro por título
         (this.selectedCategoria === 'todos' || doc.categoria.nombre === this.selectedCategoria) && // Filtro por categoría
-        (this.selectedDocumentStatus === 'todos' || doc.estado === this.selectedDocumentStatus) // Filtro por estado
+        (this.selectedDocumentStatus === 'todos' || doc.estado.toLowerCase() === this.selectedDocumentStatus.toLowerCase()) // Filtro por estado
       );
     });
   }
+
 
 // Función para formatear la fecha
   formatDate(date: string): string {
