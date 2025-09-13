@@ -37,7 +37,7 @@
           <th>ID</th>
           <th>Nombre</th>
           <th>Descripción</th>
-          <th></th>
+          <th>Acciones</th>
         </tr>
         </thead>
         <tbody>
@@ -46,13 +46,12 @@
           <td>{{ u.nombre }}</td>
           <td>{{ u.descripcion || '—' }}</td>
           <td class="actions">
-            <button (click)="edit(u)">Editar</button>
-            <button (click)="remove(u.id)">Eliminar</button>
+            <button class="edit" (click)="edit(u)">Editar</button>
+            <button class="delete" (click)="remove(u.id)">Eliminar</button>
           </td>
         </tr>
         </tbody>
       </table>
     </div>
   </div>
-
 </div>

@@ -9,10 +9,9 @@
   />
 
   <div class="toolbar-actions">
-    <button (click)="setAll(true)">Habilitar todos</button>
-    <button (click)="setAll(false)">Deshabilitar todos</button>
+    <button (click)="setAll(true)" class="primary">Habilitar todos</button>
+    <button (click)="setAll(false)" class="secondary">Deshabilitar todos</button>
 
-    <!-- El texto siempre será 'Guardar' -->
     <button
       class="primary"
       [disabled]="savingAll() || !hasDirty()"
@@ -20,7 +19,6 @@
     >
       {{ savingAll() ? 'Guardando…' : 'Guardar cambios' }}
     </button>
-
 
     <a class="link" routerLink="/admin/catalogos/roles">Ir a Catálogos</a>
   </div>
@@ -64,11 +62,12 @@
         />
       </td>
       <td class="actions">
-        <button (click)="habilitar(r)" [disabled]="r.saving">Habilitar</button>
-        <button (click)="deshabilitar(r)" [disabled]="r.saving">
+        <button (click)="habilitar(r)" [disabled]="r.saving" class="enable">
+          Habilitar
+        </button>
+        <button (click)="deshabilitar(r)" [disabled]="r.saving" class="disable">
           Deshabilitar
         </button>
-        <!-- El botón de guardar siempre dice 'Guardar' -->
         <button
           class="primary"
           [disabled]="savingAll() || !hasDirty()"

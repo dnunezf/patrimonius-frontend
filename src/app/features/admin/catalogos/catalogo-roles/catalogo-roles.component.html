@@ -39,8 +39,8 @@
       <td>{{ rol.nombre }}</td>
       <td>{{ rol.descripcion || '—' }}</td>
       <td>
-        <button (click)="edit(rol)">Editar</button>
-        <button (click)="remove(rol.id)">Eliminar</button>
+        <button class="edit" (click)="edit(rol)">Editar</button>
+        <button class="delete" (click)="remove(rol.id)">Eliminar</button>
       </td>
     </tr>
     </tbody>
@@ -50,6 +50,4 @@
   <ng-template #vacio>
     <div class="empty">No hay roles.</div>
   </ng-template>
-
-
 </div>
