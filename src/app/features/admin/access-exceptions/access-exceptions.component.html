@@ -71,10 +71,11 @@
               <option value="" disabled selected>Seleccionar Documento...</option>
               <option *ngFor="let document of filteredDocuments" [ngValue]="document">
                 {{ document.titulo }} - {{ document.numero_serie }} - {{ document.formattedState }} -
-                ({{ formatCategory(document.categoria) }}) - {{ document.formattedDate }}
+                ({{ document.categoria }}) - {{ document.formattedDate }} <!-- Aquí se muestra la categoría -->
               </option>
             </select>
           </div>
+
 
           <div class="permission-buttons">
             <button type="button" data-permission="visualizar" (click)="togglePermission('visualizar')" [class.selected]="permissions.visualizar">

@@ -167,15 +167,12 @@ export class AccessExceptionsComponent implements OnInit {
       next: (documents) => {
         console.log("Documentos recibidos:", documents);
         this.documents = documents.map(doc => {
-          const categoria = this.categorias.find(cat => cat.id === doc.categoria_id); // Ahora debería funcionar correctamente
-          const estado = this.states.find(state => state === doc.estado);
 
           return {
             ...doc,
+            categoria: this.formatCategory(doc.categoria),
             formattedDate: this.formatDate(doc.fecha),
             formattedState: this.formatState(doc.estado),
-            categoria: categoria ? categoria.nombre : 'Sin categoría',
-            estado: doc.estado || 'Estado no disponible'
           };
         });
         this.filterDocuments(); // Filtra después de cargar los documentos
@@ -186,6 +183,7 @@ export class AccessExceptionsComponent implements OnInit {
       }
     });
   }
+
 
   // Función para filtrar los usuarios según la búsqueda y el rol seleccionado
   filterUsers() {
@@ -238,7 +236,7 @@ export class AccessExceptionsComponent implements OnInit {
 
     const documentoLleno = this.selectedDocument || this.documentSearchTerm;
     const usuarioLleno = this.selectedUser || this.userSearchTerm;
-    const motivoLleno = this.reason.trim().length > 0 || true;  // Optional check for the 'motivo'
+    const motivoLleno = this.reason.trim().length > 0 || true;
 
     return permisosSeleccionados && (documentoLleno || usuarioLleno);
   }
