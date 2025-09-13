@@ -202,12 +202,14 @@ export class AccessExceptionsComponent implements OnInit {
       const documentCategory = doc.categoria ? doc.categoria.toLowerCase() : 'sin categoría';
 
       return (
-        doc.titulo.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) && // Filter by title
-        (categoriaToCompare === '' || documentCategory.includes(categoriaToCompare)) && // Filter by category
-        (this.selectedDocumentStatus === 'todos' || doc.estado.toLowerCase() === this.selectedDocumentStatus.toLowerCase()) // Filter by state
+        doc.titulo.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) && // Filtrar por título
+        (categoriaToCompare === '' || documentCategory.includes(categoriaToCompare)) && // Filtrar por categoría
+        (this.selectedDocumentStatus === 'todos' || doc.estado.toLowerCase() === this.selectedDocumentStatus.toLowerCase()) // Filtrar por estado
       );
     });
   }
+
+
 
 
 
