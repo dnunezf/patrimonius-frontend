@@ -1,0 +1,49 @@
+.dashboard-editor {
+  padding: 2rem;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.8rem;
+      color: var(--color-museo-blue);
+    }
+
+    .btn {
+      background-color: var(--color-museo-green);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+
+      &:hover {
+        background-color: rgb(0, 140, 70);
+      }
+    }
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: var(--color-museo-gray);
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+  }
+}

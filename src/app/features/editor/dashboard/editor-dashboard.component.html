@@ -1,0 +1,29 @@
+<section class="dashboard-editor">
+  <div class="header">
+    <h1>Mis Documentos</h1>
+    <button (click)="crearDocumento()" class="btn btn-primary">
+      Crear Documento con Plantilla
+    </button>
+  </div>
+
+  <table class="table">
+    <thead>
+    <tr>
+      <th>#</th>
+      <th>Título</th>
+      <th>Número de Serie</th>
+      <th>Estado</th>
+      <th>Fecha</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let doc of documentos; let i = index">
+      <td>{{ i + 1 }}</td>
+      <td>{{ doc.titulo }}</td>
+      <td>{{ doc.numero_serie }}</td>
+      <td>{{ doc.estado }}</td>
+      <td>{{ doc.fecha | date:'short' }}</td>
+    </tr>
+    </tbody>
+  </table>
+</section>
