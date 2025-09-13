@@ -1,19 +1,14 @@
 <main class="container">
-  <!-- Título de la sección -->
   <section class="section-header">
-    <!-- Enlace para volver al Dashboard -->
     <a routerLink="/admin/dashboard" class="back">← Volver al Dashboard</a>
     <h1>Formulario de Configuración de Excepciones</h1>
     <p>Complete todos los campos para crear una nueva excepción de acceso</p>
-
   </section>
 
   <div class="content-wrapper">
-    <!-- Formulario de configuración -->
     <section class="form-section">
       <form (ngSubmit)="applyException()">
         <div class="form-card">
-          <!-- Usuario Autorizado -->
           <div class="input-group">
             <label>Selecciona al usuario para quien se aplicará la excepción de acceso</label>
             <div class="select-container">
@@ -31,19 +26,16 @@
             </div>
           </div>
 
-          <!-- Usuario Seleccionado -->
           <div class="input-group">
             <label>Selecciona el usuario</label>
             <select [(ngModel)]="selectedUser" name="user">
               <option value="" disabled selected>Seleccionar Usuario...</option>
               <option *ngFor="let user of filteredUsers" [ngValue]="user">
-                {{ user.fullName }}
+                {{ user.fullName }} ({{ user.email }})
               </option>
             </select>
           </div>
 
-
-          <!-- Filtro de búsqueda de documentos -->
           <div class="input-group">
             <label>Buscar documento por título</label>
             <input
@@ -55,9 +47,7 @@
             />
           </div>
 
-          <!-- Contenedor para los ComboBox de Categoría y Estado -->
           <div class="select-container">
-            <!-- Selección de Categoría -->
             <div class="input-group">
               <select [(ngModel)]="selectedCategoria" name="categoria">
                 <option value="todos">Todas Las Categorias</option>
@@ -67,7 +57,6 @@
               </select>
             </div>
 
-            <!-- Filtro de estados -->
             <div class="input-group">
               <select [(ngModel)]="selectedDocumentStatus" name="documentStatus" (change)="filterDocuments()">
                 <option value="todos">Todos los estados</option>
@@ -76,77 +65,72 @@
             </div>
           </div>
 
-          <!-- Documento Seleccionado -->
           <div class="input-group">
             <label>Selecciona el documento</label>
             <select [(ngModel)]="selectedDocument" name="document">
               <option value="" disabled selected>Seleccionar Documento...</option>
               <option *ngFor="let document of filteredDocuments" [ngValue]="document">
-                {{ document.titulo }} - {{ document.numero_serie }}
-                - {{ document.formattedState}}
-                - ({{ document.categoria }})
-                - {{ document.formattedDate }}
+                {{ document.titulo }} - {{ document.numero_serie }} - {{ document.formattedState }} -
+                ({{ formatCategory(document.categoria) }}) - {{ document.formattedDate }}
               </option>
             </select>
           </div>
 
-
-
-          <!-- Tipo de Permiso -->
-          <div class="input-group">
-            <label>Define los permisos que se otorgan al usuario excepcionalmente</label>
-            <div class="permission-buttons">
-              <button type="button" (click)="togglePermission('visualizar')" [class.selected]="permissions.visualizar">
-                <span class="emoji">👀</span> Visualizar
-              </button>
-              <button type="button" (click)="togglePermission('editar')" [class.selected]="permissions.editar">
-                <span class="emoji">✏️</span> Editar
-              </button>
-              <button type="button" (click)="togglePermission('firmar')" [class.selected]="permissions.firmar">
-                <span class="emoji">✍️</span> Firmar
-              </button>
-            </div>
+          <div class="permission-buttons">
+            <button type="button" data-permission="visualizar" (click)="togglePermission('visualizar')" [class.selected]="permissions.visualizar">
+              <span class="emoji">👀</span> Visualizar
+            </button>
+            <button type="button" data-permission="editar" (click)="togglePermission('editar')" [class.selected]="permissions.editar">
+              <span class="emoji">✏️</span> Editar
+            </button>
+            <button type="button" data-permission="firmar" (click)="togglePermission('firmar')" [class.selected]="permissions.firmar">
+              <span class="emoji">✍️</span> Firmar
+            </button>
           </div>
 
-          <!-- Motivo -->
           <div class="input-group">
             <label>Descripción breve del motivo...</label>
             <textarea [(ngModel)]="reason" name="reason"></textarea>
           </div>
 
-          <!-- Botón de Aplicar -->
           <button type="submit" class="btn-primary" [disabled]="!isFormValid()">Aplicar Excepción</button>
         </div>
       </form>
     </section>
 
-    <!-- Tabla de Excepciones Activas -->
     <section class="exceptions-section">
       <h2>Excepciones Activas</h2>
-      <table class="exceptions-table">
-        <thead>
-        <tr>
-          <th>Usuario</th>
-          <th>Documento</th>
-          <th>Permiso</th>
-          <th>Fecha</th>
-          <th>Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let exception of activeExceptions">
-          <td>{{ exception.user }}</td>
-          <td>{{ exception.document }}</td>
-          <td>{{ exception.permission }}</td>
-          <td>{{ exception.date }}</td>
-          <td>
+      <div class="exceptions-container">
+        <div *ngFor="let exception of activeExceptions" class="exception-item">
+          <div class="user-info">
+            <div class="user-name">
+              <strong>{{ exception.user }}</strong>
+            </div>
+            <div class="user-email">Correo: {{ exception.email }}</div> <!-- Correo debajo del nombre -->
+          </div>
+
+          <div class="document-info">
+            <div class="document-title">{{ exception.document }}</div>
+            <div class="document-series">Número de Serie: {{ exception.documentNumber }}</div>
+          </div>
+
+          <div class="permissions-info">
+            <div class="permissions">Permisos: {{ exception.permission }}</div>
+            <div class="reason">Motivo: {{ exception.reason || 'N/A' }}</div>
+          </div>
+
+          <div class="date-applied">
+            <span>Aplicada: {{ exception.date }}</span>
+          </div>
+
+          <div class="action-buttons">
             <button class="btn-secondary" (click)="deleteException(exception)">Eliminar</button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
+          </div>
+        </div>
+      </div>
     </section>
+
+
+
   </div>
-
-
 </main>

@@ -6,30 +6,36 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
 .section-header {
-  margin-bottom: 24px;
+  margin-bottom: 0px;
 }
 
 h1 {
-  font-size: 1.75rem;
+  font-size: 2rem;
   color: #1f2937;
   font-weight: 700;
+  margin-bottom: 8px;
 }
 
 p {
   color: #6b7280;
   font-size: 1rem;
+  margin-bottom: 16px;
 }
+
+.back {
+  font-size: 1.3rem;
+}
+
 
 /* Contenedor para dividir el formulario y la tabla */
 .content-wrapper {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  align-items: flex-start;
 }
 
 /* Estilo del formulario */
@@ -38,7 +44,23 @@ p {
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 20px;
+  width: 100%; /* Asegurar que ocupe todo el espacio disponible */
+  max-width: 900px; /* Limitar el ancho máximo */
+  margin: 0 auto; /* Centrar el formulario */
 }
+
+/* Asegurar que ambas secciones tengan una altura mínima igual */
+.form-section, .exceptions-section {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  flex:1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 
 .form-card {
   display: flex;
@@ -67,6 +89,7 @@ p {
   appearance: none;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: border-color 0.3s, box-shadow 0.3s;
+  width: 100%;
 }
 
 .input-group select:focus,
@@ -225,6 +248,130 @@ textarea {
 .btn-primary:hover {
   background-color: #1d4ed8;
 }
+
+.permission-buttons button.selected {
+  background-color: #2563eb;
+  color: white;
+  border: 2px solid #2563eb;
+}
+
+.permission-buttons button {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  color: #333;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.permission-buttons button:hover {
+  background-color: #2563eb;
+  color: white;
+}
+
+.permission-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center; /* Centers the buttons */
+  margin-top: 16px;
+}
+
+.exceptions-section {
+  text-align: left;
+}
+
+
+.exceptions-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.exception-item {
+  background-color: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.user-info, .document-info, .permissions-info, .date-applied {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.user-email {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.user-info .user-role {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.document-info .document-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.document-info .document-series {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.permissions-info .permissions {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.permissions-info .reason {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.date-applied {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.action-buttons .btn-secondary {
+  background-color: #e5e7eb;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.action-buttons .btn-secondary:hover {
+  background-color: #d1d5db;
+}
+
+.action-buttons .btn-secondary:active {
+  background-color: #9ca3af;
+}
+
 
 /* Responsividad */
 @media screen and (max-width: 768px) {
