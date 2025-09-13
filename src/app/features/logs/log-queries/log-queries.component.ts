@@ -1,13 +1,13 @@
 // log-queries.component.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router'; // Import RouterLink
+import { RouterLink } from '@angular/router';
 
 
 @Component({
   selector: 'app-log-queries',
   standalone: true,
-  imports: [CommonModule, RouterLink], // Add RouterLink here
+  imports: [CommonModule, RouterLink],
   templateUrl: './log-queries.component.html',
   styleUrls: ['./log-queries.component.css']
 })

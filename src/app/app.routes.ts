@@ -14,6 +14,11 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/logs/logs.routes').then(m => m.LOGS_ROUTES),
   },
+  {
+    path: 'editor',
+    loadChildren: () =>
+      import('./features/editor/editor.routes').then(m => m.EDITOR_ROUTES),
+  },
   { path: 'access-exceptions', component: AccessExceptionsComponent },
   { path: '**', redirectTo: '' }
 ];

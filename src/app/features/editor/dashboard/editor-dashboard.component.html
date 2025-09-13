@@ -1,29 +1,105 @@
-<section class="dashboard-editor">
-  <div class="header">
-    <h1>Mis Documentos</h1>
-    <button (click)="crearDocumento()" class="btn btn-primary">
-      Crear Documento con Plantilla
-    </button>
+<div class="container">
+  <header class="section-header">
+    <h1 class="text-blue-639">Dashboard del Editor</h1>
+    <p class="text-gray">Gestione documentos, firmas y consultas desde su panel de control principal</p>
+  </header>
+
+  <div class="status-counters">
+    <div *ngFor="let counter of statusCounters" class="status-card">
+      <div class="status-card-content">
+        <img [src]="getIconPath(counter.icon)" alt="icon" class="status-icon"/>
+        <div class="text-container">
+          <h4>{{ counter.title }}</h4>
+          <p class="count">{{ counter.count }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <table class="table">
-    <thead>
-    <tr>
-      <th>#</th>
-      <th>Título</th>
-      <th>Número de Serie</th>
-      <th>Estado</th>
-      <th>Fecha</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr *ngFor="let doc of documentos; let i = index">
-      <td>{{ i + 1 }}</td>
-      <td>{{ doc.titulo }}</td>
-      <td>{{ doc.numero_serie }}</td>
-      <td>{{ doc.estado }}</td>
-      <td>{{ doc.fecha | date:'short' }}</td>
-    </tr>
-    </tbody>
-  </table>
-</section>
+  <div class="overview-cards">
+    <div *ngFor="let card of overviewCards" class="card-wrapper">
+      <div class="card-button" (click)="toggleTemplate(card)">
+        <div class="card-content">
+          <div class="card-icon-container">
+            <img [src]="getIconPath(card.icon)" alt="icon" class="card-icon"/>
+          </div>
+
+          <div class="card-text-content">
+            <h3 class="text-black">{{ card.title }}</h3>
+            <p>{{ card.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="card.showTemplates" class="template-list">
+        <ul>
+          <li *ngFor="let template of card.templates" (click)="selectTemplate(template.name, card)">
+            <div class="template-item">
+              <div class="template-text">
+                <h4>{{ template.name }}</h4>
+                <p>{{ template.description }}</p>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Listo  :)  -->
+
+  <div class="document-list">
+    <h2 class="text-blue-639">Documentos en Producción</h2>
+    <p>Documentos en borrador y firmados - Fase de producción activa</p>
+    <table class="document-table">
+      <thead>
+      <tr>
+        <th>Documento</th>
+        <th>Estado</th>
+        <th>Autor</th>
+        <th>Última Modificación</th>
+        <th>Acciones</th>
+      </tr>
+      </thead>
+      <tbody>
+
+      <tr *ngFor="let document of documents">
+        <td>{{ document.documento_nombre }}</td>
+        <td>
+    <span class="badge"
+          [ngClass]="{
+        'badge-yellow': document.documento_estado === 'EDICION',
+        'badge-blue': document.documento_estado === 'FIRMA_PARCIAL',
+        'badge-gray': document.documento_estado === 'CREACION'
+      }">
+      {{ document.documento_estado | formatState }}
+    </span>
+
+          <!-- Mostrar el número de firmas si el estado es 'FIRMA_PARCIAL' -->
+          <span *ngIf="document.documento_estado === 'FIRMA_PARCIAL'">
+      ({{ document.firmas_obtenidas }} / {{ document.firmas_requeridas }})
+    </span>
+        </td>
+        <td>{{ document.primer_usuario }}</td>
+        <td>{{ document.fecha_creacion ? (document.fecha_creacion | date: 'dd-mm-yyyy') : 'No disponible' }}</td>
+
+        <td>
+          <!-- Mostrar botón de editar solo si el estado no es 'FIRMA_PARCIAL' -->
+          <button *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'" class="btn btn--gray">Editar</button>
+
+          <button class="btn btn--red">Firmar</button>
+
+          <!-- Botón "Ver" siempre visible -->
+          <button class="btn btn--gray">Ver</button>
+        </td>
+      </tr>
+
+
+
+
+      </tbody>
+    </table>
+  </div>
+</div>

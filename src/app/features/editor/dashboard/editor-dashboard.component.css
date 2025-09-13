@@ -1,49 +1,425 @@
-.dashboard-editor {
-  padding: 2rem;
+/* ========================================================
+   General container settings
+   ======================================================== */
+.container {
+  font-family: Verdana, Arial, sans-serif; /* Default font for the whole container */
+  background-color: var(--mncr-white); /* White background */
+  padding: 20px; /* Padding around the entire container */
+  min-height: 100vh; /* Minimum height to cover the full viewport */
+  display: flex; /* Flexbox for layout */
+  flex-direction: column; /* Arrange items vertically */
+  gap: 24px; /* Spacing between child elements */
+}
 
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
+/* ========================================================
+   Header section styles
+   ======================================================== */
+.section-header {
+  margin-bottom: 24px; /* Space below the header */
+}
 
-    h1 {
-      font-size: 1.8rem;
-      color: var(--color-museo-blue);
-    }
+h1 {
+  font-family: "Neutraface Text", Verdana, "Segoe UI", Arial, sans-serif; /* Custom font for the title */
+  font-size: 2rem; /* Title size */
+  color: var(--mncr-black); /* Text color for the title */
+  font-weight: 700; /* Bold text */
+}
 
-    .btn {
-      background-color: var(--color-museo-green);
-      color: #fff;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
+h2 {
+  font-family: "Neutraface Text", Verdana, "Segoe UI", Arial, sans-serif;
+  font-size: 1.75rem; /* Subheading size */
+  color: var(--mncr-black); /* Text color for subheading */
+}
 
-      &:hover {
-        background-color: rgb(0, 140, 70);
-      }
-    }
+.text-gray {
+  color: var(--mncr-gray); /* Gray color for text (optional) */
+}
+
+/* ========================================================
+   Overview cards layout
+   ======================================================== */
+.overview-cards {
+  display: flex; /* Flexbox to align items in a row */
+  gap: 16px; /* Spacing between each card */
+  justify-content: space-between; /* Distribute the cards evenly */
+}
+
+/* ========================================================
+   Style for individual cards (buttons) in the overview section
+   ======================================================== */
+.card-button {
+  flex: 1; /* Make each card take equal space */
+  padding: 24px; /* Padding inside each card */
+  border-radius: 8px; /* Rounded corners for each card */
+  text-align: center; /* Center text horizontally */
+  cursor: pointer; /* Pointer cursor on hover to indicate it's clickable */
+  transition: all 0.3s ease; /* Smooth transition effect */
+  background-color: var(--mncr-white); /* White background for the card */
+  border: 2px solid transparent; /* Transparent border by default */
+}
+
+.card-button:hover {
+  border: 2px solid #6c757d; /* Change the border to gray on hover */
+  background-color: var(--mncr-white); /* Keep the background white */
+}
+
+/* ========================================================
+   Text inside the cards
+   ======================================================== */
+.card-button p {
+  margin-top: 8px; /* Space between the heading and the paragraph */
+  font-weight: 600; /* Medium weight for the text */
+  font-size: 1rem; /* Font size for the paragraph */
+}
+
+/* ========================================================
+   Status counters section layout
+   ======================================================== */
+.status-counters {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap; /* Ensure the counters wrap on smaller screens */
+}
+
+
+/* ========================================================
+   (status-card)
+   ======================================================== */
+.status-counters {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.status-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background-color: var(--mncr-white);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+
+.status-card-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.text-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-card h4 {
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--mncr-black);
+  margin: 0;
+}
+
+.count {
+  font-weight: 700;
+  font-size: 2rem;
+  color: var(--mncr-gray);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .status-counters {
+    flex-direction: column;
+  }
+}
+
+
+
+/* ========================================================
+   Text styles for status cards
+   ======================================================== */
+.status-card h4 {
+  font-weight: 600; /* Medium weight for the heading */
+  font-size: 1.25rem; /* Heading size */
+  margin-bottom: 8px; /* Space below the heading */
+}
+
+.status-card p {
+  font-weight: 700; /* Bold font for the count */
+  font-size: 1.5rem; /* Larger font size for the count */
+}
+
+/* ========================================================
+   Table styles for the document list
+   ======================================================== */
+.document-list {
+  margin-top: 24px; /* Top margin for the document list */
+}
+
+.document-table {
+  width: 100%; /* Full width table */
+  border-collapse: collapse; /* Collapse table borders */
+}
+
+.document-table th,
+.document-table td {
+  padding: 8px; /* Padding for table cells */
+  text-align: left; /* Align text to the left */
+}
+
+.document-table th {
+  background-color: var(--mncr-blue-639); /* Background for table headers */
+  color: white; /* White text color for headers */
+}
+
+.document-table td {
+  border-bottom: 1px solid var(--mncr-gray); /* Bottom border for table cells */
+}
+
+.card-icon {
+  width: 30px; /* Icon size */
+  height: 30px; /* Icon size */
+  margin-bottom: 8px; /* Space below the icon */
+}
+
+
+/* ========================================================
+   Button styles
+   ======================================================== */
+/* Estilos para los botones */
+.btn {
+  display: inline-flex; /* Alineación de los botones */
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px; /* Aumentar el espacio dentro de los botones */
+  font-weight: 700; /* Texto en negrita */
+  cursor: pointer; /* Puntero para indicar que es clickeable */
+  transition: all 0.3s ease; /* Transición suave */
+  background-color: white; /* Fondo blanco */
+  color: black; /* Color de texto negro */
+  border: 2px solid transparent; /* Borde transparente por defecto */
+  border-radius: 8px; /* Bordes redondeados */
+  margin-right: 10px; /* Espacio entre botones */
+}
+
+.btn:hover {
+  transform: translateY(-5px); /* Mueve el botón hacia arriba */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Sombra más pronunciada */
+}
+
+
+/* ========================================================
+   Primary button (used for save, confirm actions)
+   ======================================================== */
+/* Estilo para botones con estado específico */
+.btn--red {
+  border-color: var(--mncr-red-1788); /* Borde amarillo */
+  color: var(--mncr-red-1795); /* Texto amarillo */
+}
+
+.btn--blue {
+  border-color: var(--mncr-blue-639); /* Borde azul */
+  color: var(--mncr-blue-639); /* Texto azul */
+}
+
+.btn--gray {
+  border-color: var(--mncr-gray); /* Borde gris */
+  color: var(--mncr-gray); /* Texto gris */
+}
+
+/* ========================================================
+   Secondary button (used for neutral actions)
+   ======================================================== */
+.btn--secondary {
+  background: var(--mncr-celeste-306); /* Light blue background */
+  color: var(--mncr-black); /* Black text */
+}
+
+/* ========================================================
+   Badge styles (used for document statuses)
+   ======================================================== */
+.badge {
+  display: inline-block; /* Display badges inline */
+  padding: 4px 8px; /* Padding inside the badge */
+  border-radius: 4px; /* Rounded corners */
+  font-weight: 700; /* Bold text for the badge */
+}
+
+.badge-yellow {
+  background: var(--mncr-yellow); /* Yellow background */
+  color: var(--mncr-brown); /* Brown text */
+}
+
+.badge-blue {
+  background: var(--mncr-blue-639); /* Blue background */
+  color: var(--mncr-white); /* White text */
+}
+/* ========================================================
+   Make it responsive
+   ======================================================== */
+@media (max-width: 768px) {
+  /* Stack status cards vertically on smaller screens */
+  .status-counters {
+    flex-direction: column; /* Stack the counters vertically */
+    gap: 16px; /* Space between each stacked counter */
   }
 
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-
-    th, td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-
-    th {
-      background-color: var(--color-museo-gray);
-      color: white;
-    }
-
-    tr:hover {
-      background-color: #f9f9f9;
-    }
+  /* Stack cards and text vertically on smaller screens */
+  .status-card {
+    flex-direction: column; /* Stack icon, title, and count vertically */
+    text-align: center; /* Center the text in the cards */
   }
+
+  .status-icon {
+    margin-bottom: 8px; /* Add space below the icon */
+  }
+
+  .overview-cards {
+    flex-direction: column; /* Stack cards vertically */
+    gap: 16px; /* Space between each stacked card */
+  }
+
+  .card-button {
+    text-align: center; /* Center the text in the button */
+  }
+}
+
+/* Estilos para el contenedor de la tarjeta y el submenú */
+.card-wrapper {
+  flex: 1; /* Permite que cada contenedor ocupe el mismo espacio */
+  position: relative; /* Es clave para que el submenú se posicione de forma absoluta */
+  display: flex; /* Flexbox para organizar los elementos internos */
+  flex-direction: column; /* Apila el botón y el submenú verticalmente */
+}
+
+/* Ajustes para el botón principal de la tarjeta */
+.card-button {
+  flex: 1;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--mncr-white);
+  border: 2px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.card-button:hover {
+  border-color: #6c757d;
+}
+
+.card-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.toggle-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.card-icon {
+  width: 30px;
+  height: 30px;
+}
+
+
+.template-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background-color: var(--mncr-white);
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  z-index: 10;
+}
+
+.template-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.template-list li {
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.template-list li:hover {
+  background-color: #f0f0f0;
+}
+
+.template-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.template-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.template-text h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.template-text p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--mncr-gray);
+}
+
+/* Badge base style */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-weight: 700;
+  background-color: white; /* Fondo blanco */
+  color: black; /* Color de texto por defecto */
+  border: 2px solid transparent; /* Borde transparente por defecto */
+}
+
+/* Custom styles for specific states */
+.badge-yellow {
+  border-color: var(--mncr-yellow); /* Borde amarillo */
+  color: var(--mncr-yellow); /* Color de texto amarillo */
+}
+
+.badge-blue {
+  border-color: var(--mncr-blue-639); /* Borde azul */
+  color: var(--mncr-blue-639); /* Color de texto azul */
+}
+
+.badge-gray {
+  border-color: var(--mncr-gray); /* Borde gris */
+  color: var(--mncr-gray); /* Color de texto gris */
 }
