@@ -82,8 +82,8 @@
             <select [(ngModel)]="selectedDocument" name="document">
               <option value="" disabled selected>Seleccionar Documento...</option>
               <option *ngFor="let document of filteredDocuments" [ngValue]="document">
-                {{ document.titulo }}- {{ document.numero_serie }}
-                - {{ document.formattedState }}
+                {{ document.titulo }} - {{ document.numero_serie }}
+                - {{ document.formattedState}}
                 - ({{ document.categoria }})
                 - {{ document.formattedDate }}
               </option>

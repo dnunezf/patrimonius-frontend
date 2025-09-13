@@ -124,7 +124,21 @@ export class AccessExceptionsComponent implements OnInit {
     this.accessExceptionService.getDocuments().subscribe({
       next: (documents) => {
         console.log("Documentos recibidos:", documents); // Verificar que los estados sean correctos
-        this.documents = documents;
+        this.documents = documents.map(doc => {
+          const categoria = this.categorias.find(cat => cat.id === doc.categoria_id);
+          const estado = this.states.find(state => state === doc.estado);
+
+          return {
+            ...doc,
+            // Formatea la fecha
+            formattedDate: this.formatDate(doc.fecha),
+            // Formatea el estado
+            formattedState: this.formatState(doc.estado),
+            // Asigna la categoría
+            categoria: categoria ? categoria.nombre : 'Sin categoría',
+            estado: doc.estado || 'Estado no disponible'
+          };
+        });
         this.filterDocuments(); // Filtra después de cargar los documentos
       },
       error: (err) => {
@@ -132,6 +146,7 @@ export class AccessExceptionsComponent implements OnInit {
         this.documents = [];  // Si ocurre un error, dejamos la lista vacía
       }
     });
+
 
   }
 
@@ -165,23 +180,20 @@ export class AccessExceptionsComponent implements OnInit {
   }
 
 
-// Función para formatear la fecha
-  formatDate(date: string): string {
-    const dateObj = new Date(date);
-    return `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
-  }
-
-// Función para manejar el estado de manera más amigable (sin mayúsculas)
   formatState(state: string): string {
     return state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
   }
 
-  // Función para manejar la categoría de manera más amigable (sin mayúsculas)
   formatCategory(category: string): string {
     return category
       .toLowerCase()  // Convierte todo a minúsculas
       .replace(/_/g, ' ')  // Reemplaza los guiones bajos por espacios
       .replace(/\b\w/g, char => char.toUpperCase());  // Capitaliza la primera letra de cada palabra
+  }
+
+  formatDate(date: string): string {
+    const dateObj = new Date(date);
+    return `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
   }
 
 
