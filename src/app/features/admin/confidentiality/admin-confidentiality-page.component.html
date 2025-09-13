@@ -1,0 +1,355 @@
+<main class="container">
+  <!-- Back & title -->
+  <section class="head">
+    <a routerLink="/admin/dashboard" class="back">← Volver al Dashboard</a>
+    <h1>Gestión de Acceso</h1>
+    <p class="sub">Control de acceso por nivel de confidencialidad</p>
+  </section>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button
+      class="tab"
+      [class.is-active]="activeTab() === 'control'"
+      (click)="activeTab.set('control')"
+    >
+      Control de Acceso
+    </button>
+    <button
+      class="tab"
+      [class.is-active]="activeTab() === 'log'"
+      (click)="activeTab.set('log')"
+    >
+      Bitácora de Accesos
+    </button>
+  </div>
+
+  <!-- Metrics -->
+  <section class="row cols-4 mb-16" *ngIf="activeTab() === 'control'">
+    <div class="card metric">
+      <div class="metric__title">Documentos Alta Confidencialidad</div>
+      <div class="metric__value">{{ highCount() }}</div>
+    </div>
+    <div class="card metric">
+      <div class="metric__title">Accesos Denegados (24h)</div>
+      <div class="metric__value">0</div>
+    </div>
+    <div class="card metric">
+      <div class="metric__title">Usuarios con Permisos</div>
+      <div class="metric__value">{{ usersWithPerms() }}</div>
+    </div>
+    <div class="card metric">
+      <div class="metric__title">Total Documentos</div>
+      <div class="metric__value">{{ docOptions().length }}</div>
+    </div>
+  </section>
+
+  <!-- Control tab -->
+  <section class="config" *ngIf="activeTab() === 'control'">
+    <h2>Configuración de Confidencialidad</h2>
+
+    <div class="config__picker">
+      <div class="field">
+        <label>Buscar documento</label>
+        <input
+          class="form__control"
+          type="text"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+          placeholder="Buscar por título, ID o tipo..."
+        />
+      </div>
+
+      <div class="field">
+        <label>Seleccionar documento</label>
+        <select
+          class="form__control"
+          [ngModel]="selectedDocId()"
+          (ngModelChange)="selectedDocId.set($event); loadConfig()"
+        >
+          <option [ngValue]="null" disabled>Seleccionar documento</option>
+          <option *ngFor="let d of filteredDocs()" [ngValue]="d.id">
+            {{ d.title }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="grid-2">
+        <div>
+          <label class="form__label">Nivel de confidencialidad</label>
+          <div class="levels">
+            <button
+              type="button"
+              class="chip"
+              [class.on]="level() === 'PUBLIC'"
+              (click)="level.set('PUBLIC')"
+            >
+              {{ levelLabel("PUBLIC") }}
+            </button>
+            <button
+              type="button"
+              class="chip"
+              [class.on]="level() === 'INTERNAL'"
+              (click)="level.set('INTERNAL')"
+            >
+              {{ levelLabel("INTERNAL") }}
+            </button>
+            <button
+              type="button"
+              class="chip"
+              [class.on]="level() === 'HIGH'"
+              (click)="level.set('HIGH')"
+            >
+              {{ levelLabel("HIGH") }}
+            </button>
+            <button
+              type="button"
+              class="chip"
+              [class.on]="level() === 'RESTRICTED'"
+              (click)="level.set('RESTRICTED')"
+            >
+              {{ levelLabel("RESTRICTED") }}
+            </button>
+          </div>
+          <p class="hint">
+            Para niveles sensibles (Interno/Alto/Restringido), solo usuarios o
+            roles autorizados explícitamente pueden acceder.
+          </p>
+        </div>
+
+        <div class="actions-right">
+          <button
+            class="btn btn--primary"
+            [disabled]="!selectedDocId() || saving()"
+            (click)="save()"
+          >
+            {{ saving() ? "Guardando…" : "Guardar cambios" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allowed users -->
+    <div class="card">
+      <div class="flex-head">
+        <h3>Usuarios Autorizados</h3>
+        <button class="btn btn--secondary" (click)="addUser()">
+          Agregar usuario
+        </button>
+      </div>
+
+      <div class="table">
+        <div class="t-head">
+          <div>ID</div>
+          <div>Email / Nombre</div>
+          <div>Acciones</div>
+          <div></div>
+        </div>
+
+        <div class="t-row" *ngFor="let u of userRows(); let i = index">
+          <div>
+            <input
+              class="form__control"
+              type="number"
+              [(ngModel)]="u.userId"
+              min="1"
+            />
+          </div>
+
+          <div class="twocol">
+            <input
+              class="form__control"
+              type="email"
+              [(ngModel)]="u.email"
+              placeholder="email (opcional)"
+            />
+            <input
+              class="form__control"
+              type="text"
+              [(ngModel)]="u.name"
+              placeholder="nombre (opcional)"
+            />
+          </div>
+
+          <div class="acts">
+            <button
+              class="chip"
+              [class.on]="u.actions.includes('VIEW')"
+              (click)="u.actions = toggleAction(u.actions, 'VIEW')"
+            >
+              {{ actionLabel("VIEW") }}
+            </button>
+            <button
+              class="chip"
+              [class.on]="u.actions.includes('EDIT')"
+              (click)="u.actions = toggleAction(u.actions, 'EDIT')"
+            >
+              {{ actionLabel("EDIT") }}
+            </button>
+            <button
+              class="chip"
+              [class.on]="u.actions.includes('SIGN')"
+              (click)="u.actions = toggleAction(u.actions, 'SIGN')"
+            >
+              {{ actionLabel("SIGN") }}
+            </button>
+          </div>
+
+          <div>
+            <button class="btn btn--danger" (click)="removeUser(i)">
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allowed roles -->
+    <div class="card">
+      <div class="flex-head">
+        <h3>Roles Autorizados</h3>
+        <button class="btn btn--secondary" (click)="addRole()">
+          Agregar rol
+        </button>
+      </div>
+
+      <div class="table">
+        <div class="t-head">
+          <div>Role ID</div>
+          <div>Nombre</div>
+          <div>Acciones</div>
+          <div></div>
+        </div>
+
+        <div class="t-row" *ngFor="let r of roleRows(); let i = index">
+          <div>
+            <input
+              class="form__control"
+              type="number"
+              [(ngModel)]="r.roleId"
+              min="1"
+            />
+          </div>
+
+          <div>
+            <input
+              class="form__control"
+              type="text"
+              [(ngModel)]="r.label"
+              placeholder="Nombre del rol (opcional)"
+            />
+          </div>
+
+          <div class="acts">
+            <button
+              class="chip"
+              [class.on]="r.actions.includes('VIEW')"
+              (click)="r.actions = toggleAction(r.actions, 'VIEW')"
+            >
+              {{ actionLabel("VIEW") }}
+            </button>
+            <button
+              class="chip"
+              [class.on]="r.actions.includes('EDIT')"
+              (click)="r.actions = toggleAction(r.actions, 'EDIT')"
+            >
+              {{ actionLabel("EDIT") }}
+            </button>
+            <button
+              class="chip"
+              [class.on]="r.actions.includes('SIGN')"
+              (click)="r.actions = toggleAction(r.actions, 'SIGN')"
+            >
+              {{ actionLabel("SIGN") }}
+            </button>
+          </div>
+
+          <div>
+            <button class="btn btn--danger" (click)="removeRole(i)">
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Log tab -->
+  <section *ngIf="activeTab() === 'log'">
+    <div class="filters card">
+      <div class="grid-4">
+        <div>
+          <label>Filtrar por acción</label>
+          <select class="form__control" [(ngModel)]="logAction">
+            <option value="ALL">Todas</option>
+            <option value="VIEW">Ver</option>
+            <option value="EDIT">Editar</option>
+            <option value="SIGN">Firmar</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Filtrar por resultado</label>
+          <select class="form__control" [(ngModel)]="logResult">
+            <option value="ALL">Todos</option>
+            <option value="PERMITTED">Permitido</option>
+            <option value="DENIED">Denegado</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Filtrar por período</label>
+          <select class="form__control" [(ngModel)]="logPeriod">
+            <option value="24h">Últimas 24 horas</option>
+            <option value="7d">Últimos 7 días</option>
+            <option value="30d">Últimos 30 días</option>
+          </select>
+        </div>
+
+        <div class="actions-right">
+          <button class="btn btn--primary" (click)="loadLog()">
+            Aplicar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Registro de Actividades</h3>
+      <div class="log-table">
+        <div class="t-head">
+          <div>Fecha/Hora</div>
+          <div>Usuario</div>
+          <div>Acción</div>
+          <div>Documento</div>
+          <div>Resultado</div>
+          <div>Motivo</div>
+        </div>
+
+        <div class="t-row" *ngFor="let it of logItems()">
+          <div>{{ it.fecha_hora }}</div>
+          <div>{{ it.usuario }}</div>
+          <div>{{ it.accion_solicitada }}</div>
+          <div>
+            <div>{{ it.documento_titulo || "—" }}</div>
+            <small class="muted">{{
+              it.documento_codigo_unico || it.documento_codigo_oficial
+            }}</small>
+          </div>
+          <div>
+            <span
+              class="badge"
+              [class.success]="it.resultado === 'OK'"
+              [class.danger]="it.resultado !== 'OK'"
+            >
+              {{ it.resultado === "OK" ? "Permitido" : "Denegado" }}
+            </span>
+          </div>
+          <div>{{ it.razon || "—" }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

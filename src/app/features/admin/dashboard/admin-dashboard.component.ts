@@ -1,8 +1,7 @@
 import { Component } from '@angular/core';
 import { NgFor } from '@angular/common';
 import { RouterLink } from '@angular/router'; // Import RouterLink
-import {TopbarComponent} from '../../../core/layout/topbar/topbar.component';
-
+import { TopbarComponent } from '../../../core/layout/topbar/topbar.component';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -11,8 +10,6 @@ import {TopbarComponent} from '../../../core/layout/topbar/topbar.component';
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.css'],
 })
-
-
 export class AdminDashboardComponent {
   statCards = [
     {
@@ -47,7 +44,7 @@ export class AdminDashboardComponent {
       description: 'Gestión de usuarios y accesos...',
       status: 'available',
       statsLabel: 'Estado',
-      statsValue: 'HU-001 Completo',
+      statsValue: 'HU-001 + HU-002 Completo',
       features: [
         'Gestionar usuarios',
         'Control de accesos',

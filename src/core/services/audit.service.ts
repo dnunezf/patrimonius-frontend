@@ -1,8 +1,7 @@
-
 import { Injectable } from '@angular/core';
-import {HttpClient, HttpParams, HttpResponse} from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import {map, Observable} from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 export interface AuditItem {
   id_evento: number;
@@ -53,7 +52,6 @@ export class AuditService {
 
   constructor(private http: HttpClient) {}
 
-
   listEvents(opts: {
     page?: number;
     pageSize?: number;
@@ -63,7 +61,7 @@ export class AuditService {
     usuario?: string;
     documento?: string;
     sortBy?: string;
-    sortDir?: 'asc' ;
+    sortDir?: 'asc' | 'desc'; 
   }) {
     let params = new HttpParams();
     Object.entries(opts || {}).forEach(([k, v]) => {
@@ -89,10 +87,13 @@ export class AuditService {
   getDocumentStates(): Observable<string[]> {
     return this.http
       .get<{ items: string[] }>(`${this.base}/documents/states`)
-      .pipe(map(res => res.items || []));
+      .pipe(map((res) => res.items || []));
   }
 
-  exportEvents(format: 'csv' | 'xml', opts: Record<string, any>): Observable<HttpResponse<Blob>> {
+  exportEvents(
+    format: 'csv' | 'xml',
+    opts: Record<string, any>
+  ): Observable<HttpResponse<Blob>> {
     let params = new HttpParams();
     Object.entries(opts || {}).forEach(([k, v]) => {
       if (v !== undefined && v !== null && `${v}`.trim() !== '') {
@@ -104,21 +105,19 @@ export class AuditService {
     return this.http.get(`${this.base}/${endpoint}`, {
       params,
       responseType: 'blob',
-      observe: 'response'
+      observe: 'response',
     });
   }
   /** Fetch a single audit event detail. */
   getEventDetail(id: number): Observable<AuditDetail> {
     return this.http
       .get<{ item: AuditDetail }>(`${this.base}/events/${id}`)
-      .pipe(map(res => res.item));
+      .pipe(map((res) => res.item));
   }
-
-
 
   getActionTypes() {
     return this.http
       .get<{ items: string[] }>(`${this.base}/log/events`)
-      .pipe(map(res => res.items || []));
+      .pipe(map((res) => res.items || []));
   }
 }

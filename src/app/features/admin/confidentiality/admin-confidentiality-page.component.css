@@ -1,0 +1,222 @@
+/* ---------- Page header ---------- */
+.head .back {
+  color: var(--mncr-blue-639);
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.sub {
+  color: #6b7280;
+  margin: 0 0 8px;
+}
+
+/* ---------- Tabs (Control / Log) ---------- */
+.tabs {
+  display: flex;
+  gap: 8px;
+  background: #f3f4f6; /* subtle rail */
+  border-radius: 8px;
+  padding: 4px;
+  margin: 8px 0 16px;
+}
+.tab {
+  flex: 1;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.tab.is-active {
+  background: var(--mncr-white);
+  border: 1px solid #e5e7eb;
+}
+
+/* ---------- Simple responsive rows ---------- */
+.row {
+  display: grid;
+  gap: 16px;
+}
+.cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Card + metrics ---------- */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+.metric__title {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+.metric__value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+/* ---------- Document picker grid ---------- */
+.config__picker {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 16px;
+}
+@media (max-width: 700px) {
+  .config__picker {
+    grid-template-columns: 1fr;
+  }
+}
+.field label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* ---------- Chips (levels / actions) ---------- */
+.levels {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chip {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 8px 12px;
+  border-radius: 99px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.chip.on {
+  background: #e8f2fb; /* lighter brand fill */
+  border-color: var(--mncr-blue-639);
+  color: var(--mncr-blue-639);
+}
+
+/* Hint text under level selector */
+.hint {
+  color: #374151;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+/* ---------- Two-column grid for level & action button ---------- */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+}
+.actions-right {
+  text-align: right;
+}
+
+/* ---------- Section headers with action buttons ---------- */
+.flex-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+/* ---------- Generic table for users/roles ---------- */
+.table .t-head,
+.log-table .t-head {
+  display: grid;
+  grid-template-columns: 120px 1fr 260px 80px;
+  gap: 8px;
+  font-weight: 700;
+  color: #374151;
+}
+.table .t-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 260px 80px;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #f1f5f9;
+}
+.table .twocol {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+.table .acts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Stack columns on smaller screens */
+@media (max-width: 900px) {
+  .table .t-head,
+  .table .t-row {
+    grid-template-columns: 80px 1fr 1fr 60px;
+  }
+  .table .twocol {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Filters grid (Log tab) ---------- */
+.grid-4 {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .grid-4 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Log table (wider columns for document) ---------- */
+.log-table .t-head {
+  grid-template-columns: 160px 1fr 100px 1.2fr 120px 1fr;
+}
+.log-table .t-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 100px 1.2fr 120px 1fr;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid #f1f5f9;
+}
+.muted {
+  color: #6b7280;
+}
+
+/* ---------- Result badges (Permitido / Denegado) ---------- */
+.badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+  background: #e5e7eb;
+}
+.badge.success {
+  /* OK / Permitido */
+  background: #d1fae5; /* soft green background */
+  color: #065f46; /* readable green text */
+}
+.badge.danger {
+  /* DENIED / Denegado */
+  background: #fee2e2; /* soft red background */
+  color: #991b1b; /* readable red text */
+}

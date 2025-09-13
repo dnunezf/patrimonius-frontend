@@ -11,7 +11,17 @@ export const ADMIN_ROUTES: Routes = [
     children: [
       { path: 'dashboard', component: AdminDashboardComponent },
       { path: 'notifications', component: AdminNotificationsComponent },
-      {path: 'access-exceptions', component: AccessExceptionsComponent},
+      { path: 'access-exceptions', component: AccessExceptionsComponent },
+
+      // HU-002 route
+      {
+        path: 'confidentiality',
+        loadComponent: () =>
+          import('./confidentiality/admin-confidentiality-page.component').then(
+            (m) => m.AdminConfidentialityPageComponent
+          ),
+      },
+
       {
         path: 'users',
         loadComponent: () =>
