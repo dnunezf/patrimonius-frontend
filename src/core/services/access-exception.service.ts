@@ -10,6 +10,7 @@ export class AccessExceptionService {
   private rolUrl = `${environment.apiUrl}/rol/rol`;
   private usersUrl = `${environment.apiUrl}/admin/users`;
   private statesUrl = `${environment.apiUrl}/documentos/estados`;
+  private documentsUrl = `${environment.apiUrl}/documents/documents`;
 
   constructor(private http: HttpClient) {}
 
@@ -21,8 +22,10 @@ export class AccessExceptionService {
   getUsers(): Observable<any[]> {
     return this.http.get<any[]>(this.usersUrl);
   }
-  // Obtener estados desde el backend
-  // getStates(): Observable<string[]> {
-  //   return this.http.get<string[]>(this.statesUrl);
-  // }
+
+  // Obtener documentos desde el backend
+  getDocuments(): Observable<any[]> {
+    return this.http.get<any[]>(this.documentsUrl);
+  }
+
 }

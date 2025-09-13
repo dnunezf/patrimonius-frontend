@@ -29,7 +29,7 @@ p {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  align-items: flex-start; /* Ajustar alineación vertical */
+  align-items: flex-start;
 }
 
 /* Estilo del formulario */
@@ -46,8 +46,39 @@ p {
   gap: 16px;
 }
 
-.input-group select {
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
+}
+
+
+/* Ajustes para los inputs y selects */
+.input-group select,
+.input-group input {
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  color: #333;
+  margin-top: 8px;
+  background-color: #fff;
+  appearance: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.input-group select:focus,
+.input-group input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+  outline: none;
+}
+
+.input-group select {
+  min-width: 200px;
+  width: auto;
   padding: 14px;
   border-radius: 8px;
   border: 1px solid #ddd;
@@ -58,6 +89,13 @@ p {
   z-index: 5;
   max-height: 300px;
   overflow-y: auto;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 6"%3E%3Cpath fill="none" stroke="%232a2a2a" stroke-width="2" d="M1 1l3 3 3-3" /%3E%3C/svg%3E');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
 }
 
 .input-group select:focus {
@@ -89,8 +127,11 @@ p {
 /* Ajustes para el ComboBox de Roles */
 .select-container {
   display: flex;
-  gap: 12px;
+  gap: 16px; /* Espacio entre los elementos */
   align-items: center;
+  justify-content: flex-start; /* Alinear a la izquierda */
+  margin-bottom: 16px;
+  width: 100%;
 }
 
 .role-select {

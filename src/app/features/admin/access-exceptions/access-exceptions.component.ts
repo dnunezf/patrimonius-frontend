@@ -17,6 +17,11 @@ import { AuditService } from '../../../../core/services/audit.service';
 
 })
 export class AccessExceptionsComponent implements OnInit {
+  // Variables para documentos
+  documents: any[] = [];  // Lista de documentos
+  selectedDocument: { titulo: string } | null = null;
+
+
   // Variables para categorías
   categoriaSearchTerm: string = ''; // Término de búsqueda
   categorias: any[] = []; // Lista de categorías
@@ -35,7 +40,7 @@ export class AccessExceptionsComponent implements OnInit {
 
   // Variables para el formulario
   documentSearchTerm: string = '';
-  selectedDocument: any = null;
+  //selectedDocument: any = null;
   reason: string = '';
   permissions: { [key in 'visualizar' | 'editar' | 'firmar']: boolean } = {
     visualizar: false,
@@ -43,11 +48,9 @@ export class AccessExceptionsComponent implements OnInit {
     firmar: false,
   };
 
-  selectedDocumentType: string = 'todos';
-
   activeExceptions: any[] = [];
   filteredUsers: any[] = [];
-  filteredDocuments = [];
+  filteredDocuments: any[] = [];
 
   constructor(
     private accessExceptionService: AccessExceptionService,
@@ -116,6 +119,37 @@ export class AccessExceptionsComponent implements OnInit {
         this.states = [];
       }
     });
+
+    // Cargar documentos desde el backend
+    this.accessExceptionService.getDocuments().subscribe({
+      next: (documents) => {
+        console.log('Documentos cargados:', documents);
+
+        // Asociar las categorías a los documentos
+        this.documents = documents.map(doc => {
+          const categoria = this.categorias.find(cat => cat.id === doc.categoria_id);
+          const estado = this.states.find(state => state === doc.estado);
+
+          return {
+            ...doc,
+            // Formatea la fecha
+            formattedDate: this.formatDate(doc.fecha),
+            // Formatea el estado
+            formattedState: this.formatState(doc.estado),
+            // Asignamos la categoría encontrada
+            categoria: this.formatCategory(doc.categoria_nombre || 'Sin categoría'),
+            estado: doc.estado || 'Estado no disponible'
+          };
+        });
+
+        this.filterDocuments(); // Filtra los documentos con base en la categoría y estado seleccionados
+      },
+      error: (err) => {
+        console.error('Error al cargar documentos:', err);
+        this.documents = [];  // Si ocurre un error, dejamos la lista vacía
+      }
+    });
+
   }
 
   // Función para filtrar categorías
@@ -136,23 +170,36 @@ export class AccessExceptionsComponent implements OnInit {
     );
   }
 
-  // // Función para filtrar los documentos según la búsqueda
-  // filterDocuments() {
-  //   this.filteredDocuments = this.documents.filter(
-  //     (doc) =>
-  //       doc.title.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) &&
-  //       (this.selectedDocumentType === 'todos' || this.getDocumentType(doc) === this.selectedDocumentType) &&
-  //       (this.selectedDocumentStatus === 'todos' || doc.status === this.selectedDocumentStatus)
-  //   );
-  // }
-  // filterDocuments() {
-  //   this.filteredDocuments = this.documents.filter(
-  //     (doc) =>
-  //       doc.title.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) &&
-  //       (this.selectedDocumentType === 'todos' || this.getDocumentType(doc) === this.selectedDocumentType) &&
-  //       (this.selectedDocumentStatus === 'todos' || doc.status === this.selectedDocumentStatus)
-  //   );
-  // }
+  // Función para filtrar documentos
+  filterDocuments() {
+    this.filteredDocuments = this.documents.filter((doc) => {
+      return (
+        doc.titulo.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) && // Filtro por título
+        (this.selectedCategoria === 'todos' || doc.categoria.nombre === this.selectedCategoria) && // Filtro por categoría
+        (this.selectedDocumentStatus === 'todos' || doc.estado === this.selectedDocumentStatus) // Filtro por estado
+      );
+    });
+  }
+
+// Función para formatear la fecha
+  formatDate(date: string): string {
+    const dateObj = new Date(date);
+    return `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+  }
+
+// Función para manejar el estado de manera más amigable (sin mayúsculas)
+  formatState(state: string): string {
+    return state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+  }
+
+  // Función para manejar la categoría de manera más amigable (sin mayúsculas)
+  formatCategory(category: string): string {
+    return category
+      .toLowerCase()  // Convierte todo a minúsculas
+      .replace(/_/g, ' ')  // Reemplaza los guiones bajos por espacios
+      .replace(/\b\w/g, char => char.toUpperCase());  // Capitaliza la primera letra de cada palabra
+  }
+
 
 
   // Método para comprobar si el formulario es válido
@@ -167,16 +214,6 @@ export class AccessExceptionsComponent implements OnInit {
     return permisosSeleccionados && (documentoLleno || usuarioLleno);
   }
 
-  // // Método para asignar un tipo de documento según el título
-  // getDocumentType(doc: any): string {
-  //   if (doc.title.includes('Acta')) return 'Acta';
-  //   if (doc.title.includes('Informe')) return 'Informe';
-  //   if (doc.title.includes('Protocolo')) return 'Protocolo';
-  //   if (doc.title.includes('Presupuesto')) return 'Presupuesto';
-  //   if (doc.title.includes('Manual')) return 'Manual';
-  //   if (doc.title.includes('Investigación')) return 'Investigación';
-  //   return 'Otros'; // Caso por defecto
-  // }
 
   // Método para seleccionar un usuario
   selectUser(user: any) {
@@ -203,7 +240,7 @@ export class AccessExceptionsComponent implements OnInit {
     if (this.isFormValid()) {
       const exception = {
         user: this.selectedUser.fullName,
-        document: this.selectedDocument.title,
+        document: this.selectedDocument?.titulo,
         permission: this.getSelectedPermissions(),
         date: new Date().toLocaleDateString(),
       };
