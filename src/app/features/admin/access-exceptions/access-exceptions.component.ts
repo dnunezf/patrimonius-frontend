@@ -180,7 +180,8 @@ export class AccessExceptionsComponent implements OnInit {
           documentNumber: e.numero_serie,
           permission: String(e.permissions).replace(/,/g, ', '),
           date: new Date().toLocaleDateString(),
-          reason: '' // not stored per row in query; shown when applied
+          reason: e.motive ?? e.reason ?? e.descripcion ?? ''
+          // not stored per row in query; shown when applied
         }));
       },
       error: () => this.activeExceptions = []
