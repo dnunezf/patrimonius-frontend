@@ -3,9 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { AdminUsersService,EditorPermission,AdminUser } from '../../../../core/services/admin-users.service';
+import { AdminUsersService, EditorPermission, AdminUser } from '../../../../core/services/admin-users.service';
 
-type Perm = 'EDIT' | 'SIGN';
+type Perm = 'EDIT' | 'SIGN'; // 👈 payload solo con estos (sin UPLOAD)
 const EDITOR_ID = 2;
 
 interface EditorRow {
@@ -18,6 +18,7 @@ interface EditorRow {
   rolId: number;
   edit: boolean;
   sign: boolean;
+  upload: boolean;     // 👈 nueva propiedad para la casilla "Cargar"
   dirty?: boolean;
   saving?: boolean;
 }
@@ -53,7 +54,6 @@ export class PermisosEditorComponent implements OnInit {
     return this.rows().some((r) => r.dirty && !r.saving);
   });
 
-
   constructor(private usersApi: AdminUsersService) {}
 
   ngOnInit(): void {
@@ -76,6 +76,7 @@ export class PermisosEditorComponent implements OnInit {
       rolId,
       edit: perms.includes('EDIT'),
       sign: perms.includes('SIGN'),
+      upload: false,   // 👈 de momento no viene de API; solo visual
       dirty: false,
       saving: false,
     };
@@ -101,29 +102,31 @@ export class PermisosEditorComponent implements OnInit {
     });
   }
 
-  toggle(row: EditorRow, key: 'edit' | 'sign') {
+  // 👇 ahora acepta también 'upload'
+  toggle(row: EditorRow, key: 'edit' | 'sign' | 'upload') {
     row[key] = !row[key];
     row.dirty = true;
   }
 
   setAll(val: boolean) {
     this.rows.update((list) =>
-      list.map((r) => ({ ...r, edit: val, sign: val, dirty: true }))
+      list.map((r) => ({ ...r, edit: val, sign: val, upload: val, dirty: true }))
     );
   }
 
   habilitar(row: EditorRow) {
     row.edit = true;
     row.sign = true;
-    row.dirty = true; // Marcar como sucio (cambiado)
+    row.upload = true;   // 👈 afecta "Cargar"
+    row.dirty = true;
   }
 
   deshabilitar(row: EditorRow) {
     row.edit = false;
     row.sign = false;
-    row.dirty = true; // Marcar como sucio (cambiado)
+    row.upload = false;  // 👈 afecta "Cargar"
+    row.dirty = true;
   }
-
 
   guardarFila(row: EditorRow) {
     row.saving = true;
@@ -146,10 +149,9 @@ export class PermisosEditorComponent implements OnInit {
     const permisos: Perm[] = [];
     if (row.edit) permisos.push('EDIT');
     if (row.sign) permisos.push('SIGN');
-    // Asegúrate de enviar el formato esperado
+    // 👈 NO enviamos 'UPLOAD' para evitar el error de payload
     return { permisosEditor: permisos };
   }
-
 
   guardarTodos() {
     const sucios = this.rows().filter((r) => r.dirty && !r.saving);

@@ -35,6 +35,7 @@
       <th>Correo</th>
       <th class="center">Editar</th>
       <th class="center">Firmar</th>
+      <th class="center">Cargar</th> <!-- 👈 nueva columna -->
       <th>Acciones</th>
     </tr>
     </thead>
@@ -47,27 +48,27 @@
       </td>
       <td>{{ r.unidad ?? '—' }}</td>
       <td>{{ r.email }}</td>
+
+      <td class="center">
+        <input type="checkbox" [checked]="r.edit" (change)="toggle(r, 'edit')" />
+      </td>
+
+      <td class="center">
+        <input type="checkbox" [checked]="r.sign" (change)="toggle(r, 'sign')" />
+      </td>
+
       <td class="center">
         <input
           type="checkbox"
-          [checked]="r.edit"
-          (change)="toggle(r, 'edit')"
+          [checked]="r.upload"
+          (change)="toggle(r, 'upload')"
         />
       </td>
-      <td class="center">
-        <input
-          type="checkbox"
-          [checked]="r.sign"
-          (change)="toggle(r, 'sign')"
-        />
-      </td>
+
+
       <td class="actions">
-        <button (click)="habilitar(r)" [disabled]="r.saving" class="enable">
-          Habilitar
-        </button>
-        <button (click)="deshabilitar(r)" [disabled]="r.saving" class="disable">
-          Deshabilitar
-        </button>
+        <button (click)="habilitar(r)" [disabled]="r.saving" class="enable">Habilitar</button>
+        <button (click)="deshabilitar(r)" [disabled]="r.saving" class="disable">Deshabilitar</button>
         <button
           class="primary"
           [disabled]="savingAll() || !hasDirty()"
