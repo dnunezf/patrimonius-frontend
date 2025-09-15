@@ -15,6 +15,6 @@ export class DocumentCycleDialogComponent {
   @Input() detail: any = null;
 
   closeDetail() {
-    this.showDetail = false;
+   this.showDetail = false;
   }
 }

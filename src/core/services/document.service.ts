@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import {map, Observable} from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface DocumentModel {
@@ -37,15 +37,34 @@ export interface DocumentModel {
 
 
 export interface VDocumentModel {
-  documento_nombre: string;   // Renombrado de 'titulo'
-  documento_estado: string;   // Renombrado de 'estado'
-  primer_usuario: string;     // Renombrado de 'usuario_id' o 'primer_usuario'
-  fecha_creacion: string;     // Renombrado de 'fecha'
-  unidad_nombre: string;      // Renombrado de 'unidad_nombre'
-  categoria_nombre: string;   // Renombrado de 'categoria_nombre'
-  firmas_obtenidas : number; // Renombrado de 'firmas_obtenidas'
-  firmas_requeridas: number;     // Renombrado de 'total_firmas'
+  documento_nombre: string;
+  documento_estado: string;
+  primer_usuario: string;
+  fecha_creacion: string;
+  unidad_nombre: string;
+  categoria_nombre: string;
+  firmas_obtenidas : number;
+  firmas_requeridas: number;
 }
+
+// 1) Define la fila “cruda” que devuelve la vista
+export interface AccessibleDocRow {
+  viewer_usuario_id: number;
+  documento_id: number;
+  numero_serie: string;
+  titulo: string;
+  estado: string;
+  fecha_creacion: string;   // DATETIME -> string
+  unidad_id: number;
+  unidad_nombre: string;
+  creador_id: number;
+  creador_nombre: string;
+  categoria_nombre2: string | null;
+  firmas_requeridas: number;
+  firmas_obtenidas: number;
+}
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -75,7 +94,22 @@ export class DocumentService {
     return this.http.delete<void>(`${this.apiUrl}${id}`);
   }
 
-  getDocumentsFromProduction(): Observable<VDocumentModel[]> {
-    return this.http.get<VDocumentModel[]>(`${this.apiUrl}/view/production`);
-  }
+
+getDocumentsFromProduction(): Observable<VDocumentModel[]> {
+  // Asegúrate del path correcto; si tu app monta /documents:
+  // `${this.apiUrl}documents/view/production`
+  return this.http.get<AccessibleDocRow[]>(`${this.apiUrl}/view/production`).pipe(
+    map(rows => rows.map(r => ({
+      documento_nombre:   r.titulo,
+      documento_estado:   r.estado,
+      primer_usuario:     r.creador_nombre,
+      fecha_creacion:     r.fecha_creacion,
+      unidad_nombre:      r.unidad_nombre,
+      categoria_nombre:   r.categoria_nombre2  || 'Sin categoría',
+      firmas_obtenidas:   r.firmas_obtenidas,
+      firmas_requeridas:  r.firmas_requeridas,
+    } satisfies VDocumentModel)))
+  );
+}
+
 }
