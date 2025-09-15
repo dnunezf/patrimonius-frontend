@@ -1,9 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
-import { Location } from '@angular/common';
+import { AccessExceptionService } from '../../../../core/services/access-exception.service';
+import { CategoriaService } from '../../../../core/services/categoria.service';
+import { AuditService } from '../../../../core/services/audit.service';
+
+type UiUser = { id: number; email: string; fullName: string; rol: string; };
 
 @Component({
   selector: 'app-access-exceptions',
@@ -12,173 +16,200 @@ import { Location } from '@angular/common';
   templateUrl: './access-exceptions.component.html',
   styleUrls: ['./access-exceptions.component.css'],
   providers: [DatePipe]
-
 })
-export class AccessExceptionsComponent {
-  constructor(
-    private datePipe: DatePipe,
-    private location: Location) {}
+export class AccessExceptionsComponent implements OnInit {
+  // Documents
+  documents: any[] = [];
+  filteredDocuments: any[] = [];
+  selectedDocument: any | null = null;
 
-  // Variables para el formulario
-  userSearchTerm: string = '';
-  documentSearchTerm: string = '';
-  selectedUser: any = null;
-  selectedDocument: any = null;
-  reason: string = '';
-  permissions: { [key in 'visualizar' | 'editar' | 'firmar']: boolean } = {
-    visualizar: false,
-    editar: false,
-    firmar: false
-  };
-  selectedRole: string = 'todos';
-  selectedDocumentType: string = 'todos';
+  // Categories
+  categorias: any[] = [];
+  selectedCategoria: string = 'todos';
+
+  // States
+  states: string[] = [];
   selectedDocumentStatus: string = 'todos';
 
-  // Datos de ejemplo
-  users = [
-    { id: 1, name: 'Carlos Rodríguez', role: 'Editor' },
-    { id: 2, name: 'Ana Gómez', role: 'Administrador' },
-    { id: 3, name: 'Luis Fernández', role: 'Archivista' },
-  ];
+  // Users
+  users: UiUser[] = [];
+  filteredUsers: UiUser[] = [];
+  selectedUser: UiUser | null = null;
+  roles: string[] = [];
+  selectedRole: string = 'todos';
 
-  documents = [
-    { id: 1, title: 'Acta de Junta Directiva', status: 'En proceso' },
-    { id: 2, title: 'Manual de Procedimientos', status: 'Archivado' },
-    { id: 3, title: 'Informe Anual 2024', status: 'En proceso' },
-  ];
+  // Search inputs
+  userSearchTerm = '';
+  documentSearchTerm = '';
 
-  // Excepciones activas (simuladas)
-  activeExceptions = [
-    { user: 'Carlos Rodríguez', document: 'Acta de Junta Directiva', permission: 'Firmar', date: '2025-01-25' },
-    { user: 'Ana Gómez', document: 'Manual de Procedimientos', permission: 'Editar', date: '2025-01-24' }
-  ];
+  // Form data
+  reason = '';
+  permissions = { visualizar: false, editar: false, firmar: false };
 
-  filteredUsers = this.users;
-  filteredDocuments = this.documents;
+  // Exceptions list from backend
+  activeExceptions: any[] = [];
 
-  // Función para filtrar los usuarios según la búsqueda
-  filterUsers() {
-    this.filteredUsers = this.users.filter(user =>
-      user.name.toLowerCase().includes(this.userSearchTerm.toLowerCase()) &&
-      (this.selectedRole === 'todos' || user.role === this.selectedRole)
-    );
-  }
-
-  // Función para filtrar los documentos según la búsqueda
-  filterDocuments() {
-    this.filteredDocuments = this.documents.filter(doc =>
-      doc.title.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) &&
-      (this.selectedDocumentType === 'todos' || this.getDocumentType(doc) === this.selectedDocumentType) &&
-      (this.selectedDocumentStatus === 'todos' || doc.status === this.selectedDocumentStatus)
-    );
-  }
-
-  // Método para comprobar si el formulario es válido
-  isFormValid(): boolean {
-    // Verificamos que haya al menos un permiso seleccionado
-    const permisosSeleccionados = this.permissions.visualizar || this.permissions.editar || this.permissions.firmar;
-
-    // Verificar que al menos uno de los campos clave esté lleno
-    const documentoLleno = this.selectedDocument || this.documentSearchTerm;
-    const usuarioLleno = this.selectedUser || this.userSearchTerm;
-    const motivoLleno = this.reason.trim().length > 0 || true;
-
-    // Validación de formulario
-    return permisosSeleccionados && (documentoLleno || usuarioLleno);
-  }
-
-  // Método que asigna un tipo de documento según el título
-  getDocumentType(doc: any): string {
-    // Aquí deberías definir la lógica para asignar un tipo basado en el título del documento
-    if (doc.title.includes('Acta')) return 'Acta';
-    if (doc.title.includes('Informe')) return 'Informe';
-    if (doc.title.includes('Protocolo')) return 'Protocolo';
-    if (doc.title.includes('Presupuesto')) return 'Presupuesto';
-    if (doc.title.includes('Manual')) return 'Manual';
-    if (doc.title.includes('Investigación')) return 'Investigación';
-    return 'Otros'; // Caso por defecto
-  }
-
-  // Método para seleccionar un usuario
-  selectUser(user: any) {
-    this.selectedUser = user;
-    this.userSearchTerm = user.name;  // Muestra el nombre seleccionado en el input
-  }
-
-  // Método para seleccionar un documento
-  selectDocument(doc: any) {
-    this.selectedDocument = doc;
-    this.documentSearchTerm = doc.title;  // Muestra el título seleccionado en el input
-  }
-
-  // Método para manejar el cambio de estado de un permiso
-  togglePermission(permission: 'visualizar' | 'editar' | 'firmar') {
-    this.permissions[permission] = !this.permissions[permission];
-  }
-
-
-
-  // Método para obtener los permisos seleccionados
-  getSelectedPermissions(): string {
-    let selectedPermissions = [];
-    if (this.permissions.visualizar) selectedPermissions.push('Visualizar');
-    if (this.permissions.editar) selectedPermissions.push('Editar');
-    if (this.permissions.firmar) selectedPermissions.push('Firmar');
-    return selectedPermissions.join(', ') || '';
-  }
-
-  // Método para aplicar la excepción
-  applyException() {
-    if (this.isFormValid()) {
-      const formattedDate = this.datePipe.transform(new Date(), 'dd-MM-yyyy');
-      const exception = {
-        user: this.selectedUser.name,
-        document: this.selectedDocument.title,
-        permission: this.getSelectedPermissions(),
-        date: new Date().toLocaleDateString()
-      };
-
-      // Guardar las excepciones activas en localStorage
-      this.activeExceptions.push(exception);
-      localStorage.setItem('activeExceptions', JSON.stringify(this.activeExceptions)); // Guardar en localStorage
-
-      // Guardar otros datos del formulario
-      localStorage.setItem('selectedUser', JSON.stringify(this.selectedUser));
-      localStorage.setItem('selectedDocument', JSON.stringify(this.selectedDocument));
-      localStorage.setItem('permissions', JSON.stringify(this.permissions));
-      localStorage.setItem('reason', this.reason);
-
-      this.resetForm(); // Reiniciar el formulario
-    }
-  }
+  constructor(
+    private accessExceptionService: AccessExceptionService,
+    private datePipe: DatePipe,
+    private categoriaService: CategoriaService,
+    private auditService: AuditService
+  ) {}
 
   ngOnInit() {
-    // Cargar datos desde localStorage si existen
-    const savedUser = localStorage.getItem('selectedUser');
-    const savedDocument = localStorage.getItem('selectedDocument');
-    const savedPermissions = localStorage.getItem('permissions');
-    const savedReason = localStorage.getItem('reason');
-    const savedExceptions = localStorage.getItem('activeExceptions');
+    this.accessExceptionService.getRoles().subscribe({
+      next: roles => this.roles = roles.map(r => r.replace(/_/g,' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())),
+      error: () => this.roles = []
+    });
 
-    if (savedUser) {
-      this.selectedUser = JSON.parse(savedUser);
-    }
-    if (savedDocument) {
-      this.selectedDocument = JSON.parse(savedDocument);
-    }
-    if (savedPermissions) {
-      this.permissions = JSON.parse(savedPermissions);
-    }
-    if (savedReason) {
-      this.reason = savedReason;
-    }
-    // Si existen excepciones activas guardadas en localStorage, cargarlas
-    if (savedExceptions) {
-      this.activeExceptions = JSON.parse(savedExceptions);
-    }
+    this.accessExceptionService.getUsers().subscribe({
+      next: users => {
+        this.users = users.map(u => ({
+          id: u.id,
+          email: u.email,
+          rol: u.rol,
+          fullName: `${u.nombre} ${u.apellido1} ${u.apellido2 ?? ''}`.trim()
+        }));
+        this.filteredUsers = this.users.slice();
+      },
+      error: () => { this.users = []; this.filteredUsers = []; }
+    });
+
+    this.categoriaService.getCategorias().subscribe({
+      next: cats => { this.categorias = cats || []; },
+      error: () => { this.categorias = []; }
+    });
+
+    this.auditService.getDocumentStates().subscribe({
+      next: states => this.states = (states || []).map((s: string) =>
+        s.replace(/_/g,' ').toLowerCase().replace(/\b\w/g, (ch:string)=>ch.toUpperCase())),
+      error: () => this.states = []
+    });
+
+    this.accessExceptionService.getDocuments().subscribe({
+      next: docs => {
+        this.documents = (docs || []).map((d:any)=>({
+          ...d,
+          categoria: this.formatCategory(d.categoria || 'Sin categoría'),
+          formattedDate: this.formatDate(d.fecha),
+          formattedState: this.formatState(d.estado || '')
+        }));
+        this.filterDocuments();
+      },
+      error: () => { this.documents = []; this.filteredDocuments = []; }
+    });
+
+    this.reloadExceptions();
   }
 
-  // Método para reiniciar el formulario
+  // ------ Filters ------
+  filterUsers() {
+    const roleNorm = this.selectedRole === 'todos'
+      ? null
+      : this.selectedRole.replace(/ /g,'_').toLowerCase();
+    this.filteredUsers = this.users.filter(u => {
+      const matchQ = (u.fullName + ' ' + u.email).toLowerCase().includes(this.userSearchTerm.toLowerCase());
+      const matchR = !roleNorm || u.rol.toLowerCase() === roleNorm;
+      return matchQ && matchR;
+    });
+  }
+
+  filterDocuments() {
+    const q = this.documentSearchTerm.toLowerCase();
+    const cat = this.selectedCategoria === 'todos' ? null : this.selectedCategoria.toLowerCase();
+    const state = this.selectedDocumentStatus === 'todos' ? null : this.selectedDocumentStatus.toLowerCase();
+
+    this.filteredDocuments = this.documents.filter((d:any) => {
+      const byTitle = d.titulo.toLowerCase().includes(q);
+      const byCat = !cat || String(d.categoria).toLowerCase().includes(cat);
+      const byState = !state || String(d.estado || '').toLowerCase() === state;
+      return byTitle && byCat && byState;
+    });
+  }
+
+  // ------ Formatting helpers ------
+  formatState(state: string): string {
+    return state ? state.charAt(0).toUpperCase() + state.slice(1).toLowerCase() : '';
+  }
+  formatCategory(category: string): string {
+    return category?.toLowerCase().replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Sin categoría';
+  }
+  formatDate(date: string): string {
+    const d = new Date(date);
+    return isNaN(+d) ? '' : `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  }
+
+  // ------ Validation ------
+  isFormValid(): boolean {
+    const hasPerms = this.permissions.visualizar || this.permissions.editar || this.permissions.firmar;
+    const hasUser = !!this.selectedUser;
+    const hasDoc = !!this.selectedDocument;
+    const hasReason = this.reason.trim().length > 0;
+    return hasPerms && hasUser && hasDoc && hasReason;
+  }
+
+  // ------ Permissions UI ------
+  togglePermission(p: 'visualizar'|'editar'|'firmar') {
+    this.permissions[p] = !this.permissions[p];
+  }
+  selectedPermissionsApi(): ('VIEW'|'EDIT'|'SIGN')[] {
+    const out: ('VIEW'|'EDIT'|'SIGN')[] = [];
+    if (this.permissions.visualizar) out.push('VIEW');
+    if (this.permissions.editar) out.push('EDIT');
+    if (this.permissions.firmar) out.push('SIGN');
+    return out;
+  }
+  selectedPermissionsLabel(): string {
+    const s: string[] = [];
+    if (this.permissions.visualizar) s.push('Visualizar');
+    if (this.permissions.editar) s.push('Editar');
+    if (this.permissions.firmar) s.push('Firmar');
+    return s.join(', ');
+  }
+
+  // ------ Exceptions CRUD ------
+  reloadExceptions() {
+    this.accessExceptionService.listExceptions().subscribe({
+      next: list => {
+        this.activeExceptions = (list || []).map((e:any)=>({
+          userId: e.userId,
+          documentId: e.documentId,
+          user: `${e.nombre} ${e.apellido1} ${e.apellido2 ?? ''}`.trim(),
+          email: e.email,
+          document: e.titulo,
+          documentNumber: e.numero_serie,
+          permission: String(e.permissions).replace(/,/g, ', '),
+          date: new Date().toLocaleDateString(),
+          reason: e.motive ?? e.reason ?? e.descripcion ?? ''
+          // not stored per row in query; shown when applied
+        }));
+      },
+      error: () => this.activeExceptions = []
+    });
+  }
+
+  applyException() {
+    if (!this.isFormValid()) return;
+    const payload = {
+      userId: this.selectedUser!.id,
+      documentId: this.selectedDocument!.id,
+      permissions: this.selectedPermissionsApi(),
+      reason: this.reason.trim()
+    };
+    this.accessExceptionService.applyException(payload).subscribe({
+      next: () => { this.resetForm(); this.reloadExceptions(); },
+      error: err => console.error('Error al aplicar excepción:', err)
+    });
+  }
+
+  deleteException(ex: any) {
+    this.accessExceptionService.deleteException(ex.userId, ex.documentId, 'remoción por admin').subscribe({
+      next: () => this.reloadExceptions(),
+      error: err => console.error('Error al eliminar excepción:', err)
+    });
+  }
+
+  // ------ Reset ------
   resetForm() {
     this.selectedUser = null;
     this.selectedDocument = null;
@@ -186,16 +217,8 @@ export class AccessExceptionsComponent {
     this.reason = '';
     this.userSearchTerm = '';
     this.documentSearchTerm = '';
-    this.filteredUsers = this.users;
-    this.filteredDocuments = this.documents;
+    this.filteredUsers = this.users.slice();
+    this.filterDocuments();
   }
-
-  // Método para eliminar una excepción activa
-  deleteException(exception: any) {
-    const index = this.activeExceptions.indexOf(exception);
-    if (index > -1) {
-      this.activeExceptions.splice(index, 1);
-    }
-  }
-
 }
+
