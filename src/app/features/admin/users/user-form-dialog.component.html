@@ -96,7 +96,9 @@
       <label class="form__label" for="rolId">Rol en el sistema *</label>
       <div class="select">
         <select id="rolId" class="select__control" formControlName="rolId">
-          <option *ngFor="let r of ROLES" [value]="r.id">{{ r.label }}</option>
+          <option *ngFor="let r of ROLES" [ngValue]="r.id">
+            {{ r.label }}
+          </option>
         </select>
       </div>
 
@@ -107,7 +109,7 @@
           class="select__control"
           formControlName="unidadId"
         >
-          <option *ngFor="let u of UNIDADES" [value]="u.id">
+          <option *ngFor="let u of UNIDADES" [ngValue]="u.id">
             {{ u.label }}
           </option>
         </select>

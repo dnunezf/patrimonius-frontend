@@ -93,22 +93,25 @@ export class UserFormDialogComponent implements OnChanges {
       return;
     }
     const v = this.form.value as any;
+
     const editorPermissions =
-      v.rolId === this.EDITOR_ID
+      Number(v.rolId) === this.EDITOR_ID
         ? ([v.edit ? 'EDIT' : null, v.sign ? 'SIGN' : null].filter(Boolean) as (
             | 'EDIT'
             | 'SIGN'
           )[])
         : [];
+
     const dto: UpsertUserDto = {
       nombre: v.nombre,
       apellido1: v.apellido1,
       apellido2: v.apellido2 || '',
       email: v.email,
-      rolId: v.rolId,
-      unidadId: v.unidadId,
+      rolId: Number(v.rolId), 
+      unidadId: Number(v.unidadId), 
       editorPermissions,
     };
+
     this.submit.emit({ id: this.editing?.id ?? undefined, data: dto });
   }
 }
