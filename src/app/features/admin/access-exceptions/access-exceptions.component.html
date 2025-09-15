@@ -6,109 +6,136 @@
   </section>
 
   <div class="content-wrapper">
+    <!-- Formulario -->
     <section class="form-section">
       <form (ngSubmit)="applyException()">
         <div class="form-card">
+          <!-- Búsqueda y filtro de usuarios -->
           <div class="input-group">
-            <label>Selecciona al usuario para quien se aplicará la excepción de acceso</label>
+            <label for="userSearch">Selecciona al usuario para quien se aplicará la excepción de acceso</label>
             <div class="select-container">
               <input
+                id="userSearch"
                 type="text"
                 [(ngModel)]="userSearchTerm"
                 placeholder="Buscar usuario por nombre o email..."
                 name="userSearch"
                 (input)="filterUsers()"
+                autocomplete="off"
               />
-              <select [(ngModel)]="selectedRole" name="role" (change)="filterUsers()">
-                <option value="todos">Todos Los Roles</option>
+              <select
+                [(ngModel)]="selectedRole"
+                name="role"
+                aria-label="Filtrar por rol"
+                (change)="filterUsers()"
+              >
+                <option value="todos">Todos los roles</option>
                 <option *ngFor="let role of roles" [value]="role.toLowerCase()">{{ role }}</option>
               </select>
             </div>
           </div>
 
+          <!-- Selección de usuario -->
           <div class="input-group">
-            <label>Selecciona el usuario</label>
-            <select [(ngModel)]="selectedUser" name="user">
-              <option value="" disabled selected>Seleccionar Usuario...</option>
+            <label for="userSelect">Selecciona el usuario</label>
+            <select id="userSelect" [(ngModel)]="selectedUser" name="user">
+              <option [ngValue]="null" disabled>Seleccionar Usuario...</option>
               <option *ngFor="let user of filteredUsers" [ngValue]="user">
                 {{ user.fullName }} ({{ user.email }})
               </option>
             </select>
           </div>
 
+          <!-- Búsqueda de documento -->
           <div class="input-group">
-            <label>Buscar documento por título</label>
+            <label for="documentSearch">Buscar documento por título</label>
             <input
+              id="documentSearch"
               type="text"
               [(ngModel)]="documentSearchTerm"
               placeholder="Buscar por nombre..."
-              name="categoriaSearch"
+              name="documentSearch"
               (input)="filterDocuments()"
+              autocomplete="off"
             />
           </div>
 
+          <!-- Filtros de documento -->
           <div class="select-container">
             <div class="input-group">
-              <select [(ngModel)]="selectedCategoria" name="categoria" (change)="filterDocuments()">
+              <label for="categoriaSelect" class="sr-only">Filtrar por categoría</label>
+              <select
+                id="categoriaSelect"
+                [(ngModel)]="selectedCategoria"
+                name="categoria"
+                (change)="filterDocuments()"
+              >
                 <option value="todos">Todas las categorías</option>
-                <option *ngFor="let categoria of filterCategorias()" [value]="categoria.nombre">
+                <option *ngFor="let categoria of categorias" [value]="categoria.nombre">
                   {{ categoria.nombre }}
                 </option>
               </select>
             </div>
 
             <div class="input-group">
-              <select [(ngModel)]="selectedDocumentStatus" name="documentStatus" (change)="filterDocuments()">
+              <label for="estadoSelect" class="sr-only">Filtrar por estado</label>
+              <select
+                id="estadoSelect"
+                [(ngModel)]="selectedDocumentStatus"
+                name="documentStatus"
+                (change)="filterDocuments()"
+              >
                 <option value="todos">Todos los estados</option>
                 <option *ngFor="let state of states" [value]="state">{{ state }}</option>
               </select>
             </div>
           </div>
 
-          <!-- Caja de selección de documentos -->
+          <!-- Selección de documento -->
           <div class="input-group">
-            <label>Selecciona el documento</label>
-            <select [(ngModel)]="selectedDocument" name="document">
-              <option value="" disabled selected>Seleccionar Documento...</option>
+            <label for="documentSelect">Selecciona el documento</label>
+            <select id="documentSelect" [(ngModel)]="selectedDocument" name="document">
+              <option [ngValue]="null" disabled>Seleccionar Documento...</option>
               <option *ngFor="let document of filteredDocuments" [ngValue]="document">
-                {{ document.titulo }} - {{ document.numero_serie }} - {{ document.formattedState }} -
-                ({{ document.categoria }}) - {{ document.formattedDate }} <!-- Aquí se muestra la categoría -->
+                {{ document.titulo }} - {{ document.numero_serie }} - {{ document.formattedState }}
+                ({{ document.categoria }}) - {{ document.formattedDate }}
               </option>
             </select>
           </div>
 
-
-          <div class="permission-buttons">
-            <button type="button" data-permission="visualizar" (click)="togglePermission('visualizar')" [class.selected]="permissions.visualizar">
+          <!-- Permisos -->
+          <div class="permission-buttons" role="group" aria-label="Permisos a otorgar">
+            <button type="button" (click)="togglePermission('visualizar')" [class.selected]="permissions.visualizar">
               <span class="emoji">👀</span> Visualizar
             </button>
-            <button type="button" data-permission="editar" (click)="togglePermission('editar')" [class.selected]="permissions.editar">
-              <span class="emoji">✏️</span> Editar
+            <button type="button" (click)="togglePermission('editar')" [class.selected]="permissions.editar">
+              <span class="emoji">✏</span> Editar
             </button>
-            <button type="button" data-permission="firmar" (click)="togglePermission('firmar')" [class.selected]="permissions.firmar">
-              <span class="emoji">✍️</span> Firmar
+            <button type="button" (click)="togglePermission('firmar')" [class.selected]="permissions.firmar">
+              <span class="emoji">✍</span> Firmar
             </button>
           </div>
 
+          <!-- Motivo -->
           <div class="input-group">
-            <label>Descripción breve del motivo...</label>
-            <textarea [(ngModel)]="reason" name="reason"></textarea>
+            <label for="reason">Descripción breve del motivo</label>
+            <textarea id="reason" [(ngModel)]="reason" name="reason" rows="3" placeholder="Explique el motivo de la excepción"></textarea>
           </div>
 
+          <!-- Submit -->
           <button type="submit" class="btn-primary" [disabled]="!isFormValid()">Aplicar Excepción</button>
         </div>
       </form>
     </section>
 
+    <!-- Lista de excepciones -->
     <section class="exceptions-section">
       <h2>Excepciones Activas</h2>
       <div class="exceptions-container">
         <div *ngFor="let exception of activeExceptions" class="exception-item">
           <div class="user-info">
-            <div class="user-name">
-              <strong>{{ exception.user }}</strong>
-            </div>
-            <div class="user-email">Correo: {{ exception.email }}</div> <!-- Correo debajo del nombre -->
+            <div class="user-name"><strong>{{ exception.user }}</strong></div>
+            <div class="user-email">Correo: {{ exception.email }}</div>
           </div>
 
           <div class="document-info">
@@ -131,8 +158,5 @@
         </div>
       </div>
     </section>
-
-
-
-  </div>
+      </div>
 </main>

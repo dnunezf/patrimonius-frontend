@@ -7,6 +7,8 @@ import { AccessExceptionService } from '../../../../core/services/access-excepti
 import { CategoriaService } from '../../../../core/services/categoria.service';
 import { AuditService } from '../../../../core/services/audit.service';
 
+type UiUser = { id: number; email: string; fullName: string; rol: string; };
+
 @Component({
   selector: 'app-access-exceptions',
   standalone: true,
@@ -14,48 +16,38 @@ import { AuditService } from '../../../../core/services/audit.service';
   templateUrl: './access-exceptions.component.html',
   styleUrls: ['./access-exceptions.component.css'],
   providers: [DatePipe]
-
 })
 export class AccessExceptionsComponent implements OnInit {
-  // Variables para documentos
-  documents: any[] = [];  // Lista de documentos
-  selectedDocument: {
-    titulo: string;
-    numero_serie: string;
-    estado: string;
-    categoria: string;
-    fecha: string;
-  } | null = null;
-
-  // Variables para categorías
-  categoriaSearchTerm: string = ''; // Término de búsqueda
-  categorias: any[] = []; // Lista de categorías
-  selectedCategoria: string = 'todos'; // Valor predeterminado de categoría seleccionada
-
-  // Variables para estados
-  selectedDocumentStatus: string = 'todos';
-  states: string[] = [];
-
-  // Variables para usuarios
-  userSearchTerm: string = '';
-  selectedUser: any = null;
-  selectedRole: string = 'todos';
-  roles: string[] = [];
-  users: any[] = [];
-
-  // Variables para el formulario
-  documentSearchTerm: string = '';
-  //selectedDocument: any = null;
-  reason: string = '';
-  permissions: { [key in 'visualizar' | 'editar' | 'firmar']: boolean } = {
-    visualizar: false,
-    editar: false,
-    firmar: false,
-  };
-
-  activeExceptions: any[] = [];
-  filteredUsers: any[] = [];
+  // Documents
+  documents: any[] = [];
   filteredDocuments: any[] = [];
+  selectedDocument: any | null = null;
+
+  // Categories
+  categorias: any[] = [];
+  selectedCategoria: string = 'todos';
+
+  // States
+  states: string[] = [];
+  selectedDocumentStatus: string = 'todos';
+
+  // Users
+  users: UiUser[] = [];
+  filteredUsers: UiUser[] = [];
+  selectedUser: UiUser | null = null;
+  roles: string[] = [];
+  selectedRole: string = 'todos';
+
+  // Search inputs
+  userSearchTerm = '';
+  documentSearchTerm = '';
+
+  // Form data
+  reason = '';
+  permissions = { visualizar: false, editar: false, firmar: false };
+
+  // Exceptions list from backend
+  activeExceptions: any[] = [];
 
   constructor(
     private accessExceptionService: AccessExceptionService,
@@ -65,240 +57,158 @@ export class AccessExceptionsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Cargar roles desde el backend
     this.accessExceptionService.getRoles().subscribe({
-      next: (roles) => {
-        this.roles = roles.map(role =>
-          role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, char => char.toUpperCase()) // Convierte a "proper case"
-        );
-      },
-      error: (err) => {
-        console.error('Error al cargar roles:', err);
-        this.roles = [];  // Si ocurre un error, solo usamos el valor por defecto
-      },
+      next: roles => this.roles = roles.map(r => r.replace(/_/g,' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())),
+      error: () => this.roles = []
     });
 
-    // Cargar usuarios desde el backend
     this.accessExceptionService.getUsers().subscribe({
-      next: (users) => {
-        this.users = users.map(user => ({
-          ...user,
-          fullName: `${user.nombre} ${user.apellido1} ${user.apellido2} (${user.rol.replace(/_/g, ' ').toLowerCase()})` // Reemplazamos los _ por espacios
+      next: users => {
+        this.users = users.map(u => ({
+          id: u.id,
+          email: u.email,
+          rol: u.rol,
+          fullName: `${u.nombre} ${u.apellido1} ${u.apellido2 ?? ''}`.trim()
         }));
-        this.filteredUsers = this.users; // Inicializamos los usuarios filtrados
+        this.filteredUsers = this.users.slice();
       },
-      error: (err) => {
-        console.error('Error al cargar usuarios:', err);
-        this.users = []; // Si ocurre un error, no hay usuarios
-        this.filteredUsers = [];  // Inicializamos la lista de usuarios filtrados
-      },
+      error: () => { this.users = []; this.filteredUsers = []; }
     });
 
-    // Cargar categorías desde el backend
     this.categoriaService.getCategorias().subscribe({
-      next: (categorias) => {
-        console.log('Categorías recibidas desde el backend:', categorias); // Check categories here
-        this.categorias = categorias;
-        this.loadDocuments(); // Load documents after categories are fetched
-      },
-      error: (err) => {
-        console.error('Error al cargar categorías:', err);
-        this.categorias = [];
-      }
+      next: cats => { this.categorias = cats || []; },
+      error: () => { this.categorias = []; }
     });
 
-    // Cargar estados desde el backend
     this.auditService.getDocumentStates().subscribe({
-      next: (states) => {
-        console.log('Estados cargados correctamente:', states); // Verificar que lleguen bien
-        this.states = states.map((state: string) =>
-          state
-            .replace(/_/g, ' ')
-            .toLowerCase()
-            .replace(/\b\w/g, (char: string) => char.toUpperCase())
-        );
-      },
-      error: (err) => {
-        console.error('Error al cargar estados:', err);
-        this.states = [];
-      }
+      next: states => this.states = (states || []).map((s: string) =>
+        s.replace(/_/g,' ').toLowerCase().replace(/\b\w/g, (ch:string)=>ch.toUpperCase())),
+      error: () => this.states = []
     });
 
-    // Cargar documentos desde el backend
     this.accessExceptionService.getDocuments().subscribe({
-      next: (documents) => {
-        console.log('Documentos cargados:', documents);
-        this.documents = documents.map(doc => {
-          const categoria = this.categorias.find(cat => cat.id === doc.categoria_id);
-          return {
-            ...doc,
-            categoria: categoria ? categoria.nombre : 'Sin categoría',
-            numero_serie: doc.numero_serie, // Asegúrate de que esto esté presente
-          };
-        });
-        this.filterDocuments(); // Filtra después de cargar los documentos
+      next: docs => {
+        this.documents = (docs || []).map((d:any)=>({
+          ...d,
+          categoria: this.formatCategory(d.categoria || 'Sin categoría'),
+          formattedDate: this.formatDate(d.fecha),
+          formattedState: this.formatState(d.estado || '')
+        }));
+        this.filterDocuments();
       },
-      error: (err) => {
-        console.error('Error al cargar documentos:', err);
-        this.documents = [];
-      }
+      error: () => { this.documents = []; this.filteredDocuments = []; }
     });
 
-    // Cargar excepciones activas desde localStorage
-    const storedExceptions = localStorage.getItem('activeExceptions');
-    if (storedExceptions) {
-      this.activeExceptions = JSON.parse(storedExceptions);
-      console.log('Excepciones activas cargadas:', this.activeExceptions); // Verificar que lleguen bien
-    }
-
+    this.reloadExceptions();
   }
 
-  // Función para filtrar categorías
-  filterCategorias() {
-    return this.categorias.filter(categoria =>
-      categoria.nombre.toLowerCase().includes(this.categoriaSearchTerm.toLowerCase()) ||
-      this.selectedCategoria === 'todos'
-    );
-  }
-
-// Función para cargar documentos después de cargar categorías
-  loadDocuments() {
-    this.accessExceptionService.getDocuments().subscribe({
-      next: (documents) => {
-        console.log("Documentos recibidos:", documents);
-        this.documents = documents.map(doc => {
-
-          return {
-            ...doc,
-            categoria: this.formatCategory(doc.categoria),
-            formattedDate: this.formatDate(doc.fecha),
-            formattedState: this.formatState(doc.estado),
-          };
-        });
-        this.filterDocuments(); // Filtra después de cargar los documentos
-      },
-      error: (err) => {
-        console.error('Error al cargar documentos:', err);
-        this.documents = [];  // Si ocurre un error, dejamos la lista vacía
-      }
-    });
-  }
-
-
-  // Función para filtrar los usuarios según la búsqueda y el rol seleccionado
+  // ------ Filters ------
   filterUsers() {
-    const selectedRoleNormalized = this.selectedRole === 'todos' ? 'todos' : this.selectedRole.replace(/ /g, '_').toLowerCase();
-    this.filteredUsers = this.users.filter(
-      (user) =>
-        (user.fullName.toLowerCase().includes(this.userSearchTerm.toLowerCase()) || user.email.toLowerCase().includes(this.userSearchTerm.toLowerCase())) &&
-        (selectedRoleNormalized === 'todos' || user.rol.toLowerCase().replace(/ /g, '_') === selectedRoleNormalized)
-    );
-  }
-
-  // Función para filtrar documentos por estado y categoría
-  filterDocuments() {
-    this.filteredDocuments = this.documents.filter((doc) => {
-      const categoriaToCompare = this.selectedCategoria === 'todos' ? '' : this.selectedCategoria.toLowerCase();
-      const documentCategory = doc.categoria ? doc.categoria.toLowerCase() : 'sin categoría';
-
-      return (
-        doc.titulo.toLowerCase().includes(this.documentSearchTerm.toLowerCase()) && // Filtrar por título
-        (categoriaToCompare === '' || documentCategory.includes(categoriaToCompare)) && // Filtrar por categoría
-        (this.selectedDocumentStatus === 'todos' || doc.estado.toLowerCase() === this.selectedDocumentStatus.toLowerCase()) // Filtrar por estado
-      );
+    const roleNorm = this.selectedRole === 'todos'
+      ? null
+      : this.selectedRole.replace(/ /g,'_').toLowerCase();
+    this.filteredUsers = this.users.filter(u => {
+      const matchQ = (u.fullName + ' ' + u.email).toLowerCase().includes(this.userSearchTerm.toLowerCase());
+      const matchR = !roleNorm || u.rol.toLowerCase() === roleNorm;
+      return matchQ && matchR;
     });
   }
 
+  filterDocuments() {
+    const q = this.documentSearchTerm.toLowerCase();
+    const cat = this.selectedCategoria === 'todos' ? null : this.selectedCategoria.toLowerCase();
+    const state = this.selectedDocumentStatus === 'todos' ? null : this.selectedDocumentStatus.toLowerCase();
 
+    this.filteredDocuments = this.documents.filter((d:any) => {
+      const byTitle = d.titulo.toLowerCase().includes(q);
+      const byCat = !cat || String(d.categoria).toLowerCase().includes(cat);
+      const byState = !state || String(d.estado || '').toLowerCase() === state;
+      return byTitle && byCat && byState;
+    });
+  }
 
-
-
+  // ------ Formatting helpers ------
   formatState(state: string): string {
-    return state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+    return state ? state.charAt(0).toUpperCase() + state.slice(1).toLowerCase() : '';
   }
-
   formatCategory(category: string): string {
-    return category
-      .toLowerCase() // Convert to lowercase
-      .replace(/_/g, ' ') // Replace underscores with spaces
-      .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize the first letter of each word
+    return category?.toLowerCase().replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Sin categoría';
   }
-
   formatDate(date: string): string {
-    const dateObj = new Date(date);
-    return `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+    const d = new Date(date);
+    return isNaN(+d) ? '' : `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
   }
 
-
-
-  // Método para comprobar si el formulario es válido
+  // ------ Validation ------
   isFormValid(): boolean {
-    const permisosSeleccionados =
-      this.permissions.visualizar || this.permissions.editar || this.permissions.firmar;
-
-    const documentoLleno = this.selectedDocument || this.documentSearchTerm;
-    const usuarioLleno = this.selectedUser || this.userSearchTerm;
-    const motivoLleno = this.reason.trim().length > 0 || true;
-
-    return permisosSeleccionados && (documentoLleno || usuarioLleno);
+    const hasPerms = this.permissions.visualizar || this.permissions.editar || this.permissions.firmar;
+    const hasUser = !!this.selectedUser;
+    const hasDoc = !!this.selectedDocument;
+    const hasReason = this.reason.trim().length > 0;
+    return hasPerms && hasUser && hasDoc && hasReason;
   }
 
-
-
-
-  // Método para seleccionar un usuario
-  selectUser(user: any) {
-    this.selectedUser = user;
-    this.userSearchTerm = user.name;
+  // ------ Permissions UI ------
+  togglePermission(p: 'visualizar'|'editar'|'firmar') {
+    this.permissions[p] = !this.permissions[p];
+  }
+  selectedPermissionsApi(): ('VIEW'|'EDIT'|'SIGN')[] {
+    const out: ('VIEW'|'EDIT'|'SIGN')[] = [];
+    if (this.permissions.visualizar) out.push('VIEW');
+    if (this.permissions.editar) out.push('EDIT');
+    if (this.permissions.firmar) out.push('SIGN');
+    return out;
+  }
+  selectedPermissionsLabel(): string {
+    const s: string[] = [];
+    if (this.permissions.visualizar) s.push('Visualizar');
+    if (this.permissions.editar) s.push('Editar');
+    if (this.permissions.firmar) s.push('Firmar');
+    return s.join(', ');
   }
 
-  // Método para manejar el cambio de estado de un permiso
-  togglePermission(permission: 'visualizar' | 'editar' | 'firmar') {
-    this.permissions[permission] = !this.permissions[permission];
-    // Manually trigger the class toggle for styling
-    const button = document.querySelector(`button[data-permission="${permission}"]`);
-    button?.classList.toggle('selected', this.permissions[permission]);
+  // ------ Exceptions CRUD ------
+  reloadExceptions() {
+    this.accessExceptionService.listExceptions().subscribe({
+      next: list => {
+        this.activeExceptions = (list || []).map((e:any)=>({
+          userId: e.userId,
+          documentId: e.documentId,
+          user: `${e.nombre} ${e.apellido1} ${e.apellido2 ?? ''}`.trim(),
+          email: e.email,
+          document: e.titulo,
+          documentNumber: e.numero_serie,
+          permission: String(e.permissions).replace(/,/g, ', '),
+          date: new Date().toLocaleDateString(),
+          reason: '' // not stored per row in query; shown when applied
+        }));
+      },
+      error: () => this.activeExceptions = []
+    });
   }
 
-
-  // Método para obtener los permisos seleccionados
-  getSelectedPermissions(): string {
-    let selectedPermissions = [];
-    if (this.permissions.visualizar) selectedPermissions.push('Visualizar');
-    if (this.permissions.editar) selectedPermissions.push('Editar');
-    if (this.permissions.firmar) selectedPermissions.push('Firmar');
-    return selectedPermissions.join(', ') || '';
-  }
-
-  // Método para aplicar la excepción
   applyException() {
-    if (this.isFormValid()) {
-      const exception = {
-        user: this.selectedUser.fullName,
-        email: this.selectedUser.email,  // Aquí agregamos el correo
-        document: this.selectedDocument?.titulo,
-        documentNumber: this.selectedDocument?.numero_serie, // Número de serie
-        permission: this.getSelectedPermissions(),
-        reason: this.reason,
-        date: new Date().toLocaleDateString(),
-      };
-
-      // Agregar a las excepciones activas
-      this.activeExceptions.push(exception);
-
-      // Guardar en localStorage
-      localStorage.setItem('activeExceptions', JSON.stringify(this.activeExceptions));
-
-      // Limpiar formulario
-      this.resetForm();
-    }
+    if (!this.isFormValid()) return;
+    const payload = {
+      userId: this.selectedUser!.id,
+      documentId: this.selectedDocument!.id,
+      permissions: this.selectedPermissionsApi(),
+      reason: this.reason.trim()
+    };
+    this.accessExceptionService.applyException(payload).subscribe({
+      next: () => { this.resetForm(); this.reloadExceptions(); },
+      error: err => console.error('Error al aplicar excepción:', err)
+    });
   }
 
+  deleteException(ex: any) {
+    this.accessExceptionService.deleteException(ex.userId, ex.documentId, 'remoción por admin').subscribe({
+      next: () => this.reloadExceptions(),
+      error: err => console.error('Error al eliminar excepción:', err)
+    });
+  }
 
-
-
-
-  // Método para reiniciar el formulario
+  // ------ Reset ------
   resetForm() {
     this.selectedUser = null;
     this.selectedDocument = null;
@@ -306,21 +216,8 @@ export class AccessExceptionsComponent implements OnInit {
     this.reason = '';
     this.userSearchTerm = '';
     this.documentSearchTerm = '';
-    this.filteredUsers = this.users; // Reset the user list to its original state
-    this.filteredDocuments = []; // Reset filtered documents
+    this.filteredUsers = this.users.slice();
+    this.filterDocuments();
   }
-
-
-  // Método para eliminar una excepción activa
-  deleteException(exception: any) {
-    // Eliminar la excepción de activeExceptions
-    const index = this.activeExceptions.indexOf(exception);
-    if (index > -1) {
-      this.activeExceptions.splice(index, 1);
-    }
-
-    // Guardar el estado actualizado en localStorage
-    localStorage.setItem('activeExceptions', JSON.stringify(this.activeExceptions));
-  }
-
 }
+
