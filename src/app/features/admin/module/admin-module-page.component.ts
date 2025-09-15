@@ -2,12 +2,16 @@ import { Component } from '@angular/core';
 import { CommonModule, NgFor } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
+type SubLink = { label: string; route: string };
+
 type Submodule = {
   title: string;
   desc: string;
-  status: 'available' | 'wip';
-  link?: string;
-  bullets: string[];
+  status: 'available' | 'wip'; // Aquí dejamos el campo de "status" para manejar el estado de cada módulo
+  link?: string; // Ruta principal del módulo (cuando es solo un enlace)
+  links?: SubLink[]; // Lista de enlaces para submódulos (por ejemplo, Roles, Unidades, etc.)
+  bullets: string[]; // Funciones principales
+  statsValue?: string; // Para mostrar información adicional como cantidad de registros, si es necesario
 };
 
 @Component({
@@ -18,14 +22,37 @@ type Submodule = {
   styleUrls: ['./admin-module-page.component.css'],
 })
 export class AdminModulePageComponent {
+  // Definimos los submódulos que estarán en el dashboard
   submodules: Submodule[] = [
     {
       title: 'Gestión de Usuarios',
       desc: 'Administrar cuentas, roles y permisos básicos del sistema.',
-      status: 'available',
-      link: '/admin/users',
-      bullets: ['Crear usuarios', 'Asignar roles', 'Gestionar permisos'],
+      status: 'available', // El módulo está disponible
+      link: '/admin/users', // Enlace directo al módulo
+      bullets: ['Crear usuarios', 'Asignar roles', 'Gestionar permisos'], // Funciones principales
+      statsValue: '47 usuarios activos', // Información adicional que se mostrará
     },
-    // Otros submódulos se agregan en HU futuras
+
+    {
+      title: 'Gestión de Catálogos',
+      desc: 'Administrar catálogos de Roles, Unidades Organizacionales y Plantillas.',
+      status: 'available', // Módulo disponible
+      links: [ // Varios enlaces que redirigen a las respectivas páginas
+        { label: 'Roles', route: '/admin/catalogos/roles' },
+        { label: 'Unidades', route: '/admin/catalogos/unidades' },
+        { label: 'Plantillas', route: '/admin/catalogos/plantillas' },
+      ],
+      bullets: ['Roles', 'Unidades organizacionales', 'Plantillas'], // Funciones principales
+      statsValue: '3 catálogos disponibles', // Información adicional
+    },
+
+    {
+      title: 'Permisos del Editor',
+      desc: 'Configurar y aplicar permisos EDIT y SIGN para el rol de Editor.',
+      status: 'available', // Módulo disponible
+      link: '/admin/permisos-editor', // Enlace directo al módulo
+      bullets: ['Configurar EDIT y SIGN', 'Aplicación automática', 'Auditar cambios'], // Funciones principales
+      statsValue: '2 permisos configurados', // Información adicional
+    },
   ];
 }

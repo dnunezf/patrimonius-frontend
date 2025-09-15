@@ -30,23 +30,35 @@ export interface UpsertUserDto {
 
 @Injectable({ providedIn: 'root' })
 export class AdminUsersService {
-  private api = environment.apiUrl;
+  private api = `${environment.apiUrl}/admin`;
 
   constructor(private http: HttpClient) {}
 
   list(): Observable<AdminUser[]> {
-    return this.http.get<AdminUser[]>(`${this.api}/admin/users`);
+    return this.http.get<AdminUser[]>(`${this.api}/users`);
   }
 
   create(body: UpsertUserDto): Observable<AdminUser> {
-    return this.http.post<AdminUser>(`${this.api}/admin/users`, body);
+    return this.http.post<AdminUser>(`${this.api}/users`, body);
   }
 
-  update(id: number, body: Partial<UpsertUserDto>): Observable<AdminUser> {
-    return this.http.patch<AdminUser>(`${this.api}/admin/users/${id}`, body);
+  // ✅ acepta tanto editorPermissions (tipo TS) como permisosEditor (lo que consume el backend)
+  update(
+    id: number,
+    body: Partial<UpsertUserDto> | { permisosEditor: EditorPermission[] }
+  ): Observable<AdminUser> {
+    let payload: any = body;
+
+    // Si viene con editorPermissions, lo mapeamos a permisosEditor para el backend
+    if ((body as Partial<UpsertUserDto>).editorPermissions) {
+      const perms = (body as Partial<UpsertUserDto>).editorPermissions!;
+      payload = { permisosEditor: perms };
+    }
+
+    return this.http.patch<AdminUser>(`${this.api}/users/${id}`, payload);
   }
 
   remove(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.api}/admin/users/${id}`);
+    return this.http.delete<void>(`${this.api}/users/${id}`);
   }
 }

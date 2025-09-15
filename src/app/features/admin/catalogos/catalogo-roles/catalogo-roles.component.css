@@ -1,0 +1,156 @@
+/* Contenedor principal */
+.container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+/* Formulario de creación/edición de rol */
+.form-container {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+input {
+  padding: 12px;
+  margin-right: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+input:focus {
+  border-color: #4CAF50;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+button:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+}
+
+/* Listado de roles */
+.roles-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-evenly;
+}
+
+.role-card {
+  border: 1px solid #ddd;
+  padding: 20px;
+  width: 220px;
+  text-align: center;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.role-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.role-card h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.role-card p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.role-card button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: background-color 0.3s;
+}
+
+.role-card button:hover {
+  background-color: #e53935;
+}
+
+/* Estilos para el título */
+h2 {
+  color: #333;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+/* Tabla */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+table th,
+table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 14px;
+}
+
+table th {
+  text-align: left;
+  background: #fafafa;
+  font-weight: bold;
+  color: #333;
+}
+
+.center {
+  text-align: center;
+}
+
+/* Botones de acción en la tabla */
+.actions button {
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+  font-weight: bold; /* Aumentamos el peso de la fuente */
+}
+
+button.edit {
+  background-color: rgba(34, 197, 94, 0.4); /* Naranja más suave */
+  border-color: rgba(34, 197, 94, 0.6); /* Verde con menos transparencia */
+  color: #333;
+}
+
+button.edit:hover {
+  background-color: #34d399; /* Verde al pasar el cursor */
+  color: white;
+  transform: scale(1.05); /* Efecto de escalado */
+}
+
+button.delete {
+  background-color: rgba(244, 71, 113, 0.4); /* Naranja más suave */
+  border-color: rgba(244, 71, 113, 0.6); /* Rojo con menos transparencia */
+  color: #333;
+}
+
+button.delete:hover {
+  background-color: #f87171; /* Rojo al pasar el cursor */
+  color: white;
+  transform: scale(1.05); /* Efecto de escalado */
+}
