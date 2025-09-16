@@ -3,6 +3,12 @@ import { AdminShellComponent } from './admin-shell.component';
 import { AdminDashboardComponent } from './dashboard/admin-dashboard.component';
 import { AdminNotificationsComponent } from './notifications/admin-notifications.component';
 import { AccessExceptionsComponent } from './access-exceptions/access-exceptions.component';
+import {CatalogoRolesComponent} from './catalogos/catalogo-roles/catalogo-roles.component';
+import {CatalogoUnidadComponent} from './catalogos/catalogo-unidad/catalogo-unidad.component';
+import {CatalogoPlantillasComponent} from './catalogos/catalogo-plantillas/catalogo-plantillas.component';
+
+import {PermisosEditorComponent} from './permisosEditor/permisos-editor.component';
+import {CatalogosModulePageComponent} from './moduleCatalogos/catalogos-module-page.component';
 
 export const ADMIN_ROUTES: Routes = [
   {
@@ -37,6 +43,20 @@ export const ADMIN_ROUTES: Routes = [
             (m) => m.AdminModulePageComponent
           ),
       },
+
+      // Rutas para los catálogos
+      {
+        path: 'module/catalogs',
+        component: CatalogosModulePageComponent, // Asegúrate de que este componente esté correctamente importado
+        children: [
+          { path: 'roles', component: CatalogoRolesComponent },
+          { path: 'unidades', component: CatalogoUnidadComponent },
+          { path: 'plantillas', component: CatalogoPlantillasComponent },
+        ],
+      },
+
+      // Ruta para Permisos del Editor
+      { path: 'permisos-editor', component: PermisosEditorComponent }
     ],
   },
 ];

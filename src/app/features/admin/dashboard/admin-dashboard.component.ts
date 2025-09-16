@@ -6,7 +6,7 @@ import { TopbarComponent } from '../../../core/layout/topbar/topbar.component';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [NgFor, RouterLink, TopbarComponent],
+  imports: [NgFor, RouterLink, ],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.css'],
 })

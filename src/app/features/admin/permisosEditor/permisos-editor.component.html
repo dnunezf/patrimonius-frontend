@@ -1,0 +1,91 @@
+<h1 class="page-title">Permisos del Editor</h1>
+
+<div class="toolbar">
+  <input
+    type="text"
+    placeholder="Buscar por nombre o correo…"
+    [ngModel]="filter()"
+    (ngModelChange)="filter.set($event)"
+  />
+
+  <div class="toolbar-actions">
+    <button (click)="setAll(true)" class="primary">Habilitar todos</button>
+    <button (click)="setAll(false)" class="secondary">Deshabilitar todos</button>
+
+    <button
+      class="primary"
+      [disabled]="savingAll() || !hasDirty()"
+      (click)="guardarTodos()"
+    >
+      {{ savingAll() ? 'Guardando…' : 'Guardar cambios' }}
+    </button>
+
+    <a class="link" routerLink="/admin/catalogos/roles">Ir a Catálogos</a>
+  </div>
+</div>
+
+<div class="panel" *ngIf="!loading(); else cargando">
+  <div class="error" *ngIf="error()">{{ error() }}</div>
+
+  <table class="table" *ngIf="filtered().length; else vacio">
+    <thead>
+    <tr>
+      <th>Usuario</th>
+      <th>Unidad</th>
+      <th>Correo</th>
+      <th class="center">Editar</th>
+      <th class="center">Firmar</th>
+      <th class="center">Cargar</th> <!-- 👈 nueva columna -->
+      <th>Acciones</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let r of filtered()">
+      <td>
+        <div class="u-name">
+          {{ r.nombre }} {{ r.apellido1 }} {{ r.apellido2 || '' }}
+        </div>
+      </td>
+      <td>{{ r.unidad ?? '—' }}</td>
+      <td>{{ r.email }}</td>
+
+      <td class="center">
+        <input type="checkbox" [checked]="r.edit" (change)="toggle(r, 'edit')" />
+      </td>
+
+      <td class="center">
+        <input type="checkbox" [checked]="r.sign" (change)="toggle(r, 'sign')" />
+      </td>
+
+      <td class="center">
+        <input
+          type="checkbox"
+          [checked]="r.upload"
+          (change)="toggle(r, 'upload')"
+        />
+      </td>
+
+
+      <td class="actions">
+        <button (click)="habilitar(r)" [disabled]="r.saving" class="enable">Habilitar</button>
+        <button (click)="deshabilitar(r)" [disabled]="r.saving" class="disable">Deshabilitar</button>
+        <button
+          class="primary"
+          [disabled]="savingAll() || !hasDirty()"
+          (click)="guardarTodos()"
+        >
+          Guardar
+        </button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<ng-template #cargando>
+  <div class="loading">Cargando editores…</div>
+</ng-template>
+
+<ng-template #vacio>
+  <div class="empty">No hay editores que coincidan con el filtro.</div>
+</ng-template>

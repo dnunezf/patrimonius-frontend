@@ -1,0 +1,58 @@
+<div class="container">
+  <h2>Gestión de Plantillas</h2>
+
+  <div class="grid">
+    <!-- Formulario de subida -->
+    <form (ngSubmit)="upload()" #f="ngForm" class="panel">
+      <h3>Nueva Plantilla (.doc/.docx)</h3>
+
+      <label>Nombre</label>
+      <input name="nombre" [(ngModel)]="form.nombre" required />
+
+      <label>Versión</label>
+      <input name="version" [(ngModel)]="form.version" required />
+
+      <label>Descripción</label>
+      <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
+
+      <label>Archivo</label>
+      <input type="file" (change)="onFile($event)" accept=".doc,.docx" />
+
+      <div class="row">
+        <button type="submit" class="primary">Subir Plantilla</button>
+      </div>
+    </form>
+
+    <!-- Listado -->
+    <div class="panel">
+      <h3>Listado</h3>
+      <div *ngIf="loading">Cargando…</div>
+      <div *ngIf="!loading && !errorMessage">No se encontraron plantillas.</div>
+      <table *ngIf="!loading && plantillas.length > 0">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Versión</th>
+          <th>Archivo</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let plantilla of plantillas">
+          <td>{{ plantilla.id }}</td>
+          <td>{{ plantilla.nombre }}</td>
+          <td>{{ plantilla.version }}</td>
+          <td>{{ plantilla.ruta_archivo }}</td>
+          <td class="actions">
+            <button (click)="rename(plantilla)">Renombrar</button>
+            <button (click)="remove(plantilla.id)">Eliminar</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <div *ngIf="errorMessage">{{ errorMessage }}</div>
+    </div>
+  </div>
+</div>
+
