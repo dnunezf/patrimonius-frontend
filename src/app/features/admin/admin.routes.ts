@@ -9,6 +9,7 @@ import {CatalogoPlantillasComponent} from './catalogos/catalogo-plantillas/catal
 
 import {PermisosEditorComponent} from './permisosEditor/permisos-editor.component';
 import {CatalogosModulePageComponent} from './moduleCatalogos/catalogos-module-page.component';
+import {AccessControlComponent} from './access-control/access-control.component';
 
 export const ADMIN_ROUTES: Routes = [
   {
@@ -18,6 +19,7 @@ export const ADMIN_ROUTES: Routes = [
       { path: 'dashboard', component: AdminDashboardComponent },
       { path: 'notifications', component: AdminNotificationsComponent },
       { path: 'access-exceptions', component: AccessExceptionsComponent },
+      { path: 'access-control', component: AccessControlComponent },
 
       // HU-002 route
       {

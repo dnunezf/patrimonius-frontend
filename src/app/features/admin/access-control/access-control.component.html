@@ -1,0 +1,81 @@
+<main class="container">
+  <section class="section-header">
+    <a routerLink="/admin" class="back">← Volver al Módulo</a>
+    <h1>Acceso por Unidad Organizacional</h1>
+    <p>Control de permisos granular basado en la unidad organizacional responsable.</p>
+  </section>
+
+  <!-- Estado de carga -->
+  <div *ngIf="loading">Cargando...</div>
+  <div *ngIf="error" class="denied">
+    {{ error || '❌ Error cargando permisos de acceso' }}
+  </div>
+
+  <!-- Solo mostramos si hay datos -->
+  <ng-container *ngIf="!loading && !error">
+    <!-- Tabla de Documentos -->
+    <section>
+      <h2>Listado de Documentos</h2>
+      <p>
+        Matriz de permisos granular por documento:
+        <span class="allowed">✔ Permitido</span> /
+        <span class="denied">✘ Restringido</span>
+      </p>
+
+      <table class="docs-table">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Título</th>
+          <th>Unidad Responsable</th>
+          <th>Estado</th>
+          <th>Ver</th>
+          <th>Editar</th>
+          <th>Firmar</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let doc of documents">
+          <td>{{ doc.code }}</td>
+          <td>{{ doc.title }}</td>
+          <td>
+            {{ doc.unit }}
+            <span *ngIf="doc.unit === user.unit" class="badge">Su Unidad</span>
+          </td>
+          <td>{{ doc.status }}</td>
+          <td>{{ doc.canView ? "✔" : "✘" }}</td>
+          <td>{{ doc.canEdit ? "✔" : "✘" }}</td>
+          <td>{{ doc.canSign ? "✔" : "✘" }}</td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Información de Control de Acceso -->
+    <section class="info-section">
+      <h2>Información del Control de Acceso</h2>
+      <div class="grid-info">
+        <div>
+          <h3>Matriz de Permisos Granular</h3>
+          <ul>
+            <li>✔ Permitido por unidad: Su unidad coincide</li>
+            <li>✔ Permitido por excepción: Acceso especial otorgado</li>
+            <li>✘ Restringido por unidad: Documento de otra unidad</li>
+            <li>✘ Restringido por documento: Tipo no permite acción</li>
+          </ul>
+        </div>
+
+        <div *ngIf="user">
+          <h3>Su Información</h3>
+          <p>Usuario: {{ user.email }}</p>
+          <p>Rol: {{ user.role }}</p>
+          <p>Unidad asignada: {{ user.unit }}</p>
+          <p>
+            Documentos con acceso:
+            {{ accessibleCount }} de {{ documents.length }}
+          </p>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</main>

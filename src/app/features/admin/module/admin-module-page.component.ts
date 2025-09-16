@@ -69,6 +69,14 @@ export class AdminModulePageComponent {
     },
 
     {
+      title: 'Acceso por Unidad Organizacional',
+      desc: 'Control de permisos basado en la estructura organizacional del Museo Nacional.',
+      status: 'available',
+      link: '/admin/access-control',
+      bullets: ['Permisos por unidad', 'Estructura organizacional', 'Acceso granular'],
+    },
+
+    {
       title: 'Permisos del Editor',
       desc: 'Configurar y aplicar permisos EDIT y SIGN para el rol de Editor.',
       status: 'available', // Módulo disponible

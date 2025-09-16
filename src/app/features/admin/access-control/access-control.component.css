@@ -1,0 +1,81 @@
+.container {
+  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
+  background-color: #f7fafc;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section-header {
+  margin-bottom: 24px;
+}
+
+h1, h2, h3 {
+  color: #1f2937;
+  font-weight: 700;
+}
+
+p {
+  color: #6b7280;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.docs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.docs-table th,
+.docs-table td {
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  text-align: left;
+}
+
+.docs-table th {
+  background-color: #2563eb;
+  color: white;
+}
+
+.docs-table td {
+  background-color: #f9fafb;
+}
+
+.badge {
+  background: #16a34a;
+  color: white;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+.allowed {
+  color: #16a34a;
+  font-weight: 600;
+}
+.denied {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.info-section {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.grid-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
