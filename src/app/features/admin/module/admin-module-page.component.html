@@ -1,18 +1,22 @@
 <main class="container">
+  <header class="head">
+    <a routerLink="/admin/dashboard" class="back">← Volver al Dashboard</a>
+    <h1>Módulo de Administración</h1>
+    <p class="sub">Gestión integral de usuarios, permisos y configuraciones.</p>
+  </header>
+
   <section class="grid">
-    <!-- Hacemos cada tarjeta clickeable para cada submódulo -->
     <article
+      class="card"
       *ngFor="let m of submodules"
-      class="card clickable-card"
-      [routerLink]="m.link || '/admin/module/catalogs'"
+      [routerLink]="m.link || null"
     >
       <div class="row1">
         <div class="icon" aria-hidden="true"></div>
         <span class="badge" [class.ok]="m.status === 'available'">
-          {{ m.status === 'available' ? 'Disponible' : 'En desarrollo' }}
+          {{ m.status === "available" ? "Disponible" : "En desarrollo" }}
         </span>
       </div>
-
       <h3 class="title">{{ m.title }}</h3>
       <p class="desc">{{ m.desc }}</p>
 
