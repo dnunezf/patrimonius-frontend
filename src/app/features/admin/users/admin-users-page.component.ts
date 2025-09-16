@@ -1,6 +1,6 @@
 import { Component, Signal, computed, effect, signal } from '@angular/core';
 import { CommonModule, NgFor, NgIf } from '@angular/common';
-import { FormsModule } from '@angular/forms'; // ← FIX
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
   AdminUsersService,
@@ -9,7 +9,10 @@ import {
 } from '../../../../core/services/admin-users.service';
 import { UserFormDialogComponent } from './user-form-dialog.component';
 import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
+import { ToastService } from '../../../shared/ui/toast.service';
+import { ConfirmService } from '../../../shared/ui/confirm.service';
 
+/** Admin Users page: now uses ToastService (success/error) and ConfirmService (delete). */
 @Component({
   selector: 'app-admin-users-page',
   standalone: true,
@@ -20,7 +23,7 @@ import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
     NgIf,
     RouterLink,
     UserFormDialogComponent,
-  ], // ← FIX
+  ],
   templateUrl: './admin-users-page.component.html',
   styleUrls: ['./admin-users-page.component.css'],
 })
@@ -57,20 +60,25 @@ export class AdminUsersPageComponent {
   readonly UNIDADES = UNIDADES;
   readonly EDITOR_ID = EDITOR_ID;
 
-  constructor(private api: AdminUsersService) {
+  constructor(
+    private api: AdminUsersService,
+    private toast: ToastService,
+    private confirm: ConfirmService
+  ) {
     effect(() => void this.load());
   }
 
   load(): void {
     this.loading.set(true);
     this.api.list().subscribe({
-      next: (list: AdminUser[]) => {
+      next: (list) => {
         this.users.set(list);
         this.loading.set(false);
       },
-      error: (e: any) => {
+      error: (e) => {
         this.error.set(e?.error?.message || 'Failed to load users');
         this.loading.set(false);
+        this.toast.error('No se pudo cargar usuarios');
       },
     });
   }
@@ -84,14 +92,25 @@ export class AdminUsersPageComponent {
     this.showForm.set(true);
   }
 
-  delete(u: AdminUser): void {
-    if (!confirm(`Eliminar al usuario ${u.nombre} ${u.apellido1}?`)) return;
+  /** Delete flow now asks confirmation and toasts the result (no window.confirm/alert). */
+  async delete(u: AdminUser): Promise<void> {
+    const ok = await this.confirm.ask(
+      `Eliminar al usuario ${u.nombre} ${u.apellido1}?`,
+      'Confirmar eliminación'
+    );
+    if (!ok) return;
     this.api.remove(u.id).subscribe({
-      next: () => this.load(),
-      error: (e: any) => alert(e?.error?.message || 'No se pudo eliminar'),
+      next: () => {
+        this.toast.success('Usuario eliminado');
+        this.load();
+      },
+      error: (e) => {
+        this.toast.error(e?.error?.message || 'No se pudo eliminar');
+      },
     });
   }
 
+  /** Create/Update flow with success + error toasts and dialog auto-close. */
   onSubmit(data: UpsertUserDto, editedId?: number): void {
     const req = editedId
       ? this.api.update(editedId, data)
@@ -99,9 +118,19 @@ export class AdminUsersPageComponent {
     req.subscribe({
       next: () => {
         this.showForm.set(false);
+        this.toast.success(editedId ? 'Cambios guardados' : 'Usuario creado');
         this.load();
       },
-      error: (e: any) => alert(e?.error?.message || 'Operación no completada'),
+      error: (e) => {
+        // Map common backend errors to friendly text
+        const msg =
+          e?.status === 409
+            ? 'El correo ya existe'
+            : e?.status === 400
+            ? e?.error?.message || 'Datos inválidos'
+            : 'Operación no completada';
+        this.toast.error(msg);
+      },
     });
   }
 }
