@@ -1,10 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Title</title>
-</head>
-<body>
+<!-- editor-form-dialog.component.html -->
+<div *ngIf="open" class="modal" (click)="onBackdropClick($event)">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <button class="dialog__close" type="button" aria-label="Cerrar" (click)="close()">×</button>
 
-</body>
-</html>
+    <h2 id="formTitle" class="dialog__title">Formulario de Documento</h2>
+    <p class="dialog__subtitle">
+      Complete los campos necesarios para el documento seleccionado.
+    </p>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+      <!-- Título del documento -->
+      <label class="form__label">Título <span class="req">*</span></label>
+      <div class="input">
+        <input class="input__control"
+               type="text"
+               placeholder="Título del documento"
+               formControlName="titulo" />
+      </div>
+      <div class="form__error" *ngIf="form.get('titulo')?.touched && form.get('titulo')?.invalid">
+        El título es obligatorio.
+      </div>
+      <!-- Categoría -->
+      <label class="form__label">Categoría</label>
+      <div class="input">
+        <select class="input__control" formControlName="categoria">
+          <option *ngFor="let categoria of categorias" [value]="categoria.id">{{ categoria.nombre }}</option>
+        </select>
+      </div>
+
+      <!-- Acciones -->
+      <button class="btn btn--primary dialog__submit" type="submit">Guardar Documento</button>
+    </form>
+  </div>
+</div>

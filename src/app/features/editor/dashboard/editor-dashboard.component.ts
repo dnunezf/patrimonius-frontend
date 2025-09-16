@@ -4,6 +4,7 @@ import { DocumentService } from '../../../../core/services/document.service';
 import { VDocumentModel } from '../../../../core/services/document.service';
 import {CommonModule, DatePipe} from '@angular/common';
 import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
+import {EditorFormDialogComponent} from '../document/document-form-dialog.component';
 
 // Definir el tipo para las plantillas
 interface Template {
@@ -13,13 +14,19 @@ interface Template {
 
 @Component({
   selector: 'app-editor-dashboard',
-  imports: [CommonModule, FormatStatePipe],
+  imports: [CommonModule, FormatStatePipe,EditorFormDialogComponent],
   templateUrl: './editor-dashboard.component.html',
   styleUrls: ['./editor-dashboard.component.css'],
   providers: [DatePipe]
 })
 export class EditorDashboardComponent implements OnInit {
-
+  openFormDialog: boolean = false;
+  selectedTemplate: any; // otra opción selectedTemplate: string = '';
+  categorias = [
+    { id: 1, nombre: 'Categoría 1' },
+    { id: 2, nombre: 'Categoría 2' },
+    // Agrega más categorías según sea necesario
+  ];
   documents: VDocumentModel[] = [];
   plantillas: any[] = [];  // Para almacenar las plantillas que se obtienen desde el backend
 
@@ -68,7 +75,7 @@ export class EditorDashboardComponent implements OnInit {
     }
   ];
 
-  selectedTemplate: string = '';
+
 
   constructor(private documentService: DocumentService) {}
 
@@ -123,5 +130,19 @@ export class EditorDashboardComponent implements OnInit {
   selectTemplate(templateName: string, card: any): void {
     this.selectedTemplate = templateName;
     card.showTemplates = false; // Cerrar el desplegable después de la selección
+  }
+  onTemplateClick(template: any): void {
+    this.selectedTemplate = template;
+    this.openFormDialog = true;
+    console.log('Se creó el dialog');// Abre el modal
+  }
+  closeFormDialog(): void {
+    this.openFormDialog = false;  // Cierra el modal
+  }
+
+  handleFormSubmit(formData: any): void {
+    // Lógica para manejar los datos del formulario una vez enviados
+    console.log('Datos del formulario:', formData);
+    this.closeFormDialog();
   }
 }

@@ -1,4 +1,12 @@
 <div class="container">
+  <!-- editor-dashboard.component.html -->
+  <app-document-form-dialog
+    [open]="openFormDialog"
+    [categorias]="categorias"
+    (closed)="closeFormDialog()"
+    (submitForm)="handleFormSubmit($event)">
+  </app-document-form-dialog>
+
   <header class="section-header">
     <h1 class="text-blue-639">Dashboard del Editor</h1>
     <p class="text-gray">Gestione documentos, firmas y consultas desde su panel de control principal</p>
@@ -32,7 +40,7 @@
 
       <div *ngIf="card.showTemplates" class="template-list">
         <ul>
-          <li *ngFor="let template of card.templates" (click)="selectTemplate(template.name, card)">
+          <li *ngFor="let template of card.templates" (click)="onTemplateClick(template)">
             <div class="template-item">
               <div class="template-text">
                 <h4>{{ template.name }}</h4>
