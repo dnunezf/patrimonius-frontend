@@ -74,6 +74,7 @@ export class DocumentService {
 
   constructor(private http: HttpClient) {}
 
+  // Métodos existentes para manejar documentos
   getAll(): Observable<DocumentModel[]> {
     return this.http.get<DocumentModel[]>(`${this.apiUrl}`);
   }
@@ -94,22 +95,24 @@ export class DocumentService {
     return this.http.delete<void>(`${this.apiUrl}${id}`);
   }
 
+  // Método para obtener las plantillas
+  getPlantillas(): Observable<any[]> {
+    return this.http.get<any[]>('http://localhost:3000/plantillas/listaplantilla');  // Asegúrate de que esta ruta sea correcta
+  }
 
-getDocumentsFromProduction(): Observable<VDocumentModel[]> {
-  // Asegúrate del path correcto; si tu app monta /documents:
-  // `${this.apiUrl}documents/view/production`
-  return this.http.get<AccessibleDocRow[]>(`${this.apiUrl}/view/production`).pipe(
-    map(rows => rows.map(r => ({
-      documento_nombre:   r.titulo,
-      documento_estado:   r.estado,
-      primer_usuario:     r.creador_nombre,
-      fecha_creacion:     r.fecha_creacion,
-      unidad_nombre:      r.unidad_nombre,
-      categoria_nombre:   r.categoria_nombre2  || 'Sin categoría',
-      firmas_obtenidas:   r.firmas_obtenidas,
-      firmas_requeridas:  r.firmas_requeridas,
-    } satisfies VDocumentModel)))
-  );
-}
-
+  // Obtener documentos en producción
+  getDocumentsFromProduction(): Observable<VDocumentModel[]> {
+    return this.http.get<AccessibleDocRow[]>(`${this.apiUrl}/view/production`).pipe(
+      map(rows => rows.map(r => ({
+        documento_nombre:   r.titulo,
+        documento_estado:   r.estado,
+        primer_usuario:     r.creador_nombre,
+        fecha_creacion:     r.fecha_creacion,
+        unidad_nombre:      r.unidad_nombre,
+        categoria_nombre:   r.categoria_nombre2  || 'Sin categoría',
+        firmas_obtenidas:   r.firmas_obtenidas,
+        firmas_requeridas:  r.firmas_requeridas,
+      } satisfies VDocumentModel)))
+    );
+  }
 }

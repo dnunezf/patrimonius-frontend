@@ -1,22 +1,27 @@
+// src/app/features/editor/dashboard/editor-dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { DocumentService } from '../../../../core/services/document.service';
 import { VDocumentModel } from '../../../../core/services/document.service';
-import { DatePipe } from '@angular/common';
+import {CommonModule, DatePipe} from '@angular/common';
 import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
+
+// Definir el tipo para las plantillas
+interface Template {
+  name: string;
+  description: string;
+}
 
 @Component({
   selector: 'app-editor-dashboard',
-  standalone: true,
-  imports: [CommonModule , FormatStatePipe],
+  imports: [CommonModule, FormatStatePipe],
   templateUrl: './editor-dashboard.component.html',
   styleUrls: ['./editor-dashboard.component.css'],
   providers: [DatePipe]
 })
 export class EditorDashboardComponent implements OnInit {
 
-
   documents: VDocumentModel[] = [];
+  plantillas: any[] = [];  // Para almacenar las plantillas que se obtienen desde el backend
 
   // Status counters array
   statusCounters = [
@@ -42,23 +47,14 @@ export class EditorDashboardComponent implements OnInit {
     }
   ];
 
-  // Overview cards array
+  // Overview cards array (actualizado con tipo explícito para templates)
   overviewCards = [
     {
-      title: 'Crear Documento',
-      description: 'Sin plantilla',
-      icon: 'plus.png',
-    },
-    {
-      title: 'Con Plantilla',
+      title: 'Crear Documento Con Plantilla',
       description: 'Tipos predefinidos',
       icon: 'document-signed.png',
-      showTemplates: false, // This controls the visibility of the templates
-      templates: [
-        { name: 'Plantilla 1', description: 'Documento administrativo básico' },
-        { name: 'Plantilla 2', description: 'Informe técnico especializado' },
-        { name: 'Plantilla 3', description: 'Acta de reunión institucional' }
-      ]
+      showTemplates: false,
+      templates: [] as Template[]  // Definir el tipo de las plantillas explícitamente
     },
     {
       title: 'Firmar',
@@ -74,18 +70,15 @@ export class EditorDashboardComponent implements OnInit {
 
   selectedTemplate: string = '';
 
-  constructor(private documentService: DocumentService) {
-
-  }
+  constructor(private documentService: DocumentService) {}
 
   ngOnInit(): void {
-    // Initialization if necessary
     this.loadDocuments();
+    this.loadTemplates();  // Cargar las plantillas desde el backend
   }
 
   loadDocuments(): void {
     this.documentService.getDocumentsFromProduction().subscribe({
-
       next: (data) => {
         console.log('Datos obtenidos del backend:', data);
         this.documents = data;
@@ -97,18 +90,38 @@ export class EditorDashboardComponent implements OnInit {
     });
   }
 
+  loadTemplates(): void {
+    this.documentService.getPlantillas().subscribe({
+      next: (data) => {
+        console.log('Plantillas obtenidas:', data);
+        this.plantillas = data;  // Guardar las plantillas obtenidas
+        this.updateTemplateCards();  // Actualizar las tarjetas con las plantillas
+      },
+      error: (err) => {
+        console.error('Error al cargar las plantillas', err);
+      }
+    });
+  }
+
+  updateTemplateCards(): void {
+    // Asigna las plantillas a la tarjeta "Crear Documento con Plantilla"
+    this.overviewCards[0].templates = this.plantillas.map((plantilla: any) => ({
+      name: plantilla.nombre, // Asignamos el nombre de la plantilla
+      description: plantilla.descripcion
+    }));
+  }
+
+  // Métodos adicionales
   getIconPath(iconName: string): string {
     return `assets/icons/${iconName}`;
   }
 
-  // Toggle visibility of templates for the selected card
   toggleTemplate(card: any): void {
-    card.showTemplates = !card.showTemplates; // Toggle the display of the templates
+    card.showTemplates = !card.showTemplates; // Toggle la visibilidad de las plantillas
   }
 
-  // Handle the selection of a template
   selectTemplate(templateName: string, card: any): void {
     this.selectedTemplate = templateName;
-    card.showTemplates = false; // Close the dropdown after selection
+    card.showTemplates = false; // Cerrar el desplegable después de la selección
   }
 }
