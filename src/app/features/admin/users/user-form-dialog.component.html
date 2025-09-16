@@ -24,7 +24,7 @@
       usuario en el sistema
     </p>
 
-    <form class="form" [formGroup]="form" (ngSubmit)="save()">
+    <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
       <!-- ===== Personal information ===== -->
       <h3 class="section__title">Información Personal</h3>
 
@@ -37,12 +37,24 @@
             <img src="assets/icons/user.png" alt="" />
           </span>
           <input
+            #ctl
             id="nombre"
             class="input__control"
             type="text"
             placeholder="Nombre del usuario"
             formControlName="nombre"
+            [class.invalid]="showErr('nombre')"
+            [attr.aria-invalid]="showErr('nombre')"
+            [attr.aria-describedby]="'err-nombre'"
           />
+        </div>
+        <div
+          class="field-help"
+          *ngIf="showErr('nombre')"
+          id="err-nombre"
+          role="alert"
+        >
+          {{ errMsg("nombre") }}
         </div>
 
         <div class="input with-icon">
@@ -50,12 +62,24 @@
             <img src="assets/icons/user.png" alt="" />
           </span>
           <input
+            #ctl
             id="apellido1"
             class="input__control"
             type="text"
             placeholder="Primer apellido"
             formControlName="apellido1"
+            [class.invalid]="showErr('apellido1')"
+            [attr.aria-invalid]="showErr('apellido1')"
+            [attr.aria-describedby]="'err-ap1'"
           />
+        </div>
+        <div
+          class="field-help"
+          *ngIf="showErr('apellido1')"
+          id="err-ap1"
+          role="alert"
+        >
+          {{ errMsg("apellido1") }}
         </div>
       </div>
 
@@ -67,6 +91,7 @@
           <img src="assets/icons/user.png" alt="" />
         </span>
         <input
+          #ctl
           id="apellido2"
           class="input__control"
           type="text"
@@ -81,13 +106,25 @@
           <img src="assets/icons/email.png" alt="" />
         </span>
         <input
+          #ctl
           id="email"
           class="input__control"
           type="email"
           placeholder="usuario@museocr.go.cr"
           autocomplete="username"
           formControlName="email"
+          [class.invalid]="showErr('email')"
+          [attr.aria-invalid]="showErr('email')"
+          [attr.aria-describedby]="'err-email'"
         />
+      </div>
+      <div
+        class="field-help"
+        *ngIf="showErr('email')"
+        id="err-email"
+        role="alert"
+      >
+        {{ errMsg("email") }}
       </div>
 
       <!-- ===== Organization information ===== -->
@@ -95,35 +132,61 @@
 
       <label class="form__label" for="rolId">Rol en el sistema *</label>
       <div class="select">
-        <select id="rolId" class="select__control" formControlName="rolId">
-          <option *ngFor="let r of ROLES" [ngValue]="r.id">
-            {{ r.label }}
-          </option>
+        <select
+          #ctl
+          id="rolId"
+          class="select__control"
+          formControlName="rolId"
+          [class.invalid]="showErr('rolId')"
+          [attr.aria-invalid]="showErr('rolId')"
+          [attr.aria-describedby]="'err-rol'"
+        >
+          <option *ngFor="let r of ROLES" [value]="r.id">{{ r.label }}</option>
         </select>
+      </div>
+      <div
+        class="field-help"
+        *ngIf="showErr('rolId')"
+        id="err-rol"
+        role="alert"
+      >
+        {{ errMsg("rolId") }}
       </div>
 
       <label class="form__label" for="unidadId">Unidad organizacional *</label>
       <div class="select">
         <select
+          #ctl
           id="unidadId"
           class="select__control"
           formControlName="unidadId"
+          [class.invalid]="showErr('unidadId')"
+          [attr.aria-invalid]="showErr('unidadId')"
+          [attr.aria-describedby]="'err-u'"
         >
-          <option *ngFor="let u of UNIDADES" [ngValue]="u.id">
+          <option *ngFor="let u of UNIDADES" [value]="u.id">
             {{ u.label }}
           </option>
         </select>
+      </div>
+      <div
+        class="field-help"
+        *ngIf="showErr('unidadId')"
+        id="err-u"
+        role="alert"
+      >
+        {{ errMsg("unidadId") }}
       </div>
 
       <!-- Editor permissions -->
       <div *ngIf="isEditor()" class="editor-perms" aria-labelledby="permTitle">
         <div id="permTitle" class="perm-title">Permisos del Editor</div>
         <label class="switch" for="permEdit">
-          <input id="permEdit" type="checkbox" formControlName="edit" />
+          <input #ctl id="permEdit" type="checkbox" formControlName="edit" />
           <span>Edición</span>
         </label>
         <label class="switch" for="permSign">
-          <input id="permSign" type="checkbox" formControlName="sign" />
+          <input #ctl id="permSign" type="checkbox" formControlName="sign" />
           <span>Firma</span>
         </label>
       </div>
@@ -139,7 +202,11 @@
 
       <!-- Footer actions -->
       <div class="footer">
-        <button class="btn btn--success" type="submit">
+        <button
+          class="btn btn--success"
+          type="submit"
+          [disabled]="form.invalid"
+        >
           {{ editing ? "Guardar Cambios" : "Crear Usuario" }}
         </button>
         <button class="btn btn--ghost" type="button" (click)="close.emit()">
