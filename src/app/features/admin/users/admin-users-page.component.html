@@ -64,36 +64,34 @@
                 >{{ u.nombre }} {{ u.apellido1 }} {{ u.apellido2 }}</strong
               >
               <div class="email">{{ u.email }}</div>
-              <div
-                *ngIf="u.rolId === EDITOR_ID && u.editorPermissions?.length"
-                class="chips"
-              >
-                <span class="chip" *ngFor="let p of u.editorPermissions">
-                  {{ p === "SIGN" ? "Firma" : "Edición" }}
-                </span>
-              </div>
             </div>
           </td>
           <td>
-            <span
-              class="role-badge"
-              [class.admin]="u.rolId === 1"
-              [class.editor]="u.rolId === 2"
-              [class.arch]="u.rolId === 3"
-              [class.user]="u.rolId === 4"
-              [class.ext]="u.rolId === 5"
-            >
-              {{ u.rol }}
-            </span>
+            <ng-container *ngIf="u.roles?.length; else singleRole">
+              <span
+                class="role-badge"
+                *ngFor="let name of u.roles"
+                [ngClass]="roleClass(name)"
+              >
+                {{ name | uppercase }}
+              </span>
+            </ng-container>
+            <ng-template #singleRole>
+              <span class="role-badge" [ngClass]="roleClass(u.rol)">
+                {{ u.rol | uppercase }}
+              </span>
+            </ng-template>
           </td>
           <td>{{ u.unidad }}</td>
-          <td class="actions">
-            <button class="btn btn--secondary" (click)="openEdit(u)">
-              Editar
-            </button>
-            <button class="btn btn--danger" (click)="delete(u)">
-              Eliminar
-            </button>
+          <td>
+            <div class="actions">
+              <button class="btn btn--primary" (click)="openEdit(u)">
+                Editar
+              </button>
+              <button class="btn btn--danger" (click)="delete(u)">
+                Eliminar
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>

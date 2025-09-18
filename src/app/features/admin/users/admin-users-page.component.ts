@@ -59,7 +59,7 @@ export class AdminUsersPageComponent {
   readonly ROLES = ROLES;
   readonly UNIDADES = UNIDADES;
   readonly EDITOR_ID = EDITOR_ID;
-
+  
   constructor(
     private api: AdminUsersService,
     private toast: ToastService,
@@ -91,7 +91,18 @@ export class AdminUsersPageComponent {
     this.editing.set(u);
     this.showForm.set(true);
   }
+  
 
+  roleClass(name?: string): string {
+    const n = (name || '').toUpperCase();
+    if (n.startsWith('ADMIN')) return 'admin';
+    if (n.startsWith('EDITOR')) return 'editor';
+    if (n.startsWith('ARCH')) return 'arch';
+    if (n.includes('EXTERNO')) return 'ext';
+    if (n.startsWith('USU')) return 'user';
+    return '';
+  }
+  
   /** Delete flow now asks confirmation and toasts the result (no window.confirm/alert). */
   async delete(u: AdminUser): Promise<void> {
     const ok = await this.confirm.ask(

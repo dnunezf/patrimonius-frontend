@@ -98,11 +98,13 @@
   border-top: 1px solid #f1f5f9;
 }
 
-/* Usuario + chips */
+/* User block */
 .users .usr .email {
   color: #6b7280;
   font-size: 12px;
 }
+
+/* Chips (unused here but kept for consistency) */
 .users .chips {
   display: flex;
   gap: 6px;
@@ -149,10 +151,61 @@
   color: #854d0e;
 }
 
+/* Actions row */
 .users .actions {
   display: flex;
   gap: 8px;
 }
+
+/* Colored buttons for actions
+   - Primary = edit (blue)
+   - Danger  = delete (red) */
+.users .btn--primary,
+.users .btn--danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  transition: filter 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+.users .btn--primary {
+  background: var(--mncr-blue-3015);
+  color: #fff;
+}
+.users .btn--primary:hover {
+  filter: brightness(0.98);
+}
+.users .btn--primary:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(0, 145, 205, 0.25);
+}
+
+.users .btn--danger {
+  background: var(--mncr-red-1795);
+  color: #fff;
+}
+.users .btn--danger:hover {
+  filter: brightness(0.98);
+}
+.users .btn--danger:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.25);
+}
+
+.users .btn--primary[disabled],
+.users .btn--danger[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Status text */
 .users .muted {
   color: #6b7280;
 }
@@ -179,7 +232,7 @@
   }
   .users .table thead {
     display: none;
-  }
+  } /* Mobile table header off */
   .users .table tbody tr {
     display: grid;
     gap: 8px;
@@ -191,5 +244,10 @@
   }
   .users .actions {
     justify-content: flex-start;
+  }
+  /* Buttons a full width on very small screens if desired */
+  .users .actions .btn--primary,
+  .users .actions .btn--danger {
+    min-width: 110px;
   }
 }
