@@ -130,27 +130,33 @@
       <!-- ===== Organization information ===== -->
       <h3 class="section__title">Información Organizacional</h3>
 
-      <label class="form__label" for="rolId">Rol en el sistema *</label>
+      <!-- Role(s) -->
+      <h3 class="section__title">Información Organizacional</h3>
+
+      <label class="form__label" for="rolIds">Roles en el sistema *</label>
       <div class="select">
         <select
           #ctl
-          id="rolId"
+          id="rolIds"
           class="select__control"
-          formControlName="rolId"
-          [class.invalid]="showErr('rolId')"
-          [attr.aria-invalid]="showErr('rolId')"
+          formControlName="rolIds"
+          multiple
+          [attr.size]="rolesSize"
+          [class.invalid]="showErr('rolIds')"
+          [attr.aria-invalid]="showErr('rolIds')"
           [attr.aria-describedby]="'err-rol'"
+          title="Usa Ctrl/Shift para seleccionar varios"
         >
           <option *ngFor="let r of ROLES" [value]="r.id">{{ r.label }}</option>
         </select>
       </div>
       <div
         class="field-help"
-        *ngIf="showErr('rolId')"
+        *ngIf="showErr('rolIds')"
         id="err-rol"
         role="alert"
       >
-        {{ errMsg("rolId") }}
+        {{ errMsg("rolIds") }}
       </div>
 
       <label class="form__label" for="unidadId">Unidad organizacional *</label>

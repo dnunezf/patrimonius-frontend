@@ -40,7 +40,9 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
   readonly UNIDADES = UNIDADES;
   readonly EDITOR_ID = EDITOR_ID;
 
-  /** Grab references to inputs so we can focus the first invalid on submit. */
+  // Expose size for the multi-select (keeps list compact)
+  readonly rolesSize = Math.min(this.ROLES.length, 6);
+
   @ViewChildren('ctl') private inputs!: QueryList<
     ElementRef<HTMLInputElement | HTMLSelectElement>
   >;
@@ -50,7 +52,6 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
-      // required + min length + not-only-spaces
       nombre: [
         '',
         [Validators.required, Validators.minLength(2), this.noBlank],
@@ -60,37 +61,37 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
         [Validators.required, Validators.minLength(2), this.noBlank],
       ],
       apellido2: [''],
-      // required + email format
       email: ['', [Validators.required, Validators.email]],
-      // selects must be positive integers
-      rolId: [ROLES[0]?.id ?? 1, [Validators.required, this.positiveNumber]],
+      // ✅ multi-role support
+      rolIds: this.fb.control<number[]>([], [this.minArray(1)]),
       unidadId: [
         UNIDADES[0]?.id ?? 1,
         [Validators.required, this.positiveNumber],
       ],
-      // editor toggles
       edit: [false],
       sign: [false],
     });
   }
 
-  /** Disallow strings containing only whitespace. */
+  /** Custom: disallow only-whitespace strings. */
   private noBlank = (c: AbstractControl) =>
     String(c.value ?? '').trim().length ? null : { blank: true };
 
-  /** Ensure value is a positive integer (for select controls). */
+  /** Custom: ensure positive integer for selects. */
   private positiveNumber = (c: AbstractControl) => {
     const n = Number(c.value);
     return Number.isInteger(n) && n > 0 ? null : { number: true };
   };
 
-  /** Helper to decide when to show an error message. */
+  /** Custom: require at least N items in arrays. */
+  private minArray = (n: number) => (c: AbstractControl) =>
+    Array.isArray(c.value) && c.value.length >= n ? null : { minItems: true };
+
+  /** Error UI helpers */
   showErr(ctrl: string): boolean {
     const c = this.form.get(ctrl);
     return !!c && c.invalid && (c.dirty || c.touched);
   }
-
-  /** Human-readable error message per control. */
   errMsg(ctrl: string): string {
     const c = this.form.get(ctrl);
     if (!c || !c.errors) return '';
@@ -99,24 +100,26 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
     if (c.errors['email']) return 'Correo inválido';
     if (c.errors['blank']) return 'No puede estar vacío';
     if (c.errors['number']) return 'Seleccione un valor válido';
+    if (c.errors['minItems']) return 'Seleccione al menos un rol';
     return 'Valor inválido';
   }
 
-  /** Show editor switches when role is EDITOR_ID. */
+  /** Show editor toggles if EDITOR role is selected among roles. */
   isEditor(): boolean {
-    return Number(this.form.get('rolId')?.value) === this.EDITOR_ID;
+    const ids = (this.form.get('rolIds')?.value as number[]) || [];
+    return ids.includes(this.EDITOR_ID);
   }
 
   ngOnChanges(): void {
-    // Reset or patch the form when dialog is opened for create/edit
     if (this.editing) {
       const e = this.editing;
+      // When editing, we only know primary role (rolId); use it as the initial selection.
       this.form.reset({
         nombre: e.nombre ?? '',
         apellido1: e.apellido1 ?? '',
         apellido2: e.apellido2 ?? '',
         email: e.email ?? '',
-        rolId: e.rolId,
+        rolIds: [e.rolId], // seed selection with current primary role
         unidadId: e.unidadId,
         edit: e.editorPermissions?.includes('EDIT') || false,
         sign: e.editorPermissions?.includes('SIGN') || false,
@@ -127,7 +130,7 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
         apellido1: '',
         apellido2: '',
         email: '',
-        rolId: ROLES[0]?.id ?? 1,
+        rolIds: [], // ✅ empty until user picks
         unidadId: UNIDADES[0]?.id ?? 1,
         edit: false,
         sign: false,
@@ -137,18 +140,15 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
 
   ngAfterViewInit(): void {}
 
-  /** Close dialog when clicking on the backdrop only. */
   backdrop(e: MouseEvent) {
     if ((e.target as HTMLElement).classList.contains('modal'))
       this.close.emit();
   }
 
-  /** Validate, focus first invalid, and emit a sanitized DTO. */
+  /** Validate, focus first invalid, and emit sanitized DTO. */
   save() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-
-      // Focus first invalid control to guide the user
       const firstInvalidKey = Object.keys(this.form.controls).find(
         (k) => this.form.get(k)?.invalid
       );
@@ -163,20 +163,25 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
     }
 
     const v = this.form.value as any;
-    const editorPermissions =
-      Number(v.rolId) === this.EDITOR_ID
-        ? ([v.edit ? 'EDIT' : null, v.sign ? 'SIGN' : null].filter(Boolean) as (
-            | 'EDIT'
-            | 'SIGN'
-          )[])
-        : [];
+    const selected: number[] = (v.rolIds || []).map((n: any) => Number(n));
+
+    // Primary role = first selected (backend keeps it in Usuario.rol_id)
+    const primary = selected[0];
+
+    const editorPermissions = selected.includes(this.EDITOR_ID)
+      ? ([v.edit ? 'EDIT' : null, v.sign ? 'SIGN' : null].filter(Boolean) as (
+          | 'EDIT'
+          | 'SIGN'
+        )[])
+      : [];
 
     const dto: UpsertUserDto = {
       nombre: String(v.nombre).trim(),
       apellido1: String(v.apellido1).trim(),
       apellido2: String(v.apellido2 || '').trim(),
       email: String(v.email).trim(),
-      rolId: Number(v.rolId),
+      rolId: Number(primary),
+      rolIds: selected,
       unidadId: Number(v.unidadId),
       editorPermissions,
     };
