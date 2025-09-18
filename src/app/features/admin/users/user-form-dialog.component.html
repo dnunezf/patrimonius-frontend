@@ -1,18 +1,29 @@
 <!-- Modal/backdrop -->
 <div *ngIf="open" class="modal" (click)="backdrop($event)">
-  <!-- Dialog -->
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
-    <button class="dialog__close" type="button" aria-label="Cerrar" (click)="close.emit()">×</button>
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dlgTitle"
+  >
+    <button
+      class="dialog__close"
+      type="button"
+      aria-label="Cerrar"
+      (click)="close.emit()"
+    >
+      ×
+    </button>
 
     <h2 id="dlgTitle" class="dialog__title">
       {{ editing ? "Editar Usuario" : "Crear Nuevo Usuario" }}
     </h2>
     <p class="dialog__subtitle">
-      Complete la información para {{ editing ? "actualizar" : "crear" }} un usuario en el sistema
+      Complete la información para {{ editing ? "actualizar" : "crear" }} un
+      usuario en el sistema
     </p>
 
     <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
-      <!-- ===== Personal information ===== -->
       <h3 class="section__title">Información Personal</h3>
 
       <div class="grid grid-2">
@@ -20,82 +31,169 @@
         <label class="form__label" for="apellido1">Primer apellido *</label>
 
         <div class="input with-icon">
-          <span class="input__icon" aria-hidden="true"><img src="assets/icons/user.png" alt="" /></span>
+          <span class="input__icon" aria-hidden="true"
+            ><img src="assets/icons/user.png" alt=""
+          /></span>
           <input
-            #ctl id="nombre" class="input__control" type="text" placeholder="Nombre del usuario"
-            formControlName="nombre" [class.invalid]="showErr('nombre')"
-            [attr.aria-invalid]="showErr('nombre')" [attr.aria-describedby]="'err-nombre'"
+            #ctl
+            id="nombre"
+            class="input__control"
+            type="text"
+            placeholder="Nombre del usuario"
+            formControlName="nombre"
+            [class.invalid]="showErr('nombre')"
+            [attr.aria-invalid]="showErr('nombre')"
+            [attr.aria-describedby]="'err-nombre'"
           />
         </div>
-        <div class="field-help" *ngIf="showErr('nombre')" id="err-nombre" role="alert">
+        <div
+          class="field-help"
+          *ngIf="showErr('nombre')"
+          id="err-nombre"
+          role="alert"
+        >
           {{ errMsg("nombre") }}
         </div>
 
         <div class="input with-icon">
-          <span class="input__icon" aria-hidden="true"><img src="assets/icons/user.png" alt="" /></span>
+          <span class="input__icon" aria-hidden="true"
+            ><img src="assets/icons/user.png" alt=""
+          /></span>
           <input
-            #ctl id="apellido1" class="input__control" type="text" placeholder="Primer apellido"
-            formControlName="apellido1" [class.invalid]="showErr('apellido1')"
-            [attr.aria-invalid]="showErr('apellido1')" [attr.aria-describedby]="'err-ap1'"
+            #ctl
+            id="apellido1"
+            class="input__control"
+            type="text"
+            placeholder="Primer apellido"
+            formControlName="apellido1"
+            [class.invalid]="showErr('apellido1')"
+            [attr.aria-invalid]="showErr('apellido1')"
+            [attr.aria-describedby]="'err-ap1'"
           />
         </div>
-        <div class="field-help" *ngIf="showErr('apellido1')" id="err-ap1" role="alert">
+        <div
+          class="field-help"
+          *ngIf="showErr('apellido1')"
+          id="err-ap1"
+          role="alert"
+        >
           {{ errMsg("apellido1") }}
         </div>
       </div>
 
-      <label class="form__label" for="apellido2">Segundo apellido (opcional)</label>
+      <label class="form__label" for="apellido2"
+        >Segundo apellido (opcional)</label
+      >
       <div class="input with-icon">
-        <span class="input__icon" aria-hidden="true"><img src="assets/icons/user.png" alt="" /></span>
-        <input #ctl id="apellido2" class="input__control" type="text" placeholder="Segundo apellido" formControlName="apellido2" />
+        <span class="input__icon" aria-hidden="true"
+          ><img src="assets/icons/user.png" alt=""
+        /></span>
+        <input
+          #ctl
+          id="apellido2"
+          class="input__control"
+          type="text"
+          placeholder="Segundo apellido"
+          formControlName="apellido2"
+        />
       </div>
 
       <label class="form__label" for="email">Correo electrónico *</label>
       <div class="input with-icon">
-        <span class="input__icon" aria-hidden="true"><img src="assets/icons/email.png" alt="" /></span>
+        <span class="input__icon" aria-hidden="true"
+          ><img src="assets/icons/email.png" alt=""
+        /></span>
         <input
-          #ctl id="email" class="input__control" type="email" placeholder="usuario@museocr.go.cr"
-          autocomplete="username" formControlName="email" [class.invalid]="showErr('email')"
-          [attr.aria-invalid]="showErr('email')" [attr.aria-describedby]="'err-email'"
+          #ctl
+          id="email"
+          class="input__control"
+          type="email"
+          placeholder="usuario@museocr.go.cr"
+          autocomplete="username"
+          formControlName="email"
+          [class.invalid]="showErr('email')"
+          [attr.aria-invalid]="showErr('email')"
+          [attr.aria-describedby]="'err-email'"
         />
       </div>
-      <div class="field-help" *ngIf="showErr('email')" id="err-email" role="alert">
+      <div
+        class="field-help"
+        *ngIf="showErr('email')"
+        id="err-email"
+        role="alert"
+      >
         {{ errMsg("email") }}
       </div>
 
-      <!-- ===== Organization information ===== -->
       <h3 class="section__title">Información Organizacional</h3>
 
-      <!-- Roles (multiple) -->
-      <label class="form__label" for="rolIds">Roles en el sistema *</label>
-      <div class="select">
-        <select
-          #ctl id="rolIds" class="select__control" formControlName="rolIds"
-          multiple [attr.size]="rolesSize"
-          [class.invalid]="showErr('rolIds')" [attr.aria-invalid]="showErr('rolIds')" [attr.aria-describedby]="'err-roles'"
-        >
-          <!-- native <select multiple> returns strings; we coerce in save() -->
-          <option *ngFor="let r of ROLES" [value]="r.id">{{ r.label }}</option>
-        </select>
+      <!-- Roles as checkbox chips -->
+      <div class="role-head">
+        <label class="form__label">Roles en el sistema *</label>
+        <div class="role-ops">
+          <button type="button" class="btn-mini" (click)="selectAllRoles()">
+            Seleccionar todos
+          </button>
+          <button type="button" class="btn-mini" (click)="clearAllRoles()">
+            Limpiar
+          </button>
+        </div>
       </div>
-      <div class="field-help" *ngIf="showErr('rolIds')" id="err-roles" role="alert">
+
+      <div
+        class="chips"
+        [class.invalid]="showErr('rolIds')"
+        aria-describedby="err-roles"
+        role="group"
+      >
+        <label class="chip" *ngFor="let r of ROLES; trackBy: trackByRole">
+          <input
+            type="checkbox"
+            [checked]="hasRole(r.id)"
+            (change)="onRoleToggle(r.id, $event)"
+            [attr.aria-label]="r.label"
+          />
+
+          <span>{{ r.label }}</span>
+        </label>
+      </div>
+      <div
+        class="field-help"
+        *ngIf="showErr('rolIds')"
+        id="err-roles"
+        role="alert"
+      >
         {{ errMsg("rolIds") }}
       </div>
 
       <label class="form__label" for="unidadId">Unidad organizacional *</label>
       <div class="select">
         <select
-          #ctl id="unidadId" class="select__control" formControlName="unidadId"
-          [class.invalid]="showErr('unidadId')" [attr.aria-invalid]="showErr('unidadId')" [attr.aria-describedby]="'err-u'"
+          #ctl
+          id="unidadId"
+          class="select__control"
+          formControlName="unidadId"
+          [class.invalid]="showErr('unidadId')"
+          [attr.aria-invalid]="showErr('unidadId')"
+          [attr.aria-describedby]="'err-u'"
         >
-          <option *ngFor="let u of UNIDADES" [value]="u.id">{{ u.label }}</option>
+          <option
+            *ngFor="let u of UNIDADES; trackBy: trackByUnidad"
+            [value]="u.id"
+          >
+            {{ u.label }}
+          </option>
         </select>
       </div>
-      <div class="field-help" *ngIf="showErr('unidadId')" id="err-u" role="alert">
+      <div
+        class="field-help"
+        *ngIf="showErr('unidadId')"
+        id="err-u"
+        role="alert"
+      >
         {{ errMsg("unidadId") }}
       </div>
 
-      <!-- Editor permissions (only if one of the selected roles is EDITOR) -->
       <div *ngIf="isEditor()" class="editor-perms" aria-labelledby="permTitle">
         <div id="permTitle" class="perm-title">Permisos del Editor</div>
         <label class="switch" for="permEdit">
@@ -108,16 +206,25 @@
         </label>
       </div>
 
-      <!-- Notes (UI only, optional) -->
       <label class="form__label" for="notes">Notas adicionales</label>
-      <textarea id="notes" class="textarea" rows="3" placeholder="Información adicional sobre el usuario (opcional)"></textarea>
+      <textarea
+        id="notes"
+        class="textarea"
+        rows="3"
+        placeholder="Información adicional sobre el usuario (opcional)"
+      ></textarea>
 
-      <!-- Footer actions -->
       <div class="footer">
-        <button class="btn btn--success" type="submit" [disabled]="form.invalid">
+        <button
+          class="btn btn--success"
+          type="submit"
+          [disabled]="form.invalid"
+        >
           {{ editing ? "Guardar Cambios" : "Crear Usuario" }}
         </button>
-        <button class="btn btn--ghost" type="button" (click)="close.emit()">Cancelar</button>
+        <button class="btn btn--ghost" type="button" (click)="close.emit()">
+          Cancelar
+        </button>
       </div>
     </form>
   </div>
