@@ -5,18 +5,22 @@ import { map, Observable } from 'rxjs';
 
 export type EditorPermission = 'EDIT' | 'SIGN';
 
+// + Add rolIds to the DTO and AdminUser so TS lets us use them.
+
 export interface AdminUser {
   id: number;
   nombre: string;
   apellido1: string;
   apellido2?: string;
   email: string;
-  rol: string;        // primary role name (for table)
-  rolId: number;      // primary role id
-  rolIds?: number[];  // optional: all roles (if backend returns it later)
+  rol: string;
+  rolId: number;
   unidad: string;
   unidadId: number;
   editorPermissions?: EditorPermission[];
+  // NEW (the backend already returns these if agregaste el GROUP_CONCAT):
+  rolIds?: number[];
+  roles?: string[];
 }
 
 export interface UpsertUserDto {
@@ -24,8 +28,10 @@ export interface UpsertUserDto {
   apellido1: string;
   apellido2?: string;
   email: string;
-  rolId: number;      // primary = first of rolIds
-  rolIds: number[];   // all selected roles
+  // keep primary role for backward-compat
+  rolId: number;
+  // NEW: all roles selected in the multi-select
+  rolIds: number[];
   unidadId: number;
   editorPermissions?: EditorPermission[];
 }
