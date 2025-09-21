@@ -47,7 +47,7 @@ export class CatalogosModulePageComponent {
     {
       title: 'Plantillas',
       desc: 'Administrar plantillas para documentos y otros procesos.',
-      status: 'available',
+      status: 'wip',
       links: [
         { label: 'Gestionar Plantillas', route: '/admin/module/catalogs/plantillas' },
       ],

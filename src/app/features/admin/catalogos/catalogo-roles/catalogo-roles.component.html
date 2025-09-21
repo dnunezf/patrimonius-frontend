@@ -1,28 +1,38 @@
 <div class="container">
   <h1 class="page-title">Gestión de Catálogo de Roles</h1>
 
-  <!-- Formulario para crear un rol -->
+  <!-- Formulario para crear/editar un rol -->
   <div class="form-container">
     <h2>{{ editing ? 'Editar Rol' : 'Crear Nuevo Rol' }}</h2>
     <form (ngSubmit)="submit()">
       <div>
-        <label for="nombre">Nombre</label>
-        <input id="nombre" [(ngModel)]="form.nombre" name="nombre" required placeholder="Nombre del rol" />
+        <label for="nombreRol">Nombre</label>
+        <!-- usa nombreRol para ser consistente con el backend -->
+        <input
+          id="nombreRol"
+          [(ngModel)]="form.nombreRol"
+          name="nombreRol"
+          required
+          placeholder="Nombre del rol" />
       </div>
 
       <div>
         <label for="descripcion">Descripción</label>
-        <input id="descripcion" [(ngModel)]="form.descripcion" name="descripcion" placeholder="Descripción del rol" />
+        <input
+          id="descripcion"
+          [(ngModel)]="form.descripcion"
+          name="descripcion"
+          placeholder="Descripción del rol" />
       </div>
 
-      <button type="submit" [disabled]="loading || !form.nombre?.trim()">
+      <button type="submit" [disabled]="loading || !form.nombreRol?.trim()">
         {{ editing ? 'Actualizar Rol' : 'Crear Rol' }}
       </button>
       <button type="button" (click)="cancel()">Cancelar</button>
     </form>
   </div>
 
-  <!-- Mostrar lista de roles -->
+  <!-- Cargando -->
   <div *ngIf="loading">Cargando...</div>
 
   <!-- Tabla de roles -->
@@ -36,11 +46,11 @@
     </thead>
     <tbody>
     <tr *ngFor="let rol of roles">
-      <td>{{ rol.nombre }}</td>
+      <td>{{ rol.nombreRol }}</td>
       <td>{{ rol.descripcion || '—' }}</td>
       <td>
         <button class="edit" (click)="edit(rol)">Editar</button>
-        <button class="delete" (click)="remove(rol.id)">Eliminar</button>
+        <button class="delete" (click)="remove(rol.idRol)">Eliminar</button>
       </td>
     </tr>
     </tbody>

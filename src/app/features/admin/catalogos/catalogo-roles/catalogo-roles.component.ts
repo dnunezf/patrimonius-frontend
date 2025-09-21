@@ -12,31 +12,31 @@ import { Observable } from 'rxjs';
   styleUrls: ['./catalogo-roles.component.css'],
 })
 export class CatalogoRolesComponent implements OnInit {
-  roles$: Observable<Rol[]>; // Observable en lugar de un array directo
-  form: Partial<Rol> = { nombre: '', descripcion: '' };
+  roles$: Observable<Rol[]>;
+  // ahora el formulario usa nombreRol
+  form: Partial<Rol> = { nombreRol: '', descripcion: '' };
   editing: Rol | null = null;
   loading = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
   constructor(private api: CatalogosService) {
-    this.roles$ = this.api.getRoles(); // Asignamos el Observable directamente
+    this.roles$ = this.api.getRoles();
   }
 
-  ngOnInit() {
-    // La lista de roles es automáticamente gestionada por el async pipe.
-  }
+  ngOnInit() {}
 
   submit() {
-    if (!this.form.nombre?.trim()) return;
+    if (!this.form.nombreRol?.trim()) return;
     this.loading = true;
+
     if (this.editing) {
-      this.api.updateRol(this.editing.id, this.form).subscribe({
+      this.api.updateRol(this.editing.idRol, this.form).subscribe({
         next: (r) => {
           Object.assign(this.editing!, r);
           this.cancel();
           this.successMessage = 'Rol actualizado correctamente';
-          this.roles$ = this.api.getRoles(); // Recargar los roles después de la actualización
+          this.roles$ = this.api.getRoles();
           this.loading = false;
         },
         error: (error) => {
@@ -46,10 +46,10 @@ export class CatalogoRolesComponent implements OnInit {
       });
     } else {
       this.api.createRol(this.form).subscribe({
-        next: (r) => {
+        next: () => {
           this.successMessage = 'Rol creado exitosamente';
-          this.roles$ = this.api.getRoles(); // Recargar los roles después de la creación
-          this.form = { nombre: '', descripcion: '' };
+          this.roles$ = this.api.getRoles();
+          this.form = { nombreRol: '', descripcion: '' };
           this.loading = false;
         },
         error: (error) => {
@@ -62,23 +62,23 @@ export class CatalogoRolesComponent implements OnInit {
 
   edit(r: Rol) {
     this.editing = r;
-    this.form = { nombre: r.nombre, descripcion: r.descripcion };
+    this.form = { nombreRol: r.nombreRol, descripcion: r.descripcion };
   }
 
   cancel() {
     this.editing = null;
-    this.form = { nombre: '', descripcion: '' };
+    this.form = { nombreRol: '', descripcion: '' };
     this.errorMessage = null;
     this.successMessage = null;
   }
 
-  remove(id: number) {
+  remove(idRol: number) {
     if (!confirm('¿Eliminar rol?')) return;
     this.loading = true;
-    this.api.deleteRol(id).subscribe({
+    this.api.deleteRol(idRol).subscribe({
       next: () => {
         this.successMessage = 'Rol eliminado exitosamente';
-        this.roles$ = this.api.getRoles(); // Recargar los roles después de la eliminación
+        this.roles$ = this.api.getRoles();
         this.loading = false;
       },
       error: (error) => {
