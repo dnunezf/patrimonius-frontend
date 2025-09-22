@@ -1,4 +1,4 @@
-/* Backdrop */
+/* Backdrop (full-screen overlay) */
 .modal {
   position: fixed;
   inset: 0;
@@ -18,10 +18,17 @@
   }
 }
 
-/* Dialog */
+/* Dialog
+ * - Constrain height to viewport
+ * - Use flex column so only the form scrolls
+ */
 .dialog {
   width: 100%;
   max-width: 540px;
+  max-height: 90vh; /* <= cap height to viewport */
+  display: flex; /* <= column layout */
+  flex-direction: column;
+  overflow: hidden; /* <= contain inner scroll */
   background: #fff;
   color: #1d2939;
   border: 1px solid #e6eaee;
@@ -30,6 +37,8 @@
   padding: 18px;
   position: relative;
 }
+
+/* Close button */
 .dialog__close {
   position: absolute;
   top: 8px;
@@ -43,6 +52,8 @@
 .dialog__close:hover {
   color: #111827;
 }
+
+/* Header text */
 .dialog__title {
   margin: 4px 0 6px;
   font-weight: 700;
@@ -54,11 +65,21 @@
   font-size: 0.95rem;
 }
 
-/* Form & layout */
+/* Form & layout
+ * - Make the form the scrollable area
+ * - min-height:0 allows the child to shrink within flex parent
+ */
 .form {
   display: grid;
   gap: 12px;
+  overflow-y: auto; /* <= vertical scroll inside dialog */
+  min-height: 0; /* <= required for proper flex overflow */
+  padding-right: 4px; /* <= keep text clear of scrollbar */
+  /* Optional: smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
+
+/* Section titles and labels */
 .section__title {
   margin: 6px 0;
   font-size: 1rem;
@@ -69,6 +90,8 @@
   font-weight: 700;
   font-size: 0.92rem;
 }
+
+/* Simple grid helpers */
 .grid {
   display: grid;
   gap: 8px;
@@ -111,6 +134,7 @@
   outline: none;
   width: 100%;
 }
+/* Focus ring for accessibility */
 .input:has(.input__control:focus-visible) {
   outline: 3px solid #0091cd;
   outline-offset: 2px;
@@ -144,7 +168,7 @@
   outline-offset: 2px;
 }
 
-/* Editor perms */
+/* Editor permissions group */
 .editor-perms {
   display: flex;
   gap: 12px;
@@ -183,7 +207,10 @@
   margin: 4px 0 8px;
 }
 
-/* Footer */
+/* Footer
+ * - Stays at the bottom of the dialog (not sticky)
+ * - Does not scroll because parent .dialog is flex and .form consumes overflow
+ */
 .footer {
   display: flex;
   gap: 8px;
@@ -191,6 +218,8 @@
   margin-top: 6px;
   flex-wrap: wrap;
 }
+
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -218,6 +247,8 @@
 .btn:hover {
   filter: brightness(0.98);
 }
+
+/* Responsive tweaks */
 @media (max-width: 480px) {
   .dialog {
     max-width: 92vw;
