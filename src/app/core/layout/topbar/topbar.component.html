@@ -1,10 +1,15 @@
 <header class="topbar">
   <div class="container topbar__inner">
     <div class="brand">
-      <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true">
-        <circle cx="7" cy="7" r="7" fill="var(--mncr-red-1795)"></circle>
-      </svg>
-      <strong>Patrimonius</strong>
+      <img
+        src="assets/logos/logo.png"
+        alt="Logo Museo Nacional de Costa Rica"
+        class="brand__logo"
+      />
+      <div class="brand__text">
+        <strong>Patrimonius</strong>
+        <span class="brand__sub">Museo Nacional de Costa Rica</span>
+      </div>
     </div>
 
     <nav class="nav">
@@ -13,7 +18,7 @@
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
         class="nav__btn"
-        >Dashboard</a
+      >Dashboard</a
       >
 
       <a
@@ -23,8 +28,8 @@
       >
         Notificaciones
         <span class="nav__badge" *ngIf="noticeCount() > 0">{{
-          noticeCount()
-        }}</span>
+            noticeCount()
+          }}</span>
       </a>
     </nav>
 

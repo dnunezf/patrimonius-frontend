@@ -14,10 +14,25 @@
   padding: 10px 16px;
   flex-wrap: wrap;
 }
+
+/* Brand */
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.brand__logo {
+  width: 40px;
+  height: auto;
+}
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.brand__sub {
+  font-size: 0.85rem;
+  color: #555;
 }
 
 /* Nav with “pill” active */
