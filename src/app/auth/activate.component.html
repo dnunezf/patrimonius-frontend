@@ -1,0 +1,17 @@
+<div class="activate-container">
+  <h2>Activar cuenta</h2>
+  <p>Ingrese su nueva contraseña para activar la cuenta.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label>Nueva contraseña</label>
+    <input type="password" formControlName="password" placeholder="••••••••" />
+    <div *ngIf="form.get('password')?.touched && form.get('password')?.invalid" class="error">
+      La contraseña debe tener al menos 6 caracteres.
+    </div>
+
+    <button type="submit" class="btn btn--primary">Guardar contraseña</button>
+  </form>
+
+  <div *ngIf="message" class="success">{{ message }}</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+</div>

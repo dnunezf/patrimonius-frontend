@@ -1,6 +1,7 @@
 import { RouterModule, Routes } from '@angular/router';
 import { HomeComponent } from '../home/home.component';
 import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
+import { ActivateComponent } from './auth/activate.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -20,5 +21,6 @@ export const routes: Routes = [
       import('./features/editor/editor.routes').then(m => m.EDITOR_ROUTES),
   },
   { path: 'access-exceptions', component: AccessExceptionsComponent },
+  { path: 'activate', component: ActivateComponent },
   { path: '**', redirectTo: '' }
 ];

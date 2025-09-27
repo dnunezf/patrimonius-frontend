@@ -18,7 +18,7 @@ export class AuthService {
     return this.http.post<LoginResp>(`${this.api}/auth/login`, { email, password })
       .pipe(
         tap(resp => {
-          this.setSession(resp); // 🔹 usamos el nuevo método
+          this.setSession(resp);
         })
       );
   }
@@ -35,5 +35,12 @@ export class AuthService {
     localStorage.removeItem('user');
     this.token.set(null);
     this.currentUser.set(null);
+  }
+
+  activateAccount(token: string, newPassword: string) {
+    return this.http.post<{ message: string }>(`${this.api}/auth/activate`, {
+      token,
+      newPassword,
+    });
   }
 }
