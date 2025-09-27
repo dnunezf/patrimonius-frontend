@@ -10,18 +10,12 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
   styleUrls: ['./login-dialog.component.css']
 })
 export class LoginDialogComponent {
-  /* Controls modal visibility */
   @Input() open = false;
-
-  /* Outputs */
   @Output() closed = new EventEmitter<void>();
   @Output() submitLogin = new EventEmitter<{ email: string; password: string }>();
   @Output() forgot = new EventEmitter<void>();
 
-  /* Local state */
   showPassword = signal(false);
-
-
   form: FormGroup;
 
   constructor(private fb: FormBuilder) {
@@ -29,10 +23,8 @@ export class LoginDialogComponent {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
     });
-
   }
 
-  /* Close when clicking backdrop only */
   onBackdropClick(e: MouseEvent) {
     if ((e.target as HTMLElement).classList.contains('modal')) this.close();
   }

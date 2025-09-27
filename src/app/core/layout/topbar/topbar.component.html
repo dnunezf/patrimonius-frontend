@@ -13,8 +13,7 @@
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
         class="nav__btn"
-        >Dashboard</a
-      >
+      >Dashboard</a>
 
       <a
         routerLink="/admin/notifications"
@@ -22,15 +21,15 @@
         class="nav__btn nav__btn--notif"
       >
         Notificaciones
-        <span class="nav__badge" *ngIf="noticeCount() > 0">{{
-          noticeCount()
-        }}</span>
+        <span class="nav__badge" *ngIf="noticeCount() > 0">
+          {{ noticeCount() }}
+        </span>
       </a>
     </nav>
 
-    <div class="session">
-      <span class="role">admin@gmail.com</span>
-      <span class="role-sub">Administrador</span>
+    <div class="session" *ngIf="userEmail() as email">
+      <span class="role">{{ email }}</span>
+      <span class="role-sub">{{ userRol() }}</span>
       <button class="btn-exit" (click)="signOut()">Salir</button>
     </div>
   </div>
