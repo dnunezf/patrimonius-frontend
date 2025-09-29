@@ -1,10 +1,11 @@
 // src/app/features/editor/dashboard/editor-dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
-import { DocumentService } from '../../../../core/services/document.service';
+import {Categoria, DocumentService} from '../../../../core/services/document.service';
 import { VDocumentModel } from '../../../../core/services/document.service';
 import {CommonModule, DatePipe} from '@angular/common';
 import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
 import {EditorFormDialogComponent} from '../document/document-form-dialog.component';
+import { Router } from '@angular/router';
 
 // Definir el tipo para las plantillas
 interface Template {
@@ -22,11 +23,7 @@ interface Template {
 export class EditorDashboardComponent implements OnInit {
   openFormDialog: boolean = false;
   selectedTemplate: any; // otra opción selectedTemplate: string = '';
-  categorias = [
-    { id: 1, nombre: 'Categoría 1' },
-    { id: 2, nombre: 'Categoría 2' },
-    // Agrega más categorías según sea necesario
-  ];
+  categorias: Categoria[] = [];
   documents: VDocumentModel[] = [];
   plantillas: any[] = [];  // Para almacenar las plantillas que se obtienen desde el backend
 
@@ -77,11 +74,13 @@ export class EditorDashboardComponent implements OnInit {
 
 
 
-  constructor(private documentService: DocumentService) {}
+  //constructor(private documentService: DocumentService) {}
+  constructor(private documentService: DocumentService, private router: Router) {}
 
   ngOnInit(): void {
     this.loadDocuments();
     this.loadTemplates();  // Cargar las plantillas desde el backend
+    this.loadCategorias();
   }
 
   loadDocuments(): void {
@@ -93,6 +92,17 @@ export class EditorDashboardComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar los documentos', err);
+      }
+    });
+  }
+  loadCategorias(): void {
+    this.documentService.getCategorias().subscribe({
+      next: (cats) => {
+        console.log('Categorías obtenidas:', cats);
+        this.categorias = cats;
+      },
+      error: (err) => {
+        console.error('Error al cargar categorías', err);
       }
     });
   }
@@ -142,7 +152,24 @@ export class EditorDashboardComponent implements OnInit {
 
   handleFormSubmit(formData: any): void {
     // Lógica para manejar los datos del formulario una vez enviados
-    console.log('Datos del formulario:', formData);
-    this.closeFormDialog();
+    this.documentService.createFromForm({
+      titulo: formData.titulo,
+      categoria_id: formData.categoria,
+      plantilla_id: this.selectedTemplate?.id
+    }).subscribe({
+      next: (created) => {
+        console.log('Documento creado:', created);
+        this.closeFormDialog();
+        // de momento seguimos mostrando la página en blanco
+        this.router.navigate(['/editor/create']);
+      },
+      error: (err) => {
+        console.error('Error creando documento:', err);
+        // aquí puedes mostrar un snackbar o alerta de error si quieres
+      }
+    });
+    //console.log('Datos del formulario:', formData);
+    //this.closeFormDialog();
+    //this.router.navigate(['/editor/create']);
   }
 }

@@ -8,6 +8,17 @@
    ======================================================= */
 
 /* ---------- Base / Reset-light ---------- */
+:root {
+  --mncr-white: #ffffff;
+  --mncr-black: #111111;
+  --mncr-blue-639: #005baa;
+  --mncr-red-1795: #ee3524;
+  --mncr-orange-165: #ff8200;
+  --mncr-brown: #372c2a;
+  --mncr-celeste-306: #00adef;
+  --mncr-muted: #f6f8fb;
+  --mncr-border: rgba(0, 0, 0, 0.08);
+}
 html { box-sizing: border-box; font-size: 16px; }
 *, *::before, *::after { box-sizing: inherit; }
 body {

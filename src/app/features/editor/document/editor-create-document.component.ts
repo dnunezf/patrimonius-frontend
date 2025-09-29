@@ -117,3 +117,87 @@ export class EditorCreateDocumentComponent implements OnInit {
 </div>
 
 */
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { DocumentService } from '../../../../core/services/document.service';
+
+
+@Component({
+  selector: 'app-editor-create-document',
+  templateUrl: './editor-create-document.component.html',
+  styleUrls: ['./editor-create-document.component.css']
+})
+export class EditorCreateDocumentComponent implements OnInit {
+  // Navegación desde el dashboard: history.state = { docId, templateId, title }
+  docId?: number | string;
+  templateId?: number | string;
+  title = '';
+
+  // UI/state
+  loading = true;
+  error = '';
+  lastSaved = new Date();
+  hasUnsaved = false;
+
+  // contenido de la plantilla (markdown / texto)
+  content = '';
+
+  // panel derecho (placeholder)
+  activeEditors = [
+    { sig: 'MG', name: 'María González', role: 'Conservadora', online: true,  ago: 'Hace 2 min',   color: 'chip-blue'  },
+    { sig: 'CR', name: 'Carlos Rodríguez', role: 'Arqueólogo',   online: true,  ago: 'Hace 5 min',  color: 'chip-green' },
+    { sig: 'AF', name: 'Ana Fernández',   role: 'Editora',       online: false, ago: 'Hace 1 h',    color: 'chip-amber' },
+  ];
+
+  constructor(private router: Router, private docs: DocumentService) {}
+
+  ngOnInit(): void {
+    const s: any = history.state || {};
+    this.docId = s?.docId;
+    this.templateId = s?.templateId;
+    this.title = s?.title || 'Sin título';
+
+    if (this.templateId != null) {
+      // Si tienes GET /plantillas/:id, úsalo:
+      if ((this.docs as any).getPlantillaById) {
+        (this.docs as any).getPlantillaById(this.templateId).subscribe({
+          next: (tpl: any) => {
+            this.content = tpl?.contenido ?? tpl?.markdown ?? tpl?.cuerpo ?? '';
+            this.loading = false;
+          },
+          error: () => { this.error = 'No se pudo cargar la plantilla.'; this.loading = false; }
+        });
+      } else {
+        // Plan B: desde la lista
+        this.docs.getPlantillas().subscribe({
+          next: (list) => {
+            const tpl = list.find((p: any) => `${p.id}` === `${this.templateId}`);
+            this.content = tpl?.contenido ?? tpl?.markdown ?? tpl?.cuerpo ?? '';
+            this.loading = false;
+          },
+          error: () => { this.error = 'No se pudo cargar la plantilla.'; this.loading = false; }
+        });
+      }
+    } else {
+      this.loading = false;
+    }
+  }
+
+  backToDashboard() { this.router.navigate(['/editor']); }
+
+  onContentInput(val: string) {
+    this.content = val;
+    this.hasUnsaved = true;
+    this.lastSaved = new Date();
+    // TODO: debounce + PATCH al backend
+  }
+
+  // toolbar (placeholders)
+  fmt(kind: 'bold'|'italic'|'underline'|'list'|'link') {
+    // TODO: aplicar formato al selection del textarea
+  }
+
+  saveDraft()  { this.hasUnsaved = false; this.lastSaved = new Date(); /* TODO: PATCH */ }
+  preview()    { /* TODO */ }
+  requestSign(){ /* TODO */ }
+}

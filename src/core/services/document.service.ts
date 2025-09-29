@@ -63,7 +63,18 @@ export interface AccessibleDocRow {
   firmas_requeridas: number;
   firmas_obtenidas: number;
 }
+export interface Categoria {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+}
 
+//creación desde el formulario
+export type CreateDocumentDto = {
+  titulo: string;
+  categoria_id?: number | string;
+  plantilla_id?: number | string;
+};
 
 @Injectable({
   providedIn: 'root'
@@ -87,6 +98,11 @@ export class DocumentService {
     return this.http.post<DocumentModel>(`${this.apiUrl}`, document);
   }
 
+  //creación de documento desde el formulario
+  createFromForm(dto: CreateDocumentDto): Observable<{ id: string; titulo: string }> {
+    return this.http.post<{ id: string; titulo: string }>(`${this.apiUrl}`, dto);
+  }
+
   update(id: string, document: DocumentModel): Observable<DocumentModel> {
     return this.http.put<DocumentModel>(`${this.apiUrl}${id}`, document);
   }
@@ -94,6 +110,7 @@ export class DocumentService {
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}${id}`);
   }
+
 
   // Método para obtener las plantillas
   getPlantillas(): Observable<any[]> {
@@ -114,5 +131,8 @@ export class DocumentService {
         firmas_requeridas:  r.firmas_requeridas,
       } satisfies VDocumentModel)))
     );
+  }
+  getCategorias(): Observable<Categoria[]> {
+  return this.http.get<Categoria[]>(`${environment.apiUrl}/categorias/categorias`);
   }
 }

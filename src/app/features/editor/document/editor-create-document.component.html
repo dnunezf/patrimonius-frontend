@@ -1,1 +1,82 @@
+<!-- src/app/features/editor/document/editor-create-document.component.html -->
+<div class="container">
+  <!-- Encabezado -->
+  <header class="mb-24">
+    <button class="btn btn--secondary" routerLink="/editor/dashboard">
+      ← Volver al Dashboard
+    </button>
+    <h1 class="mt-16">Editor de Documento</h1>
+    <p class="mt-8">Aquí puedes editar el documento generado a partir de la plantilla seleccionada.</p>
+  </header>
 
+  <main class="grid" style="grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Área principal de edición -->
+    <section>
+      <!-- Herramientas de formato -->
+      <div class="section">
+        <h2 class="h2">Herramientas de Formato</h2>
+        <div class="gap-8 flex">
+          <button class="btn btn--secondary">B</button>
+          <button class="btn btn--secondary"><i>I</i></button>
+          <button class="btn btn--secondary"><u>U</u></button>
+          <button class="btn btn--secondary">Lista</button>
+          <button class="btn btn--secondary">Link</button>
+        </div>
+      </div>
+
+      <!-- Contenido del documento -->
+      <div class="section">
+        <h2 class="h2">Contenido del Documento</h2>
+        <textarea
+          class="form__control"
+          rows="20"
+          placeholder="Aquí se cargará la plantilla asociada al documento..."
+        ></textarea>
+      </div>
+
+      <!-- Acciones principales -->
+      <div class="section gap-8 flex">
+        <button class="btn btn--primary">Guardar Borrador</button>
+        <button class="btn btn--secondary">Previsualizar</button>
+        <button class="btn btn--secondary">Metadatos</button>
+        <button class="btn btn--primary">Solicitar Firma</button>
+      </div>
+    </section>
+
+    <!-- Panel lateral -->
+    <aside class="section">
+      <h2 class="h2">Editores Activos</h2>
+      <div class="mt-16">
+        <div class="mb-16">
+          <strong>María González</strong><br />
+          <small>Conservadora · En línea</small>
+        </div>
+        <div class="mb-16">
+          <strong>Carlos Rodríguez</strong><br />
+          <small>Arqueólogo · En línea</small>
+        </div>
+        <div class="mb-16">
+          <strong>Ana Fernández</strong><br />
+          <small>Editora · Desconectada</small>
+        </div>
+      </div>
+
+      <hr class="mt-24 mb-24" />
+
+      <h2 class="h2">Historial de Versiones</h2>
+      <ul>
+        <li><strong>Versión 3</strong> - 15 Sep 2025</li>
+        <li><strong>Versión 2</strong> - 15 Sep 2025</li>
+        <li><strong>Versión 1</strong> - 14 Sep 2025</li>
+      </ul>
+
+      <hr class="mt-24 mb-24" />
+
+      <h2 class="h2">Comentarios</h2>
+      <ul>
+        <li>Revisar el porcentaje de pérdida de policromía (María)</li>
+        <li>Confirmar la datación del período (Carlos)</li>
+      </ul>
+    </aside>
+  </main>
+</div>

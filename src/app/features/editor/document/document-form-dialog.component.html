@@ -21,15 +21,17 @@
         El título es obligatorio.
       </div>
       <!-- Categoría -->
-      <label class="form__label">Categoría</label>
-      <div class="input">
-        <select class="input__control" formControlName="categoria">
-          <option *ngFor="let categoria of categorias" [value]="categoria.id">{{ categoria.nombre }}</option>
-        </select>
-      </div>
+      <label for="categoria">Categoría</label>
+      <select id="categoria" formControlName="categoria">
+        <option value="" disabled selected>Seleccione una categoría</option>
+        <option *ngFor="let cat of categorias" [value]="cat.id">
+          {{ cat.nombre }}
+        </option>
+      </select>
 
       <!-- Acciones -->
-      <button class="btn btn--primary dialog__submit" type="submit">Guardar Documento</button>
+      <!--<button class="btn btn--primary dialog__submit" type="submit">Guardar Documento</button>-->
+      <button type="button" (click)="submit()">Guardar Documento</button>
     </form>
   </div>
 </div>
