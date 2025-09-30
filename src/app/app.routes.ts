@@ -1,5 +1,5 @@
-import { RouterModule, Routes } from '@angular/router';
-import { HomeComponent } from '../home/home.component';
+import { Routes } from '@angular/router';
+import { HomeComponent } from './features/home/home.component';
 import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
 import { ActivateComponent } from './auth/activate.component';
 
@@ -22,5 +22,5 @@ export const routes: Routes = [
   },
   { path: 'access-exceptions', component: AccessExceptionsComponent },
   { path: 'activate', component: ActivateComponent },
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: '' },
 ];

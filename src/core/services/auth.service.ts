@@ -5,22 +5,34 @@ import { tap } from 'rxjs/operators';
 
 type User = { id: number; email: string; rolId?: number; unidadId?: number };
 type LoginResp = { token: string; user: User };
+type LoginStep1Resp = { userId: number; message: string };
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = environment.apiUrl;
   token = signal<string | null>(localStorage.getItem('token'));
-  currentUser = signal<User | null>(JSON.parse(localStorage.getItem('user') || 'null'));
+  currentUser = signal<User | null>(this.getStoredUser());
 
   constructor(private http: HttpClient) {}
 
+  private getStoredUser(): User | null {
+    try {
+      const raw = localStorage.getItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Paso 1: validar credenciales y enviar código 2FA */
   login(email: string, password: string) {
-    return this.http.post<LoginResp>(`${this.api}/auth/login`, { email, password })
-      .pipe(
-        tap(resp => {
-          this.setSession(resp);
-        })
-      );
+    return this.http.post<LoginStep1Resp>(`${this.api}/auth/login`, { email, password });
+  }
+
+  /** Paso 2: verificar código 2FA */
+  verify2fa(userId: number, code: string) {
+    return this.http.post<LoginResp>(`${this.api}/auth/verify-2fa`, { userId, code })
+      .pipe(tap(resp => this.setSession(resp)));
   }
 
   setSession(resp: LoginResp) {

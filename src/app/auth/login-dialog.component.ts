@@ -1,6 +1,8 @@
+// src/app/auth/login-dialog.component.ts
 import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-login-dialog',
@@ -12,27 +14,68 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 export class LoginDialogComponent {
   @Input() open = false;
   @Output() closed = new EventEmitter<void>();
-  @Output() submitLogin = new EventEmitter<{ email: string; password: string }>();
-  @Output() forgot = new EventEmitter<void>();
 
-  showPassword = signal(false);
-  form: FormGroup;
+  step = signal<1 | 2>(1);
+  userId: number | null = null;
+  error = signal<string | null>(null);
 
-  constructor(private fb: FormBuilder) {
-    this.form = this.fb.group({
+  formLogin: FormGroup;
+  formCode: FormGroup;
+
+  constructor(private fb: FormBuilder, private auth: AuthService) {
+    this.formLogin = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
     });
+
+    this.formCode = this.fb.group({
+      code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]]
+    });
   }
 
-  onBackdropClick(e: MouseEvent) {
-    if ((e.target as HTMLElement).classList.contains('modal')) this.close();
+  close() {
+    this.closed.emit();
+    this.step.set(1);
+    this.userId = null;
+    this.error.set(null);
+    this.formLogin.reset();
+    this.formCode.reset();
   }
 
-  close() { this.closed.emit(); }
+  /** Paso 1: login */
+  submitLogin() {
+    if (this.formLogin.invalid) {
+      this.formLogin.markAllAsTouched();
+      return;
+    }
 
-  submit() {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    this.submitLogin.emit(this.form.value);
+    const { email, password } = this.formLogin.value;
+    this.auth.login(email, password).subscribe({
+      next: (res) => {
+        this.userId = res.userId;
+        this.step.set(2);
+      },
+      error: (e) => {
+        this.error.set(e?.error?.error || 'Error al iniciar sesión');
+      }
+    });
+  }
+
+  /** Paso 2: verificar código */
+  submitCode() {
+    if (this.formCode.invalid || !this.userId) {
+      this.formCode.markAllAsTouched();
+      return;
+    }
+
+    const { code } = this.formCode.value;
+    this.auth.verify2fa(this.userId, code).subscribe({
+      next: () => {
+        this.close();
+      },
+      error: (e) => {
+        this.error.set(e?.error?.error || 'Código inválido o vencido');
+      }
+    });
   }
 }

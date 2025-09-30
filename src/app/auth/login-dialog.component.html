@@ -1,55 +1,25 @@
-<!-- Backdrop -->
-<div *ngIf="open" class="modal" (click)="onBackdropClick($event)">
-  <!-- Dialog -->
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-    <button class="dialog__close" type="button" aria-label="Cerrar" (click)="close()">×</button>
+<div class="modal" *ngIf="open">
+  <div class="dialog">
+    <button class="dialog__close" (click)="close()">×</button>
 
-    <h2 id="loginTitle" class="dialog__title">Iniciar Sesión</h2>
-    <p class="dialog__subtitle">
-      Acceda al sistema Patrimonius con sus credenciales institucionales.
-    </p>
-
-    <form class="form" [formGroup]="form" (ngSubmit)="submit()">
-      <!-- Email -->
-      <label class="form__label">Correo electrónico <span class="req">*</span></label>
-      <div class="input">
-        <span class="input__icon" aria-hidden="true">
-          <img src="assets/icons/email.png" alt="">
-        </span>
-        <input class="input__control"
-               type="email"
-               placeholder="ejemplo@gmail.com"
-               formControlName="email"
-               autocomplete="username" />
-      </div>
-      <div class="form__error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
-        Ingrese un correo válido.
-      </div>
-
-      <!-- Password -->
-      <label class="form__label">Contraseña <span class="req">*</span></label>
-      <div class="input">
-        <span class="input__icon" aria-hidden="true">
-          <img src="assets/icons/lock.png" alt="">
-        </span>
-        <input class="input__control"
-               [type]="showPassword() ? 'text' : 'password'"
-               placeholder="•••••••"
-               formControlName="password"
-               autocomplete="current-password" />
-        <button class="input__toggle" type="button"
-                (click)="showPassword.set(!showPassword())">
-          {{ showPassword() ? 'Ocultar' : 'Ver' }}
-        </button>
-      </div>
-      <div class="form__error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
-        La contraseña es obligatoria.
-      </div>
-
-      <!-- Submit -->
-      <button class="btn btn--primary dialog__submit" type="submit">INGRESAR</button>
+    <!-- Paso 1 -->
+    <h2 *ngIf="step() === 1">Iniciar Sesión</h2>
+    <form *ngIf="step() === 1" [formGroup]="formLogin" (ngSubmit)="submitLogin()">
+      <label>Email</label>
+      <input type="email" formControlName="email" />
+      <label>Contraseña</label>
+      <input type="password" formControlName="password" />
+      <button type="submit" class="btn btn--primary">Entrar</button>
     </form>
 
-    <button class="link" type="button" (click)="forgot.emit()">¿Olvidaste tu contraseña?</button>
+    <!-- Paso 2 -->
+    <h2 *ngIf="step() === 2">Verificación 2FA</h2>
+    <form *ngIf="step() === 2" [formGroup]="formCode" (ngSubmit)="submitCode()">
+      <p>Ingrese el código enviado a su correo.</p>
+      <input type="text" maxlength="6" formControlName="code" placeholder="000000" />
+      <button type="submit" class="btn btn--primary">Verificar</button>
+    </form>
+
+    <div *ngIf="error()" class="error">{{ error() }}</div>
   </div>
 </div>
