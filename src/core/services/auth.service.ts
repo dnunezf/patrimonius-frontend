@@ -35,6 +35,11 @@ export class AuthService {
       .pipe(tap(resp => this.setSession(resp)));
   }
 
+  /** Nuevo: Reenviar código 2FA */
+  resend2fa(userId: number) {
+    return this.http.post<{ message: string }>(`${this.api}/auth/resend-2fa`, { userId });
+  }
+
   setSession(resp: LoginResp) {
     localStorage.setItem('token', resp.token);
     localStorage.setItem('user', JSON.stringify(resp.user));

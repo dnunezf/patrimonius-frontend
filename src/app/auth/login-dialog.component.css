@@ -70,6 +70,34 @@ input:focus-visible {
   outline-offset: 1px;
 }
 
+/* Input wrapper para botón de visibilidad */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-wrapper input {
+  width: 100%;
+  padding: 10px 40px 10px 12px; /* espacio a la derecha para el botón */
+}
+
+/* Botón "Ver / Ocultar" */
+.toggle-visibility {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #006699; /* azul corporativo */
+  font-weight: 600;
+}
+.toggle-visibility:hover {
+  text-decoration: underline;
+}
+
 /* Errors */
 .error {
   color: var(--mncr-red-1795, #c33737);
@@ -99,6 +127,18 @@ input:focus-visible {
   color: #fff;
 }
 .btn--primary:hover { filter: brightness(.95); }
+
+/* Link button (reenviar) */
+.btn--link {
+  margin-top: 8px;
+  background: transparent;
+  color: var(--mncr-blue-639, #0091CD);
+  font-size: .9rem;
+  text-decoration: underline;
+  justify-content: center;
+  width: 100%;
+}
+.btn--link:hover { color: #005f99; }
 
 /* Small screens */
 @media (max-width: 480px) {
