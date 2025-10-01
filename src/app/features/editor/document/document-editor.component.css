@@ -1,0 +1,47 @@
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+.file {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #eef2ff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.file input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #0ea5e9;
+  color: #fff;
+  cursor: pointer;
+}
+button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.muted { color: #64748b; margin-left: 8px; }
+.err { color: #dc2626; margin-left: 8px; }
+
+.quill-host {
+  height: 60vh;
+}
+.quill-host .ql-editor {
+  height: 100%;
+}
+
+.presence { margin: 10px 0 16px; color: #334155; }
+.comments h3 { margin: 16px 0 8px; }
+.comment-new { display: flex; gap: 8px; }
+.comment-new input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }

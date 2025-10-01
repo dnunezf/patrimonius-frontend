@@ -1,0 +1,41 @@
+<h2>Editor de documento #{{ documentoId }}</h2>
+
+<div class="toolbar">
+  <label class="file">
+    Importar DOCX
+    <input type="file" accept=".docx" (change)="importDocx($event)" />
+  </label>
+
+  <button (click)="save()" [disabled]="saving">Guardar</button>
+  <span *ngIf="saving" class="muted">guardando…</span>
+  <span *ngIf="error" class="err">{{ error }}</span>
+</div>
+
+<div #editor class="quill-host"></div>
+
+<section class="presence">
+  <b>Colaborando:</b>
+  <ng-container *ngIf="presence?.length; else solo">
+    <span *ngFor="let u of presence; let i = index">
+      {{ u.nombre }} {{ u.apellido1 }} ({{ u.email }})<span *ngIf="i < presence.length - 1"> • </span>
+    </span>
+  </ng-container>
+  <ng-template #solo>solo tú</ng-template>
+</section>
+
+<section class="comments">
+  <h3>Comentarios</h3>
+  <ul>
+    <li *ngFor="let c of comentarios">
+      <small>{{ c.fecha | date: 'short' }}</small>
+      — <b>{{ c.usuario }}</b>: {{ c.descripcion }}
+      <span *ngIf="c.resuelto">✅</span>
+    </li>
+  </ul>
+
+  <div class="comment-new">
+    <input #cm placeholder="Nuevo comentario…" />
+    <button (click)="addComentario(cm.value); cm.value = ''">Agregar</button>
+  </div>
+</section>
+
