@@ -57,11 +57,17 @@ export interface AccessibleDocRow {
 
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
-  private api = environment.api; // ej: http://localhost:3000
+  /** Base del backend. En local suele ser http://localhost:3000 */
+  private api = environment.api;
+
+  /** Base para los endpoints de ESTE mini-flujo (Express con /api/documentos).
+   *  Si tu environment.api ya incluye /api, ajusta esto a `${this.api}/documentos`.
+   */
+  private docsApi = `${this.api}/api/documentos`;
 
   constructor(private http: HttpClient) {}
 
-  // ==== Listados básicos (si los usas) ====
+  // ========== ENDPOINTS EXISTENTES (Patrimonius) ==========
   getAll(): Observable<DocumentModel[]> {
     return this.http.get<DocumentModel[]>(`${this.api}/documents`);
   }
@@ -78,7 +84,6 @@ export class DocumentService {
     return this.http.delete<void>(`${this.api}/documents/${id}`);
   }
 
-  // ==== Vista de producción (dashboard) ====
   getDocumentsFromProduction(): Observable<VDocumentModel[]> {
     return this.http.get<AccessibleDocRow[]>(`${this.api}/view/production`).pipe(
       map(rows =>
@@ -96,7 +101,7 @@ export class DocumentService {
     );
   }
 
-  // ==== HU-007: crear desde plantilla ====
+  // HU-007
   crearDesdePlantilla(body: {
     plantilla_id: number;
     titulo: string;
@@ -110,13 +115,12 @@ export class DocumentService {
     );
   }
 
-  // ==== HU-008: edición colaborativa ====
+  // HU-008
   ultimaVersion(id: number): Observable<{ id: number; fecha: string } | null> {
     return this.http.get<{ id: number; fecha: string } | null>(
       `${this.api}/documentos/${id}/version/latest`
     );
   }
-
   guardarColab(id: number, contenido: string, base_version_id: number):
     Observable<{ version_id: number; next_version: number; conflict: boolean }> {
     return this.http.put<{ version_id: number; next_version: number; conflict: boolean }>(
@@ -124,17 +128,48 @@ export class DocumentService {
       { contenido, base_version_id }
     );
   }
-
-  // sesiones (awareness)
   touchSession(id: number)  { return this.http.post(`${this.api}/documentos/${id}/sessions`, {}); }
   listSession(id: number)   { return this.http.get<any[]>(`${this.api}/documentos/${id}/sessions`); }
   endSession(id: number)    { return this.http.delete(`${this.api}/documentos/${id}/sessions`); }
 
-  // ==== HU-016: comentarios ====
   listarComentarios(id: number) {
     return this.http.get<any[]>(`${this.api}/documentos/${id}/comentarios`);
   }
   agregarComentario(id: number, descripcion: string) {
     return this.http.post(`${this.api}/documentos/${id}/comentarios`, { descripcion });
+  }
+
+  // ========= NUEVOS MÉTODOS para el mini Word colaborativo =========
+
+  /** Crear BORRADOR (Express: POST /api/documentos) */
+  createDraft(titulo: string, plantillaId?: number):
+    Observable<{ id: number; numero_borrador: number }> {
+    const body: any = { titulo };
+    if (plantillaId != null) body.plantillaId = plantillaId;
+    return this.http.post<{ id: number; numero_borrador: number }>(this.docsApi, body);
+  }
+
+  /** Importar .docx -> HTML (Express: POST /api/documentos/import-docx) */
+  importDocx(file: File): Observable<{ html: string }> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<{ html: string }>(`${this.docsApi}/import-docx`, fd);
+  }
+
+  /** Guardar checkpoint (Express: POST /api/documentos/:id/checkpoint) */
+  checkpoint(id: number, snapshot: any): Observable<void> {
+    return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, { snapshot });
+  }
+
+  /** Aprobar (firmar) y obtener código oficial (Express: POST /api/documentos/:id/aprobar) */
+  approve(id: number, snapshot: any): Observable<{ codigo_oficial: string }> {
+    return this.http.post<{ codigo_oficial: string }>(`${this.docsApi}/${id}/aprobar`, { snapshot });
+  }
+
+  /** URL del WebSocket de colaboración (y-websocket) */
+  wsUrl(docId: number): string {
+    // Si tienes environment.ws, úsalo; si no, default local:
+    const wsBase = (environment as any).ws ?? 'ws://localhost:1234';
+    return `${wsBase}?doc=${docId}`;
   }
 }
