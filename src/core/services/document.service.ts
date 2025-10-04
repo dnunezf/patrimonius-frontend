@@ -63,7 +63,7 @@ export class DocumentService {
   /** Base para los endpoints de ESTE mini-flujo (Express con /api/documentos).
    *  Si tu environment.api ya incluye /api, ajusta esto a `${this.api}/documentos`.
    */
-  private docsApi = `${this.api}/api/documentos`;
+  private docsApi = `${this.api}/documentos`;
 
   constructor(private http: HttpClient) {}
 
