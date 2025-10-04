@@ -1,11 +1,12 @@
-import { Injectable } from '@angular/core';
+// src/app/features/admin/users/admin-users.service.ts
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { map, Observable } from 'rxjs';
 
+// Mantengo el tipo por compatibilidad; el servicio YA NO lo envía en create.
 export type EditorPermission = 'EDIT' | 'SIGN';
-
-// + Add rolIds to the DTO and AdminUser so TS lets us use them.
+export type Perm = EditorPermission;
 
 export interface AdminUser {
   id: number;
@@ -17,8 +18,7 @@ export interface AdminUser {
   rolId: number;
   unidad: string;
   unidadId: number;
-  editorPermissions?: EditorPermission[];
-  // NEW (the backend already returns these if agregaste el GROUP_CONCAT):
+  editorPermissions?: EditorPermission[]; // solo informativo si backend lo devuelve
   rolIds?: number[];
   roles?: string[];
 }
@@ -28,64 +28,84 @@ export interface UpsertUserDto {
   apellido1: string;
   apellido2?: string;
   email: string;
-  // keep primary role for backward-compat
-  rolId: number;
-  // NEW: all roles selected in the multi-select
-  rolIds: number[];
+  rolId: number;     // rol principal (compat)
+  rolIds: number[];  // todos los roles seleccionados
   unidadId: number;
-  editorPermissions?: EditorPermission[];
+  // editorPermissions?: EditorPermission[]; // ← NO se usa al enviar
 }
-
 
 @Injectable({ providedIn: 'root' })
 export class AdminUsersService {
+  private http = inject(HttpClient);
   private api = `${environment.apiUrl}/admin`;
-
-  constructor(private http: HttpClient) {}
 
   list(): Observable<AdminUser[]> {
     return this.http.get<AdminUser[]>(`${this.api}/users`);
   }
 
-  /** Create: normalize to always send rolIds[] (and keep rolId for backward compat) */
+  /** Crear usuario (solo datos y roles; SIN permisos de editor) */
   create(body: UpsertUserDto): Observable<AdminUser> {
+    if (!body) throw new Error('AdminUsersService.create: body es requerido');
+
     const payload: any = {
-      ...body,
-      rolIds:
-        Array.isArray(body.rolIds) && body.rolIds.length
-          ? body.rolIds
-          : [body.rolId],
+      // datos personales
+      nombre: body.nombre?.trim(),
+      apellido1: body.apellido1?.trim(),
+      apellido2: body.apellido2?.trim() || null,
+      email: body.email?.trim(),
+
+      // organización / roles
+      unidadId: Number(body.unidadId),
+
+      // normalización de roles
+      rolIds: (Array.isArray(body.rolIds) && body.rolIds.length ? body.rolIds : [body.rolId])
+        .map(n => Number(n))
+        .filter(n => !Number.isNaN(n)),
       rolId:
-        body.rolId ?? (Array.isArray(body.rolIds) ? body.rolIds[0] : undefined),
+        body.rolId ??
+        (Array.isArray(body.rolIds) && body.rolIds.length ? Number(body.rolIds[0]) : undefined),
     };
+
     return this.http.post<AdminUser>(`${this.api}/users`, payload);
   }
 
-  /** Update: accepts editorPermissions or permisosEditor and handles multi-role */
+  /**
+   * Actualiza datos o roles.
+   * También acepta `{ permisosEditor: Perm[] }` por compatibilidad
+   * con el componente de permisos (si lo usas).
+   */
   update(
     id: number,
-    body: Partial<UpsertUserDto> | { permisosEditor: EditorPermission[] }
+    body: Partial<UpsertUserDto> | { permisosEditor: Perm[] }
   ): Observable<AdminUser> {
-    let payload: any = body;
+    if (!body) throw new Error('AdminUsersService.update: body es requerido');
 
-    if ((body as Partial<UpsertUserDto>).editorPermissions) {
+    // Compatibilidad con componente de permisos
+    if ('permisosEditor' in body) {
+      return this.http.patch<AdminUser>(`${this.api}/users/${id}`, {
+        permisosEditor: body.permisosEditor,
+      });
+    }
+
+    const b = body as Partial<UpsertUserDto>;
+    let payload: any = {
+      ...(b.nombre != null ? { nombre: b.nombre.trim() } : {}),
+      ...(b.apellido1 != null ? { apellido1: b.apellido1.trim() } : {}),
+      ...(b.apellido2 != null ? { apellido2: (b.apellido2 || '').trim() || null } : {}),
+      ...(b.email != null ? { email: b.email.trim() } : {}),
+      ...(b.unidadId != null ? { unidadId: Number(b.unidadId) } : {}),
+    };
+
+    // Normaliza roles si llegan
+    const hasRolIds = Array.isArray(b.rolIds) && b.rolIds.length > 0;
+    const hasRolId = b.rolId != null;
+    if (hasRolIds || hasRolId) {
+      const ids = hasRolIds ? b.rolIds! : [b.rolId!];
       payload = {
         ...payload,
-        permisosEditor: (body as Partial<UpsertUserDto>).editorPermissions!,
+        rolIds: ids.map(n => Number(n)).filter(n => !Number.isNaN(n)),
+        rolId: Number(ids[0]),
       };
-    }
-    if (
-      (body as Partial<UpsertUserDto>).rolIds ||
-      (body as Partial<UpsertUserDto>).rolId != null
-    ) {
-      const ids =
-        (body as Partial<UpsertUserDto>).rolIds &&
-        (body as Partial<UpsertUserDto>).rolIds!.length
-          ? (body as Partial<UpsertUserDto>).rolIds
-          : (body as Partial<UpsertUserDto>).rolId != null
-          ? [(body as Partial<UpsertUserDto>).rolId!]
-          : undefined;
-      if (ids) payload = { ...payload, rolIds: ids, rolId: ids[0] };
     }
 
     return this.http.patch<AdminUser>(`${this.api}/users/${id}`, payload);
@@ -97,7 +117,7 @@ export class AdminUsersService {
 
   listEmails(): Observable<string[]> {
     return this.list().pipe(
-      map((users) => Array.from(new Set(users.map((u) => u.email))).sort())
+      map(users => Array.from(new Set(users.map(u => u.email))).sort())
     );
   }
 }
