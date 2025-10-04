@@ -6,9 +6,18 @@
     <h2 *ngIf="step() === 1">Iniciar Sesión</h2>
     <form *ngIf="step() === 1" [formGroup]="formLogin" (ngSubmit)="submitLogin()">
       <label>Email</label>
-      <input type="email" formControlName="email" />
+      <input type="email" formControlName="email" placeholder="example@museocostarica.go.cr" />
+
       <label>Contraseña</label>
-      <input type="password" formControlName="password" />
+      <div class="input-wrapper">
+        <input [type]="showPassword ? 'text' : 'password'"
+               formControlName="password"
+               placeholder="••••••••" />
+        <button type="button" class="toggle-visibility" (click)="showPassword = !showPassword">
+          {{ showPassword ? 'Ocultar' : 'Ver' }}
+        </button>
+      </div>
+
       <button type="submit" class="btn btn--primary">Entrar</button>
     </form>
 
@@ -16,8 +25,21 @@
     <h2 *ngIf="step() === 2">Verificación 2FA</h2>
     <form *ngIf="step() === 2" [formGroup]="formCode" (ngSubmit)="submitCode()">
       <p>Ingrese el código enviado a su correo.</p>
-      <input type="text" maxlength="6" formControlName="code" placeholder="000000" />
+      <div class="input-wrapper">
+        <input [type]="showCode ? 'text' : 'password'"
+               maxlength="6"
+               formControlName="code"
+               placeholder="000000" />
+        <button type="button" class="toggle-visibility" (click)="showCode = !showCode">
+          {{ showCode ? 'Ocultar' : 'Ver' }}
+        </button>
+      </div>
       <button type="submit" class="btn btn--primary">Verificar</button>
+
+      <!-- reenviar código -->
+      <button type="button" class="btn btn--link" (click)="resendCode()">
+        Reenviar código
+      </button>
     </form>
 
     <div *ngIf="error()" class="error">{{ error() }}</div>

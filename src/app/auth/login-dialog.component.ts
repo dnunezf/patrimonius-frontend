@@ -22,6 +22,10 @@ export class LoginDialogComponent {
   formLogin: FormGroup;
   formCode: FormGroup;
 
+  // 👇 Estados de visibilidad
+  showPassword = false;
+  showCode = false;
+
   constructor(private fb: FormBuilder, private auth: AuthService) {
     this.formLogin = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -75,6 +79,21 @@ export class LoginDialogComponent {
       },
       error: (e) => {
         this.error.set(e?.error?.error || 'Código inválido o vencido');
+      }
+    });
+  }
+
+  /** Reenviar código 2FA */
+  resendCode() {
+    if (!this.userId) return;
+
+    this.auth.resend2fa(this.userId).subscribe({
+      next: () => {
+        this.error.set(null);
+        console.log('Nuevo código enviado al correo');
+      },
+      error: (e) => {
+        this.error.set(e?.error?.error || 'No se pudo reenviar el código');
       }
     });
   }
