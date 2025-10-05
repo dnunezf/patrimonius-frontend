@@ -4,13 +4,13 @@ import { CommonModule } from '@angular/common';
 import { DocumentService, VDocumentModel } from '../../../../core/services/document.service';
 import { DatePipe } from '@angular/common';
 import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
-import { Router } from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-editor-dashboard',
   standalone: true,
-  imports: [CommonModule, FormatStatePipe],
+  imports: [CommonModule, FormatStatePipe, RouterModule],
   templateUrl: './editor-dashboard.component.html',
   styleUrls: ['./editor-dashboard.component.css'],
   providers: [DatePipe]
@@ -54,6 +54,8 @@ export class EditorDashboardComponent implements OnInit {
     this.loadDocuments();
   }
 
+
+
   loadDocuments(): void {
     this.documentService.getDocumentsFromProduction().subscribe({
       next: (data) => {
@@ -73,6 +75,13 @@ export class EditorDashboardComponent implements OnInit {
     card.showTemplates = !card.showTemplates;
   }
 
+  editarDocumento(documentoId: number): void {
+    if (!documentoId) {
+      console.error('ID de documento inválido');
+      return;
+    }
+    this.router.navigate(['/editor','document', documentoId, 'edit']);
+  }
   selectTemplate(templateName: string, card: any): void {
     this.selectedTemplate = templateName;
     card.showTemplates = false;

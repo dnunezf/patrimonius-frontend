@@ -115,6 +115,7 @@
           <button
             *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
             class="btn btn--gray"
+            (click)="editarDocumento(document.id)"
           >
             Editar
           </button>
