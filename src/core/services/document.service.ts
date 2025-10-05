@@ -29,6 +29,7 @@ export interface DocumentModel {
 }
 
 export interface VDocumentModel {
+  id: number;
   documento_nombre: string;
   documento_estado: string;
   primer_usuario: string;
@@ -88,6 +89,7 @@ export class DocumentService {
     return this.http.get<AccessibleDocRow[]>(`${this.api}/view/production`).pipe(
       map(rows =>
         rows.map(r => ({
+          id :                 r.documento_id,
           documento_nombre:   r.titulo,
           documento_estado:   r.estado,
           primer_usuario:     r.creador_nombre,
