@@ -123,13 +123,30 @@ export class DocumentService {
       `${this.api}/documentos/${id}/version/latest`
     );
   }
-  guardarColab(id: number, contenido: string, base_version_id: number):
-    Observable<{ version_id: number; next_version: number; conflict: boolean }> {
-    return this.http.put<{ version_id: number; next_version: number; conflict: boolean }>(
-      `${this.api}/documentos/${id}/colab-guardar`,
-      { contenido, base_version_id }
-    );
+
+  guardarColab(
+    id: number,
+    contenido: string,
+    base_version_id: number
+  ): Observable<{
+    version_id: number;
+    next_version: number;
+    conflict: boolean;
+    saved?: boolean;
+    reason?: 'NO_CHANGES' | string;
+    nombre_versionado?: string;
+  }> {
+    return this.http.put<{
+      version_id: number;
+      next_version: number;
+      conflict: boolean;
+      saved?: boolean;
+      reason?: 'NO_CHANGES' | string;
+      nombre_versionado?: string;
+    }>(`${this.api}/documentos/${id}/colab-guardar`, { contenido, base_version_id });
   }
+
+
   touchSession(id: number)  { return this.http.post(`${this.api}/documentos/${id}/sessions`, {}); }
   listSession(id: number)   { return this.http.get<any[]>(`${this.api}/documentos/${id}/sessions`); }
   endSession(id: number)    { return this.http.delete(`${this.api}/documentos/${id}/sessions`); }
@@ -174,4 +191,21 @@ export class DocumentService {
     const wsBase = (environment as any).ws ?? 'ws://localhost:1234';
     return `${wsBase}?doc=${docId}`;
   }
+
+  getContenido(id: number): Observable<{
+    documento_id: number;
+    titulo: string;
+    estado: string;
+    contenido: string;
+    latest_version_id: number;
+  }> {
+    return this.http.get<{
+      documento_id: number;
+      titulo: string;
+      estado: string;
+      contenido: string;
+      latest_version_id: number;
+    }>(`${this.api}/documentos/${id}/contenido`);
+  }
+
 }

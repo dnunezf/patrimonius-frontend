@@ -30,6 +30,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   error = '';
 
   private subs: Subscription[] = [];
+  private readonly clientId = crypto.randomUUID();
 
   constructor(
     private route: ActivatedRoute,
@@ -42,37 +43,60 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     // Iniciar Quill
     this.quill = new Quill(this.editorRef.nativeElement, { theme: 'snow' });
-    this.quill.on('text-change', () => {
-      const html = this.html();
-      // parche en vivo
-      this.rt.emit('content:patch', { content: html, ts: Date.now() });
+
+    // Emitir deltas (NO HTML) y evitar eco con clientId
+    this.quill.on('text-change', (delta, _oldDelta, source) => {
+      if (source !== 'user') return;
+      this.rt.emit('content:patch', { from: this.clientId, delta, ts: Date.now() });
     });
 
-    // Cargar base version (para guardado con control de versión)
+    this.docs.getContenido(this.documentoId).subscribe(d => {
+      // setear HTML inicial sin romper el caret
+      const range = this.quill.getSelection();
+      this.quill.clipboard.dangerouslyPasteHTML(d.contenido || '', 'silent');
+      if (range) this.quill.setSelection(range.index, range.length, 'silent');
+      // dejar base con la última versión
+      this.baseVersionId = d.latest_version_id ?? 0;
+    });
+
+
+    // Cargar base de versión (para guardado con control de versionado)
     this.docs.ultimaVersion(this.documentoId).subscribe(v => {
       this.baseVersionId = v?.id ?? 0;
-      // si quieres precargar contenido, crea un endpoint GET /documentos/:id/contenido y setea this.html(contenido)
+      // Si tienes un GET /documentos/:id/contenido, aquí podrías:
+      // this.setHtmlSafe(contenidoInicial);
     });
 
     // Conectarse a WS y unirse al doc
     this.rt.connect();
-    this.rt.emit('editor:join', { documentoId: this.documentoId });
+    this.rt.emit('editor:join', { documentoId: this.documentoId, from: this.clientId });
 
-    // Presencia y parches entrantes
+    // ======== Eventos Realtime ========
+    // Presencia
     this.rt.on('presence:update', (u: any[]) => (this.presence = u));
+
+    // Parches entrantes → aplicar delta (preferido) o fallback a HTML
     this.rt.on('content:patch', (m: any) => {
-      if (!m?.content) return;
-      this.setHtml(m.content); // estrategia simple (reemplazo)
+      if (!m) return;
+      if (m.from === this.clientId) return; // evita auto-eco
+
+      if (m.delta) {
+        this.quill.updateContents(m.delta, 'silent');
+      } else if (m.content) {
+        // Fallback: si el servidor aún envía HTML completo
+        const range = this.quill.getSelection();
+        this.quill.clipboard.dangerouslyPasteHTML(m.content, 'silent');
+        if (range) this.quill.setSelection(range.index, range.length, 'silent');
+      }
     });
 
     // Guardado notificado desde otros
     this.rt.on('editor:saved', (_: any) => {
-      // podrías mostrar un toast si quieres
+      // opcional: toast
     });
 
-    // Conflictos
+    // Conflictos → refrescar baseVersionId
     this.rt.on('editor:conflict', (_: any) => {
-      // refresca id base
       this.docs.ultimaVersion(this.documentoId).subscribe(v => (this.baseVersionId = v?.id ?? 0));
     });
 
@@ -91,19 +115,36 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   save(): void {
     this.saving = true;
     this.error = '';
-    const html = this.html();
+    const html = this.getHtml();
 
     this.docs
       .guardarColab(this.documentoId, html, this.baseVersionId)
       .subscribe({
         next: (r) => {
           this.saving = false;
-          this.baseVersionId = r.version_id; // avanzamos versión base
+
+          // 👇 Manejo del caso "sin cambios"
+          if (r.saved === false && r.reason === 'NO_CHANGES') {
+            // NO muevas baseVersionId; opcional: refrescar versión
+            // this.docs.ultimaVersion(this.documentoId).subscribe(v => this.baseVersionId = v?.id ?? this.baseVersionId);
+            // opcional: toast/UI
+            // this.toast.info('No hay cambios para guardar');
+            return;
+          }
+
+          // Caso normal: avanzamos baseVersionId
+          this.baseVersionId = r.version_id;
+
+          // Opcional: mostrar nombre_versionado si vino
+          // if (r.nombre_versionado) this.toast.success(`Guardado: ${r.nombre_versionado}`);
+
+          // Notificar a otros si quieres
+          this.rt.emit('editor:saved', { documentoId: this.documentoId, versionId: r.version_id });
         },
         error: (e) => {
           this.saving = false;
           if (e.status === 409) {
-            // versión desactualizada → refresca id base
+            // versión desactualizada → refrescar base
             this.docs.ultimaVersion(this.documentoId).subscribe(v => (this.baseVersionId = v?.id ?? 0));
           } else {
             this.error = e?.error?.message || 'No se pudo guardar';
@@ -112,13 +153,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       });
   }
 
+
   /** Importar DOCX → HTML (Mammoth) */
   async importDocx(evt: Event): Promise<void> {
     const file = (evt.target as HTMLInputElement).files?.[0];
     if (!file) return;
     const buf = await file.arrayBuffer();
     const res = await mammoth.convertToHtml({ arrayBuffer: buf });
-    this.setHtml(res.value || '');
+    this.setHtmlSafe(res.value || '');
   }
 
   /** Comentarios (HU-016) */
@@ -135,11 +177,15 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.docs.endSession(this.documentoId).subscribe();
   }
 
-  // Helpers HTML del editor
-  private html(): string {
-    return this.editorRef.nativeElement.querySelector('.ql-editor')!.innerHTML;
+  // ======== Helpers seguros con Quill (NO tocar innerHTML directamente) ========
+  private getHtml(): string {
+    return this.quill.root.innerHTML;
   }
-  private setHtml(html: string): void {
-    this.editorRef.nativeElement.querySelector('.ql-editor')!.innerHTML = html;
+
+  private setHtmlSafe(html: string): void {
+    // Preserva (en lo posible) el caret al pegar HTML completo
+    const range = this.quill.getSelection();
+    this.quill.clipboard.dangerouslyPasteHTML(html, 'silent');
+    if (range) this.quill.setSelection(range.index, range.length, 'silent');
   }
 }
