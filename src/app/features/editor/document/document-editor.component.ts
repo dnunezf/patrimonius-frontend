@@ -1,4 +1,10 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -97,6 +103,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       next: (d) => {
         const html = d?.contenido || '';
         this.pasteHtml(html);
+        this.pasteHtml(html);
         this.baseVersionId = d?.latest_version_id ?? 0;
       },
       error: () => (this.error = 'No se pudo cargar el contenido'),
@@ -129,6 +136,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       this.docs
         .ultimaVersion(this.documentoId)
         .subscribe((v) => (this.baseVersionId = v?.id ?? 0));
+      this.docs
+        .ultimaVersion(this.documentoId)
+        .subscribe((v) => (this.baseVersionId = v?.id ?? 0));
     });
 
     // 🔟 Comentarios en tiempo real
@@ -158,6 +168,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   save(): void {
     this.saving = true;
     this.error = '';
+    this.sigMsg = '';
     const html = this.html();
 
     this.docs.guardarColab(this.documentoId, html, this.baseVersionId).subscribe({
@@ -236,16 +247,19 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private html(): string {
     // Quill v2: getSemanticHTML(); Quill v1: root.innerHTML
     // @ts-ignore
+    // @ts-ignore
     return (this.quill as any).getSemanticHTML?.() ?? this.quill.root.innerHTML;
   }
 
   private pasteHtml(html: string): void {
+    this.quill.setContents([], 'silent');
     this.quill.setContents([], 'silent');
     this.quill.clipboard.dangerouslyPasteHTML(0, html, 'api');
   }
 
   private setHtmlPreservingCaretAndScroll(html: string): void {
     const sel = this.quill.getSelection();
+    const scroller = this.quill.root.parentElement!;
     const scroller = this.quill.root.parentElement!;
     const prevScrollTop = scroller.scrollTop;
 

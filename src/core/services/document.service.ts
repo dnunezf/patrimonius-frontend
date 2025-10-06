@@ -10,9 +10,9 @@ export interface DocumentModel {
   titulo: string;
   numero_serie: string;
   estado: 'borrador' | 'firmado-parcial' | 'firmado-completo' | 'archivado';
-  unidad?: { id: string; nombre: string; descripcion: string; };
+  unidad?: { id: string; nombre: string; descripcion: string };
   usuario_id: string;
-  categoria?: { id: string; nombre: string; descripcion: string; };
+  categoria?: { id: string; nombre: string; descripcion: string };
   fecha: string;
   fechaModificacion?: string;
   keywords?: string[];
@@ -71,14 +71,33 @@ export interface DocVersionRow {
   email?: string | null;
 }
 
+export interface DocumentMetadata {
+  technical: {
+    mimeType: string | null;
+    fileExt: string | null;
+    sizeBytes: number | null;
+    createdAt: string | null;
+    updatedAt: string | null;
+    contentHash: string | null;
+    storageUri: string | null;
+    accessLevel: string | null;
+    software: string | null;
+  };
+  descriptive: {
+    title: string | null;
+    author: string | null;
+    responsibleUnitId: number | null;
+    keywords: string[];
+    preliminaryClass: string | null;
+    classificationCode: string | null;
+    retentionYears: number | null;
+    pages?: number | null;
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
-  /** Base del backend. En local suele ser http://localhost:3000 */
   private api = environment.api;
-
-  /** Base para los endpoints de ESTE mini-flujo (Express con /api/documentos).
-   *  Si tu environment.api ya incluye /api, ajusta esto a `${this.api}/documentos`.
-   */
   private docsApi = `${this.api}/documentos`;
 
   constructor(private http: HttpClient) {}
@@ -94,28 +113,36 @@ export class DocumentService {
     return this.http.post<DocumentModel>(`${this.api}/documents`, document);
   }
   update(id: string, document: DocumentModel): Observable<DocumentModel> {
-    return this.http.put<DocumentModel>(`${this.api}/documents/${id}`, document);
+    return this.http.put<DocumentModel>(
+      `${this.api}/documents/${id}`,
+      document
+    );
   }
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/documents/${id}`);
   }
 
   getDocumentsFromProduction(): Observable<VDocumentModel[]> {
-    return this.http.get<AccessibleDocRow[]>(`${this.api}/view/production`).pipe(
-      map(rows =>
-        rows.map(r => ({
-          id :                 r.documento_id,
-          documento_nombre:   r.titulo,
-          documento_estado:   r.estado,
-          primer_usuario:     r.creador_nombre,
-          fecha_creacion:     r.fecha_creacion,
-          unidad_nombre:      r.unidad_nombre,
-          categoria_nombre:   r.categoria_nombre || 'Sin categoría',
-          firmas_obtenidas:   r.firmas_obtenidas,
-          firmas_requeridas:  r.firmas_requeridas,
-        } satisfies VDocumentModel))
-      )
-    );
+    return this.http
+      .get<AccessibleDocRow[]>(`${this.api}/view/production`)
+      .pipe(
+        map((rows) =>
+          rows.map(
+            (r) =>
+              ({
+                id: r.documento_id,
+                documento_nombre: r.titulo,
+                documento_estado: r.estado,
+                primer_usuario: r.creador_nombre,
+                fecha_creacion: r.fecha_creacion,
+                unidad_nombre: r.unidad_nombre,
+                categoria_nombre: r.categoria_nombre || 'Sin categoría',
+                firmas_obtenidas: r.firmas_obtenidas,
+                firmas_requeridas: r.firmas_requeridas,
+              } satisfies VDocumentModel)
+          )
+        )
+      );
   }
 
   // HU-007
@@ -123,7 +150,7 @@ export class DocumentService {
     plantilla_id: number;
     titulo: string;
     categoria_id?: number | null;
-    confid_level?: 'PUBLIC'|'INTERNAL'|'HIGH'|'RESTRICTED';
+    confid_level?: 'PUBLIC' | 'INTERNAL' | 'HIGH' | 'RESTRICTED';
     numero_firmas?: number;
   }): Observable<{ documento_id: number; numero_serie: string }> {
     return this.http.post<{ documento_id: number; numero_serie: string }>(
@@ -132,7 +159,6 @@ export class DocumentService {
     );
   }
 
-  // HU-008
   ultimaVersion(id: number): Observable<{ id: number; fecha: string } | null> {
     return this.http.get<{ id: number; fecha: string } | null>(
       `${this.api}/documentos/${id}/version/latest`
@@ -158,19 +184,29 @@ export class DocumentService {
       saved?: boolean;
       reason?: 'NO_CHANGES' | string;
       nombre_versionado?: string;
-    }>(`${this.api}/documentos/${id}/colab-guardar`, { contenido, base_version_id });
+    }>(`${this.api}/documentos/${id}/colab-guardar`, {
+      contenido,
+      base_version_id,
+    });
   }
 
-
-  touchSession(id: number)  { return this.http.post(`${this.api}/documentos/${id}/sessions`, {}); }
-  listSession(id: number)   { return this.http.get<any[]>(`${this.api}/documentos/${id}/sessions`); }
-  endSession(id: number)    { return this.http.delete(`${this.api}/documentos/${id}/sessions`); }
+  touchSession(id: number) {
+    return this.http.post(`${this.api}/documentos/${id}/sessions`, {});
+  }
+  listSession(id: number) {
+    return this.http.get<any[]>(`${this.api}/documentos/${id}/sessions`);
+  }
+  endSession(id: number) {
+    return this.http.delete(`${this.api}/documentos/${id}/sessions`);
+  }
 
   listarComentarios(id: number) {
     return this.http.get<any[]>(`${this.api}/documentos/${id}/comentarios`);
   }
   agregarComentario(id: number, descripcion: string) {
-    return this.http.post(`${this.api}/documentos/${id}/comentarios`, { descripcion });
+    return this.http.post(`${this.api}/documentos/${id}/comentarios`, {
+      descripcion,
+    });
   }
 
   marcarComentarioResuelto(id: number) {
@@ -184,17 +220,18 @@ export class DocumentService {
     Observable<{ id: number; numero_borrador: number }> {
     const body: any = { titulo };
     if (plantillaId != null) body.plantillaId = plantillaId;
-    return this.http.post<{ id: number; numero_borrador: number }>(this.docsApi, body);
+    return this.http.post<{ id: number; numero_borrador: number }>(
+      this.docsApi,
+      body
+    );
   }
 
-  /** Importar .docx -> HTML (Express: POST /api/documentos/import-docx) */
   importDocx(file: File): Observable<{ html: string }> {
     const fd = new FormData();
     fd.append('file', file);
     return this.http.post<{ html: string }>(`${this.docsApi}/import-docx`, fd);
   }
 
-  /** Guardar checkpoint (Express: POST /api/documentos/:id/checkpoint) */
   checkpoint(id: number, snapshot: any): Observable<void> {
     return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, { snapshot });
   }
