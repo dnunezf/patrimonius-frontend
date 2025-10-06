@@ -6,13 +6,14 @@ import Quill from 'quill';
 import * as mammoth from 'mammoth';
 import { interval, Subscription, switchMap } from 'rxjs';
 
-import { DocumentService } from 'core/services/document.service';
+import { DocumentService,VersionDoc } from 'core/services/document.service';
 import { RealtimeService } from 'core/services/realtime.service';
+import { VersionHistoryDialogComponent } from './version-history-dialog.component';
 
 @Component({
   standalone: true,
   selector: 'app-document-editor',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,VersionHistoryDialogComponent],
   templateUrl: './document-editor.component.html',
   styleUrls: ['./document-editor.component.css'],
 })
@@ -28,17 +29,45 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   saving = false;
   error = '';
+  info = '';
+  showRestoreModal = false;
+  versiones: VersionDoc[] = [];
+  selectedVersionId: number | null = null;
+  restoreMotivo = '';
+  restoring = false;
+  showHistory = false;
+
 
   private readonly clientId =
     (globalThis as any).crypto?.randomUUID?.() ?? this.fallbackUuid();
 
   private subs: Subscription[] = [];
 
+
   constructor(
     private route: ActivatedRoute,
     private docs: DocumentService,
     private rt: RealtimeService
   ) {}
+
+  openHistory(): void {
+    this.showHistory = true;
+    this.info = '';
+  }
+
+  onRestored(e: { newVersionId: number; html: string }) {
+    this.pasteHtml(e.html);
+    const end = Math.max(0, this.quill.getLength() - 1);
+    this.quill.setSelection(end, 0, 'silent');
+    this.baseVersionId = e.newVersionId;
+    this.info = `Documento restaurado (v${e.newVersionId}). El historial se conserva.`;
+    this.rt.emit('editor:saved', {
+      documentoId: this.documentoId,
+      versionId: this.baseVersionId,
+      from: this.clientId,
+      reason: 'RESTORE'
+    });
+  }
 
   ngOnInit(): void {
     this.documentoId = Number(this.route.snapshot.paramMap.get('id'));
@@ -213,5 +242,55 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
+  }
+
+  // ===== HU-010: UI =====
+  openRestoreModal() {
+    this.showRestoreModal = true;
+    this.selectedVersionId = null;
+    this.restoreMotivo = '';
+    this.docs.listVersions(this.documentoId).subscribe({
+      next: (rows: VersionDoc[]) => (this.versiones = rows),
+      error: (e: any) => (this.error = e?.error?.message || 'No se pudieron cargar versiones'),
+    });
+  }
+
+  closeRestoreModal() {
+    this.showRestoreModal = false;
+  }
+
+  selectVersion(v: VersionDoc) {
+    this.selectedVersionId = v.id;
+  }
+
+  confirmRestore() {
+    if (!this.selectedVersionId) return;
+    this.restoring = true;
+    this.docs.restoreVersion(this.documentoId, this.selectedVersionId, this.restoreMotivo || '')
+      .subscribe({
+        next: (_res) => {
+          this.restoring = false;
+          this.showRestoreModal = false;
+
+          // Recarga el contenido actual (ya actualizado por el backend)
+          this.docs.getContenido(this.documentoId).subscribe({
+            next: (d) => {
+              const html = d?.contenido || '';
+              this.pasteHtml(html);
+              this.baseVersionId = d?.latest_version_id ?? 0;
+            },
+            error: () => {
+              this.error = 'No se pudo cargar el contenido';
+            },
+          });
+
+          // Feedback simple (puedes cambiar por toast)
+          alert('Versión restaurada con éxito.');
+        },
+        error: (e) => {
+          this.restoring = false;
+          this.error = e?.error?.message || 'Error al restaurar versión';
+        },
+      });
   }
 }

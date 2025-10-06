@@ -7,8 +7,11 @@
   </label>
 
   <button (click)="save()" [disabled]="saving">Guardar</button>
+  <button type="button" (click)="openRestoreModal()" [disabled]="restoring">Restaurar versión</button>
   <span *ngIf="saving" class="muted">guardando…</span>
   <span *ngIf="error" class="err">{{ error }}</span>
+  <span *ngIf="info" class="muted">{{ info }}</span>
+
 </div>
 
 <div #editor class="quill-host"></div>
@@ -39,3 +42,61 @@
   </div>
 </section>
 
+<!-- Modal de restauración de versión -->
+<div class="modal-backdrop" *ngIf="showRestoreModal" (click)="closeRestoreModal()"></div>
+
+<div class="modal" *ngIf="showRestoreModal" role="dialog" aria-modal="true" aria-labelledby="restoreTitle">
+  <header class="modal__header">
+    <h3 id="restoreTitle">Restaurar versión</h3>
+    <button class="close" (click)="closeRestoreModal()">×</button>
+  </header>
+
+  <section class="modal__body">
+    <div class="versions">
+      <div class="versions__list">
+        <div
+          *ngFor="let v of versiones; let i = index"
+          class="version-item"
+          [class.active]="v.id === selectedVersionId"
+          (click)="selectVersion(v)"
+          tabindex="0"
+          [attr.aria-checked]="v.id === selectedVersionId"
+          role="radio"
+        >
+          <div class="version-item__title">
+            {{ v.nombre_versionado || ('Versión #' + (versiones.length - i)) }}
+          </div>
+          <div class="version-item__meta">
+            {{ v.fecha | date:'dd-MM-yyyy HH:mm' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="versions__details" *ngIf="selectedVersionId">
+        <label for="motivo">Motivo de la restauración</label>
+        <textarea id="motivo" [(ngModel)]="restoreMotivo" rows="3" placeholder="Describe por qué restauras esta versión..."></textarea>
+
+        <!-- Preview opcional con iframe/HTML simple -->
+        <div class="preview-hint">
+          *El contenido restaurado reemplazará el contenido actual del documento y se creará una nueva entrada en el historial.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="modal__footer">
+    <button class="btn btn--gray" (click)="closeRestoreModal()">Cancelar</button>
+    <button class="btn btn--red"
+            (click)="confirmRestore()"
+            [disabled]="!selectedVersionId || restoring">
+      {{ restoring ? 'Restaurando…' : 'Restaurar' }}
+    </button>
+  </footer>
+</div>
+
+<app-version-history-dialog
+  [open]="showHistory"
+  [documentoId]="documentoId"
+  (close)="showHistory=false"
+  (restored)="onRestored($event)">
+</app-version-history-dialog>

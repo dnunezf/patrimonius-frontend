@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import {catchError} from 'rxjs/operators';
 
 export interface DocumentModel {
   id: string;
@@ -54,6 +55,20 @@ export interface AccessibleDocRow {
   categoria_nombre: string | null;
   firmas_requeridas: number;
   firmas_obtenidas: number;
+}
+
+export type VersionDoc = {
+  id: number;
+  fecha: string;
+  nombre_versionado?: string | null;
+};
+
+export interface DocVersionRow {
+  id: number;
+  fecha: string;
+  nombre_versionado?: string | null;
+  usuario?: string | null;
+  email?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -206,6 +221,56 @@ export class DocumentService {
       contenido: string;
       latest_version_id: number;
     }>(`${this.api}/documentos/${id}/contenido`);
+  }
+
+  /** HU-010: listar versiones de un documento */
+  listVersions(documentId: number) {
+    // Ajusta el path si tu backend usa otra convención:
+    // opciones típicas: /documentos/:id/versiones  | /documentos/:id/versions
+    const url1 = `${this.api}/documentos/${documentId}/versiones`;
+    const url2 = `${this.api}/documentos/${documentId}/versions`;
+
+    return this.http.get<any>(url1).pipe(
+      // si falla url1 prueba url2
+      catchError(() => this.http.get<any>(url2)),
+      map((raw) => {
+        const arr: any[] = Array.isArray(raw) ? raw : (raw?.items ?? raw?.rows ?? []);
+        return (arr || []) as DocVersionRow[];
+      })
+    );
+  }
+
+  /** HU-010: restaurar versión */
+  // restoreVersion(documentId: number, versionId: number, motivo: string) {
+  //   // Ajusta si tu backend usa otro path:
+  //   const url1 = `${this.api}/documentos/${documentId}/versiones/${versionId}/restore`;
+  //   const url2 = `${this.api}/documentos/${documentId}/versions/${versionId}/restore`;
+  //
+  //   const body = { motivo };
+  //
+  //   return this.http.post<any>(url1, body).pipe(
+  //     catchError(() => this.http.post<any>(url2, body)),
+  //     map((res) => {
+  //       // formatea la respuesta esperada por el editor
+  //       return {
+  //         newVersionId: res?.newVersionId ?? res?.version_id ?? res?.id ?? 0,
+  //         html: String(res?.html ?? res?.contenido ?? ''),
+  //         nombre_versionado: res?.nombre_versionado ?? null,
+  //       };
+  //     })
+  //   );
+  // }
+  // src/app/core/document.service.ts
+  restoreVersion(documentId: number, versionId: number, motivo: string) {
+    const url = `${this.api}/documentos/${documentId}/restaurar-version/${versionId}`;
+    return this.http.post<any>(url, { motivo }).pipe(
+      map(res => ({
+        // tu backend devuelve: { documento_id, version_origen_id, version_restaurada_id, nombre_versionado }
+        newVersionId: res?.version_restaurada_id ?? 0,
+        html: '', // no lo devuelve el back; el front ya vuelve a pedir el contenido luego
+        nombre_versionado: res?.nombre_versionado ?? null,
+      }))
+    );
   }
 
 }
