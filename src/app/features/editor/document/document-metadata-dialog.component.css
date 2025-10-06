@@ -1,0 +1,272 @@
+/* src/app/core/features/editor/document/document-metadata-dialog.component.css */
+
+/* ========== Design tokens ========== */
+:host {
+  --bg: #ffffff;
+  --bg-subtle: #f8fafc;
+  --bg-readonly: #f5f7fb;
+  --text: #0f172a;
+  --muted: #64748b;
+  --label: #334155;
+  --border: #e5e7eb;
+  --border-strong: #cbd5e1;
+  --primary: #2563eb;
+  --primary-600: #1d4ed8;
+  --ring: rgba(37, 99, 235, 0.2);
+  --danger: #b91c1c;
+  --danger-bg: #fee2e2;
+  --danger-br: #fecaca;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 10px 30px rgba(2, 8, 23, 0.15), 0 2px 10px rgba(2, 8, 23, 0.06);
+}
+
+/* ========== Backdrop & modal ========== */
+.md-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+}
+
+.md-modal {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, 92vw);
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 1001;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .md-modal {
+    animation: md-enter 0.18s ease-out;
+  }
+  .md-backdrop {
+    animation: md-fade 0.18s ease-out;
+  }
+}
+@keyframes md-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+@keyframes md-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ========== Header ========== */
+.md-header {
+  position: sticky;
+  top: 0;
+  padding: 16px 20px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+}
+.md-header h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--text);
+}
+.md-close {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.md-close:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.md-close:hover {
+  color: #0b1222;
+}
+
+/* ========== Body ========== */
+.md-body {
+  padding: 20px;
+  max-height: 70vh;
+  overflow: auto;
+}
+.md-subtitle {
+  margin: 6px 0 14px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 15px;
+}
+.mt-24 {
+  margin-top: 24px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 680px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========== Read-only fields ========== */
+.ro-field label,
+.form-field label {
+  display: block;
+  font-size: 13px;
+  color: var(--label);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.ro-field .ro {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-readonly);
+  color: #1f2937;
+}
+
+/* ========== Inputs ========== */
+.form-field {
+  margin-bottom: 12px;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  outline: none;
+  color: #0b1222;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+.form-field input::placeholder {
+  color: #9aa5b1;
+}
+.form-field input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Number input spin buttons reset (webkit) */
+.form-field input[type="number"]::-webkit-outer-spin-button,
+.form-field input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.form-field input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Validation states */
+.err {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 6px;
+}
+.req {
+  color: var(--danger);
+}
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+input.ng-invalid.ng-touched {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+/* ========== Footer ========== */
+.md-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: 18px;
+  padding-top: 14px;
+  background: linear-gradient(to top, #fff 60%, rgba(255, 255, 255, 0));
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* ========== Buttons ========== */
+.btn {
+  appearance: none;
+  background: var(--primary);
+  color: #fff;
+  border: 0;
+  padding: 10px 16px;
+  border-radius: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.06s ease, background-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.btn:hover {
+  background: var(--primary-600);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.btn[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn--ghost {
+  background: var(--bg-subtle);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn--ghost:hover {
+  background: #eef2f7;
+}
+
+/* ========== Messages ========== */
+.md-info {
+  color: var(--text);
+}
+.md-error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-br);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+}

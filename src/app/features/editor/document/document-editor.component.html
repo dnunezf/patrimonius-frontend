@@ -7,8 +7,16 @@
   </label>
 
   <button (click)="save()" [disabled]="saving">Guardar</button>
+
+  <button type="button" (click)="openMetadata()">Metadatos</button>
+
+  <button type="button" class="btn-accent" (click)="requestSignature()">
+    Solicitar Firma
+  </button>
+
   <span *ngIf="saving" class="muted">guardando…</span>
   <span *ngIf="error" class="err">{{ error }}</span>
+  <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
 </div>
 
 <div #editor class="quill-host"></div>
@@ -17,7 +25,11 @@
   <b>Colaborando:</b>
   <ng-container *ngIf="presence?.length; else solo">
     <span *ngFor="let u of presence; let i = index">
-      {{ u.nombre }} {{ u.apellido1 }} ({{ u.email }})<span *ngIf="i < presence.length - 1"> • </span>
+      {{ u.nombre }} {{ u.apellido1 }} ({{ u.email }})<span
+        *ngIf="i < presence.length - 1"
+      >
+        •
+      </span>
     </span>
   </ng-container>
   <ng-template #solo>solo tú</ng-template>
@@ -27,8 +39,9 @@
   <h3>Comentarios</h3>
   <ul>
     <li *ngFor="let c of comentarios">
-      <small>{{ c.fecha | date: 'short' }}</small>
-      — <b>{{ c.usuario }}</b>: {{ c.descripcion }}
+      <small>{{ c.fecha | date : "short" }}</small>
+      — <b>{{ c.usuario }}</b
+      >: {{ c.descripcion }}
       <span *ngIf="c.resuelto">✅</span>
     </li>
   </ul>
@@ -39,3 +52,10 @@
   </div>
 </section>
 
+<app-document-metadata-dialog
+  [documentId]="documentoId"
+  [open]="metadataOpen"
+  (closed)="metadataOpen = false"
+  (saved)="onMetadataSaved()"
+>
+</app-document-metadata-dialog>
