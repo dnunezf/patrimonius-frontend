@@ -1,0 +1,44 @@
+<div class="panel" [class.open]="open">
+  <div class="panel-header">
+    <h3>Comentarios y Anotaciones</h3>
+    <button class="close-btn" (click)="close.emit()">×</button>
+  </div>
+
+  <div class="panel-body">
+    <div *ngIf="comentarios.length === 0" class="empty">
+      No hay comentarios aún.
+    </div>
+
+    <div
+      *ngFor="let c of comentarios"
+      class="comentario"
+      [class.resuelto]="c.resuelto"
+    >
+      <div class="comentario-head">
+        <b>{{ c.usuario }}</b>
+        <small>{{ c.fecha | date: 'short' }}</small>
+      </div>
+
+      <p>{{ c.descripcion }}</p>
+
+      <div class="comentario-foot">
+        <span *ngIf="c.resuelto" class="badge">Resuelto</span>
+        <button
+          *ngIf="!c.resuelto"
+          class="btn-resolver"
+          (click)="onResolve(c.id)"
+        >
+          Marcar como resuelto
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-new">
+    <textarea
+      [(ngModel)]="nuevoComentario"
+      placeholder="Escribe una observación..."
+    ></textarea>
+    <button class="btn-add" (click)="onAdd()">Agregar comentario</button>
+  </div>
+</div>

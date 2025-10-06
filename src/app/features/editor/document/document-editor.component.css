@@ -1,47 +1,195 @@
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  padding: 10px;
+}
+
+/* ===== COLUMNA PRINCIPAL ===== */
+.editor-main {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== BOTÓN VOLVER ===== */
+.top-bar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+.btn-back {
+  background: #e2e8f0;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+.btn-back:hover {
+  background: #bfdbfe;
+  border-color: #93c5fd;
+  color: #1e3a8a;
+  transform: translateY(-1px);
+}
+
+/* ===== TOOLBAR ===== */
 .toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.toolbar h2 {
+  color: #1e293b;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.buttons {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin: 8px 0 12px;
 }
-.file {
+
+/* ===== BOTONES ===== */
+.btn-primary {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  background: #eef2ff;
-  border-radius: 6px;
+  background: linear-gradient(90deg, #bae6fd, #7dd3fc);
+  color: #0c4a6e;
+  border: 1px solid #7dd3fc;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.25s ease;
 }
-.file input[type="file"] {
+.btn-primary:hover {
+  background: linear-gradient(90deg, #7dd3fc, #38bdf8);
+  transform: translateY(-1px);
+}
+.btn-primary input[type="file"] {
   position: absolute;
   inset: 0;
   opacity: 0;
   cursor: pointer;
 }
-button {
-  padding: 6px 12px;
-  border: 0;
-  border-radius: 6px;
-  background: #0ea5e9;
+
+.btn-save {
+  background: linear-gradient(90deg, #2563eb, #1e40af);
   color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.25s ease;
 }
-button[disabled] {
+.btn-save:hover {
+  background: linear-gradient(90deg, #1e40af, #1d4ed8);
+  transform: translateY(-1px);
+}
+.btn-save:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
-.muted { color: #64748b; margin-left: 8px; }
-.err { color: #dc2626; margin-left: 8px; }
 
+/* ===== LADO DERECHO ===== */
+.editor-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card h4 {
+  margin-bottom: 8px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1e293b;
+}
+
+/* ===== USUARIOS ACTIVOS ===== */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.avatar {
+  background: #2563eb;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== COMENTARIOS ===== */
+.notif-card {
+  position: relative;
+}
+
+.notif-badge {
+  background-color: #2563eb;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 12px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+/* Botón de ver anotaciones */
+.btn-outline {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-outline:hover {
+  background: #e0f2fe;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+/* Quill */
 .quill-host {
-  height: 60vh;
-}
-.quill-host .ql-editor {
-  height: 100%;
+  min-height: 65vh;
+  border: 1px solid #ddd;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 10px;
 }
 
-.presence { margin: 10px 0 16px; color: #334155; }
-.comments h3 { margin: 16px 0 8px; }
-.comment-new { display: flex; gap: 8px; }
-.comment-new input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.muted {
+  color: #64748b;
+  margin-left: 8px;
+}

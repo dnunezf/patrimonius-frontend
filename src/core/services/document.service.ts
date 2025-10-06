@@ -158,6 +158,10 @@ export class DocumentService {
     return this.http.post(`${this.api}/documentos/${id}/comentarios`, { descripcion });
   }
 
+  marcarComentarioResuelto(id: number) {
+    return this.http.patch(`${this.api}/comentarios/${id}/resolver`, {});
+  }
+
   // ========= NUEVOS MÉTODOS para el mini Word colaborativo =========
 
   /** Crear BORRADOR (Express: POST /api/documentos) */

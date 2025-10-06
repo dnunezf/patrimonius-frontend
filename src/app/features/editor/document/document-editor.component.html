@@ -1,41 +1,62 @@
-<h2>Editor de documento #{{ documentoId }}</h2>
+<div class="editor-grid">
+  <div class="editor-main">
+    <div class="top-bar">
+      <button class="btn-back" (click)="goBack()">← Volver al Dashboard</button>
+    </div>
 
-<div class="toolbar">
-  <label class="file">
-    Importar DOCX
-    <input type="file" accept=".docx" (change)="importDocx($event)" />
-  </label>
+    <div class="toolbar">
+      <h2>Editor Colaborativo</h2>
 
-  <button (click)="save()" [disabled]="saving">Guardar</button>
-  <span *ngIf="saving" class="muted">guardando…</span>
-  <span *ngIf="error" class="err">{{ error }}</span>
-</div>
+      <div class="buttons">
+        <label class="btn-primary">
+          Importar DOCX
+          <input type="file" accept=".docx" (change)="importDocx($event)" />
+        </label>
 
-<div #editor class="quill-host"></div>
+        <button class="btn-save" (click)="save()" [disabled]="saving">
+          Guardar
+        </button>
+      </div>
+    </div>
 
-<section class="presence">
-  <b>Colaborando:</b>
-  <ng-container *ngIf="presence?.length; else solo">
-    <span *ngFor="let u of presence; let i = index">
-      {{ u.nombre }} {{ u.apellido1 }} ({{ u.email }})<span *ngIf="i < presence.length - 1"> • </span>
-    </span>
-  </ng-container>
-  <ng-template #solo>solo tú</ng-template>
-</section>
-
-<section class="comments">
-  <h3>Comentarios</h3>
-  <ul>
-    <li *ngFor="let c of comentarios">
-      <small>{{ c.fecha | date: 'short' }}</small>
-      — <b>{{ c.usuario }}</b>: {{ c.descripcion }}
-      <span *ngIf="c.resuelto">✅</span>
-    </li>
-  </ul>
-
-  <div class="comment-new">
-    <input #cm placeholder="Nuevo comentario…" />
-    <button (click)="addComentario(cm.value); cm.value = ''">Agregar</button>
+    <!-- 📝 CONTENIDO DEL DOCUMENTO -->
+    <div class="section">
+      <div #editor class="quill-host"></div>
+    </div>
   </div>
-</section>
 
+  <!-- ===== COLUMNA DERECHA ===== -->
+  <div class="editor-sidebar">
+    <div class="card">
+      <h4>
+        <img src="assets/icons/activeUser.png" width="18" />
+        Editores Activos
+      </h4>
+      <div *ngIf="presence?.length; else noUsers" class="user-list">
+        <div *ngFor="let u of presence" class="user-card">
+          <div class="avatar">{{ (u.nombre?.[0] ?? '?') | uppercase }}</div>
+          <b>{{ u.nombre }}</b>
+        </div>
+      </div>
+      <ng-template #noUsers><small>No hay editores activos</small></ng-template>
+    </div>
+
+    <div class="card notif-card">
+      <h4>
+        <img src="assets/icons/comentario.png" width="18" />
+        Comentarios
+        <span *ngIf="unreadCount > 0" class="notif-badge">+{{ unreadCount }}</span>
+      </h4>
+      <button class="btn-outline" (click)="toggleComentarios()">Ver Anotaciones</button>
+    </div>
+  </div>
+
+  <app-comment-panel
+    [open]="showComentarios"
+    [comentarios]="comentarios"
+    [presence]="presence"
+    (add)="addComentario($event)"
+    (resolve)="markResolved($event)"
+    (close)="toggleComentarios()"
+  ></app-comment-panel>
+</div>
