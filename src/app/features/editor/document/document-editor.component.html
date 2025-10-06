@@ -1,9 +1,12 @@
+<!-- ====== LAYOUT PRINCIPAL (lado 1 como contenedor) ====== -->
 <div class="editor-grid">
   <div class="editor-main">
+    <!-- Top bar (lado 1) -->
     <div class="top-bar">
       <button class="btn-back" (click)="goBack()">← Volver al Dashboard</button>
     </div>
 
+    <!-- Toolbar (lado 1) -->
     <div class="toolbar">
       <h2>Editor Colaborativo</h2>
 
@@ -19,13 +22,57 @@
       </div>
     </div>
 
-    <!-- 📝 CONTENIDO DEL DOCUMENTO -->
+    <!-- ===== Toolbar adicional (lado 2, preservado) ===== -->
+    <h2>Editor de documento #{{ documentoId }}</h2>
+
+    <div class="toolbar">
+      <label class="file">
+        Importar DOCX
+        <input type="file" accept=".docx" (change)="importDocx($event)" />
+      </label>
+
+      <button (click)="save()" [disabled]="saving">Guardar</button>
+      <button type="button" (click)="openRestoreModal()" [disabled]="restoring">Restaurar versión</button>
+      <span *ngIf="saving" class="muted">guardando…</span>
+      <span *ngIf="error" class="err">{{ error }}</span>
+      <span *ngIf="info" class="muted">{{ info }}</span>
+    </div>
+
+    <!-- 📝 CONTENIDO DEL DOCUMENTO (único host Quill para evitar conflicto) -->
     <div class="section">
       <div #editor class="quill-host"></div>
     </div>
+
+    <!-- ===== Sección de presencia (lado 2, preservada) ===== -->
+    <section class="presence">
+      <b>Colaborando:</b>
+      <ng-container *ngIf="presence?.length; else solo">
+        <span *ngFor="let u of presence; let i = index">
+          {{ u.nombre }} {{ u.apellido1 }} ({{ u.email }})<span *ngIf="i < presence.length - 1"> • </span>
+        </span>
+      </ng-container>
+      <ng-template #solo>solo tú</ng-template>
+    </section>
+
+    <!-- ===== Sección de comentarios (lado 2, preservada) ===== -->
+    <section class="comments">
+      <h3>Comentarios</h3>
+      <ul>
+        <li *ngFor="let c of comentarios">
+          <small>{{ c.fecha | date: 'short' }}</small>
+          — <b>{{ c.usuario }}</b>: {{ c.descripcion }}
+          <span *ngIf="c.resuelto">✅</span>
+        </li>
+      </ul>
+
+      <div class="comment-new">
+        <input #cm placeholder="Nuevo comentario…" />
+        <button (click)="addComentario(cm.value); cm.value = ''">Agregar</button>
+      </div>
+    </section>
   </div>
 
-  <!-- ===== COLUMNA DERECHA ===== -->
+  <!-- ===== COLUMNA DERECHA (lado 1, preservada) ===== -->
   <div class="editor-sidebar">
     <div class="card">
       <h4>
@@ -51,6 +98,7 @@
     </div>
   </div>
 
+  <!-- ===== Panel lateral de comentarios (lado 1, preservado) ===== -->
   <app-comment-panel
     [open]="showComentarios"
     [comentarios]="comentarios"
@@ -60,3 +108,62 @@
     (close)="toggleComentarios()"
   ></app-comment-panel>
 </div>
+
+<!-- ===== Modal de restauración de versión (lado 2, preservado) ===== -->
+<div class="modal-backdrop" *ngIf="showRestoreModal" (click)="closeRestoreModal()"></div>
+
+<div class="modal" *ngIf="showRestoreModal" role="dialog" aria-modal="true" aria-labelledby="restoreTitle">
+  <header class="modal__header">
+    <h3 id="restoreTitle">Restaurar versión</h3>
+    <button class="close" (click)="closeRestoreModal()">×</button>
+  </header>
+
+  <section class="modal__body">
+    <div class="versions">
+      <div class="versions__list">
+        <div
+          *ngFor="let v of versiones; let i = index"
+          class="version-item"
+          [class.active]="v.id === selectedVersionId"
+          (click)="selectVersion(v)"
+          tabindex="0"
+          [attr.aria-checked]="v.id === selectedVersionId"
+          role="radio"
+        >
+          <div class="version-item__title">
+            {{ v.nombre_versionado || ('Versión #' + (versiones.length - i)) }}
+          </div>
+          <div class="version-item__meta">
+            {{ v.fecha | date:'dd-MM-yyyy HH:mm' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="versions__details" *ngIf="selectedVersionId">
+        <label for="motivo">Motivo de la restauración</label>
+        <textarea id="motivo" [(ngModel)]="restoreMotivo" rows="3" placeholder="Describe por qué restauras esta versión..."></textarea>
+
+        <div class="preview-hint">
+          *El contenido restaurado reemplazará el contenido actual del documento y se creará una nueva entrada en el historial.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="modal__footer">
+    <button class="btn btn--gray" (click)="closeRestoreModal()">Cancelar</button>
+    <button class="btn btn--red"
+            (click)="confirmRestore()"
+            [disabled]="!selectedVersionId || restoring">
+      {{ restoring ? 'Restaurando…' : 'Restaurar' }}
+    </button>
+  </footer>
+</div>
+
+<!-- ===== Diálogo de historial (lado 2, preservado) ===== -->
+<app-version-history-dialog
+  [open]="showHistory"
+  [documentoId]="documentoId"
+  (close)="showHistory=false"
+  (restored)="onRestored($event)">
+</app-version-history-dialog>
