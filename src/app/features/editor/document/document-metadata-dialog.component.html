@@ -25,11 +25,11 @@
     <div *ngIf="!loading && error" class="md-error">{{ error }}</div>
 
     <ng-container *ngIf="!loading && !error">
-      <!-- Readonly (automatic) -->
+      <!-- Automatic (read-only) -->
       <h4 class="md-subtitle">Información Automática (solo lectura)</h4>
       <div class="grid-2">
         <div class="ro-field">
-          <label>Tipo de documento</label>
+          <label>Tipo (MIME)</label>
           <input
             class="ro"
             [value]="meta?.technical?.mimeType ?? '—'"
@@ -56,9 +56,25 @@
             readonly
           />
         </div>
+        <div class="ro-field">
+          <label>Nivel de acceso</label>
+          <input
+            class="ro"
+            [value]="meta?.technical?.accessLevel ?? '—'"
+            readonly
+          />
+        </div>
+        <div class="ro-field">
+          <label>Software</label>
+          <input
+            class="ro"
+            [value]="meta?.technical?.software ?? '—'"
+            readonly
+          />
+        </div>
       </div>
 
-        <!-- Editable (manual) -->
+      <!-- Manual (editable) -->
       <h4 class="md-subtitle mt-24">Información Manual (editable)</h4>
 
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -100,12 +116,57 @@
         </div>
 
         <div class="form-field">
-          <label>Palabras clave (separadas por coma)</label>
+          <label
+            >Palabras clave (separadas por coma)
+            <span class="req">*</span></label
+          >
           <input
             formControlName="keywords"
             placeholder="p. ej., conservación, arqueología, cerámica"
           />
-          <small class="hint">Máx. 20 palabras clave.</small>
+          <small class="hint">Al menos una, hasta 20.</small>
+          <small
+            class="err"
+            *ngIf="f['keywords'].touched && f['keywords'].invalid"
+            >Ingrese al menos una palabra clave.</small
+          >
+        </div>
+
+        <div class="grid-2">
+          <div class="form-field">
+            <label>Código de clasificación <span class="req">*</span></label>
+            <input
+              formControlName="classificationCode"
+              placeholder="p. ej., DAF-AC-2025-XXX"
+            />
+            <small
+              class="err"
+              *ngIf="
+                f['classificationCode'].touched &&
+                f['classificationCode'].invalid
+              "
+            >
+              Obligatorio. Máx. 60.
+            </small>
+          </div>
+          <div class="form-field">
+            <label
+              >Plazo de conservación (años) <span class="req">*</span></label
+            >
+            <input
+              type="number"
+              min="1"
+              max="200"
+              formControlName="retentionYears"
+              placeholder="Años…"
+            />
+            <small
+              class="err"
+              *ngIf="f['retentionYears'].touched && f['retentionYears'].invalid"
+            >
+              Ingrese un número entre 1 y 200.
+            </small>
+          </div>
         </div>
 
         <div class="form-field">
@@ -121,6 +182,17 @@
             "
             >Obligatorio.</small
           >
+        </div>
+
+        <div class="form-field">
+          <label>Número de páginas (opcional)</label>
+          <input
+            type="number"
+            min="1"
+            max="10000"
+            formControlName="pages"
+            placeholder="p. ej., 12"
+          />
         </div>
 
         <div class="md-footer">

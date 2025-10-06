@@ -1,9 +1,8 @@
 // src/app/core/document.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { HttpResponse } from '@angular/common/http';
 
 export interface DocumentModel {
   id: string;
@@ -66,29 +65,28 @@ export interface DocumentMetadata {
     updatedAt: string | null;
     contentHash: string | null;
     storageUri: string | null;
+    accessLevel: string | null;
+    software: string | null;
   };
   descriptive: {
     title: string | null;
     author: string | null;
     responsibleUnitId: number | null;
-    keywords: string[]; // normalized array
+    keywords: string[];
     preliminaryClass: string | null;
+    classificationCode: string | null;
+    retentionYears: number | null;
+    pages?: number | null;
   };
 }
 
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
-  /** Base del backend. En local suele ser http://localhost:3000 */
   private api = environment.api;
-
-  /** Base para los endpoints de ESTE mini-flujo (Express con /api/documentos).
-   *  Si tu environment.api ya incluye /api, ajusta esto a `${this.api}/documentos`.
-   */
   private docsApi = `${this.api}/documentos`;
 
   constructor(private http: HttpClient) {}
 
-  // ========== ENDPOINTS EXISTENTES (Patrimonius) ==========
   getAll(): Observable<DocumentModel[]> {
     return this.http.get<DocumentModel[]>(`${this.api}/documents`);
   }
@@ -131,7 +129,6 @@ export class DocumentService {
       );
   }
 
-  // HU-007
   crearDesdePlantilla(body: {
     plantilla_id: number;
     titulo: string;
@@ -145,7 +142,6 @@ export class DocumentService {
     );
   }
 
-  // HU-008
   ultimaVersion(id: number): Observable<{ id: number; fecha: string } | null> {
     return this.http.get<{ id: number; fecha: string } | null>(
       `${this.api}/documentos/${id}/version/latest`
@@ -196,9 +192,6 @@ export class DocumentService {
     });
   }
 
-  // ========= NUEVOS MÉTODOS para el mini Word colaborativo =========
-
-  /** Crear BORRADOR (Express: POST /api/documentos) */
   createDraft(
     titulo: string,
     plantillaId?: number
@@ -211,21 +204,18 @@ export class DocumentService {
     );
   }
 
-  /** Importar .docx -> HTML (Express: POST /api/documentos/import-docx) */
   importDocx(file: File): Observable<{ html: string }> {
     const fd = new FormData();
     fd.append('file', file);
     return this.http.post<{ html: string }>(`${this.docsApi}/import-docx`, fd);
   }
 
-  /** Guardar checkpoint (Express: POST /api/documentos/:id/checkpoint) */
   checkpoint(id: number, snapshot: any): Observable<void> {
     return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, {
       snapshot,
     });
   }
 
-  /** Aprobar (firmar) y obtener código oficial (Express: POST /api/documentos/:id/aprobar) */
   approve(id: number, snapshot: any): Observable<{ codigo_oficial: string }> {
     return this.http.post<{ codigo_oficial: string }>(
       `${this.docsApi}/${id}/aprobar`,
@@ -233,9 +223,7 @@ export class DocumentService {
     );
   }
 
-  /** URL del WebSocket de colaboración (y-websocket) */
   wsUrl(docId: number): string {
-    // Si tienes environment.ws, úsalo; si no, default local:
     const wsBase = (environment as any).ws ?? 'ws://localhost:1234';
     return `${wsBase}?doc=${docId}`;
   }
@@ -270,8 +258,11 @@ export class DocumentService {
       title: string;
       author: string;
       responsibleUnitId: number;
-      keywords: string[] | string; // csv or array
+      keywords: string[] | string; // csv or array (>=1)
       preliminaryClass: string;
+      classificationCode: string; 
+      retentionYears: number; 
+      pages?: number; 
     }
   ) {
     return this.http.put<{ ok: true }>(
@@ -280,7 +271,7 @@ export class DocumentService {
     );
   }
 
-  /** Enforce signature rule on backend (returns official index) */
+  /** Backend will enforce completeness for signature */
   prepareForSignature(id: number) {
     return this.http.put<{
       documento_id: number;

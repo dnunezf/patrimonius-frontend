@@ -1,11 +1,20 @@
 // src/app/core/features/editor/document/document-metadata-dialog.component.ts
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  OnChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
   Validators,
+  AbstractControl,
+  ValidationErrors,
 } from '@angular/forms';
 import {
   DocumentService,
@@ -27,6 +36,17 @@ function humanSize(bytes: number | null): string {
   return `${v >= 10 ? v.toFixed(0) : v.toFixed(1)} ${units[i]}`;
 }
 
+/** Custom validator: at least one keyword after splitting CSV. */
+function requireKeywords(ctrl: AbstractControl): ValidationErrors | null {
+  const raw = String(ctrl.value || '').trim();
+  if (!raw) return { required: true };
+  const list = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return list.length ? null : { required: true };
+}
+
 @Component({
   selector: 'app-document-metadata-dialog',
   standalone: true,
@@ -34,7 +54,7 @@ function humanSize(bytes: number | null): string {
   templateUrl: './document-metadata-dialog.component.html',
   styleUrls: ['./document-metadata-dialog.component.css'],
 })
-export class DocumentMetadataDialogComponent implements OnInit {
+export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
   @Input() documentId!: number;
   @Input() open = false;
   @Output() closed = new EventEmitter<void>();
@@ -54,8 +74,14 @@ export class DocumentMetadataDialogComponent implements OnInit {
       title: ['', [Validators.required, Validators.maxLength(255)]],
       author: ['', [Validators.required, Validators.maxLength(120)]],
       responsibleUnitId: [null, [Validators.required, Validators.min(1)]],
-      keywords: ['', [Validators.maxLength(2000)]],
+      keywords: ['', [requireKeywords, Validators.maxLength(2000)]], // REQUIRED (>=1)
       preliminaryClass: ['', [Validators.required, Validators.maxLength(150)]],
+      classificationCode: ['', [Validators.required, Validators.maxLength(60)]],
+      retentionYears: [
+        null,
+        [Validators.required, Validators.min(1), Validators.max(200)],
+      ],
+      pages: [null, [Validators.min(1), Validators.max(10000)]],
     });
     if (this.open) this.load();
   }
@@ -77,6 +103,9 @@ export class DocumentMetadataDialogComponent implements OnInit {
           responsibleUnitId: m.descriptive.responsibleUnitId || null,
           keywords: toCsv(m.descriptive.keywords),
           preliminaryClass: m.descriptive.preliminaryClass || '',
+          classificationCode: m.descriptive.classificationCode || '',
+          retentionYears: m.descriptive.retentionYears ?? null,
+          pages: m.descriptive.pages ?? null,
         });
         this.loading = false;
       },
@@ -95,7 +124,6 @@ export class DocumentMetadataDialogComponent implements OnInit {
     this.saving = true;
     this.error = null;
 
-    // Normalize inputs
     const v = this.form.value;
     const title = String(v.title || '')
       .replace(/\s+/g, ' ')
@@ -104,6 +132,9 @@ export class DocumentMetadataDialogComponent implements OnInit {
       .replace(/\s+/g, ' ')
       .trim();
     const preliminaryClass = String(v.preliminaryClass || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const classificationCode = String(v.classificationCode || '')
       .replace(/\s+/g, ' ')
       .trim();
     const keywords = String(v.keywords || '')
@@ -119,6 +150,9 @@ export class DocumentMetadataDialogComponent implements OnInit {
         responsibleUnitId: Number(v.responsibleUnitId),
         keywords,
         preliminaryClass,
+        classificationCode,
+        retentionYears: Number(v.retentionYears),
+        pages: v.pages != null && v.pages !== '' ? Number(v.pages) : undefined,
       })
       .subscribe({
         next: () => {
