@@ -42,6 +42,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   presence: any[] = [];
   comentarios: any[] = [];
   unreadCount = 0;
+  showComentarios = false;
 
   saving = false;
   error = '';
@@ -168,10 +169,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   /** Toggle comments side panel (badge reset) */
   toggleComentarios(): void {
-    const wasClosed = this.unreadCount > 0;
-    this.unreadCount = 0;
-    // If you have a dedicated panel, you can control its visibility via a local flag.
-    // Left as no-op if the panel is self-contained in template.
+    this.showComentarios = !this.showComentarios;
+    if (this.showComentarios) this.unreadCount = 0;
   }
 
   /** Save version */
