@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import {catchError} from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 
 export interface DocumentModel {
   id: string;
@@ -102,7 +102,7 @@ export class DocumentService {
 
   constructor(private http: HttpClient) {}
 
-  // ========== ENDPOINTS EXISTENTES (Patrimonius) ==========
+  // ========== Existing endpoints ==========
   getAll(): Observable<DocumentModel[]> {
     return this.http.get<DocumentModel[]>(`${this.api}/documents`);
   }
@@ -145,7 +145,7 @@ export class DocumentService {
       );
   }
 
-  // HU-007
+  // ========== Draft / collaboration ==========
   crearDesdePlantilla(body: {
     plantilla_id: number;
     titulo: string;
@@ -208,16 +208,15 @@ export class DocumentService {
       descripcion,
     });
   }
-
   marcarComentarioResuelto(id: number) {
     return this.http.patch(`${this.api}/comentarios/${id}/resolver`, {});
   }
 
-  // ========= NUEVOS MÉTODOS para el mini Word colaborativo =========
-
   /** Crear BORRADOR (Express: POST /api/documentos) */
-  createDraft(titulo: string, plantillaId?: number):
-    Observable<{ id: number; numero_borrador: number }> {
+  createDraft(
+    titulo: string,
+    plantillaId?: number
+  ): Observable<{ id: number; numero_borrador: number }> {
     const body: any = { titulo };
     if (plantillaId != null) body.plantillaId = plantillaId;
     return this.http.post<{ id: number; numero_borrador: number }>(
@@ -233,17 +232,19 @@ export class DocumentService {
   }
 
   checkpoint(id: number, snapshot: any): Observable<void> {
-    return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, { snapshot });
+    return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, {
+      snapshot,
+    });
   }
 
-  /** Aprobar (firmar) y obtener código oficial (Express: POST /api/documentos/:id/aprobar) */
   approve(id: number, snapshot: any): Observable<{ codigo_oficial: string }> {
-    return this.http.post<{ codigo_oficial: string }>(`${this.docsApi}/${id}/aprobar`, { snapshot });
+    return this.http.post<{ codigo_oficial: string }>(
+      `${this.docsApi}/${id}/aprobar`,
+      { snapshot }
+    );
   }
 
-  /** URL del WebSocket de colaboración (y-websocket) */
   wsUrl(docId: number): string {
-    // Si tienes environment.ws, úsalo; si no, default local:
     const wsBase = (environment as any).ws ?? 'ws://localhost:1234';
     return `${wsBase}?doc=${docId}`;
   }
@@ -266,52 +267,63 @@ export class DocumentService {
 
   /** HU-010: listar versiones de un documento */
   listVersions(documentId: number) {
-    // Ajusta el path si tu backend usa otra convención:
-    // opciones típicas: /documentos/:id/versiones  | /documentos/:id/versions
     const url1 = `${this.api}/documentos/${documentId}/versiones`;
     const url2 = `${this.api}/documentos/${documentId}/versions`;
 
     return this.http.get<any>(url1).pipe(
-      // si falla url1 prueba url2
       catchError(() => this.http.get<any>(url2)),
       map((raw) => {
-        const arr: any[] = Array.isArray(raw) ? raw : (raw?.items ?? raw?.rows ?? []);
+        const arr: any[] = Array.isArray(raw)
+          ? raw
+          : raw?.items ?? raw?.rows ?? [];
         return (arr || []) as DocVersionRow[];
       })
     );
   }
 
   /** HU-010: restaurar versión */
-  // restoreVersion(documentId: number, versionId: number, motivo: string) {
-  //   // Ajusta si tu backend usa otro path:
-  //   const url1 = `${this.api}/documentos/${documentId}/versiones/${versionId}/restore`;
-  //   const url2 = `${this.api}/documentos/${documentId}/versions/${versionId}/restore`;
-  //
-  //   const body = { motivo };
-  //
-  //   return this.http.post<any>(url1, body).pipe(
-  //     catchError(() => this.http.post<any>(url2, body)),
-  //     map((res) => {
-  //       // formatea la respuesta esperada por el editor
-  //       return {
-  //         newVersionId: res?.newVersionId ?? res?.version_id ?? res?.id ?? 0,
-  //         html: String(res?.html ?? res?.contenido ?? ''),
-  //         nombre_versionado: res?.nombre_versionado ?? null,
-  //       };
-  //     })
-  //   );
-  // }
-  // src/app/core/document.service.ts
   restoreVersion(documentId: number, versionId: number, motivo: string) {
     const url = `${this.api}/documentos/${documentId}/restaurar-version/${versionId}`;
     return this.http.post<any>(url, { motivo }).pipe(
-      map(res => ({
-        // tu backend devuelve: { documento_id, version_origen_id, version_restaurada_id, nombre_versionado }
+      map((res) => ({
         newVersionId: res?.version_restaurada_id ?? 0,
-        html: '', // no lo devuelve el back; el front ya vuelve a pedir el contenido luego
+        html: '',
         nombre_versionado: res?.nombre_versionado ?? null,
       }))
     );
   }
 
+  // ========== HU-011/012 metadata ==========
+  getMetadata(id: number) {
+    return this.http.get<DocumentMetadata>(
+      `${this.api}/documentos/${id}/metadata`
+    );
+  }
+
+  saveDescriptiveMetadata(
+    id: number,
+    body: {
+      title: string;
+      author: string;
+      responsibleUnitId: number;
+      keywords: string[] | string; // csv or array (>=1)
+      preliminaryClass: string;
+      classificationCode: string;
+      retentionYears: number;
+      pages?: number;
+    }
+  ) {
+    return this.http.put<{ ok: true }>(
+      `${this.api}/documentos/${id}/metadata/descriptive`,
+      body
+    );
+  }
+
+  /** Backend enforces completeness and returns official index */
+  prepareForSignature(id: number) {
+    return this.http.put<{
+      documento_id: number;
+      numero_serie_oficial: string;
+    }>(`${this.api}/documentos/${id}/preparar-firma`, {});
+  }
 }

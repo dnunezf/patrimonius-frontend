@@ -1,4 +1,6 @@
+<!-- src/app/core/features/editor/document/document-editor.component.html -->
 <div class="editor-grid">
+  <!-- ===== COLUMNA IZQUIERDA (principal) ===== -->
   <div class="editor-main">
     <div class="top-bar">
       <button class="btn-back" (click)="goBack()">← Volver al Dashboard</button>
@@ -16,9 +18,22 @@
         <button class="btn-save" (click)="save()" [disabled]="saving">
           Guardar
         </button>
+
         <button class="btn-save" type="button" (click)="openRestoreModal()" [disabled]="restoring">
           Restaurar versión
         </button>
+
+        <!-- HU-11/12 -->
+        <button type="button" class="btn-secondary" (click)="openMetadata()">
+          Metadatos
+        </button>
+        <button type="button" class="btn-accent" (click)="requestSignature()">
+          Solicitar Firma
+        </button>
+
+        <span *ngIf="saving" class="muted">guardando…</span>
+        <span *ngIf="error" class="err">{{ error }}</span>
+        <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
         <span *ngIf="info" class="muted">{{ info }}</span>
       </div>
     </div>
@@ -29,7 +44,7 @@
     </div>
   </div>
 
-  <!-- ===== COLUMNA DERECHA ===== -->
+  <!-- ===== COLUMNA DERECHA (sidebar) ===== -->
   <div class="editor-sidebar">
     <div class="card">
       <h4>
@@ -54,7 +69,8 @@
       <button class="btn-outline" (click)="toggleComentarios()">Ver Anotaciones</button>
     </div>
   </div>
-  <!-- Modal de restauración de versión -->
+
+  <!-- ===== MODAL: Restaurar versión (HU-010) ===== -->
   <div class="modal-backdrop" *ngIf="showRestoreModal" (click)="closeRestoreModal()"></div>
 
   <div class="modal" *ngIf="showRestoreModal" role="dialog" aria-modal="true" aria-labelledby="restoreTitle">
@@ -88,7 +104,6 @@
           <label for="motivo">Motivo de la restauración</label>
           <textarea id="motivo" [(ngModel)]="restoreMotivo" rows="3" placeholder="Describe por qué restauras esta versión..."></textarea>
 
-          <!-- Preview opcional con iframe/HTML simple -->
           <div class="preview-hint">
             *El contenido restaurado reemplazará el contenido actual del documento y se creará una nueva entrada en el historial.
           </div>
@@ -106,6 +121,7 @@
     </footer>
   </div>
 
+  <!-- Panel lateral de comentarios -->
   <app-comment-panel
     [open]="showComentarios"
     [comentarios]="comentarios"
@@ -115,9 +131,20 @@
     (close)="toggleComentarios()"
   ></app-comment-panel>
 </div>
+
+<!-- Historial (diálogo) -->
 <app-version-history-dialog
   [open]="showHistory"
   [documentoId]="documentoId"
   (close)="showHistory=false"
   (restored)="onRestored($event)">
 </app-version-history-dialog>
+
+<!-- HU-11/12: Diálogo de metadatos -->
+<app-document-metadata-dialog
+  [documentId]="documentoId"
+  [open]="metadataOpen"
+  (closed)="metadataOpen = false"
+  (saved)="onMetadataSaved()"
+>
+</app-document-metadata-dialog>

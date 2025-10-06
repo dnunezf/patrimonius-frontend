@@ -1,3 +1,4 @@
+// src/app/core/features/editor/document/document-editor.component.ts
 import {
   Component,
   ElementRef,
@@ -12,15 +13,22 @@ import Quill from 'quill';
 import * as mammoth from 'mammoth';
 import { interval, Subscription, switchMap } from 'rxjs';
 
-import { DocumentService,VersionDoc } from 'core/services/document.service';
+import { DocumentService, VersionDoc } from 'core/services/document.service';
 import { RealtimeService } from 'core/services/realtime.service';
 import { CommentPanelComponent } from './comment-panel.component';
 import { VersionHistoryDialogComponent } from './version-history-dialog.component';
+import { DocumentMetadataDialogComponent } from './document-metadata-dialog.component';
 
 @Component({
   standalone: true,
   selector: 'app-document-editor',
-  imports: [CommonModule, FormsModule, CommentPanelComponent,VersionHistoryDialogComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CommentPanelComponent,
+    VersionHistoryDialogComponent,
+    DocumentMetadataDialogComponent,
+  ],
   templateUrl: './document-editor.component.html',
   styleUrls: ['./document-editor.component.css'],
 })
@@ -37,21 +45,23 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   saving = false;
   error = '';
-  showComentarios = false;
   info = '';
+
+  // HU-010 (historial / restauración)
+  showHistory = false;
   showRestoreModal = false;
   versiones: VersionDoc[] = [];
   selectedVersionId: number | null = null;
   restoreMotivo = '';
   restoring = false;
-  showHistory = false;
 
+  // HU-11/12
+  sigMsg = '';
+  metadataOpen = false;
 
   private readonly clientId =
     (globalThis as any).crypto?.randomUUID?.() ?? this.fallbackUuid();
-
   private subs: Subscription[] = [];
-
 
   constructor(
     private route: ActivatedRoute,
@@ -60,11 +70,88 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     private rt: RealtimeService
   ) {}
 
+  ngOnInit(): void {
+    this.documentoId = Number(this.route.snapshot.paramMap.get('id'));
+
+    // 1) Init Quill
+    this.quill = new Quill(this.editorRef.nativeElement, { theme: 'snow' });
+
+    // 2) Emit only user changes (deltas)
+    this.quill.on('text-change', (delta, _oldDelta, source) => {
+      if (source !== 'user') return;
+      this.rt.emit('delta', { delta, ts: Date.now(), from: this.clientId });
+
+      // Fallback compatibility for old clients
+      this.rt.emit('content:patch', {
+        content: this.html(),
+        ts: Date.now(),
+        from: this.clientId,
+      });
+    });
+
+    // 3) Load initial content and base version
+    this.docs.getContenido(this.documentoId).subscribe({
+      next: (d) => {
+        const html = d?.contenido || '';
+        this.pasteHtml(html);
+        this.baseVersionId = d?.latest_version_id ?? 0;
+      },
+      error: () => (this.error = 'No se pudo cargar el contenido'),
+    });
+
+    // 4) Connect WS and join doc
+    this.rt.connect();
+    this.rt.emit('editor:join', { documentoId: this.documentoId });
+
+    // 5) Presence and incoming patches
+    this.rt.on('presence:update', (u: any[]) => (this.presence = u));
+
+    // 5.a) Apply deltas
+    this.rt.on('delta', (m: any) => {
+      if (!m?.delta || m.from === this.clientId) return;
+      this.quill.updateContents(m.delta as any, 'api');
+    });
+
+    // 5.b) Fallback HTML patch
+    this.rt.on('content:patch', (m: any) => {
+      if (!m?.content || m.from === this.clientId) return;
+      this.setHtmlPreservingCaretAndScroll(m.content);
+    });
+
+    // 6) Saved notif
+    this.rt.on('editor:saved', (_: any) => {});
+
+    // 7) Conflicts → refresh base version
+    this.rt.on('editor:conflict', (_: any) => {
+      this.docs
+        .ultimaVersion(this.documentoId)
+        .subscribe((v) => (this.baseVersionId = v?.id ?? 0));
+    });
+
+    // 7.b) Realtime comment badge (HU-016)
+    this.rt.on('comentario:nuevo', (comentario: any) => {
+      this.comentarios.push(comentario);
+      this.unreadCount++;
+    });
+
+    // 8) Presence heartbeat
+    this.subs.push(
+      interval(20000)
+        .pipe(switchMap(() => this.docs.touchSession(this.documentoId)))
+        .subscribe()
+    );
+
+    // 9) Comments
+    this.loadComentarios();
+  }
+
+  /** Open history (HU-010) */
   openHistory(): void {
     this.showHistory = true;
     this.info = '';
   }
 
+  /** Callback after restore from VersionHistoryDialog */
   onRestored(e: { newVersionId: number; html: string }) {
     this.pasteHtml(e.html);
     const end = Math.max(0, this.quill.getLength() - 1);
@@ -75,126 +162,80 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       documentoId: this.documentoId,
       versionId: this.baseVersionId,
       from: this.clientId,
-      reason: 'RESTORE'
+      reason: 'RESTORE',
     });
   }
 
-  ngOnInit(): void {
-    this.documentoId = Number(this.route.snapshot.paramMap.get('id'));
-
-    // 1️⃣ Iniciar Quill
-    this.quill = new Quill(this.editorRef.nativeElement, { theme: 'snow' });
-
-    // 2️⃣ Emitir SOLO cambios del usuario (deltas)
-    this.quill.on('text-change', (delta, _oldDelta, source) => {
-      if (source !== 'user') return;
-      this.rt.emit('delta', { delta, ts: Date.now(), from: this.clientId });
-
-      // Fallback de compatibilidad
-      this.rt.emit('content:patch', {
-        content: this.html(),
-        ts: Date.now(),
-        from: this.clientId,
-      });
-    });
-
-    // 3️⃣ Cargar contenido inicial
-    this.docs.getContenido(this.documentoId).subscribe({
-      next: (d) => {
-        const html = d?.contenido || '';
-        this.pasteHtml(html);
-        this.pasteHtml(html);
-        this.baseVersionId = d?.latest_version_id ?? 0;
-      },
-      error: () => (this.error = 'No se pudo cargar el contenido'),
-    });
-
-    // 4️⃣ Conexión WS
-    this.rt.connect();
-    this.rt.emit('editor:join', { documentoId: this.documentoId });
-
-    // 5️⃣ Presencia
-    this.rt.on('presence:update', (u: any[]) => (this.presence = u));
-
-    // 6️⃣ Aplicar DELTAS sin mover el cursor local
-    this.rt.on('delta', (m: any) => {
-      if (!m?.delta || m.from === this.clientId) return;
-      this.quill.updateContents(m.delta as any, 'api');
-    });
-
-    // 7️⃣ Fallback HTML
-    this.rt.on('content:patch', (m: any) => {
-      if (!m?.content || m.from === this.clientId) return;
-      this.setHtmlPreservingCaretAndScroll(m.content);
-    });
-
-    // 8️⃣ Guardado notificado desde otros
-    this.rt.on('editor:saved', (_: any) => {});
-
-    // 9️⃣ Conflictos → refrescar versión base
-    this.rt.on('editor:conflict', (_: any) => {
-      this.docs
-        .ultimaVersion(this.documentoId)
-        .subscribe((v) => (this.baseVersionId = v?.id ?? 0));
-      this.docs
-        .ultimaVersion(this.documentoId)
-        .subscribe((v) => (this.baseVersionId = v?.id ?? 0));
-    });
-
-    // 🔟 Comentarios en tiempo real
-    this.rt.on('comentario:nuevo', (comentario: any) => {
-      this.comentarios.push(comentario);
-      this.unreadCount++;
-    });
-
-    // 11️⃣ Heartbeat REST para presencia
-    this.subs.push(
-      interval(20000)
-        .pipe(switchMap(() => this.docs.touchSession(this.documentoId)))
-        .subscribe()
-    );
-
-    // 12️⃣ Cargar comentarios iniciales
-    this.loadComentarios();
-  }
-
-  /** 💬 Mostrar / ocultar panel de comentarios */
+  /** Toggle comments side panel (badge reset) */
   toggleComentarios(): void {
-    this.showComentarios = !this.showComentarios;
-    if (this.showComentarios) this.unreadCount = 0;
+    const wasClosed = this.unreadCount > 0;
+    this.unreadCount = 0;
+    // If you have a dedicated panel, you can control its visibility via a local flag.
+    // Left as no-op if the panel is self-contained in template.
   }
 
-  /** 💾 Guardar versión */
+  /** Save version */
   save(): void {
     this.saving = true;
     this.error = '';
     this.sigMsg = '';
     const html = this.html();
 
-    this.docs.guardarColab(this.documentoId, html, this.baseVersionId).subscribe({
+    this.docs
+      .guardarColab(this.documentoId, html, this.baseVersionId)
+      .subscribe({
+        next: (r) => {
+          this.saving = false;
+          this.baseVersionId = r?.version_id ?? this.baseVersionId;
+          this.rt.emit('editor:saved', {
+            documentoId: this.documentoId,
+            versionId: this.baseVersionId,
+            from: this.clientId,
+          });
+        },
+        error: (e) => {
+          this.saving = false;
+          if (e?.status === 409) {
+            this.docs
+              .ultimaVersion(this.documentoId)
+              .subscribe(
+                (v) => (this.baseVersionId = v?.id ?? this.baseVersionId)
+              );
+          } else {
+            this.error = e?.error?.message || 'No se pudo guardar';
+          }
+        },
+      });
+  }
+
+  /** HU-12: open metadata modal */
+  openMetadata(): void {
+    this.metadataOpen = true;
+  }
+  onMetadataSaved(): void {
+    // optional refresh actions
+  }
+
+  /** HU-12: backend enforces metadata completeness */
+  requestSignature(): void {
+    this.error = '';
+    this.sigMsg = '';
+    this.docs.prepareForSignature(this.documentoId).subscribe({
       next: (r) => {
-        this.saving = false;
-        this.baseVersionId = r?.version_id ?? this.baseVersionId;
-        this.rt.emit('editor:saved', {
-          documentoId: this.documentoId,
-          versionId: this.baseVersionId,
-          from: this.clientId,
-        });
+        this.sigMsg = `Índice oficial asignado: ${r.numero_serie_oficial}`;
       },
       error: (e) => {
-        this.saving = false;
-        if (e?.status === 409) {
-          this.docs
-            .ultimaVersion(this.documentoId)
-            .subscribe((v) => (this.baseVersionId = v?.id ?? this.baseVersionId));
+        if (e?.error?.error === 'missing_required_metadata') {
+          this.error = 'Faltan metadatos requeridos. Complete “Metadatos”.';
+          this.metadataOpen = true;
         } else {
-          this.error = e?.error?.message || 'No se pudo guardar';
+          this.error = e?.error?.message || 'No se pudo preparar la firma';
         }
       },
     });
   }
 
-  /** 📄 Importar DOCX → HTML */
+  /** Import DOCX → HTML (Mammoth) */
   async importDocx(evt: Event): Promise<void> {
     const file = (evt.target as HTMLInputElement).files?.[0];
     if (!file) return;
@@ -206,7 +247,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.quill.setSelection(end, 0, 'silent');
   }
 
-  /** 💬 Agregar comentario (tiempo real) */
+  /** Comments (HU-016) */
   addComentario(desc: string): void {
     if (!desc?.trim()) return;
     this.docs.agregarComentario(this.documentoId, desc).subscribe(() => {
@@ -219,20 +260,18 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       this.comentarios.push(comentario);
     });
   }
-
-  /** ✅ Nuevo método: marcar comentario como resuelto */
   markResolved(id: number): void {
-    this.docs.marcarComentarioResuelto(id).subscribe(() => this.loadComentarios());
+    this.docs
+      .marcarComentarioResuelto(id)
+      .subscribe(() => this.loadComentarios());
   }
-
-  /** Cargar comentarios */
   private loadComentarios(): void {
     this.docs
       .listarComentarios(this.documentoId)
       .subscribe((c) => (this.comentarios = c));
   }
 
-  /** 🔙 Volver al dashboard */
+  /** Back to dashboard */
   goBack(): void {
     this.router.navigate(['/editor/dashboard']);
   }
@@ -242,24 +281,18 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.docs.endSession(this.documentoId).subscribe();
   }
 
-  /* ==== Helpers seguros con Quill ==== */
-
+  /* ==== Quill helpers ==== */
   private html(): string {
     // Quill v2: getSemanticHTML(); Quill v1: root.innerHTML
     // @ts-ignore
-    // @ts-ignore
     return (this.quill as any).getSemanticHTML?.() ?? this.quill.root.innerHTML;
   }
-
   private pasteHtml(html: string): void {
-    this.quill.setContents([], 'silent');
     this.quill.setContents([], 'silent');
     this.quill.clipboard.dangerouslyPasteHTML(0, html, 'api');
   }
-
   private setHtmlPreservingCaretAndScroll(html: string): void {
     const sel = this.quill.getSelection();
-    const scroller = this.quill.root.parentElement!;
     const scroller = this.quill.root.parentElement!;
     const prevScrollTop = scroller.scrollTop;
 
@@ -275,7 +308,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     scroller.scrollTop = prevScrollTop;
   }
-
   private fallbackUuid(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
@@ -284,35 +316,36 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===== HU-010: UI =====
+  // ===== HU-010: restore modal helpers =====
   openRestoreModal() {
     this.showRestoreModal = true;
     this.selectedVersionId = null;
     this.restoreMotivo = '';
     this.docs.listVersions(this.documentoId).subscribe({
       next: (rows: VersionDoc[]) => (this.versiones = rows),
-      error: (e: any) => (this.error = e?.error?.message || 'No se pudieron cargar versiones'),
+      error: (e: any) =>
+        (this.error = e?.error?.message || 'No se pudieron cargar versiones'),
     });
   }
-
   closeRestoreModal() {
     this.showRestoreModal = false;
   }
-
   selectVersion(v: VersionDoc) {
     this.selectedVersionId = v.id;
   }
-
   confirmRestore() {
     if (!this.selectedVersionId) return;
     this.restoring = true;
-    this.docs.restoreVersion(this.documentoId, this.selectedVersionId, this.restoreMotivo || '')
+    this.docs
+      .restoreVersion(
+        this.documentoId,
+        this.selectedVersionId,
+        this.restoreMotivo || ''
+      )
       .subscribe({
-        next: (_res) => {
+        next: () => {
           this.restoring = false;
           this.showRestoreModal = false;
-
-          // Recarga el contenido actual (ya actualizado por el backend)
           this.docs.getContenido(this.documentoId).subscribe({
             next: (d) => {
               const html = d?.contenido || '';
@@ -323,8 +356,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
               this.error = 'No se pudo cargar el contenido';
             },
           });
-
-          // Feedback simple (puedes cambiar por toast)
           alert('Versión restaurada con éxito.');
         },
         error: (e) => {
