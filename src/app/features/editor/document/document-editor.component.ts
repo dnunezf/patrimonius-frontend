@@ -15,9 +15,9 @@ import { interval, Subscription, switchMap } from 'rxjs';
 
 import { DocumentService, VersionDoc } from 'core/services/document.service';
 import { RealtimeService } from 'core/services/realtime.service';
-import { CommentPanelComponent } from './comment-panel.component';
+import { CommentPanelComponent } from './comment/comment-panel.component';
 import { VersionHistoryDialogComponent } from './version-history-dialog.component';
-import { DocumentMetadataDialogComponent } from './document-metadata-dialog.component';
+import { DocumentMetadataDialogComponent } from './metadata/document-metadata-dialog.component';
 
 @Component({
   standalone: true,

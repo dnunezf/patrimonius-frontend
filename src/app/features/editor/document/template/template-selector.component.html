@@ -1,0 +1,17 @@
+<div class="modal-backdrop"></div>
+<div class="modal">
+  <h3>Seleccionar plantilla</h3>
+
+  <div *ngIf="loading" class="loading">Cargando plantillas…</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div *ngIf="!loading && !error" class="list">
+    <div *ngFor="let p of plantillas" class="plantilla" (click)="elegir(p)">
+      <b>{{ p.nombre }}</b>
+      <p>{{ p.descripcion || 'Sin descripción' }}</p>
+      <small>Versión {{ p.version }}</small>
+    </div>
+  </div>
+
+  <button class="cancel" (click)="cancelar()">Cancelar</button>
+</div>

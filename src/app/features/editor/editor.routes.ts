@@ -1,7 +1,7 @@
 // src/app/editor/editor.routes.ts
 import { Routes } from '@angular/router';
 import { EditorDashboardComponent } from './dashboard/editor-dashboard.component';
-import { EditorCreateDocumentComponent } from './document/editor-create-document.component';
+import { EditorCreateDocumentComponent } from './document/create/editor-create-document.component';
 import { DocumentEditorComponent } from './document/document-editor.component';
 
 export const EDITOR_ROUTES: Routes = [

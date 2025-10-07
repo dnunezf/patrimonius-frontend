@@ -1,8 +1,0 @@
-.form { max-width: 520px; }
-label { display:block; margin:8px 0 4px; font-weight:600; }
-input { width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; }
-.row { margin:12px 0; }
-button { margin-top:10px; padding:8px 14px; border:0; border-radius:6px; background:#0ea5e9; color:white; cursor:pointer; }
-button[disabled] { opacity:.6; cursor:not-allowed; }
-.loading { margin-left:8px; color:#64748b; }
-.err { color:#dc2626; margin-top:8px; }
