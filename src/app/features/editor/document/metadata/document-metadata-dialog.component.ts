@@ -19,7 +19,7 @@ import {
 import {
   DocumentService,
   DocumentMetadata,
-} from 'core/services/document.service';
+} from '../../../../../core/services/document.service';
 
 function toCsv(arr: string[] | null | undefined) {
   return Array.isArray(arr) ? arr.join(', ') : '';

@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DocumentService } from 'core/services/document.service';
-import { TemplateSelectorComponent } from './template-selector.component'; // ✅ agregado
-import { PlantillaModel } from 'core/services/plantilla.service'; // ✅ agregado
+import { DocumentService } from '../../../../../core/services/document.service';
+import { TemplateSelectorComponent } from '../template/template-selector.component'; // ✅ agregado
+import { PlantillaModel } from '../../../../../core/services/plantilla.service'; // ✅ agregado
 
 const DEFAULT_TEMPLATE_ID = 1; // documento en blanco
 
@@ -94,4 +94,11 @@ export class EditorCreateDocumentComponent implements OnInit {
         },
       });
   }
+  cancelar(): void {
+    // por si el modal estaba abierto
+    this.showTemplateSelector = false;
+    // navega al dashboard del editor
+    this.router.navigate(['/editor/dashboard']);
+  }
 }
+

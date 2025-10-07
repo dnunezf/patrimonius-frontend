@@ -96,3 +96,10 @@
   color: #dc2626;
   font-size: 0.9rem;
 }
+
+.btn--secondary {
+  margin-top: 12px;
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+.btn--secondary:hover { filter: brightness(0.98); }

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PlantillaService, PlantillaModel } from 'core/services/plantilla.service';
+import { PlantillaService, PlantillaModel } from '../../../../../core/services/plantilla.service';
 
 @Component({
   standalone: true,
