@@ -1,0 +1,134 @@
+/* ============================
+   🌟 Estilos tipo Word para el editor Patrimonius
+   ============================ */
+
+.quill-host {
+  background: #fff;
+  padding: 2.5cm;
+  border: 1px solid #e2e8f0;
+  font-family: "Calibri", "Arial", sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #111827;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  min-height: 70vh;
+}
+
+.quill-host p {
+  margin: 0 0 10pt;
+  text-align: justify;
+}
+
+.quill-host h1,
+.quill-host h2,
+.quill-host h3 {
+  font-family: "Calibri", "Arial", sans-serif;
+  font-weight: bold;
+  color: #0f172a;
+  margin-top: 18pt;
+  margin-bottom: 8pt;
+}
+
+.quill-host h1 {
+  font-size: 16pt;
+}
+.quill-host h2 {
+  font-size: 14pt;
+  color: #1d4ed8;
+}
+.quill-host h3 {
+  font-size: 12pt;
+  color: #334155;
+}
+
+.quill-host strong {
+  font-weight: 700;
+  color: #000;
+}
+.quill-host em {
+  font-style: italic;
+}
+
+/* Tablas tipo Word */
+.quill-host table.word-table {
+  border-collapse: collapse;
+  margin: 12pt 0;
+  width: 100%;
+}
+.quill-host th.word-th,
+.quill-host td.word-td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 8px;
+  font-size: 10.5pt;
+}
+.quill-host th.word-th {
+  background: #f1f5f9;
+  font-weight: bold;
+}
+
+/* Párrafos especiales */
+.word-title {
+  font-size: 15pt;
+  color: #0f172a;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 24pt;
+  margin-bottom: 12pt;
+}
+.word-header {
+  font-size: 13pt;
+  font-weight: 600;
+  color: #1e40af;
+  text-transform: uppercase;
+}
+.word-text {
+  text-align: justify;
+  line-height: 1.6;
+}
+
+/* ===== Mejoras visuales para plantillas DOCX convertidas ===== */
+.quill-host .word-text {
+  text-align: justify;
+  margin-bottom: 10pt;
+}
+
+.quill-host .word-title {
+  text-align: center;
+  font-size: 16pt;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 20pt;
+  margin-bottom: 10pt;
+  text-transform: uppercase;
+}
+
+.quill-host .word-subtitle {
+  font-size: 13pt;
+  font-weight: 600;
+  color: #1e40af;
+  margin-top: 15pt;
+  margin-bottom: 8pt;
+}
+
+.quill-host .word-center {
+  text-align: center !important;
+}
+
+.quill-host .word-right {
+  text-align: right !important;
+}
+
+.quill-host .word-underline {
+  text-decoration: underline;
+}
+
+.quill-host table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12pt 0;
+}
+.quill-host td, .quill-host th {
+  border: 1px solid #cbd5e1;
+  padding: 6px 8px;
+}
+
