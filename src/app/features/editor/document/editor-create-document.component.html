@@ -1,17 +1,33 @@
-<h2>Crear documento</h2>
-
-<form (ngSubmit)="crear()" class="form">
-  <label for="titulo">Título</label>
-  <input id="titulo" name="titulo" [(ngModel)]="titulo" required />
-
-  <div class="row">
-    <label for="firma">Firmas requeridas</label>
-    <input id="firma" name="firma" type="number" min="0" [(ngModel)]="numero_firmas" />
+<div class="create-container">
+  <div class="icon-header">
+    <img src="/assets/icons/document-create.png" alt="icono documento" />
   </div>
 
-  <button type="submit" [disabled]="loading">Crear y editar</button>
-  <span *ngIf="loading" class="loading">creando…</span>
+  <h2 class="title">Creación del documento</h2>
+  <p class="subtitle">Preparando entorno del editor</p>
 
-  <div *ngIf="error" class="err">{{ error }}</div>
-</form>
+  <div class="card">
+    <div class="info-grid">
+      <div><strong>Usuario:</strong> {{ usuarioEmail }}</div>
+      <div><strong>Fecha:</strong> {{ fecha | date:'d/MM/yyyy' }}</div>
+      <div><strong>Hora:</strong> {{ fecha | date:'h:mm:ss a' }}</div>
+    </div>
+  </div>
 
+  <form (ngSubmit)="crear()" class="formulario">
+    <label for="titulo">Título del documento</label>
+    <input
+      id="titulo"
+      name="titulo"
+      [(ngModel)]="titulo"
+      required
+      placeholder="Ej. Acta de reunión 2025"
+    />
+
+    <button type="submit" [disabled]="loading" class="btn">
+      {{ loading ? 'Creando…' : 'Crear y abrir en el editor' }}
+    </button>
+
+    <div *ngIf="error" class="error">{{ error }}</div>
+  </form>
+</div>

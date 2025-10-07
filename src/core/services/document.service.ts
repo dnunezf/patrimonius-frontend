@@ -146,12 +146,12 @@ export class DocumentService {
   }
 
   // ========== Draft / collaboration ==========
+  /** Crear documento desde plantilla (solo título, sin número de firmas) */
   crearDesdePlantilla(body: {
     plantilla_id: number;
     titulo: string;
     categoria_id?: number | null;
     confid_level?: 'PUBLIC' | 'INTERNAL' | 'HIGH' | 'RESTRICTED';
-    numero_firmas?: number;
   }): Observable<{ documento_id: number; numero_serie: string }> {
     return this.http.post<{ documento_id: number; numero_serie: string }>(
       `${this.api}/documentos/crear-desde-plantilla`,
@@ -306,7 +306,7 @@ export class DocumentService {
       title: string;
       author: string;
       responsibleUnitId: number;
-      keywords: string[] | string; // csv or array (>=1)
+      keywords: string[] | string;
       preliminaryClass: string;
       classificationCode: string;
       retentionYears: number;
