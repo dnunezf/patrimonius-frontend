@@ -4,7 +4,7 @@
   </div>
 
   <h2 class="title">Creación del documento</h2>
-  <p class="subtitle">Preparando entorno del editor</p>
+  <p class="subtitle">Seleccione si desea usar una plantilla o crear en blanco</p>
 
   <div class="card">
     <div class="info-grid">
@@ -25,9 +25,15 @@
     />
 
     <button type="submit" [disabled]="loading" class="btn">
-      {{ loading ? 'Creando…' : 'Crear y abrir en el editor' }}
+      {{ loading ? 'Creando…' : 'Crear documento' }}
     </button>
 
     <div *ngIf="error" class="error">{{ error }}</div>
   </form>
+
+  <!-- ✅ Modal de selección de plantilla -->
+  <app-template-selector
+    *ngIf="showTemplateSelector"
+    (selected)="onTemplateSelected($event)">
+  </app-template-selector>
 </div>
