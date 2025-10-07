@@ -14,7 +14,7 @@ type ApplyExceptionDto = {
 export class AccessExceptionService {
   private rolesUrl = `${environment.apiUrl}/rol/rol`;
   private usersUrl = `${environment.apiUrl}/admin/users`;
-  private documentsUrl = `${environment.apiUrl}/documents`; // fixed
+  private documentsUrl = `${environment.apiUrl}/`;
   private exceptionsUrl = `${environment.apiUrl}/permissions/exceptions`;
 
   constructor(private http: HttpClient) {}
