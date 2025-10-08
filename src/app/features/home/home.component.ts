@@ -2,12 +2,12 @@ import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common'; // 👈 quitamos NgIf
 import { AuthService } from '../../../core/services/auth.service';
 import { LoginDialogComponent } from '../../auth/login-dialog.component';
-import { NavComponent } from '../../../app/core/nav/nav.component';
+
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, LoginDialogComponent, NavComponent],
+  imports: [CommonModule, LoginDialogComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
 })

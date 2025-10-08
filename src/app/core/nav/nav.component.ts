@@ -38,36 +38,51 @@ export class NavComponent {
 
   userEmail = () => this.auth.currentUser?.()?.email ?? '';
 
-  // Soporta usuarios con un único rol (rolId) o con arreglo de roles por nombre/ID
-  roles(): string[] {
+
+   roles(): string[] {
     const u = this.auth.currentUser?.();
     if (!u) return [];
-    // Si vienen nombres de rol:
+
+
     if (Array.isArray((u as any).roles) && (u as any).roles.length) {
-      return (u as any).roles as string[];
+      return (u as any).roles.map((r: string) =>
+        r?.toString().trim()
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase())
+      );
     }
-    // Mapear por rolId clásico:
-    const map: Record<number, string> = {
+
+     const map: Record<number, string> = {
       1: 'Administrador',
       2: 'Editor',
       3: 'Archivista',
       4: 'Usuario',
       5: 'Usuario Externo'
     };
-    const name = map[(u as any).rolId] ?? 'Usuario';
+
+    const id = Number((u as any).rolId);
+    const name = Number.isFinite(id) ? (map[id] ?? 'Usuario') : 'Usuario';
     return [name];
   }
 
   roleLink(role: string): string {
-    switch (role) {
-      case 'Administrador': return '/admin/dashboard';
-      case 'Editor':        return '/editor/dashboard';
-      case 'Archivista':    return '/'; // TODO: ruta de archivista
-      case 'Usuario':       return '/'; // TODO: ruta de usuario interno
-      case 'Usuario Externo': return '/'; // TODO: ruta de externo
-      default: return '/';
+    // Convertimos el texto legible a código interno
+    const r = role
+      ?.toUpperCase()
+      .replace(/\s+/g, '_');
+
+    switch (r) {
+      case 'ADMIN':             return '/admin/dashboard';
+      case 'EDITOR':            return '/editor/dashboard';
+      case 'ARCHIVISTA':        return '/archivista/dashboard';
+      case 'USUARIO':           return '/usuario/dashboard';
+      case 'USUARIO_EXTERNO':   return '/externo/dashboard';
+      default:                  return '/';
     }
   }
+
+
+
 
   notificationsLink(): string {
     // Por ahora siempre a admin/notifications como pediste:
