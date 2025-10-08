@@ -38,21 +38,22 @@ export class NavComponent {
 
   userEmail = () => this.auth.currentUser?.()?.email ?? '';
 
-
-   roles(): string[] {
+// Reemplaza TU método roles(): string[] { ... } por este getter:
+  get rolesList(): string[] {
     const u = this.auth.currentUser?.();
     if (!u) return [];
 
-
+    // Si vienen nombres de rol (p.ej. "USUARIO_EXTERNO" o "Usuario Externo")
     if (Array.isArray((u as any).roles) && (u as any).roles.length) {
       return (u as any).roles.map((r: string) =>
         r?.toString().trim()
           .replace(/_/g, ' ')
-          .replace(/\b\w/g, c => c.toUpperCase())
+          .replace(/\b\w/g, c => c.toUpperCase()) // capitaliza palabras
       );
     }
 
-     const map: Record<number, string> = {
+    // Si viene rolId clásico
+    const map: Record<number, string> = {
       1: 'Administrador',
       2: 'Editor',
       3: 'Archivista',
@@ -64,6 +65,20 @@ export class NavComponent {
     const name = Number.isFinite(id) ? (map[id] ?? 'Usuario') : 'Usuario';
     return [name];
   }
+
+
+  roleDisplay(role: string): string {
+    const r = role?.toUpperCase().replace(/\s+/g, '_');
+    const map: Record<string, string> = {
+      ADMIN: 'Administrador',
+      EDITOR: 'Editor',
+      ARCHIVISTA: 'Archivista',
+      USUARIO: 'Usuario',
+      USUARIO_EXTERNO: 'Usuario Externo',
+    };
+    return map[r] ?? role;
+  }
+
 
   roleLink(role: string): string {
     // Convertimos el texto legible a código interno

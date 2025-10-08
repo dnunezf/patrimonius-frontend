@@ -47,10 +47,8 @@
     <!-- Si SÍ está logueado: roles, notificaciones, email y salir -->
     <ng-template #logged>
       <!-- Botones por rol -->
-      <ng-container *ngFor="let r of roles()">
-        <a class="btn btn--ghost" [routerLink]="roleLink(r)">
-          {{ r }}
-        </a>
+      <ng-container *ngFor="let r of rolesList">
+        <a class="btn btn--ghost" [routerLink]="roleLink(r)">{{ r }}</a>
       </ng-container>
 
       <!-- Notificaciones -->
