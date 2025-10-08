@@ -14,8 +14,6 @@ import { NavComponent } from '../../../app/core/nav/nav.component';
 export class HomeComponent {
   open = signal(false);
 
-  items = [{ label: 'Inicio', path: '/' }];
-
   constructor(public auth: AuthService) {}
 
   openLogin() {

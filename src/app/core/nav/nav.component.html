@@ -34,15 +34,39 @@
 
   <!-- Right actions -->
   <div class="actions">
-    <!-- botón login DESKTOP (no navega; abre modal) -->
-    <button *ngIf="loginItem"
-            type="button"
-            class="btn btn--ghost actions__login"
-            (click)="loginClick.emit()">
-      {{ loginItem.label }}
-    </button>
+    <!-- Si NO está logueado: botón de login -->
+    <ng-container *ngIf="!isLoggedIn(); else logged">
+      <button *ngIf="loginItem"
+              type="button"
+              class="btn btn--ghost actions__login"
+              (click)="loginClick.emit()">
+        {{ loginItem.label }}
+      </button>
+    </ng-container>
 
-    <!-- Hamburger -->
+    <!-- Si SÍ está logueado: roles, notificaciones, email y salir -->
+    <ng-template #logged>
+      <!-- Botones por rol -->
+      <ng-container *ngFor="let r of roles()">
+        <a class="btn btn--ghost" [routerLink]="roleLink(r)">
+          {{ r }}
+        </a>
+      </ng-container>
+
+      <!-- Notificaciones -->
+      <a class="btn btn--ghost" [routerLink]="notificationsLink()">
+        Notificaciones
+        <span *ngIf="noticeCount() > 0" class="badge badge-blue">{{ noticeCount() }}</span>
+      </a>
+
+      <!-- Correo -->
+      <span class="role">{{ userEmail() }}</span>
+
+      <!-- Salir -->
+      <button class="btn btn--primary" type="button" (click)="signOut()">Salir</button>
+    </ng-template>
+
+    <!-- Hamburger (solo uno) -->
     <button class="hamburger" type="button"
             (click)="toggle()"
             aria-controls="mobile-menu"
@@ -65,7 +89,8 @@
         </a>
       </li>
 
-      <li class="mobile__item" *ngIf="loginItem">
+      <!-- Botón login en móvil, solo si NO está logueado -->
+      <li class="mobile__item" *ngIf="loginItem && !isLoggedIn()">
         <button class="btn btn--primary mobile__btn" type="button"
                 (click)="loginClick.emit(); close()">
           {{ loginItem.label }}
