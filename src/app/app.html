@@ -1,4 +1,11 @@
-<app-nav>  </app-nav>
+<app-nav
+  [brandTitle]="'Patrimonius'"
+  [brandSubtitle]="'Museo Nacional de Costa Rica'"
+  [logo]="'assets/logos/logo.png'"
+  [items]="[]"
+  [loginItem]="{ label: 'Iniciar sesión', path: '/login' }"
+  (loginClick)="openLogin()">
+</app-nav>
 
 <router-outlet></router-outlet>
 

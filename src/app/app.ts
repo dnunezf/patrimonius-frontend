@@ -9,4 +9,8 @@ import {NavComponent} from './core/nav/nav.component';
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
-export class App {}
+export class App {
+  openLogin() {
+
+  }
+}

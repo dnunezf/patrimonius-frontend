@@ -1,12 +1,12 @@
-import { Component } from '@angular/core';
+import {Component, signal} from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NavComponent } from './core/nav/nav.component';
-
+import { LoginDialogComponent } from './auth/login-dialog.component';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavComponent],
+  imports: [CommonModule, RouterOutlet, NavComponent, LoginDialogComponent],
   template: `
     <app-nav
       [brandTitle]="'Patrimonius'"
@@ -17,13 +17,22 @@ import { NavComponent } from './core/nav/nav.component';
     </app-nav>
 
     <router-outlet></router-outlet>
-  `,
+
+  <app-login-dialog
+    [open]="loginOpen()"
+  (closed)="closeLogin()">
+    </app-login-dialog>
+      `,
 })
+
 export class AppComponent {
   constructor(private router: Router) {}
 
 
-  openLogin() {
-    this.router.navigate(['/login']);
-  }
+
+  // estado del modal
+  loginOpen = signal(false);
+
+  openLogin()  { this.loginOpen.set(true); }
+  closeLogin() { this.loginOpen.set(false); }
 }
