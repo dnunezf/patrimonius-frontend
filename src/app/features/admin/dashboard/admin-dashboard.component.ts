@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { NgFor } from '@angular/common';
 import { RouterLink } from '@angular/router'; // Import RouterLink
-import { TopbarComponent } from '../../../core/layout/topbar/topbar.component';
 
 @Component({
   selector: 'app-admin-dashboard',
