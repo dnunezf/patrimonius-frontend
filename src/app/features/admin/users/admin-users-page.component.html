@@ -57,7 +57,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let u of filtered()">
+        <tr
+          *ngFor="let u of filtered()"
+          [class.row--flash]="u.id === highlightId()"
+        >
           <td>
             <div class="usr">
               <strong

@@ -28,6 +28,8 @@ import { ConfirmService } from '../../../shared/ui/confirm.service';
   styleUrls: ['./admin-users-page.component.css'],
 })
 export class AdminUsersPageComponent {
+  readonly highlightId = signal<number | null>(null);
+
   readonly users = signal<AdminUser[]>([]);
   readonly loading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
@@ -59,7 +61,7 @@ export class AdminUsersPageComponent {
   readonly ROLES = ROLES;
   readonly UNIDADES = UNIDADES;
   readonly EDITOR_ID = EDITOR_ID;
-  
+
   constructor(
     private api: AdminUsersService,
     private toast: ToastService,
@@ -91,7 +93,6 @@ export class AdminUsersPageComponent {
     this.editing.set(u);
     this.showForm.set(true);
   }
-  
 
   roleClass(name?: string): string {
     const n = (name || '').toUpperCase();
@@ -102,7 +103,7 @@ export class AdminUsersPageComponent {
     if (n.startsWith('USU')) return 'user';
     return '';
   }
-  
+
   /** Delete flow now asks confirmation and toasts the result (no window.confirm/alert). */
   async delete(u: AdminUser): Promise<void> {
     const ok = await this.confirm.ask(
@@ -126,14 +127,23 @@ export class AdminUsersPageComponent {
     const req = editedId
       ? this.api.update(editedId, data)
       : this.api.create(data);
+
     req.subscribe({
-      next: () => {
+      next: (user) => {
         this.showForm.set(false);
         this.toast.success(editedId ? 'Cambios guardados' : 'Usuario creado');
-        this.load();
+
+        if (editedId) {
+          this.users.update((list) =>
+            list.map((u) => (u.id === editedId ? { ...u, ...user } : u))
+          );
+          this.highlight(user.id);
+        } else {
+          this.users.update((list) => [user, ...list]);
+          this.highlight(user.id);
+        }
       },
       error: (e) => {
-        // Map common backend errors to friendly text
         const msg =
           e?.status === 409
             ? 'El correo ya existe'
@@ -143,5 +153,10 @@ export class AdminUsersPageComponent {
         this.toast.error(msg);
       },
     });
+  }
+
+  private highlight(id: number) {
+    this.highlightId.set(id);
+    setTimeout(() => this.highlightId.set(null), 1200);
   }
 }

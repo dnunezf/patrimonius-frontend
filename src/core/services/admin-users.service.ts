@@ -28,8 +28,8 @@ export interface UpsertUserDto {
   apellido1: string;
   apellido2?: string;
   email: string;
-  rolId: number;     // rol principal (compat)
-  rolIds: number[];  // todos los roles seleccionados
+  rolId: number; // rol principal (compat)
+  rolIds: number[]; // todos los roles seleccionados
   unidadId: number;
   // editorPermissions?: EditorPermission[]; // ← NO se usa al enviar
 }
@@ -44,29 +44,27 @@ export class AdminUsersService {
   }
 
   /** Crear usuario (solo datos y roles; SIN permisos de editor) */
-  create(body: UpsertUserDto): Observable<AdminUser> {
+  create(body: UpsertUserDto) {
     if (!body) throw new Error('AdminUsersService.create: body es requerido');
 
     const payload: any = {
-      // datos personales
       nombre: body.nombre?.trim(),
       apellido1: body.apellido1?.trim(),
       apellido2: body.apellido2?.trim() || null,
       email: body.email?.trim(),
-
-      // organización / roles
       unidadId: Number(body.unidadId),
-
-      // normalización de roles
-      rolIds: (Array.isArray(body.rolIds) && body.rolIds.length ? body.rolIds : [body.rolId])
-        .map(n => Number(n))
-        .filter(n => !Number.isNaN(n)),
-      rolId:
-        body.rolId ??
-        (Array.isArray(body.rolIds) && body.rolIds.length ? Number(body.rolIds[0]) : undefined),
+      rolIds: (Array.isArray(body.rolIds) && body.rolIds.length
+        ? body.rolIds
+        : [body.rolId]
+      )
+        .map((n) => Number(n))
+        .filter((n) => !Number.isNaN(n)),
+      rolId: body.rolId ?? Number((body.rolIds || [])[0]),
     };
 
-    return this.http.post<AdminUser>(`${this.api}/users`, payload);
+    return this.http
+      .post<{ message: string; user: AdminUser }>(`${this.api}/users`, payload)
+      .pipe(map((r) => r.user));
   }
 
   /**
@@ -91,7 +89,9 @@ export class AdminUsersService {
     let payload: any = {
       ...(b.nombre != null ? { nombre: b.nombre.trim() } : {}),
       ...(b.apellido1 != null ? { apellido1: b.apellido1.trim() } : {}),
-      ...(b.apellido2 != null ? { apellido2: (b.apellido2 || '').trim() || null } : {}),
+      ...(b.apellido2 != null
+        ? { apellido2: (b.apellido2 || '').trim() || null }
+        : {}),
       ...(b.email != null ? { email: b.email.trim() } : {}),
       ...(b.unidadId != null ? { unidadId: Number(b.unidadId) } : {}),
     };
@@ -103,7 +103,7 @@ export class AdminUsersService {
       const ids = hasRolIds ? b.rolIds! : [b.rolId!];
       payload = {
         ...payload,
-        rolIds: ids.map(n => Number(n)).filter(n => !Number.isNaN(n)),
+        rolIds: ids.map((n) => Number(n)).filter((n) => !Number.isNaN(n)),
         rolId: Number(ids[0]),
       };
     }
@@ -117,7 +117,7 @@ export class AdminUsersService {
 
   listEmails(): Observable<string[]> {
     return this.list().pipe(
-      map(users => Array.from(new Set(users.map(u => u.email))).sort())
+      map((users) => Array.from(new Set(users.map((u) => u.email))).sort())
     );
   }
 }

@@ -251,3 +251,24 @@
     min-width: 110px;
   }
 }
+
+/* Flash highlight for newly created/updated rows */
+.users .table tbody tr.row--flash {
+  animation: flashRow 1.2s ease-in-out 1;
+}
+@keyframes flashRow {
+  0% {
+    background: rgba(255, 235, 59, 0.45);
+  }
+  100% {
+    background: transparent;
+  }
+}
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .users .table tbody tr.row--flash {
+    animation: none;
+    background: rgba(255, 235, 59, 0.25);
+    transition: background 1.2s ease-in-out;
+  }
+}
