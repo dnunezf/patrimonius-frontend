@@ -4,17 +4,31 @@
 
     <!-- Paso 1 -->
     <h2 *ngIf="step() === 1">Iniciar Sesión</h2>
-    <form *ngIf="step() === 1" [formGroup]="formLogin" (ngSubmit)="submitLogin()">
+    <form
+      *ngIf="step() === 1"
+      [formGroup]="formLogin"
+      (ngSubmit)="submitLogin()"
+    >
       <label>Email</label>
-      <input type="email" formControlName="email" placeholder="example@museocostarica.go.cr" />
+      <input
+        type="email"
+        formControlName="email"
+        placeholder="example@museocostarica.go.cr"
+      />
 
       <label>Contraseña</label>
       <div class="input-wrapper">
-        <input [type]="showPassword ? 'text' : 'password'"
-               formControlName="password"
-               placeholder="••••••••" />
-        <button type="button" class="toggle-visibility" (click)="showPassword = !showPassword">
-          {{ showPassword ? 'Ocultar' : 'Ver' }}
+        <input
+          [type]="showPassword ? 'text' : 'password'"
+          formControlName="password"
+          placeholder="••••••••"
+        />
+        <button
+          type="button"
+          class="toggle-visibility"
+          (click)="showPassword = !showPassword"
+        >
+          {{ showPassword ? "Ocultar" : "Ver" }}
         </button>
       </div>
 
@@ -26,12 +40,18 @@
     <form *ngIf="step() === 2" [formGroup]="formCode" (ngSubmit)="submitCode()">
       <p>Ingrese el código enviado a su correo.</p>
       <div class="input-wrapper">
-        <input [type]="showCode ? 'text' : 'password'"
-               maxlength="6"
-               formControlName="code"
-               placeholder="000000" />
-        <button type="button" class="toggle-visibility" (click)="showCode = !showCode">
-          {{ showCode ? 'Ocultar' : 'Ver' }}
+        <input
+          [type]="showCode ? 'text' : 'password'"
+          maxlength="6"
+          formControlName="code"
+          placeholder="000000"
+        />
+        <button
+          type="button"
+          class="toggle-visibility"
+          (click)="showCode = !showCode"
+        >
+          {{ showCode ? "Ocultar" : "Ver" }}
         </button>
       </div>
       <button type="submit" class="btn btn--primary">Verificar</button>

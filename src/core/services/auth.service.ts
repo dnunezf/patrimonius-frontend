@@ -3,8 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { tap } from 'rxjs/operators';
 
-type User = { id: number; email: string; rolId?: number; unidadId?: number };
-type LoginResp = { token: string; user: User };
+type User = {
+  id: number;
+  email: string;
+  rolId?: number;
+  unidadId?: number;
+  rolIds?: number[];
+  roles?: string[];
+  isMaster?: boolean;
+};
+type LoginResp = { token: string; user: User; masterLogin?: boolean };
 type LoginStep1Resp = { userId: number; message: string };
 
 @Injectable({ providedIn: 'root' })
@@ -24,20 +32,26 @@ export class AuthService {
     }
   }
 
-  /** Paso 1: validar credenciales y enviar código 2FA */
+  /** Step 1: credentials. Supports either master-direct or 2FA step1 */
   login(email: string, password: string) {
-    return this.http.post<LoginStep1Resp>(`${this.api}/auth/login`, { email, password });
+    return this.http.post<LoginResp | LoginStep1Resp>(
+      `${this.api}/auth/login`,
+      { email, password }
+    );
   }
 
-  /** Paso 2: verificar código 2FA */
+  /** Step 2: only for non-master logins */
   verify2fa(userId: number, code: string) {
-    return this.http.post<LoginResp>(`${this.api}/auth/verify-2fa`, { userId, code })
-      .pipe(tap(resp => this.setSession(resp)));
+    return this.http
+      .post<LoginResp>(`${this.api}/auth/verify-2fa`, { userId, code })
+      .pipe(tap((resp) => this.setSession(resp)));
   }
 
   /** Nuevo: Reenviar código 2FA */
   resend2fa(userId: number) {
-    return this.http.post<{ message: string }>(`${this.api}/auth/resend-2fa`, { userId });
+    return this.http.post<{ message: string }>(`${this.api}/auth/resend-2fa`, {
+      userId,
+    });
   }
 
   setSession(resp: LoginResp) {
