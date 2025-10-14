@@ -4,7 +4,6 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { map, Observable } from 'rxjs';
 
-// Mantengo el tipo por compatibilidad; el servicio YA NO lo envía en create.
 export type EditorPermission = 'EDIT' | 'SIGN';
 export type Perm = EditorPermission;
 
@@ -18,7 +17,7 @@ export interface AdminUser {
   rolId: number;
   unidad: string;
   unidadId: number;
-  editorPermissions?: EditorPermission[]; // solo informativo si backend lo devuelve
+  editorPermissions?: EditorPermission[];
   rolIds?: number[];
   roles?: string[];
 }
@@ -28,10 +27,10 @@ export interface UpsertUserDto {
   apellido1: string;
   apellido2?: string;
   email: string;
-  rolId: number; // rol principal (compat)
-  rolIds: number[]; // todos los roles seleccionados
+  rolId: number; 
+  rolIds: number[];
   unidadId: number;
-  // editorPermissions?: EditorPermission[]; // ← NO se usa al enviar
+  editorPermissions?: EditorPermission[]; 
 }
 
 @Injectable({ providedIn: 'root' })
@@ -43,9 +42,9 @@ export class AdminUsersService {
     return this.http.get<AdminUser[]>(`${this.api}/users`);
   }
 
-  /** Crear usuario (solo datos y roles; SIN permisos de editor) */
-  create(body: UpsertUserDto) {
-    if (!body) throw new Error('AdminUsersService.create: body es requerido');
+  /** Create user including optional editorPermissions. */
+  create(body: UpsertUserDto): Observable<AdminUser> {
+    if (!body) throw new Error('AdminUsersService.create: body is required');
 
     const payload: any = {
       nombre: body.nombre?.trim(),
@@ -62,26 +61,42 @@ export class AdminUsersService {
       rolId: body.rolId ?? Number((body.rolIds || [])[0]),
     };
 
+    // pass editorPermissions if provided and valid
+    const perms = Array.isArray(body.editorPermissions)
+      ? Array.from(
+          new Set(
+            body.editorPermissions.filter((p) => p === 'EDIT' || p === 'SIGN')
+          )
+        )
+      : [];
+    if (perms.length) payload.editorPermissions = perms;
+
     return this.http
-      .post<{ message: string; user: AdminUser }>(`${this.api}/users`, payload)
-      .pipe(map((r) => r.user));
+      .post<AdminUser | { user: AdminUser }>(`${this.api}/users`, payload)
+      .pipe(map((r: any) => (r?.user ?? r) as AdminUser));
   }
 
   /**
-   * Actualiza datos o roles.
-   * También acepta `{ permisosEditor: Perm[] }` por compatibilidad
-   * con el componente de permisos (si lo usas).
+   * Update user data/roles.
+   * Also accepts `{ permisosEditor: Perm[] }` for compatibility.
    */
   update(
     id: number,
     body: Partial<UpsertUserDto> | { permisosEditor: Perm[] }
   ): Observable<AdminUser> {
-    if (!body) throw new Error('AdminUsersService.update: body es requerido');
+    if (!body) throw new Error('AdminUsersService.update: body is required');
 
-    // Compatibilidad con componente de permisos
+    // legacy path
     if ('permisosEditor' in body) {
+      const perms = Array.isArray(body.permisosEditor)
+        ? Array.from(
+            new Set(
+              body.permisosEditor.filter((p) => p === 'EDIT' || p === 'SIGN')
+            )
+          )
+        : [];
       return this.http.patch<AdminUser>(`${this.api}/users/${id}`, {
-        permisosEditor: body.permisosEditor,
+        permisosEditor: perms,
       });
     }
 
@@ -96,7 +111,7 @@ export class AdminUsersService {
       ...(b.unidadId != null ? { unidadId: Number(b.unidadId) } : {}),
     };
 
-    // Normaliza roles si llegan
+    // roles
     const hasRolIds = Array.isArray(b.rolIds) && b.rolIds.length > 0;
     const hasRolId = b.rolId != null;
     if (hasRolIds || hasRolId) {
@@ -106,6 +121,14 @@ export class AdminUsersService {
         rolIds: ids.map((n) => Number(n)).filter((n) => !Number.isNaN(n)),
         rolId: Number(ids[0]),
       };
+    }
+
+    // editorPermissions 
+    if (Array.isArray(b.editorPermissions)) {
+      const perms = Array.from(
+        new Set(b.editorPermissions.filter((p) => p === 'EDIT' || p === 'SIGN'))
+      );
+      payload.editorPermissions = perms; 
     }
 
     return this.http.patch<AdminUser>(`${this.api}/users/${id}`, payload);

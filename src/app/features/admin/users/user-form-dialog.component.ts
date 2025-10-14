@@ -23,11 +23,6 @@ import {
 } from '../../../../core/services/admin-users.service';
 import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
 
-/**
- * User Form Dialog
- * - Multi-role selection with checkbox chips.
- * - Template-safe event handling (no $event.target.checked in template).
- */
 @Component({
   selector: 'app-user-form-dialog',
   standalone: true,
@@ -39,7 +34,13 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
   @Input() open = false;
   @Input() editing: AdminUser | null = null;
   @Output() close = new EventEmitter<void>();
-  @Output() submit = new EventEmitter<{ id?: number; data: UpsertUserDto }>();
+  @Output() submit = new EventEmitter<{
+    id?: number;
+    data: UpsertUserDto & {
+      rolIds: number[];
+      editorPermissions?: ('EDIT' | 'SIGN')[];
+    };
+  }>();
 
   readonly ROLES = ROLES;
   readonly UNIDADES = UNIDADES;
@@ -73,7 +74,7 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
     });
   }
 
-  // Validators
+  // ---- validators
   private noBlank = (c: AbstractControl) =>
     String(c.value ?? '').trim().length ? null : { blank: true };
 
@@ -85,7 +86,7 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
   private minOne = (c: AbstractControl) =>
     Array.isArray(c.value) && c.value.length > 0 ? null : { minOne: true };
 
-  // UI helpers
+  // ---- helpers
   showErr(ctrl: string): boolean {
     const c = this.form.get(ctrl);
     return !!c && c.invalid && (c.dirty || c.touched);
@@ -116,7 +117,6 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
     return this.getRolIds().includes(id);
   }
 
-  /** Safe handler: derives `checked` from Event, avoids template casts. */
   onRoleToggle(id: number, ev: Event): void {
     const checked = (ev.target as HTMLInputElement | null)?.checked ?? false;
     const set = new Set(this.getRolIds());
@@ -126,6 +126,7 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
     this.form.get('rolIds')?.markAsDirty();
     this.form.get('rolIds')?.markAsTouched();
 
+    // If EDITOR role is removed, force editor perms off
     if (!this.isEditor()) {
       this.form.patchValue({ edit: false, sign: false }, { emitEvent: false });
     }
@@ -142,7 +143,7 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
     this.form.patchValue({ edit: false, sign: false }, { emitEvent: false });
   }
 
-  // Lifecycle
+  // ---- lifecycle
   ngOnChanges(): void {
     if (this.editing) {
       const e = this.editing;
@@ -159,6 +160,12 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
         edit: e.editorPermissions?.includes('EDIT') || false,
         sign: e.editorPermissions?.includes('SIGN') || false,
       });
+      if (!ids.includes(this.EDITOR_ID)) {
+        this.form.patchValue(
+          { edit: false, sign: false },
+          { emitEvent: false }
+        );
+      }
     } else {
       this.form.reset({
         nombre: '',
@@ -180,7 +187,8 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
       this.close.emit();
   }
 
-  // Submit
+  isSubmitting = false;
+
   save() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -196,6 +204,8 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
       }
       return;
     }
+
+    this.isSubmitting = true; // <-- start loading
 
     const v = this.form.value as any;
     const rolIds: number[] = (v.rolIds || [])
@@ -218,15 +228,21 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
       rolIds,
       unidadId: Number(v.unidadId),
       editorPermissions,
-    } as UpsertUserDto & { rolIds: number[] };
+    };
 
-    this.submit.emit({ id: this.editing?.id ?? undefined, data: dto });
+    // emit and wait externally handled (close handled on success)
+    this.submit.emit({
+      id: this.editing?.id ?? undefined,
+      data: dto,
+    });
+
+    // simulate locking until parent notifies reset
+    setTimeout(() => (this.isSubmitting = false), 5000);
   }
 
   trackByRole(index: number, r: { id: number; label: string }): number {
     return r.id;
   }
-
   trackByUnidad(index: number, u: { id: number; label: string }): number {
     return u.id;
   }

@@ -216,13 +216,26 @@
 
       <div class="footer">
         <button
+          type="button"
           class="btn btn--success"
-          type="submit"
-          [disabled]="form.invalid"
+          [disabled]="form.invalid || isSubmitting"
+          (click)="save()"
         >
-          {{ editing ? "Guardar Cambios" : "Crear Usuario" }}
+          <ng-container *ngIf="!isSubmitting; else loadingTpl">
+            Crear Usuario
+          </ng-container>
+          <ng-template #loadingTpl>
+            <span class="spinner"></span>
+            Creando...
+          </ng-template>
         </button>
-        <button class="btn btn--ghost" type="button" (click)="close.emit()">
+
+        <button
+          type="button"
+          class="btn btn--ghost"
+          (click)="close.emit()"
+          [disabled]="isSubmitting"
+        >
           Cancelar
         </button>
       </div>
