@@ -129,18 +129,16 @@ export class AdminUsersPageComponent {
       : this.api.create(data);
 
     req.subscribe({
-      next: (user) => {
+      next: (saved) => {
         this.showForm.set(false);
         this.toast.success(editedId ? 'Cambios guardados' : 'Usuario creado');
 
         if (editedId) {
-          this.users.update((list) =>
-            list.map((u) => (u.id === editedId ? { ...u, ...user } : u))
+          this.users.update((arr) =>
+            arr.map((u) => (u.id === editedId ? (saved as AdminUser) : u))
           );
-          this.highlight(user.id);
         } else {
-          this.users.update((list) => [user, ...list]);
-          this.highlight(user.id);
+          this.users.update((arr) => [saved as AdminUser, ...arr]);
         }
       },
       error: (e) => {
