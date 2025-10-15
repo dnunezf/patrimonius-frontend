@@ -28,14 +28,16 @@
       />
     </div>
 
-    <select
-      class="select"
-      [ngModel]="roleFilter()"
-      (ngModelChange)="roleFilter.set($event)"
-    >
-      <option [ngValue]="'all'">Todos los roles</option>
-      <option *ngFor="let r of ROLES" [ngValue]="r.id">{{ r.label }}</option>
-    </select>
+    <div class="select">
+      <select
+        class="select__control"
+        [ngModel]="roleFilter()"
+        (ngModelChange)="roleFilter.set($event)"
+      >
+        <option [ngValue]="'all'">Todos los roles</option>
+        <option *ngFor="let r of ROLES" [ngValue]="r.id">{{ r.label }}</option>
+      </select>
+    </div>
 
     <button class="btn btn--primary cta" (click)="openCreate()">
       + Crear Usuario
@@ -105,6 +107,7 @@
   <app-user-form-dialog
     [open]="showForm()"
     [editing]="editing()"
+    [submitting]="isBusy()"
     (close)="showForm.set(false)"
     (submit)="onSubmit($event.data, $event.id)"
   ></app-user-form-dialog>

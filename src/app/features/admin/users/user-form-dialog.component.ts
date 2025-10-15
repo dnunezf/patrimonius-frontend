@@ -3,6 +3,7 @@ import {
   EventEmitter,
   Input,
   Output,
+  OnInit,
   OnChanges,
   AfterViewInit,
   ViewChildren,
@@ -21,8 +22,19 @@ import {
   UpsertUserDto,
   AdminUser,
 } from '../../../../core/services/admin-users.service';
-import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
+import {
+  UnidadService,
+  OrgUnit,
+} from '../../../../core/services/unidad.service';
+import { EDITOR_ID, ROLES } from '../../../shared/data/catalogs';
 
+/**
+ * User Form Dialog
+ * - Fetches organizational units from backend to avoid mismatched IDs.
+ * - Supports multi-role selection with checkbox chips.
+ * - Editor permissions (EDIT/SIGN) are enabled only when EDITOR role is selected.
+ * - Exposes `isSubmitting` to lock the submit button while parent handles the request.
+ */
 @Component({
   selector: 'app-user-form-dialog',
   standalone: true,
@@ -30,9 +42,14 @@ import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
   templateUrl: './user-form-dialog.component.html',
   styleUrls: ['./user-form-dialog.component.css'],
 })
-export class UserFormDialogComponent implements OnChanges, AfterViewInit {
+export class UserFormDialogComponent
+  implements OnInit, OnChanges, AfterViewInit
+{
   @Input() open = false;
   @Input() editing: AdminUser | null = null;
+
+  @Input() submitting = false;
+
   @Output() close = new EventEmitter<void>();
   @Output() submit = new EventEmitter<{
     id?: number;
@@ -42,17 +59,28 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
     };
   }>();
 
+  /** Static roles catalog (labels and ids) */
   readonly ROLES = ROLES;
-  readonly UNIDADES = UNIDADES;
+
+  /** Role ID that gates editor permissions UI */
   readonly EDITOR_ID = EDITOR_ID;
 
+  /** Units loaded from backend */
+  units: OrgUnit[] = [];
+  unitsLoading = false;
+
+  /** Locks the submit button and can drive a loading indicator */
+  isSubmitting = false;
+
+  /** Refs for focusing first invalid field */
   @ViewChildren('ctl') private inputs!: QueryList<
     ElementRef<HTMLInputElement | HTMLSelectElement>
   >;
 
+  /** Reactive form */
   form: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private unitsApi: UnidadService) {
     this.form = this.fb.group({
       nombre: [
         '',
@@ -65,101 +93,153 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
       apellido2: [''],
       email: ['', [Validators.required, Validators.email]],
       rolIds: [[], [Validators.required, this.minOne]],
-      unidadId: [
-        UNIDADES[0]?.id ?? 1,
-        [Validators.required, this.positiveNumber],
-      ],
+      // Unit is set after units load; keep null to avoid defaulting to wrong IDs
+      unidadId: [null, [Validators.required, this.positiveNumber]],
+      // Editor permissions toggles
       edit: [false],
       sign: [false],
     });
   }
 
-  // ---- validators
+  // ---------- Validators ----------
+
+  /** Rejects strings that are only whitespace */
   private noBlank = (c: AbstractControl) =>
     String(c.value ?? '').trim().length ? null : { blank: true };
 
+  /** Requires a positive integer */
   private positiveNumber = (c: AbstractControl) => {
     const n = Number(c.value);
     return Number.isInteger(n) && n > 0 ? null : { number: true };
   };
 
+  /** Requires at least one selected role */
   private minOne = (c: AbstractControl) =>
     Array.isArray(c.value) && c.value.length > 0 ? null : { minOne: true };
 
-  // ---- helpers
+  // ---------- UI helpers ----------
+
   showErr(ctrl: string): boolean {
     const c = this.form.get(ctrl);
     return !!c && c.invalid && (c.dirty || c.touched);
   }
 
+  /** English messages to keep codebase consistent */
   errMsg(ctrl: string): string {
     const c = this.form.get(ctrl);
     if (!c || !c.errors) return '';
-    if (c.errors['required']) return 'Campo requerido';
-    if (c.errors['minlength']) return 'Mínimo 2 caracteres';
-    if (c.errors['email']) return 'Correo inválido';
-    if (c.errors['blank']) return 'No puede estar vacío';
-    if (c.errors['number']) return 'Seleccione un valor válido';
-    if (c.errors['minOne']) return 'Seleccione al menos un rol';
-    return 'Valor inválido';
+    if (c.errors['required']) return 'This field is required';
+    if (c.errors['minlength']) return 'Minimum length is 2 characters';
+    if (c.errors['email']) return 'Invalid email';
+    if (c.errors['blank']) return 'Cannot be blank';
+    if (c.errors['number']) return 'Select a valid option';
+    if (c.errors['minOne']) return 'Select at least one role';
+    return 'Invalid value';
   }
 
+  /** True when EDITOR role is selected */
   isEditor(): boolean {
     return this.getRolIds().includes(this.EDITOR_ID);
   }
 
+  /** Normalized role IDs from form state */
   private getRolIds(): number[] {
     const raw = (this.form.get('rolIds')?.value as (string | number)[]) || [];
     return raw.map(Number).filter((n) => Number.isInteger(n) && n > 0);
   }
 
-  hasRole(id: number): boolean {
-    return this.getRolIds().includes(id);
-  }
-
+  /** Checkbox chip toggle handler for roles */
   onRoleToggle(id: number, ev: Event): void {
     const checked = (ev.target as HTMLInputElement | null)?.checked ?? false;
     const set = new Set(this.getRolIds());
     if (checked) set.add(id);
     else set.delete(id);
+
     this.form.get('rolIds')?.setValue(Array.from(set));
     this.form.get('rolIds')?.markAsDirty();
     this.form.get('rolIds')?.markAsTouched();
 
-    // If EDITOR role is removed, force editor perms off
+    // Keep editor perms consistent with role selection
+    this.ensureEditorPermsConsistency();
+  }
+
+  /** Select all roles quickly */
+  selectAllRoles(): void {
+    this.form.get('rolIds')?.setValue(this.ROLES.map((r) => r.id));
+    this.form.get('rolIds')?.markAsDirty();
+    this.ensureEditorPermsConsistency();
+  }
+
+  /** Clear all roles and disable editor perms */
+  clearAllRoles(): void {
+    this.form.get('rolIds')?.setValue([]);
+    this.form.get('rolIds')?.markAsDirty();
+    this.ensureEditorPermsConsistency();
+  }
+
+  /** If EDITOR role is not present, turn off edit/sign toggles */
+  private ensureEditorPermsConsistency(): void {
     if (!this.isEditor()) {
       this.form.patchValue({ edit: false, sign: false }, { emitEvent: false });
     }
   }
 
-  selectAllRoles(): void {
-    this.form.get('rolIds')?.setValue(this.ROLES.map((r) => r.id));
-    this.form.get('rolIds')?.markAsDirty();
+  /** Returns true if the given role id is currently selected in the form. */
+  hasRole(id: number): boolean {
+    return this.getRolIds().includes(Number(id));
   }
 
-  clearAllRoles(): void {
-    this.form.get('rolIds')?.setValue([]);
-    this.form.get('rolIds')?.markAsDirty();
-    this.form.patchValue({ edit: false, sign: false }, { emitEvent: false });
+  // ---------- Lifecycle ----------
+
+  ngOnInit(): void {
+    this.loadUnits();
   }
 
-  // ---- lifecycle
+  /** Load units from backend and set a safe default in create mode */
+  private loadUnits(): void {
+    this.unitsLoading = true;
+    this.unitsApi.list().subscribe({
+      next: (list) => {
+        this.units = list || [];
+        const current = this.form.get('unidadId')?.value;
+        // If creating and unit not set yet, pick the first available
+        if (
+          !this.editing &&
+          (current == null || current === 0) &&
+          this.units.length
+        ) {
+          this.form.get('unidadId')?.setValue(this.units[0].id);
+        }
+      },
+      error: () => {
+        this.units = [];
+      },
+      complete: () => {
+        this.unitsLoading = false;
+      },
+    });
+  }
+
+  /** Refill form on edit/create transitions */
   ngOnChanges(): void {
     if (this.editing) {
       const e = this.editing;
       const ids = (e as any).rolIds?.length
         ? (e as any).rolIds.map(Number)
         : [e.rolId];
+
       this.form.reset({
         nombre: e.nombre ?? '',
         apellido1: e.apellido1 ?? '',
         apellido2: e.apellido2 ?? '',
         email: e.email ?? '',
         rolIds: ids,
-        unidadId: e.unidadId,
+        unidadId: e.unidadId ?? null,
         edit: e.editorPermissions?.includes('EDIT') || false,
         sign: e.editorPermissions?.includes('SIGN') || false,
       });
+
+      // If EDITOR is not present, force editor perms off
       if (!ids.includes(this.EDITOR_ID)) {
         this.form.patchValue(
           { edit: false, sign: false },
@@ -167,83 +247,89 @@ export class UserFormDialogComponent implements OnChanges, AfterViewInit {
         );
       }
     } else {
+      // Create mode defaults: first role as convenience, unit will be set after loadUnits()
       this.form.reset({
         nombre: '',
         apellido1: '',
         apellido2: '',
         email: '',
         rolIds: [this.ROLES[0]?.id ?? 1],
-        unidadId: this.UNIDADES[0]?.id ?? 1,
+        unidadId: this.units.length ? this.units[0].id : null,
         edit: false,
         sign: false,
       });
     }
   }
 
+  get disableSubmit(): boolean {
+    return this.form.invalid || this.submitting;
+  }
+
+  get loading(): boolean {
+    return this.submitting;
+  }
+
   ngAfterViewInit(): void {}
 
   backdrop(e: MouseEvent) {
     if ((e.target as HTMLElement | null)?.classList.contains('modal'))
-      this.close.emit();
+      this.onCancel();
   }
 
-  isSubmitting = false;
+  onCancel(): void {
+    this.close.emit();
+  }
 
-  save() {
+  save(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       const firstInvalidKey = Object.keys(this.form.controls).find(
         (k) => this.form.get(k)?.invalid
       );
-      if (firstInvalidKey) {
-        const el = this.inputs.find(
-          (r) =>
-            r.nativeElement.getAttribute('formcontrolname') === firstInvalidKey
-        );
-        el?.nativeElement.focus();
-      }
+      const el = firstInvalidKey
+        ? this.inputs.find(
+            (r) =>
+              r.nativeElement.getAttribute('formcontrolname') ===
+              firstInvalidKey
+          )
+        : null;
+      el?.nativeElement.focus();
       return;
     }
 
-    this.isSubmitting = true; // <-- start loading
-
     const v = this.form.value as any;
-    const rolIds: number[] = (v.rolIds || [])
-      .map((n: any) => Number(n))
+    const rolIds = (v.rolIds as (number | string)[])
+      .map((n: number | string) => Number(n))
       .filter((n: number) => Number.isInteger(n) && n > 0);
-    const rolId = rolIds[0];
-    const editorPermissions = rolIds.includes(this.EDITOR_ID)
-      ? ([v.edit ? 'EDIT' : null, v.sign ? 'SIGN' : null].filter(Boolean) as (
-          | 'EDIT'
-          | 'SIGN'
-        )[])
-      : [];
-
-    const dto = {
+    const dto: UpsertUserDto & {
+      rolIds: number[];
+      editorPermissions?: ('EDIT' | 'SIGN')[];
+    } = {
       nombre: String(v.nombre).trim(),
       apellido1: String(v.apellido1).trim(),
       apellido2: String(v.apellido2 || '').trim(),
       email: String(v.email).trim(),
-      rolId,
+      rolId: rolIds[0],
       rolIds,
       unidadId: Number(v.unidadId),
-      editorPermissions,
+      editorPermissions: rolIds.includes(this.EDITOR_ID)
+        ? ([v.edit ? 'EDIT' : null, v.sign ? 'SIGN' : null].filter(Boolean) as (
+            | 'EDIT'
+            | 'SIGN'
+          )[])
+        : [],
     };
 
-    // emit and wait externally handled (close handled on success)
-    this.submit.emit({
-      id: this.editing?.id ?? undefined,
-      data: dto,
-    });
-
-    // simulate locking until parent notifies reset
-    setTimeout(() => (this.isSubmitting = false), 5000);
+    this.submit.emit({ id: this.editing?.id ?? undefined, data: dto });
   }
+  // ---------- trackBy ----------
 
   trackByRole(index: number, r: { id: number; label: string }): number {
     return r.id;
   }
-  trackByUnidad(index: number, u: { id: number; label: string }): number {
+
+  trackByUnidad(index: number, u: OrgUnit): number {
     return u.id;
+    // OrgUnit: { id: number; name: string; description?: string }
   }
 }

@@ -11,6 +11,7 @@ import { UserFormDialogComponent } from './user-form-dialog.component';
 import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
+import { ChangeDetectorRef } from '@angular/core';
 
 /** Admin Users page: now uses ToastService (success/error) and ConfirmService (delete). */
 @Component({
@@ -38,6 +39,7 @@ export class AdminUsersPageComponent {
   readonly roleFilter = signal<number | 'all'>('all');
   readonly showForm = signal<boolean>(false);
   readonly editing = signal<AdminUser | null>(null);
+  readonly isBusy = signal(false);
 
   readonly filtered = computed(() => {
     const q = this.query().toLowerCase().trim();
@@ -48,8 +50,14 @@ export class AdminUsersPageComponent {
         `${u.nombre} ${u.apellido1} ${u.apellido2 ?? ''} ${u.email} ${u.unidad}`
           .toLowerCase()
           .includes(q);
-      const roleOk = role === 'all' || u.rolId === role;
-      return hit && roleOk;
+
+      if (role === 'all') return hit;
+
+      const hasPrimary = u.rolId === role;
+      const hasMulti =
+        Array.isArray(u.rolIds) && u.rolIds.some((id: number) => id === role);
+
+      return hit && (hasPrimary || hasMulti);
     });
   });
 
@@ -65,7 +73,8 @@ export class AdminUsersPageComponent {
   constructor(
     private api: AdminUsersService,
     private toast: ToastService,
-    private confirm: ConfirmService
+    private confirm: ConfirmService,
+    private cd: ChangeDetectorRef
   ) {
     effect(() => void this.load());
   }
@@ -123,7 +132,9 @@ export class AdminUsersPageComponent {
   }
 
   /** Create/Update flow with success + error toasts and dialog auto-close. */
+  /** Create/Update without reload. Cierra el modal y parchea la lista. */
   onSubmit(data: UpsertUserDto, editedId?: number): void {
+    this.isBusy.set(true);
     const req = editedId
       ? this.api.update(editedId, data)
       : this.api.create(data);
@@ -131,15 +142,17 @@ export class AdminUsersPageComponent {
     req.subscribe({
       next: (saved) => {
         this.showForm.set(false);
-        this.toast.success(editedId ? 'Cambios guardados' : 'Usuario creado');
-
         if (editedId) {
-          this.users.update((arr) =>
-            arr.map((u) => (u.id === editedId ? (saved as AdminUser) : u))
+          this.users.update((list) =>
+            list.map((u) => (u.id === saved.id ? saved : u))
           );
+          this.toast.success('Cambios guardados');
         } else {
-          this.users.update((arr) => [saved as AdminUser, ...arr]);
+          this.users.update((list) => [saved, ...list]);
+          this.toast.success('Usuario creado');
         }
+        this.highlight(saved.id);
+        this.cd.markForCheck();
       },
       error: (e) => {
         const msg =
@@ -150,6 +163,7 @@ export class AdminUsersPageComponent {
             : 'Operación no completada';
         this.toast.error(msg);
       },
+      complete: () => this.isBusy.set(false),
     });
   }
 

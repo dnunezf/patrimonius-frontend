@@ -173,15 +173,17 @@
           id="unidadId"
           class="select__control"
           formControlName="unidadId"
+          [disabled]="unitsLoading || !units.length"
           [class.invalid]="showErr('unidadId')"
           [attr.aria-invalid]="showErr('unidadId')"
           [attr.aria-describedby]="'err-u'"
         >
+          <option *ngIf="unitsLoading" [ngValue]="null">Loading units…</option>
           <option
-            *ngFor="let u of UNIDADES; trackBy: trackByUnidad"
-            [value]="u.id"
+            *ngFor="let u of units; trackBy: trackByUnidad"
+            [ngValue]="u.id"
           >
-            {{ u.label }}
+            {{ u.name }}
           </option>
         </select>
       </div>
@@ -216,25 +218,19 @@
 
       <div class="footer">
         <button
-          type="button"
+          type="submit"
           class="btn btn--success"
-          [disabled]="form.invalid || isSubmitting"
-          (click)="save()"
+          [disabled]="disableSubmit"
         >
-          <ng-container *ngIf="!isSubmitting; else loadingTpl">
-            Crear Usuario
-          </ng-container>
-          <ng-template #loadingTpl>
-            <span class="spinner"></span>
-            Creando...
-          </ng-template>
+          <span *ngIf="loading" class="spinner"></span>
+          {{ editing ? "Guardar" : "Crear usuario" }}
         </button>
 
         <button
           type="button"
           class="btn btn--ghost"
-          (click)="close.emit()"
-          [disabled]="isSubmitting"
+          (click)="onCancel()"
+          [disabled]="loading"
         >
           Cancelar
         </button>
