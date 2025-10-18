@@ -1,10 +1,15 @@
 <div class="container">
+  <!-- 🔙 Botón para volver -->
+  <div class="back-bar">
+    <a class="btn-back" routerLink="/admin/module/catalogs">← Volver a Catálogos</a>
+  </div>
+
   <h2>Gestión de Plantillas</h2>
 
   <div class="grid">
     <!-- Formulario de subida -->
     <form (ngSubmit)="upload()" #f="ngForm" class="panel">
-      <h3>Nueva Plantilla (.doc/.docx)</h3>
+      <h3>Nueva Plantilla (.docx)</h3>
 
       <label>Nombre</label>
       <input name="nombre" [(ngModel)]="form.nombre" required />
@@ -16,19 +21,38 @@
       <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
 
       <label>Archivo</label>
-      <input type="file" (change)="onFile($event)" accept=".doc,.docx" />
+      <!-- Botón personalizado -->
+      <label class="file-label">
+        📂 Seleccionar archivo
+        <input
+          #fileInput
+          type="file"
+          (change)="onFile($event)"
+          accept=".docx"
+        />
+      </label>
+      <span class="file-name">{{ file?.name || 'Ningún archivo seleccionado' }}</span>
 
       <div class="row">
-        <button type="submit" class="primary">Subir Plantilla</button>
+        <button type="submit" class="primary" [disabled]="uploading || !form.nombre || !form.version || !file">
+          {{ uploading ? 'Subiendo…' : 'Subir Plantilla' }}
+        </button>
       </div>
     </form>
 
     <!-- Listado -->
     <div class="panel">
       <h3>Listado</h3>
+
       <div *ngIf="loading">Cargando…</div>
-      <div *ngIf="!loading && !errorMessage">No se encontraron plantillas.</div>
-      <table *ngIf="!loading && plantillas.length > 0">
+
+      <div *ngIf="!loading && errorMessage" class="error">{{ errorMessage }}</div>
+
+      <div *ngIf="!loading && !errorMessage && plantillas.length === 0" class="muted">
+        No se encontraron plantillas.
+      </div>
+
+      <table *ngIf="!loading && !errorMessage && plantillas.length > 0">
         <thead>
         <tr>
           <th>ID</th>
@@ -43,7 +67,9 @@
           <td>{{ plantilla.id }}</td>
           <td>{{ plantilla.nombre }}</td>
           <td>{{ plantilla.version }}</td>
-          <td>{{ plantilla.ruta_archivo }}</td>
+          <td>
+            <a [href]="href(plantilla)" target="_blank">{{ plantilla.ruta_archivo }}</a>
+          </td>
           <td class="actions">
             <button (click)="rename(plantilla)">Renombrar</button>
             <button (click)="remove(plantilla.id)">Eliminar</button>
@@ -51,8 +77,6 @@
         </tr>
         </tbody>
       </table>
-      <div *ngIf="errorMessage">{{ errorMessage }}</div>
     </div>
   </div>
 </div>
-

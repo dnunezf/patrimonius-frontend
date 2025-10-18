@@ -1,57 +1,51 @@
-<div class="container">
-  <h2>Gestión de Unidades Organizacionales</h2>
+<div class="back-bar">
+  <a class="btn-back" routerLink="/admin/module/catalogs">← Volver a Catálogos</a>
+</div>
 
-  <div class="grid">
-    <!-- Formulario de creación/edición -->
-    <form (ngSubmit)="submit()" #f="ngForm" class="panel">
-      <h3>{{ editing ? 'Editar Unidad' : 'Nueva Unidad' }}</h3>
+<h2>Gestión de Unidades Organizacionales</h2>
 
-      <label>Nombre</label>
-      <input name="nombre" [(ngModel)]="form.nombre" required />
+<div class="panel">
+  <h3>{{ editing ? 'Editar Unidad' : 'Nueva Unidad' }}</h3>
 
-      <label>Descripción</label>
-      <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
+  <label>Nombre</label>
+  <input [(ngModel)]="form.nombre" />
 
-      <!-- Mostrar el mensaje de error -->
-      <div *ngIf="errorMessage" class="error-message">
-        {{ errorMessage }}
-      </div>
+  <label>Descripción</label>
+  <textarea [(ngModel)]="form.descripcion"></textarea>
 
-      <div class="row">
-        <button type="submit" class="primary">
-          {{ editing ? 'Guardar cambios' : 'Crear Unidad' }}
-        </button>
-        <button type="button" (click)="cancel()" *ngIf="editing">
-          Cancelar
-        </button>
-      </div>
-    </form>
-
-    <!-- Listado -->
-    <div class="panel">
-      <h3>Listado</h3>
-      <div *ngIf="loading">Cargando…</div>
-      <table *ngIf="!loading">
-        <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Descripción</th>
-          <th>Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let u of unidades">
-          <td>{{ u.id }}</td>
-          <td>{{ u.nombre }}</td>
-          <td>{{ u.descripcion || '—' }}</td>
-          <td class="actions">
-            <button class="edit" (click)="edit(u)">Editar</button>
-            <button class="delete" (click)="remove(u.id)">Eliminar</button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="row">
+    <button class="primary" (click)="submit()" [disabled]="saving || !form.nombre">
+      {{ editing ? 'Guardar cambios' : 'Crear Unidad' }}
+    </button>
+    <button *ngIf="editing" type="button" (click)="cancel()">Cancelar</button>
   </div>
+
+  <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
+</div>
+
+<div class="panel">
+  <h3>Listado</h3>
+
+  <table>
+    <thead>
+    <tr>
+      <th style="width:60px">ID</th>
+      <th style="width:220px">Nombre</th>
+      <th>Descripción</th>
+      <th style="width:140px">Acciones</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- 👇 Render desde el store. Se actualiza al instante tras create/delete -->
+    <tr *ngFor="let u of (unidades$ | async) ?? []; trackBy: trackById">
+      <td>{{ u.id }}</td>
+      <td>{{ u.nombre }}</td>
+      <td>{{ u.descripcion }}</td>
+      <td class="actions">
+        <button (click)="edit(u)">Editar</button>
+        <button (click)="remove(u)">Eliminar</button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
 </div>

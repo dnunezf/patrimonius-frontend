@@ -1,4 +1,8 @@
 <main class="container">
+  <div class="back-bar">
+    <a class="btn-back" [routerLink]="'/admin/module'">← Volver al Módulo de Administración</a>
+  </div>
+
   <section class="grid">
     <article *ngFor="let m of submodules" class="card clickable-card">
       <div class="row1">
@@ -31,4 +35,3 @@
     </article>
   </section>
 </main>
-<router-outlet></router-outlet>  <!-- Esto es clave para mostrar los componentes de los catálogos -->

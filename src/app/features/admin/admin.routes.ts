@@ -1,15 +1,15 @@
+// admin.routes.ts
 import { Routes } from '@angular/router';
 import { AdminShellComponent } from './admin-shell.component';
 import { AdminDashboardComponent } from './dashboard/admin-dashboard.component';
 import { AdminNotificationsComponent } from './notifications/admin-notifications.component';
 import { AccessExceptionsComponent } from './access-exceptions/access-exceptions.component';
-import {CatalogoRolesComponent} from './catalogos/catalogo-roles/catalogo-roles.component';
-import {CatalogoUnidadComponent} from './catalogos/catalogo-unidad/catalogo-unidad.component';
-import {CatalogoPlantillasComponent} from './catalogos/catalogo-plantillas/catalogo-plantillas.component';
-
-import {PermisosEditorComponent} from './permisosEditor/permisos-editor.component';
-import {CatalogosModulePageComponent} from './moduleCatalogos/catalogos-module-page.component';
-import {AccessControlComponent} from './access-control/access-control.component';
+import { CatalogoRolesComponent } from './catalogos/catalogo-roles/catalogo-roles.component';
+import { CatalogoUnidadComponent } from './catalogos/catalogo-unidad/catalogo-unidad.component';
+import { CatalogoPlantillasComponent } from './catalogos/catalogo-plantillas/catalogo-plantillas.component';
+import { PermisosEditorComponent } from './permisosEditor/permisos-editor.component';
+import { CatalogosModulePageComponent } from './moduleCatalogos/catalogos-module-page.component';
+import { AccessControlComponent } from './access-control/access-control.component';
 
 export const ADMIN_ROUTES: Routes = [
   {
@@ -37,7 +37,10 @@ export const ADMIN_ROUTES: Routes = [
             (m) => m.AdminUsersPageComponent
           ),
       },
+
+      // Home del admin
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+
       {
         path: 'module',
         loadComponent: () =>
@@ -46,19 +49,20 @@ export const ADMIN_ROUTES: Routes = [
           ),
       },
 
-      // Rutas para los catálogos
+      // ===== Rutas para los catálogos (ajustadas) =====
+      // Página de tarjetas (grid)
       {
         path: 'module/catalogs',
-        component: CatalogosModulePageComponent, // Asegúrate de que este componente esté correctamente importado
-        children: [
-          { path: 'roles', component: CatalogoRolesComponent },
-          { path: 'unidades', component: CatalogoUnidadComponent },
-          { path: 'plantillas', component: CatalogoPlantillasComponent },
-        ],
+        component: CatalogosModulePageComponent,
       },
+      // Páginas individuales (cada una reemplaza la vista dentro del AdminShell)
+      { path: 'module/catalogs/roles', component: CatalogoRolesComponent },
+      { path: 'module/catalogs/unidades', component: CatalogoUnidadComponent },
+      { path: 'module/catalogs/plantillas', component: CatalogoPlantillasComponent },
+      // ===============================================
 
       // Ruta para Permisos del Editor
-      { path: 'permisos-editor', component: PermisosEditorComponent }
+      { path: 'permisos-editor', component: PermisosEditorComponent },
     ],
   },
 ];

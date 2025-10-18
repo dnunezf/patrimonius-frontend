@@ -1,64 +1,46 @@
-import { Component, OnInit } from '@angular/core';
+// src/app/admin/catalogos/catalogo-unidad/catalogo-unidad.component.ts
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { Observable } from 'rxjs';
 import { CatalogosService, Unidad } from '../../../../../core/services/catalogos.service';
 
 @Component({
   selector: 'app-catalogo-unidad',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './catalogo-unidad.component.html',
   styleUrls: ['./catalogo-unidad.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CatalogoUnidadComponent implements OnInit {
-  unidades: Unidad[] = [];
+  unidades$!: Observable<Unidad[]>;       // 👈 fuente: store reactivo
   form: Partial<Unidad> = { nombre: '', descripcion: '' };
   editing: Unidad | null = null;
-  loading = false;
-  errorMessage: string = ''; // Nueva propiedad para manejar los mensajes de error
+  saving = false;
+  errorMessage = '';
 
   constructor(private api: CatalogosService) {}
 
   ngOnInit() {
-    this.load();
-  }
-
-  load() {
-    this.loading = true;
-    this.errorMessage = ''; // Limpiar mensaje de error al cargar
-    this.api.getUnidades().subscribe({
-      next: (d) => {
-        this.unidades = d;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.loading = false;
-        this.errorMessage = 'Error cargando unidades'; // Mostrar el mensaje de error
-      }
-    });
+    this.api.loadUnidades();              // carga una vez
+    this.unidades$ = this.api.unidades$;  // template se reactualiza solo
   }
 
   submit() {
     if (!this.form.nombre?.trim()) return;
+    this.saving = true;
+
     if (this.editing) {
       this.api.updateUnidad(this.editing.id, this.form).subscribe({
-        next: (u) => {
-          Object.assign(this.editing!, u);
-          this.cancel();
-        },
-        error: () => {
-          this.errorMessage = 'Error actualizando unidad'; // Mostrar error
-        }
+        next: () => { this.saving = false; this.cancel(); },   // store ya emitió
+        error: () => { this.saving = false; this.errorMessage = 'Error actualizando unidad'; }
       });
     } else {
       this.api.createUnidad(this.form).subscribe({
-        next: (u) => {
-          this.unidades.push(u);
-          this.form = { nombre: '', descripcion: '' };
-        },
-        error: () => {
-          this.errorMessage = 'Error creando unidad'; // Mostrar error
-        }
+        next: () => { this.saving = false; this.form = { nombre: '', descripcion: '' }; }, // store ya emitió
+        error: () => { this.saving = false; this.errorMessage = 'Error creando unidad'; }
       });
     }
   }
@@ -73,15 +55,13 @@ export class CatalogoUnidadComponent implements OnInit {
     this.form = { nombre: '', descripcion: '' };
   }
 
-  remove(id: number) {
-    if (!confirm('¿Eliminar unidad?')) return;
-    this.api.deleteUnidad(id).subscribe({
-      next: () => {
-        this.unidades = this.unidades.filter(x => x.id !== id);
-      },
-      error: () => {
-        this.errorMessage = 'No se pudo eliminar la unidad'; // Mostrar error
-      }
+  remove(u: Unidad) {
+    if (!confirm(`¿Eliminar unidad "${u.nombre}"?`)) return;
+    this.api.deleteUnidad(u.id).subscribe({
+      // nada más: el store ya quitó el ítem y la tabla se repinta
+      error: () => this.errorMessage = 'No se pudo eliminar la unidad'
     });
   }
+
+  trackById = (_: number, item: Unidad) => item.id;
 }
