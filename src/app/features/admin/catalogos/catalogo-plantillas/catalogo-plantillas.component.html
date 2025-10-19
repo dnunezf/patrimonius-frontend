@@ -1,27 +1,59 @@
-<div class="container">
-  <!-- 🔙 Botón para volver -->
+<main class="container">
+  <!-- 🔙 Volver -->
   <div class="back-bar">
-    <a class="btn-back" routerLink="/admin/module/catalogs">← Volver a Catálogos</a>
+    <a class="link-back" routerLink="/admin/module/catalogs">
+      ← Volver a Catálogos
+    </a>
   </div>
 
-  <h2>Gestión de Plantillas</h2>
+  <!-- 🔹 Encabezado -->
+  <header class="page-header">
+    <h1>Gestión de Plantillas</h1>
+    <p class="sub">
+      Administración de plantillas del sistema — carga, edición y eliminación de archivos DOCX.
+    </p>
+  </header>
 
-  <div class="grid">
-    <!-- Formulario de subida -->
-    <form (ngSubmit)="upload()" #f="ngForm" class="panel">
-      <h3>Nueva Plantilla (.docx)</h3>
+  <!-- 🔹 Formulario de subida -->
+  <section class="card form-panel">
+    <h2>Nueva Plantilla (.docx)</h2>
 
-      <label>Nombre</label>
-      <input name="nombre" [(ngModel)]="form.nombre" required />
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nombre</label>
+        <input
+          name="nombre"
+          [(ngModel)]="form.nombre"
+          type="text"
+          placeholder="Ej: Plantilla de Informe"
+          required
+        />
+      </div>
 
-      <label>Versión</label>
-      <input name="version" [(ngModel)]="form.version" required />
+      <div class="form-group">
+        <label>Versión</label>
+        <input
+          name="version"
+          [(ngModel)]="form.version"
+          type="text"
+          placeholder="Ej: 1.0, 2.1"
+          required
+        />
+      </div>
+    </div>
 
+    <div class="form-group">
       <label>Descripción</label>
-      <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
+      <input
+        name="descripcion"
+        [(ngModel)]="form.descripcion"
+        type="text"
+        placeholder="Breve descripción de la plantilla"
+      />
+    </div>
 
-      <label>Archivo</label>
-      <!-- Botón personalizado -->
+    <div class="form-group">
+      <label>Archivo (.docx)</label>
       <label class="file-label">
         📂 Seleccionar archivo
         <input
@@ -32,51 +64,62 @@
         />
       </label>
       <span class="file-name">{{ file?.name || 'Ningún archivo seleccionado' }}</span>
-
-      <div class="row">
-        <button type="submit" class="primary" [disabled]="uploading || !form.nombre || !form.version || !file">
-          {{ uploading ? 'Subiendo…' : 'Subir Plantilla' }}
-        </button>
-      </div>
-    </form>
-
-    <!-- Listado -->
-    <div class="panel">
-      <h3>Listado</h3>
-
-      <div *ngIf="loading">Cargando…</div>
-
-      <div *ngIf="!loading && errorMessage" class="error">{{ errorMessage }}</div>
-
-      <div *ngIf="!loading && !errorMessage && plantillas.length === 0" class="muted">
-        No se encontraron plantillas.
-      </div>
-
-      <table *ngIf="!loading && !errorMessage && plantillas.length > 0">
-        <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Versión</th>
-          <th>Archivo</th>
-          <th>Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let plantilla of plantillas">
-          <td>{{ plantilla.id }}</td>
-          <td>{{ plantilla.nombre }}</td>
-          <td>{{ plantilla.version }}</td>
-          <td>
-            <a [href]="href(plantilla)" target="_blank">{{ plantilla.ruta_archivo }}</a>
-          </td>
-          <td class="actions">
-            <button (click)="rename(plantilla)">Renombrar</button>
-            <button (click)="remove(plantilla.id)">Eliminar</button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
     </div>
-  </div>
-</div>
+
+    <div class="form-actions">
+      <button
+        class="btn btn--primary"
+        type="button"
+        (click)="upload()"
+        [disabled]="uploading || !form.nombre || !form.version || !file"
+      >
+        {{ uploading ? 'Subiendo…' : 'Subir Plantilla' }}
+      </button>
+    </div>
+
+    <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  </section>
+
+  <!-- 🔹 Tabla de plantillas -->
+  <section class="card">
+    <div class="table-header">
+      <h2>Listado de Plantillas</h2>
+      <p class="muted">Plantillas actualmente registradas en el sistema.</p>
+    </div>
+
+    <div *ngIf="loading" class="muted">Cargando…</div>
+    <div *ngIf="!loading && errorMessage" class="error">{{ errorMessage }}</div>
+    <div *ngIf="!loading && !errorMessage && plantillas.length === 0" class="muted">
+      No se encontraron plantillas.
+    </div>
+
+    <table
+      class="table"
+      *ngIf="!loading && !errorMessage && plantillas.length > 0"
+    >
+      <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Versión</th>
+        <th>Archivo</th>
+        <th style="width: 160px">Acciones</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let p of plantillas">
+        <td>{{ p.nombre }}</td>
+        <td>{{ p.version }}</td>
+        <td>
+          <a [href]="href(p)" target="_blank" class="link-file">
+            {{ p.ruta_archivo }}
+          </a>
+        </td>
+        <td class="actions">
+          <button class="btn btn--ghost" (click)="rename(p)">Renombrar</button>
+          <button class="btn btn--danger" (click)="remove(p.id)">Eliminar</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
