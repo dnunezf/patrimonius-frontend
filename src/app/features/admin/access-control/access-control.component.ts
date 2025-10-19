@@ -1,7 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { AccessControlService, Document, AccessControlResponse } from '../../../../core/services/access-control.service';
+import {
+  AccessControlService,
+  Document,
+  AccessControlResponse,
+} from '../../../../core/services/access-control.service';
 
 @Component({
   selector: 'app-access-control',
@@ -19,23 +23,51 @@ export class AccessControlComponent implements OnInit {
   constructor(private accessService: AccessControlService) {}
 
   ngOnInit() {
-    // 🚀 Ya no revisamos token
+    this.loadAccessControl();
+  }
+
+  /** 🔹 Carga inicial de los permisos y documentos */
+  private loadAccessControl() {
     this.accessService.getAccessControl().subscribe({
       next: (res: AccessControlResponse) => {
         this.user = res.user;
         this.documents = res.documents;
         this.loading = false;
       },
-      error: () => {
+      error: (err) => {
+        console.error('❌ Error cargando permisos:', err);
         this.error = '❌ Error cargando permisos de acceso';
         this.loading = false;
       },
     });
   }
 
+  /** 🔹 Conteo de documentos con acceso */
   get accessibleCount(): number {
     return this.documents.filter(
       (d) => d.canView || d.canEdit || d.canSign
     ).length;
+  }
+
+  /** 🔹 Devuelve un texto descriptivo del permiso aplicado */
+  getAccessSourceLabel(source: string): string {
+    switch (source) {
+      case 'UNIDAD ORGANIZACIONAL':
+        return 'Unidad Organizacional';
+      case 'PERMISO DE ROL / USUARIO':
+        return 'Permiso de Rol / Usuario';
+      case 'EXCEPCIÓN AUTORIZADA':
+        return 'Excepción Autorizada';
+      default:
+        return 'Denegado';
+    }
+  }
+
+  /** 🔹 Devuelve una clase CSS según el origen del permiso */
+  getSourceClass(source: string): string {
+    if (source === 'UNIDAD ORGANIZACIONAL') return 'sourceUnit';
+    if (source === 'PERMISO DE ROL / USUARIO') return 'sourceRole';
+    if (source === 'EXCEPCIÓN AUTORIZADA') return 'sourceException';
+    return 'denied';
   }
 }

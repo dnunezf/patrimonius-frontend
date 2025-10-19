@@ -2,7 +2,10 @@
   <section class="section-header">
     <a routerLink="/admin" class="back">← Volver al Módulo</a>
     <h1>Acceso por Unidad Organizacional</h1>
-    <p>Control de permisos granular basado en la unidad organizacional responsable.</p>
+    <p>
+      Control de permisos basado en la unidad organizacional, el rol del usuario
+      y las excepciones otorgadas.
+    </p>
   </section>
 
   <!-- Estado de carga -->
@@ -11,13 +14,12 @@
     {{ error || 'Error cargando permisos de acceso...' }}
   </div>
 
-  <!-- Solo mostramos si hay datos -->
+  <!-- Tabla principal -->
   <ng-container *ngIf="!loading && !error">
-    <!-- Tabla de Documentos -->
     <section>
       <h2>Listado de Documentos</h2>
       <p>
-        Matriz de permisos granular por documento:
+        Matriz de permisos por documento:
         <span class="allowed">✔ Permitido</span> /
         <span class="denied">✘ Restringido</span>
       </p>
@@ -40,38 +42,61 @@
           <td>{{ doc.title }}</td>
           <td>
             {{ doc.unit }}
-            <span *ngIf="doc.unit === user.unit" class="badge">Su Unidad</span>
+            <span *ngIf="doc.unit === user.unidadId" class="badge">
+                Su Unidad
+              </span>
           </td>
           <td>{{ doc.status }}</td>
-          <td>{{ doc.canView ? "✔" : "✘" }}</td>
-          <td>{{ doc.canEdit ? "✔" : "✘" }}</td>
-          <td>{{ doc.canSign ? "✔" : "✘" }}</td>
+          <td [class.allowed]="doc.canView" [class.denied]="!doc.canView">
+            {{ doc.canView ? "✔" : "✘" }}
+          </td>
+          <td [class.allowed]="doc.canEdit" [class.denied]="!doc.canEdit">
+            {{ doc.canEdit ? "✔" : "✘" }}
+          </td>
+          <td [class.allowed]="doc.canSign" [class.denied]="!doc.canSign">
+            {{ doc.canSign ? "✔" : "✘" }}
+          </td>
         </tr>
         </tbody>
       </table>
     </section>
 
-    <!-- Información de Control de Acceso -->
+    <!-- Información general -->
     <section class="info-section">
       <h2>Información del Control de Acceso</h2>
       <div class="grid-info">
         <div>
-          <h3>Matriz de Permisos Granular</h3>
+          <h3>Tipos de Acceso</h3>
           <ul>
-            <li>✔ Permitido por unidad: Su unidad coincide</li>
-            <li>✔ Permitido por excepción: Acceso especial otorgado</li>
-            <li>✘ Restringido por unidad: Documento de otra unidad</li>
-            <li>✘ Restringido por documento: Tipo no permite acción</li>
+            <li>
+              <strong>✔ Unidad Organizacional:</strong>
+              Su unidad coincide con la del documento.
+            </li>
+            <li>
+              <strong>✔ Permiso de Rol / Usuario:</strong>
+              Configuración aplicada según HU-001 / HU-004.
+            </li>
+            <li>
+              <strong>✔ Excepción Autorizada:</strong>
+              Acceso especial otorgado por el administrador (HU-005).
+            </li>
+            <li>
+              <strong>✘ Denegado:</strong>
+              Documento de otra unidad sin excepción.
+            </li>
           </ul>
         </div>
 
         <div *ngIf="user">
           <h3>Su Información</h3>
-          <p>Usuario: {{ user.email }}</p>
-          <p>Rol: {{ user.role }}</p>
-          <p>Unidad asignada: {{ user.unit }}</p>
+          <p><strong>Correo:</strong> {{ user.email }}</p>
+          <p><strong>Rol:</strong> {{ user.role }}</p>
           <p>
-            Documentos con acceso:
+            <strong>Unidad Asignada:</strong>
+            {{ user.unidadNombre || user.unit }}
+          </p>
+          <p>
+            <strong>Documentos con acceso:</strong>
             {{ accessibleCount }} de {{ documents.length }}
           </p>
         </div>

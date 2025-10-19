@@ -1,3 +1,4 @@
+/* === ESTILO GENERAL === */
 .container {
   font-family: "Neutraface Text", Verdana, Arial, sans-serif;
   background-color: #f7fafc;
@@ -15,10 +16,12 @@
 h1, h2, h3 {
   color: #1f2937;
   font-weight: 700;
+  margin-bottom: 8px;
 }
 
 p {
   color: #6b7280;
+  font-size: 1rem;
 }
 
 .back {
@@ -26,27 +29,52 @@ p {
   margin-bottom: 8px;
   color: #2563eb;
   text-decoration: none;
+  font-weight: 600;
 }
 
+.back:hover {
+  text-decoration: underline;
+}
+
+/* === TABLA DE DOCUMENTOS === */
 .docs-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .docs-table th,
 .docs-table td {
   border: 1px solid #e5e7eb;
   padding: 12px;
-  text-align: left;
+  text-align: center;
+  font-size: 0.95rem;
 }
 
 .docs-table th {
   background-color: #2563eb;
-  color: white;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .docs-table td {
   background-color: #f9fafb;
+  color: #1f2937;
+}
+
+/* === COLORES DE PERMISOS === */
+.allowed {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.denied {
+  color: #ef4444;
+  font-weight: 700;
 }
 
 .badge {
@@ -58,15 +86,7 @@ p {
   margin-left: 6px;
 }
 
-.allowed {
-  color: #16a34a;
-  font-weight: 600;
-}
-.denied {
-  color: #ef4444;
-  font-weight: 600;
-}
-
+/* === SECCIÓN INFORMATIVA === */
 .info-section {
   background: white;
   border-radius: 10px;
@@ -78,4 +98,57 @@ p {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+.grid-info h3 {
+  color: #1f2937;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.grid-info ul {
+  padding-left: 20px;
+}
+
+.grid-info ul li {
+  margin-bottom: 6px;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.grid-info strong {
+  color: #111827;
+}
+
+/* === RESPONSIVIDAD === */
+@media screen and (max-width: 900px) {
+  .grid-info {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-table th, .docs-table td {
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+
+  .info-section {
+    padding: 16px;
+  }
+
+  .back {
+    font-size: 0.95rem;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .docs-table th:nth-child(3),
+  .docs-table td:nth-child(3),
+  .docs-table th:nth-child(4),
+  .docs-table td:nth-child(4) {
+    display: none; /* Oculta Unidad y Estado en pantallas muy pequeñas */
+  }
 }
