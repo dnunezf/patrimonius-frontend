@@ -1,47 +1,84 @@
-<div class="back-bar">
-  <a class="btn-back" routerLink="/admin/module/catalogs">← Volver a Catálogos</a>
-</div>
-
-<h2>Gestión de Catálogo de Roles</h2>
-
-<div class="panel">
-  <h3>{{ editing ? 'Editar Rol' : 'Crear Nuevo Rol' }}</h3>
-
-  <label>Nombre</label>
-  <input [(ngModel)]="form.nombreRol" placeholder="Nombre del rol" />
-
-  <label>Descripción</label>
-  <input [(ngModel)]="form.descripcion" placeholder="Descripción del rol" />
-
-  <div class="row">
-    <button class="primary" (click)="submit()" [disabled]="saving || !form.nombreRol">
-      {{ editing ? 'Guardar Cambios' : 'Crear Rol' }}
-    </button>
-    <button *ngIf="editing" type="button" (click)="cancel()">Cancelar</button>
+<main class="container">
+  <!-- 🔙 Volver -->
+  <div class="back-bar">
+    <a class="link-back" routerLink="/admin/module/catalogs">
+      ← Volver a Catálogos
+    </a>
   </div>
 
-  <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
-</div>
+  <!-- 🔹 Título -->
+  <header class="page-header">
+    <h1>Gestión de Roles</h1>
+    <p class="sub">
+      Administración de roles del sistema — creación, edición y eliminación de roles.
+    </p>
+  </header>
 
-<div class="panel">
-  <h3>Listado</h3>
-  <table>
-    <thead>
-    <tr>
-      <th>Nombre</th>
-      <th>Descripción</th>
-      <th style="width:140px;">Acciones</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr *ngFor="let rol of (roles$ | async) ?? []; trackBy: trackById">
-      <td>{{ rol.nombreRol }}</td>
-      <td>{{ rol.descripcion || '—' }}</td>
-      <td class="actions">
-        <button (click)="edit(rol)">Editar</button>
-        <button (click)="remove(rol)">Eliminar</button>
-      </td>
-    </tr>
-    </tbody>
-  </table>
-</div>
+  <!-- 🔹 Formulario -->
+  <section class="card form-panel">
+    <h2>{{ editing ? 'Editar Rol' : 'Crear Nuevo Rol' }}</h2>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nombre del Rol</label>
+        <input
+          [(ngModel)]="form.nombreRol"
+          type="text"
+          placeholder="Ej: Editor, Archivista, Administrador"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Descripción</label>
+        <input
+          [(ngModel)]="form.descripcion"
+          type="text"
+          placeholder="Breve descripción del rol"
+        />
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button
+        class="btn btn--primary"
+        (click)="submit()"
+        [disabled]="saving || !form.nombreRol"
+      >
+        {{ editing ? 'Guardar Cambios' : 'Crear Rol' }}
+      </button>
+      <button *ngIf="editing" type="button" class="btn btn--ghost" (click)="cancel()">
+        Cancelar
+      </button>
+    </div>
+
+    <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  </section>
+
+  <!-- 🔹 Tabla -->
+  <section class="card">
+    <div class="table-header">
+      <h2>Listado de Roles</h2>
+      <p class="muted">Roles actualmente registrados en el sistema.</p>
+    </div>
+
+    <table class="table">
+      <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th style="width: 150px">Acciones</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let rol of (roles$ | async) ?? []; trackBy: trackById">
+        <td>{{ rol.nombreRol }}</td>
+        <td>{{ rol.descripcion || '—' }}</td>
+        <td class="actions">
+          <button class="btn btn--ghost" (click)="edit(rol)">Editar</button>
+          <button class="btn btn--danger" (click)="remove(rol)">Eliminar</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
