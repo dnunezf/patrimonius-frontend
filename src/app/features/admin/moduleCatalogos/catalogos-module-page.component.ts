@@ -11,6 +11,7 @@ type Submodule = {
   links?: SubLink[];
   bullets: string[];
   statsValue?: string;
+  icon?: string;
 };
 
 @Component({
@@ -29,6 +30,7 @@ export class CatalogosModulePageComponent {
       links: [{ label: 'Gestionar Roles', route: '/admin/module/catalogs/roles' }],
       bullets: ['Crear, editar y eliminar roles', 'Asignar permisos', 'Gestionar usuarios por rol'],
       statsValue: '10 roles registrados',
+      icon: 'roles',
     },
     {
       title: 'Unidades Organizacionales',
@@ -37,6 +39,7 @@ export class CatalogosModulePageComponent {
       links: [{ label: 'Gestionar Unidades', route: '/admin/module/catalogs/unidades' }],
       bullets: ['Agregar nuevas unidades', 'Editar o eliminar unidades existentes'],
       statsValue: '5 unidades registradas',
+      icon: 'unidades',
     },
     {
       title: 'Plantillas',
@@ -45,6 +48,7 @@ export class CatalogosModulePageComponent {
       links: [{ label: 'Gestionar Plantillas', route: '/admin/module/catalogs/plantillas' }],
       bullets: ['Crear plantillas', 'Asignar plantillas a documentos'],
       statsValue: '12 plantillas disponibles',
+      icon: 'plantillas',
     },
   ];
 }

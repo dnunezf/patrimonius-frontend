@@ -1,12 +1,22 @@
 <main class="container">
   <div class="back-bar">
-    <a class="btn-back" [routerLink]="'/admin/module'">← Volver al Módulo de Administración</a>
+    <a class="btn-back" [routerLink]="'/admin/module'">
+      ← Volver al Módulo de Administración
+    </a>
   </div>
 
   <section class="grid">
     <article *ngFor="let m of submodules" class="card clickable-card">
       <div class="row1">
-        <div class="icon" aria-hidden="true"></div>
+        <!-- ✅ Ícono dinámico -->
+        <div class="icon-wrapper">
+          <img
+            [src]="'assets/icons/' + m.icon + '.png'"
+            alt="{{ m.title }}"
+            class="icon-img"
+          />
+        </div>
+
         <span class="badge" [class.ok]="m.status === 'available'">
           {{ m.status === 'available' ? 'Disponible' : 'En desarrollo' }}
         </span>
@@ -20,11 +30,6 @@
         <ul>
           <li *ngFor="let b of m.bullets">{{ b }}</li>
         </ul>
-      </div>
-
-      <div *ngIf="m.statsValue">
-        <strong>Estadísticas:</strong>
-        <p>{{ m.statsValue }}</p>
       </div>
 
       <div class="actions">

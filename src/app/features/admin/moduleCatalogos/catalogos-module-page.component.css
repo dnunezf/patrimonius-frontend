@@ -234,3 +234,23 @@ button {
 .submodules .btn:hover {
   background-color: #eef2f7;
 }
+
+/* ==== Íconos dinámicos para catálogos ==== */
+.icon-wrapper {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #f8fafc;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.icon-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(38%) sepia(68%)
+  saturate(2861%) hue-rotate(187deg) brightness(95%) contrast(89%);
+}
