@@ -35,8 +35,8 @@ export class AccessControlComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        console.error('❌ Error cargando permisos:', err);
-        this.error = '❌ Error cargando permisos de acceso';
+        console.error('✘ Error cargando permisos:', err);
+        this.error = 'Error cargando permisos de acceso';
         this.loading = false;
       },
     });
@@ -49,25 +49,8 @@ export class AccessControlComponent implements OnInit {
     ).length;
   }
 
-  /** 🔹 Devuelve un texto descriptivo del permiso aplicado */
-  getAccessSourceLabel(source: string): string {
-    switch (source) {
-      case 'UNIDAD ORGANIZACIONAL':
-        return 'Unidad Organizacional';
-      case 'PERMISO DE ROL / USUARIO':
-        return 'Permiso de Rol / Usuario';
-      case 'EXCEPCIÓN AUTORIZADA':
-        return 'Excepción Autorizada';
-      default:
-        return 'Denegado';
-    }
-  }
-
-  /** 🔹 Devuelve una clase CSS según el origen del permiso */
-  getSourceClass(source: string): string {
-    if (source === 'UNIDAD ORGANIZACIONAL') return 'sourceUnit';
-    if (source === 'PERMISO DE ROL / USUARIO') return 'sourceRole';
-    if (source === 'EXCEPCIÓN AUTORIZADA') return 'sourceException';
-    return 'denied';
+  /** 🔹 Devuelve la URL del ícono de permiso */
+  getIconPath(allowed: boolean): string {
+    return allowed ? 'assets/icons/check.png' : 'assets/icons/equis.png';
   }
 }

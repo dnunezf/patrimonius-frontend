@@ -16,8 +16,8 @@ export interface Document {
 export interface AccessControlResponse {
   user: {
     email: string;
-    role: string;
-    unit: string;
+    roles: string[];
+    unidad: string;
   };
   documents: Document[];
   accessibleCount: number;

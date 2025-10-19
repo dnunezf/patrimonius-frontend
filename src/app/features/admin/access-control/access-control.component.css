@@ -1,154 +1,193 @@
-/* === ESTILO GENERAL === */
+/* ===== CONTENEDOR GENERAL ===== */
 .container {
-  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
-  background-color: #f7fafc;
   padding: 20px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  max-width: 1150px;
+  margin: 0 auto;
+  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
 }
 
-.section-header {
-  margin-bottom: 24px;
+/* ===== ENCABEZADO ===== */
+.page-header {
+  margin-bottom: 16px;
 }
-
-h1, h2, h3 {
-  color: #1f2937;
+.page-header h1 {
+  font-size: 1.8rem;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  color: #1f2937;
 }
-
-p {
+.page-header .sub {
   color: #6b7280;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
-.back {
+/* ===== LINK VOLVER ===== */
+.link-back {
   display: inline-block;
-  margin-bottom: 8px;
-  color: #2563eb;
   text-decoration: none;
-  font-weight: 600;
+  color: var(--mncr-blue-3015);
+  font-weight: 700;
+  margin-bottom: 12px;
+  transition: color 0.2s ease;
 }
-
-.back:hover {
+.link-back:hover {
+  color: var(--mncr-blue-639);
   text-decoration: underline;
 }
 
-/* === TABLA DE DOCUMENTOS === */
-.docs-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  background-color: #ffffff;
-  border-radius: 8px;
-  overflow: hidden;
+/* ===== PANEL / CARD ===== */
+.card {
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(17, 24, 39, 0.06);
+  margin-bottom: 24px;
 }
-
-.docs-table th,
-.docs-table td {
-  border: 1px solid #e5e7eb;
-  padding: 12px;
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-.docs-table th {
-  background-color: #2563eb;
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.docs-table td {
-  background-color: #f9fafb;
+.card h2 {
+  margin: 0 0 10px 0;
+  font-size: 1.25rem;
   color: #1f2937;
 }
+.muted {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
 
-/* === COLORES DE PERMISOS === */
+/* ===== TABLA ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.table th,
+.table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 14px;
+  text-align: center;
+}
+.table th {
+  background: var(--mncr-blue-639);
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+.table td {
+  background: #f9fafb;
+  color: #1f2937;
+}
+.table tr:hover td {
+  background: #f3f4f6;
+}
+
+/* ===== ESTADOS DE PERMISOS ===== */
 .allowed {
   color: #16a34a;
   font-weight: 700;
 }
-
 .denied {
-  color: #ef4444;
+  color: #dc2626;
   font-weight: 700;
 }
 
+/* ===== BADGE ===== */
 .badge {
   background: #16a34a;
-  color: white;
+  color: #fff;
   padding: 2px 6px;
   font-size: 0.75rem;
   border-radius: 6px;
   margin-left: 6px;
+  font-weight: 600;
 }
 
-/* === SECCIÓN INFORMATIVA === */
+/* ===== INFO SECTION ===== */
 .info-section {
-  background: white;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  background: #fff;
 }
-
+.info-section h3 {
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
 .grid-info {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 24px;
 }
-
-.grid-info h3 {
-  color: #1f2937;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
 .grid-info ul {
+  list-style: disc;
   padding-left: 20px;
 }
-
-.grid-info ul li {
-  margin-bottom: 6px;
+.grid-info li {
   color: #374151;
   font-size: 0.95rem;
+  margin-bottom: 6px;
 }
-
 .grid-info strong {
   color: #111827;
 }
 
-/* === RESPONSIVIDAD === */
-@media screen and (max-width: 900px) {
+/* ===== MENSAJES ===== */
+.error-box {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* ===== RESPONSIVIDAD ===== */
+@media (max-width: 900px) {
   .grid-info {
     grid-template-columns: 1fr;
   }
-
-  .docs-table th, .docs-table td {
+  .table th,
+  .table td {
     font-size: 0.85rem;
     padding: 10px;
   }
-
-  .info-section {
-    padding: 16px;
+  .page-header h1 {
+    font-size: 1.5rem;
   }
-
-  .back {
-    font-size: 0.95rem;
-  }
-
-  h1 {
-    font-size: 1.4rem;
+}
+@media (max-width: 600px) {
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(4),
+  .table td:nth-child(4) {
+    display: none;
   }
 }
 
-@media screen and (max-width: 600px) {
-  .docs-table th:nth-child(3),
-  .docs-table td:nth-child(3),
-  .docs-table th:nth-child(4),
-  .docs-table td:nth-child(4) {
-    display: none; /* Oculta Unidad y Estado en pantallas muy pequeñas */
-  }
+/* ... (todo tu CSS actual igual) ... */
+
+/* ===== ÍCONOS ===== */
+.icon-status {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
+.icon-small {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* Efecto al pasar sobre las celdas de permisos */
+.table td img:hover {
+  transform: scale(1.15);
+  transition: transform 0.2s ease;
+}
+

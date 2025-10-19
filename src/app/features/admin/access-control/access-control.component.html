@@ -1,30 +1,43 @@
 <main class="container">
-  <section class="section-header">
-    <a routerLink="/admin" class="back">← Volver al Módulo</a>
-    <h1>Acceso por Unidad Organizacional</h1>
-    <p>
-      Control de permisos basado en la unidad organizacional, el rol del usuario
-      y las excepciones otorgadas.
-    </p>
-  </section>
+  <!-- 🔙 Volver -->
+  <div class="back-bar">
+    <a routerLink="/admin/module" class="link-back">
+      ← Volver al Módulo de Administración
+    </a>
+  </div>
 
-  <!-- Estado de carga -->
-  <div *ngIf="loading">Cargando...</div>
-  <div *ngIf="error" class="denied">
+  <!-- 🔹 Encabezado -->
+  <header class="page-header">
+    <h1>Acceso por Unidad Organizacional</h1>
+    <p class="sub">
+      Control de permisos basado en la unidad organizacional, el rol del usuario y las excepciones otorgadas.
+    </p>
+  </header>
+
+  <!-- 🔹 Estado de carga -->
+  <div *ngIf="loading" class="muted">Cargando información...</div>
+  <div *ngIf="error" class="error-box">
     {{ error || 'Error cargando permisos de acceso...' }}
   </div>
 
-  <!-- Tabla principal -->
+  <!-- 🔹 Contenido principal -->
   <ng-container *ngIf="!loading && !error">
-    <section>
+    <section class="card">
       <h2>Listado de Documentos</h2>
-      <p>
+      <p class="muted">
         Matriz de permisos por documento:
-        <span class="allowed">✔ Permitido</span> /
-        <span class="denied">✘ Restringido</span>
+        <span class="allowed">
+          <img src="assets/icons/check.png" alt="Permitido" class="icon-small" />
+          Permitido
+        </span>
+        /
+        <span class="denied">
+          <img src="assets/icons/equis.png" alt="Restringido" class="icon-small" />
+          Restringido
+        </span>
       </p>
 
-      <table class="docs-table">
+      <table class="table">
         <thead>
         <tr>
           <th>Código</th>
@@ -47,22 +60,33 @@
               </span>
           </td>
           <td>{{ doc.status }}</td>
-          <td [class.allowed]="doc.canView" [class.denied]="!doc.canView">
-            {{ doc.canView ? "✔" : "✘" }}
+          <td>
+            <img
+              [src]="getIconPath(doc.canView)"
+              [alt]="doc.canView ? 'Permitido' : 'Denegado'"
+              class="icon-status"
+            />
           </td>
-          <td [class.allowed]="doc.canEdit" [class.denied]="!doc.canEdit">
-            {{ doc.canEdit ? "✔" : "✘" }}
+          <td>
+            <img
+              [src]="getIconPath(doc.canEdit)"
+              [alt]="doc.canEdit ? 'Permitido' : 'Denegado'"
+              class="icon-status"
+            />
           </td>
-          <td [class.allowed]="doc.canSign" [class.denied]="!doc.canSign">
-            {{ doc.canSign ? "✔" : "✘" }}
+          <td>
+            <img
+              [src]="getIconPath(doc.canSign)"
+              [alt]="doc.canSign ? 'Permitido' : 'Denegado'"
+              class="icon-status"
+            />
           </td>
         </tr>
         </tbody>
       </table>
     </section>
 
-    <!-- Información general -->
-    <section class="info-section">
+    <section class="card info-section">
       <h2>Información del Control de Acceso</h2>
       <div class="grid-info">
         <div>
@@ -74,11 +98,11 @@
             </li>
             <li>
               <strong>✔ Permiso de Rol / Usuario:</strong>
-              Configuración aplicada según HU-001 / HU-004.
+              Configuración aplicada al crear o modificar su usuario.
             </li>
             <li>
               <strong>✔ Excepción Autorizada:</strong>
-              Acceso especial otorgado por el administrador (HU-005).
+              Acceso especial otorgado por el administrador.
             </li>
             <li>
               <strong>✘ Denegado:</strong>
@@ -90,11 +114,13 @@
         <div *ngIf="user">
           <h3>Su Información</h3>
           <p><strong>Correo:</strong> {{ user.email }}</p>
-          <p><strong>Rol:</strong> {{ user.role }}</p>
           <p>
-            <strong>Unidad Asignada:</strong>
-            {{ user.unidadNombre || user.unit }}
+            <strong>Roles:</strong>
+            <span *ngFor="let rol of user.roles; let last = last">
+      {{ rol }}<span *ngIf="!last">, </span>
+    </span>
           </p>
+          <p><strong>Unidad Asignada:</strong> {{ user.unidad }}</p>
           <p>
             <strong>Documentos con acceso:</strong>
             {{ accessibleCount }} de {{ documents.length }}
