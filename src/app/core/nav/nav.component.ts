@@ -81,18 +81,15 @@ export class NavComponent {
 
 
   roleLink(role: string): string {
-    // Convertimos el texto legible a código interno
-    const r = role
-      ?.toUpperCase()
-      .replace(/\s+/g, '_');
+    const r = role?.toUpperCase().replace(/\s+/g, '_');
 
     switch (r) {
-      case 'ADMIN':             return '/admin/dashboard';
-      case 'EDITOR':            return '/editor/dashboard';
-      case 'ARCHIVISTA':        return '/archivista/dashboard';
-      case 'USUARIO':           return '/usuario/dashboard';
-      case 'USUARIO_EXTERNO':   return '/externo/dashboard';
-      default:                  return '/';
+      case 'ADMINISTRADOR':   return '/admin/dashboard';
+      case 'EDITOR':           return '/editor/dashboard';
+      case 'ARCHIVISTA':       return '/archivista/dashboard';
+      case 'USUARIO':          return '/usuario/dashboard';
+      case 'USUARIO_EXTERNO':  return '/externo/dashboard';
+      default:                 return '/';
     }
   }
 
