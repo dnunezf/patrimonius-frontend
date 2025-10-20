@@ -1,8 +1,7 @@
 <div class="create-container">
   <div class="icon-header">
-    <img src="../../../../../assets/icons/document-create.png" alt="icono documento"/>
+    <img src="../../../../../assets/icons/document-create.png" alt="icono documento" />
   </div>
-
 
   <h2 class="title">Creación del documento</h2>
   <p class="subtitle">Seleccione si desea usar una plantilla o crear en blanco</p>
@@ -10,8 +9,8 @@
   <div class="card">
     <div class="info-grid">
       <div><strong>Usuario:</strong> {{ usuarioEmail }}</div>
-      <div><strong>Fecha:</strong> {{ fecha | date:'d/MM/yyyy' }}</div>
-      <div><strong>Hora:</strong> {{ fecha | date:'h:mm:ss a' }}</div>
+      <div><strong>Fecha:</strong> {{ fecha | date: 'd/MM/yyyy' }}</div>
+      <div><strong>Hora:</strong> {{ fecha | date: 'h:mm:ss a' }}</div>
     </div>
   </div>
 
@@ -36,6 +35,11 @@
     Cancelar
   </button>
 
+  <!-- ✅ Modal de selección del tipo de creación -->
+  <app-create-option-dialog
+    *ngIf="showOptionDialog"
+    (optionSelected)="onOptionSelected($event)">
+  </app-create-option-dialog>
 
   <!-- ✅ Modal de selección de plantilla -->
   <app-template-selector

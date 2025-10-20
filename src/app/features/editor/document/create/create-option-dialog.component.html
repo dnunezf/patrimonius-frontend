@@ -1,0 +1,19 @@
+<div class="modal-backdrop"></div>
+<div class="modal">
+  <h2>Seleccionar tipo de documento</h2>
+  <p class="desc">Elija cómo desea crear su nuevo documento:</p>
+
+  <div class="options">
+    <button class="btn btn--primary" (click)="elegir('plantilla')">
+      Documento con Plantilla
+    </button>
+
+    <button class="btn btn--secondary" (click)="elegir('sin')">
+      Documento sin Plantilla
+    </button>
+
+    <button class="btn btn--cancel" (click)="elegir('cancelar')">
+      Cancelar
+    </button>
+  </div>
+</div>

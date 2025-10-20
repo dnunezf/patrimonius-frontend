@@ -1,6 +1,6 @@
 <div class="container">
   <header class="section-header">
-    <h1 class="text-blue-639">Dashboard del Editor</h1>
+    <h1 class="text-blue-639">Panel de Edición</h1>
     <p class="text-gray">
       Gestione documentos, firmas y consultas desde su panel de control principal
     </p>
@@ -19,49 +19,23 @@
   </div>
 
   <div class="overview-cards">
-    <div *ngFor="let card of overviewCards; let i = index" class="card-wrapper">
-      <!-- Botón o "tile" -->
+    <div *ngFor="let card of overviewCards" class="card-wrapper">
       <div
         class="card-button"
-        (click)="
-          card.title === 'Crear Documento'
-            ? goToCreate()
-            : toggleTemplate(card)
-        "
+        (click)="card.title === 'Crear Documento' ? goToCreate() : null"
         role="button"
         [attr.tabindex]="0"
         [attr.aria-label]="card.title"
       >
         <div class="card-content">
           <div class="card-icon-container">
-            <img
-              [src]="getIconPath(card.icon)"
-              alt="icon"
-              class="card-icon"
-            />
+            <img [src]="getIconPath(card.icon)" alt="icon" class="card-icon" />
           </div>
           <div class="card-text-content">
             <h3 class="text-black">{{ card.title }}</h3>
             <p>{{ card.description }}</p>
           </div>
         </div>
-      </div>
-
-      <!-- Menú de plantillas solo para la tarjeta Con Plantilla -->
-      <div *ngIf="card.showTemplates && card.templates" class="template-list">
-        <ul>
-          <li
-            *ngFor="let template of card.templates"
-            (click)="$event.stopPropagation(); crearConPlantilla(template.id)"
-          >
-            <div class="template-item">
-              <div class="template-text">
-                <h4>{{ template.name }}</h4>
-                <p>{{ template.description }}</p>
-              </div>
-            </div>
-          </li>
-        </ul>
       </div>
     </div>
   </div>

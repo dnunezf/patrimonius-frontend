@@ -3,15 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DocumentService } from '../../../../../core/services/document.service';
-import { TemplateSelectorComponent } from '../template/template-selector.component'; // ✅ agregado
-import { PlantillaModel } from '../../../../../core/services/plantilla.service'; // ✅ agregado
+import { TemplateSelectorComponent } from '../template/template-selector.component';
+import { PlantillaModel } from '../../../../../core/services/plantilla.service';
+import { CreateOptionDialogComponent } from './create-option-dialog.component';
 
 const DEFAULT_TEMPLATE_ID = 1; // documento en blanco
 
 @Component({
   standalone: true,
   selector: 'app-editor-create-document',
-  imports: [CommonModule, FormsModule, TemplateSelectorComponent], // ✅ agregado
+  imports: [CommonModule, FormsModule, TemplateSelectorComponent, CreateOptionDialogComponent],
   templateUrl: './editor-create-document.component.html',
   styleUrls: ['./editor-create-document.component.css'],
 })
@@ -22,8 +23,9 @@ export class EditorCreateDocumentComponent implements OnInit {
   fecha = new Date();
   usuarioEmail = '';
 
-  // ✅ NUEVO
+  // ✅ Nuevos estados para modales
   showTemplateSelector = false;
+  showOptionDialog = false;
   plantillaSeleccionada: PlantillaModel | null = null;
 
   constructor(private docs: DocumentService, private router: Router) {}
@@ -38,12 +40,27 @@ export class EditorCreateDocumentComponent implements OnInit {
     }
   }
 
-  // ✅ Paso 2: preguntar si usar plantilla
-  async preguntarUsoPlantilla(): Promise<boolean> {
-    return new Promise((resolve) => {
-      const usar = confirm('¿Desea crear el documento usando una plantilla existente?');
-      resolve(usar);
-    });
+  // ✅ Crear documento (abrir modal de opciones)
+  crear(): void {
+    this.error = '';
+    if (!this.titulo.trim()) {
+      this.error = 'Debe ingresar un título para el documento';
+      return;
+    }
+    this.showOptionDialog = true; // mostrar modal de opciones
+  }
+
+  // ✅ Recibir la elección del modal
+  onOptionSelected(option: 'plantilla' | 'sin' | 'cancelar') {
+    this.showOptionDialog = false;
+
+    if (option === 'plantilla') {
+      this.showTemplateSelector = true; // abrir selector de plantillas
+    } else if (option === 'sin') {
+      this.crearDocumento(DEFAULT_TEMPLATE_ID); // crear sin plantilla
+    } else {
+      this.cancelar(); // volver al dashboard
+    }
   }
 
   // ✅ Evento cuando selecciona una plantilla
@@ -55,26 +72,7 @@ export class EditorCreateDocumentComponent implements OnInit {
     }
   }
 
-  // ✅ Crear documento (ya sea con o sin plantilla)
-  crear(): void {
-    this.error = '';
-    if (!this.titulo.trim()) {
-      this.error = 'Debe ingresar un título para el documento';
-      return;
-    }
-
-    this.preguntarUsoPlantilla().then((usarPlantilla) => {
-      if (usarPlantilla) {
-        // Abre el modal para elegir plantilla
-        this.showTemplateSelector = true;
-      } else {
-        // Crea documento en blanco como hasta ahora
-        this.crearDocumento(DEFAULT_TEMPLATE_ID);
-      }
-    });
-  }
-
-  // ✅ Lógica común para crear
+  // ✅ Crear documento (con o sin plantilla)
   private crearDocumento(plantillaId: number): void {
     this.loading = true;
     this.docs
@@ -94,11 +92,10 @@ export class EditorCreateDocumentComponent implements OnInit {
         },
       });
   }
+
   cancelar(): void {
-    // por si el modal estaba abierto
     this.showTemplateSelector = false;
-    // navega al dashboard del editor
+    this.showOptionDialog = false;
     this.router.navigate(['/editor/dashboard']);
   }
 }
-
