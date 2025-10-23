@@ -15,83 +15,69 @@
    Header section styles
    ======================================================== */
 .section-header {
-  margin-bottom: 24px; /* Space below the header */
+  margin-bottom: 24px;
 }
 
 h1 {
-  font-family: "Neutraface Text", Verdana, "Segoe UI", Arial, sans-serif; /* Custom font for the title */
-  font-size: 2rem; /* Title size */
-  color: var(--mncr-black); /* Text color for the title */
-  font-weight: 700; /* Bold text */
+  font-family: "Neutraface Text", Verdana, "Segoe UI", Arial, sans-serif;
+  font-size: 2rem;
+  color: var(--mncr-black);
+  font-weight: 700;
 }
 
 h2 {
   font-family: "Neutraface Text", Verdana, "Segoe UI", Arial, sans-serif;
-  font-size: 1.75rem; /* Subheading size */
-  color: var(--mncr-black); /* Text color for subheading */
+  font-size: 1.75rem;
+  color: var(--mncr-black);
 }
 
 .text-gray {
-  color: var(--mncr-gray); /* Gray color for text (optional) */
+  color: var(--mncr-gray);
 }
 
 /* ========================================================
    Overview cards layout
    ======================================================== */
 .overview-cards {
-  display: flex; /* Flexbox to align items in a row */
-  gap: 16px; /* Spacing between each card */
-  justify-content: space-between; /* Distribute the cards evenly */
-}
-
-/* ========================================================
-   Style for individual cards (buttons) in the overview section
-   ======================================================== */
-.card-button {
-  flex: 1; /* Make each card take equal space */
-  padding: 24px; /* Padding inside each card */
-  border-radius: 8px; /* Rounded corners for each card */
-  text-align: center; /* Center text horizontally */
-  cursor: pointer; /* Pointer cursor on hover to indicate it's clickable */
-  transition: all 0.3s ease; /* Smooth transition effect */
-  background-color: var(--mncr-white); /* White background for the card */
-  border: 2px solid transparent; /* Transparent border by default */
-}
-
-.card-button:hover {
-  border: 2px solid #6c757d; /* Change the border to gray on hover */
-  background-color: var(--mncr-white); /* Keep the background white */
-}
-
-/* ========================================================
-   Text inside the cards
-   ======================================================== */
-.card-button p {
-  margin-top: 8px; /* Space between the heading and the paragraph */
-  font-weight: 600; /* Medium weight for the text */
-  font-size: 1rem; /* Font size for the paragraph */
-}
-
-/* ========================================================
-   Status counters section layout
-   ======================================================== */
-.status-counters {
   display: flex;
   gap: 16px;
   justify-content: space-between;
-  margin-bottom: 24px;
-  flex-wrap: wrap; /* Ensure the counters wrap on smaller screens */
 }
 
+/* ========================================================
+   Style for individual cards
+   ======================================================== */
+.card-button {
+  flex: 1;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: var(--mncr-white);
+  border: 2px solid transparent;
+}
+
+.card-button:hover {
+  border: 2px solid #6c757d;
+  background-color: var(--mncr-white);
+}
+
+.card-button p {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+}
 
 /* ========================================================
-   (status-card)
+   Status counters layout
    ======================================================== */
 .status-counters {
   display: flex;
   gap: 16px;
   justify-content: space-between;
   flex-wrap: wrap;
+  margin-bottom: 24px;
 }
 
 .status-card {
@@ -104,7 +90,6 @@ h2 {
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
-
 
 .status-card-content {
   display: flex;
@@ -143,166 +128,166 @@ h2 {
   }
 }
 
-
-
 /* ========================================================
    Text styles for status cards
    ======================================================== */
 .status-card h4 {
-  font-weight: 600; /* Medium weight for the heading */
-  font-size: 1.25rem; /* Heading size */
-  margin-bottom: 8px; /* Space below the heading */
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin-bottom: 8px;
 }
 
 .status-card p {
-  font-weight: 700; /* Bold font for the count */
-  font-size: 1.5rem; /* Larger font size for the count */
+  font-weight: 700;
+  font-size: 1.5rem;
 }
 
 /* ========================================================
    Table styles for the document list
    ======================================================== */
 .document-list {
-  margin-top: 24px; /* Top margin for the document list */
+  margin-top: 24px;
 }
 
 .document-table {
-  width: 100%; /* Full width table */
-  border-collapse: collapse; /* Collapse table borders */
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .document-table th,
 .document-table td {
-  padding: 8px; /* Padding for table cells */
-  text-align: left; /* Align text to the left */
+  padding: 8px;
+  text-align: left;
 }
 
 .document-table th {
-  background-color: var(--mncr-blue-639); /* Background for table headers */
-  color: white; /* White text color for headers */
+  background-color: var(--mncr-blue-639);
+  color: white;
 }
 
 .document-table td {
-  border-bottom: 1px solid var(--mncr-gray); /* Bottom border for table cells */
+  border-bottom: 1px solid var(--mncr-gray);
 }
 
 .card-icon {
-  width: 30px; /* Icon size */
-  height: 30px; /* Icon size */
-  margin-bottom: 8px; /* Space below the icon */
+  width: 30px;
+  height: 30px;
+  margin-bottom: 8px;
 }
-
 
 /* ========================================================
    Button styles
    ======================================================== */
-/* Estilos para los botones */
 .btn {
-  display: inline-flex; /* Alineación de los botones */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 24px; /* Aumentar el espacio dentro de los botones */
-  font-weight: 700; /* Texto en negrita */
-  cursor: pointer; /* Puntero para indicar que es clickeable */
-  transition: all 0.3s ease; /* Transición suave */
-  background-color: white; /* Fondo blanco */
-  color: black; /* Color de texto negro */
-  border: 2px solid transparent; /* Borde transparente por defecto */
-  border-radius: 8px; /* Bordes redondeados */
-  margin-right: 10px; /* Espacio entre botones */
+  padding: 12px 24px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: white;
+  color: black;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  margin-right: 10px;
 }
 
 .btn:hover {
-  transform: translateY(-5px); /* Mueve el botón hacia arriba */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Sombra más pronunciada */
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-
 /* ========================================================
-   Primary button (used for save, confirm actions)
+   Botones por color
    ======================================================== */
-/* Estilo para botones con estado específico */
 .btn--red {
-  border-color: var(--mncr-red-1788); /* Borde amarillo */
-  color: var(--mncr-red-1795); /* Texto amarillo */
+  border-color: var(--mncr-red-1788);
+  color: var(--mncr-red-1795);
 }
 
 .btn--blue {
-  border-color: var(--mncr-blue-639); /* Borde azul */
-  color: var(--mncr-blue-639); /* Texto azul */
+  border-color: var(--mncr-blue-639);
+  color: var(--mncr-blue-639);
 }
 
 .btn--gray {
-  border-color: var(--mncr-gray); /* Borde gris */
-  color: var(--mncr-gray); /* Texto gris */
+  border-color: var(--mncr-gray);
+  color: var(--mncr-gray);
 }
 
-/* ========================================================
-   Secondary button (used for neutral actions)
-   ======================================================== */
 .btn--secondary {
-  background: var(--mncr-celeste-306); /* Light blue background */
-  color: var(--mncr-black); /* Black text */
+  background: var(--mncr-celeste-306);
+  color: var(--mncr-black);
 }
 
 /* ========================================================
-   Badge styles (used for document statuses)
+   Badges (Estados)
    ======================================================== */
 .badge {
-  display: inline-block; /* Display badges inline */
-  padding: 4px 8px; /* Padding inside the badge */
-  border-radius: 4px; /* Rounded corners */
-  font-weight: 700; /* Bold text for the badge */
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-weight: 700;
+  background-color: white;
+  color: black;
+  border: 2px solid transparent;
+  font-size: 0.8rem;
 }
 
 .badge-yellow {
-  background: var(--mncr-yellow); /* Yellow background */
-  color: var(--mncr-brown); /* Brown text */
+  border-color: var(--mncr-yellow);
+  color: var(--mncr-yellow);
 }
 
 .badge-blue {
-  background: var(--mncr-blue-639); /* Blue background */
-  color: var(--mncr-white); /* White text */
+  border-color: var(--mncr-blue-639);
+  color: var(--mncr-blue-639);
 }
+
+.badge-gray {
+  border-color: var(--mncr-gray);
+  color: var(--mncr-gray);
+}
+
 /* ========================================================
-   Make it responsive
+   Responsividad
    ======================================================== */
 @media (max-width: 768px) {
-  /* Stack status cards vertically on smaller screens */
   .status-counters {
-    flex-direction: column; /* Stack the counters vertically */
-    gap: 16px; /* Space between each stacked counter */
+    flex-direction: column;
+    gap: 16px;
   }
 
-  /* Stack cards and text vertically on smaller screens */
   .status-card {
-    flex-direction: column; /* Stack icon, title, and count vertically */
-    text-align: center; /* Center the text in the cards */
+    flex-direction: column;
+    text-align: center;
   }
 
   .status-icon {
-    margin-bottom: 8px; /* Add space below the icon */
+    margin-bottom: 8px;
   }
 
   .overview-cards {
-    flex-direction: column; /* Stack cards vertically */
-    gap: 16px; /* Space between each stacked card */
+    flex-direction: column;
+    gap: 16px;
   }
 
   .card-button {
-    text-align: center; /* Center the text in the button */
+    text-align: center;
   }
 }
 
-/* Estilos para el contenedor de la tarjeta y el submenú */
+/* ========================================================
+   Estructura de tarjeta y submenú
+   ======================================================== */
 .card-wrapper {
-  flex: 1; /* Permite que cada contenedor ocupe el mismo espacio */
-  position: relative; /* Es clave para que el submenú se posicione de forma absoluta */
-  display: flex; /* Flexbox para organizar los elementos internos */
-  flex-direction: column; /* Apila el botón y el submenú verticalmente */
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Ajustes para el botón principal de la tarjeta */
 .card-button {
   flex: 1;
   padding: 24px;
@@ -342,7 +327,9 @@ h2 {
   height: 30px;
 }
 
-
+/* ========================================================
+   Submenú de plantillas
+   ======================================================== */
 .template-list {
   position: absolute;
   top: 100%;
@@ -397,29 +384,36 @@ h2 {
   color: var(--mncr-gray);
 }
 
-/* Badge base style */
-.badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 7px;
-  font-weight: 700;
-  background-color: white; /* Fondo blanco */
-  color: black; /* Color de texto por defecto */
-  border: 2px solid transparent; /* Borde transparente por defecto */
+/* ========================================================
+   Ajuste uniforme para botones de acciones
+   ======================================================== */
+.document-table td .btn {
+  min-width: 90px; /* 🔹 todos del mismo ancho */
+  padding: 6px 10px; /* 🔹 tamaño más pequeño */
+  font-size: 0.85rem; /* 🔹 texto más compacto */
+  border-radius: 6px; /* 🔹 esquinas suaves */
+  margin-right: 6px; /* 🔹 espacio entre botones */
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-/* Custom styles for specific states */
-.badge-yellow {
-  border-color: var(--mncr-yellow); /* Borde amarillo */
-  color: var(--mncr-yellow); /* Color de texto amarillo */
+.document-table td .btn:hover {
+  transform: translateY(-2px);
 }
 
-.badge-blue {
-  border-color: var(--mncr-blue-639); /* Borde azul */
-  color: var(--mncr-blue-639); /* Color de texto azul */
+.btn--red {
+  border-color: var(--mncr-red-1788);
+  color: var(--mncr-red-1788);
+  background-color: #fff;
 }
 
-.badge-gray {
-  border-color: var(--mncr-gray); /* Borde gris */
-  color: var(--mncr-gray); /* Color de texto gris */
+.btn--gray {
+  border-color: var(--mncr-gray);
+  color: var(--mncr-gray);
+  background-color: #fff;
+}
+
+.btn--red:hover,
+.btn--gray:hover {
+  background-color: #f7f7f7;
 }

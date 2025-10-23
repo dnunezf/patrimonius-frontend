@@ -191,6 +191,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             versionId: this.baseVersionId,
             from: this.clientId,
           });
+          this.info = 'Documento guardado con éxito.';
+          setTimeout(() => (this.info = ''), 4000);
         },
         error: (e) => {
           this.saving = false;

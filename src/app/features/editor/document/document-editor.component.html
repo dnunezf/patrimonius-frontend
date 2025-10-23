@@ -53,8 +53,10 @@
       </h4>
       <div *ngIf="presence?.length; else noUsers" class="user-list">
         <div *ngFor="let u of presence" class="user-card">
-          <div class="avatar">{{ (u.nombre?.[0] ?? '?') | uppercase }}</div>
-          <b>{{ u.nombre }}</b>
+          <div class="avatar">
+            {{ (u.nombre?.[0] ?? '?') | uppercase }}
+          </div>
+          <b>{{ u.nombre }} {{ u.apellido1 }} {{ u.apellido2 }}</b>
         </div>
       </div>
       <ng-template #noUsers><small>No hay editores activos</small></ng-template>
