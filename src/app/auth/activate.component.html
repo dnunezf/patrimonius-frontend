@@ -1,17 +1,70 @@
 <div class="activate-container">
   <h2>Activar cuenta</h2>
-  <p>Ingrese su nueva contraseña para activar la cuenta.</p>
+  <p class="intro">
+    Para activar su cuenta, por favor defina una contraseña segura. Esta
+    contraseña se utilizará cada vez que ingrese al Sistema Patrimonius.
+  </p>
 
   <form [formGroup]="form" (ngSubmit)="submit()">
-    <label>Nueva contraseña</label>
-    <input type="password" formControlName="password" placeholder="••••••••" />
-    <div *ngIf="form.get('password')?.touched && form.get('password')?.invalid" class="error">
-      La contraseña debe tener al menos 6 caracteres.
+    <label for="password">Nueva contraseña</label>
+
+    <div class="input-wrapper">
+      <input
+        id="password"
+        [type]="showPassword ? 'text' : 'password'"
+        formControlName="password"
+        placeholder="••••••••"
+        autocomplete="new-password"
+      />
+      <button
+        type="button"
+        class="toggle-visibility"
+        (click)="showPassword = !showPassword"
+      >
+        {{ showPassword ? "Ocultar" : "Ver" }}
+      </button>
     </div>
 
-    <button type="submit" class="btn btn--primary">Guardar contraseña</button>
+    <!-- Reglas de contraseña -->
+    <div class="rules">
+      <p class="rules-title">La contraseña debe cumplir con lo siguiente:</p>
+      <ul>
+        <li [class.rule-ok]="hasMinLength" [class.rule-bad]="!hasMinLength">
+          <span class="bullet">{{ hasMinLength ? "✔" : "•" }}</span>
+          Mínimo 8 caracteres.
+        </li>
+        <li [class.rule-ok]="hasLetter" [class.rule-bad]="!hasLetter">
+          <span class="bullet">{{ hasLetter ? "✔" : "•" }}</span>
+          Al menos una letra.
+        </li>
+        <li [class.rule-ok]="hasNumber" [class.rule-bad]="!hasNumber">
+          <span class="bullet">{{ hasNumber ? "✔" : "•" }}</span>
+          Al menos un número.
+        </li>
+        <li [class.rule-ok]="hasSymbol" [class.rule-bad]="!hasSymbol">
+          <span class="bullet">{{ hasSymbol ? "✔" : "•" }}</span>
+          Al menos un símbolo (por ejemplo: ! @ # $ % &).
+        </li>
+      </ul>
+    </div>
+
+    <!-- Mensaje de error de contraseña: SOLO después de darle al botón -->
+    <div
+      *ngIf="submitted && passwordCtrl?.invalid && !message"
+      class="error"
+    >
+      La contraseña no cumple con los requisitos de seguridad indicados.
+    </div>
+
+    <button type="submit" class="btn btn--primary">
+      Guardar contraseña y activar cuenta
+    </button>
   </form>
 
-  <div *ngIf="message" class="success">{{ message }}</div>
-  <div *ngIf="error" class="error">{{ error }}</div>
+  <div *ngIf="message" class="success">
+    {{ message }}
+  </div>
+  <div *ngIf="error && !message" class="error">
+    {{ error }}
+  </div>
 </div>

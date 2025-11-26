@@ -1,14 +1,28 @@
 .activate-container {
-  max-width: 400px;
-  margin: 2rem auto;
-  padding: 2rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
+  max-width: 420px;
+  margin: 3rem auto;
+  padding: 2rem 1.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  sans-serif;
 }
 
 h2 {
-  margin-bottom: 1rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: #111827;
+}
+
+.intro {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  color: #4b5563;
+  text-align: center;
 }
 
 form {
@@ -17,22 +31,162 @@ form {
   gap: 1rem;
 }
 
-input {
-  padding: 0.5rem;
-  font-size: 1rem;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-
-.error {
-  color: red;
+label {
   font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Input y wrapper para botón Ver/Ocultar */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+input {
+  width: 100%;
+  padding: 10px 40px 10px 12px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  outline: none;
+}
+
+input:focus-visible {
+  border-color: #0091cd;
+  outline: 3px solid #e0f2fe;
+  outline-offset: 1px;
+}
+
+.toggle-visibility {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #006699;
+  font-weight: 600;
+}
+
+.toggle-visibility:hover {
+  text-decoration: underline;
+}
+
+/* Reglas de contraseña */
+.rules {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.rules-title {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.rules ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rules li {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.rules li:last-child {
+  margin-bottom: 0;
+}
+
+.bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+/* Estado cuando la regla se cumple */
+.rule-ok {
+  color: #027a48; /* verde */
+}
+
+.rule-ok .bullet {
+  background: #ecfdf3;
+  border: 1px solid #a6f4c5;
+}
+
+/* Estado cuando aún no se cumple */
+.rule-bad {
+  color: #6b7280; /* gris */
+}
+
+.rule-bad .bullet {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+}
+
+/* Botón principal */
+.btn {
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn--primary {
+  width: 100%;
+  background: #0091cd;
+  color: #ffffff;
+}
+
+.btn--primary:hover {
+  filter: brightness(0.96);
+}
+
+/* Mensajes */
+.error {
+  margin-top: 0.4rem;
+  color: #c33737;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 .success {
-  color: green;
+  margin-top: 0.8rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ecfdf3;
+  border: 1px solid #a6f4c5;
+  color: #027a48;
   font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Responsivo */
+@media (max-width: 480px) {
+  .activate-container {
+    margin: 2rem 1rem;
+    padding: 1.5rem 1.25rem;
+  }
 }
