@@ -2,11 +2,11 @@
   <div class="dialog">
     <button class="dialog__close" (click)="close()">×</button>
 
+    <!-- Paso 1 -->
     <h2 *ngIf="step() === 1">Iniciar Sesión</h2>
 
-    <div *ngIf="success()" class="success">
-      ✔ {{ success() }}
-    </div>
+    <!-- Mensaje de éxito -->
+    <div *ngIf="success()" class="success">✔ {{ success() }}</div>
 
     <form
       *ngIf="step() === 1 && !success()"
@@ -37,8 +37,18 @@
       </div>
 
       <button type="submit" class="btn btn--primary">Entrar</button>
+
+      <button
+        type="button"
+        class="btn--link"
+        style="margin-top: 4px"
+        (click)="goToResetPassword()"
+      >
+        ¿Olvidó su contraseña?
+      </button>
     </form>
 
+    <!-- Paso 2 -->
     <h2 *ngIf="step() === 2">Verificación 2FA</h2>
     <form
       *ngIf="step() === 2 && !success()"
@@ -63,7 +73,8 @@
       </div>
       <button type="submit" class="btn btn--primary">Verificar</button>
 
-      <button type="button" class="btn btn--link" (click)="resendCode()">
+      <!-- reenviar código -->
+      <button type="button" class="btn--link" (click)="resendCode()">
         Reenviar código
       </button>
     </form>

@@ -20,6 +20,20 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/editor/editor.routes').then(m => m.EDITOR_ROUTES),
   },
+  {
+    path: 'reset-password-request',
+    loadComponent: () =>
+      import('./auth/reset-password-request.component').then(
+        (m) => m.ResetPasswordRequestComponent
+      ),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./auth/reset-password.component').then(
+        (m) => m.ResetPasswordComponent
+      ),
+  },
   { path: 'access-exceptions', component: AccessExceptionsComponent },
   { path: 'activate', component: ActivateComponent },
   { path: '**', redirectTo: '' },

@@ -1,5 +1,11 @@
 // src/app/auth/login-dialog.component.ts
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -7,6 +13,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 type LoginResp = {
@@ -43,10 +50,15 @@ export class LoginDialogComponent {
   formLogin: FormGroup;
   formCode: FormGroup;
 
+  // Visibilidad
   showPassword = false;
   showCode = false;
 
-  constructor(private fb: FormBuilder, private auth: AuthService) {
+  constructor(
+    private fb: FormBuilder,
+    private auth: AuthService,
+    private router: Router
+  ) {
     this.formLogin = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]],
@@ -59,7 +71,7 @@ export class LoginDialogComponent {
 
   private showSuccessAndClose() {
     this.success.set(
-      'Inicio de sesión correcto. Bienvenido(a) a Patrimonius.'
+      'Inicio de sesión correcto. Bienvenido(a) al Sistema Patrimonius del Museo Nacional de Costa Rica.'
     );
     this.error.set(null);
     setTimeout(() => this.close(), 2000);
@@ -142,5 +154,11 @@ export class LoginDialogComponent {
         this.error.set(e?.error?.error || 'No se pudo reenviar el código');
       },
     });
+  }
+
+  /** Navegar al flujo de "Olvidó su contraseña" */
+  goToResetPassword() {
+    this.close();
+    this.router.navigate(['/reset-password-request']);
   }
 }

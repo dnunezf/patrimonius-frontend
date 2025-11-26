@@ -12,6 +12,7 @@ type User = {
   roles?: string[];
   isMaster?: boolean;
 };
+
 type LoginResp = { token: string; user: User; masterLogin?: boolean };
 type LoginStep1Resp = { userId: number; message: string };
 
@@ -19,7 +20,6 @@ type LoginStep1Resp = { userId: number; message: string };
 export class AuthService {
   private api = environment.apiUrl;
 
-  // Se inicializan en null y luego se restauran en el constructor
   token = signal<string | null>(null);
   currentUser = signal<User | null>(null);
 
@@ -32,24 +32,23 @@ export class AuthService {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
-        return true; // token mal formado => lo consideramos inválido
+        return true;
       }
 
       const payloadBase64 = parts[1]
         .replace(/-/g, '+')
-        .replace(/_/g, '/'); // por si viene en formato base64url
+        .replace(/_/g, '/');
 
       const payloadJson = atob(payloadBase64);
       const payload = JSON.parse(payloadJson);
 
       if (!payload.exp) {
-        return true; // si no trae exp, mejor tratarlo como vencido
+        return true;
       }
 
       const nowInSeconds = Math.floor(Date.now() / 1000);
       return payload.exp < nowInSeconds;
     } catch {
-      // Si algo sale mal decodificando, mejor forzar logout
       return true;
     }
   }
@@ -100,13 +99,14 @@ export class AuthService {
       .pipe(tap((resp) => this.setSession(resp)));
   }
 
-  /** Nuevo: Reenviar código 2FA */
+  /** Reenviar código 2FA */
   resend2fa(userId: number) {
     return this.http.post<{ message: string }>(`${this.api}/auth/resend-2fa`, {
       userId,
     });
   }
 
+  /** Guardar sesión (token + usuario) */
   setSession(resp: LoginResp) {
     localStorage.setItem('token', resp.token);
     localStorage.setItem('user', JSON.stringify(resp.user));
@@ -121,10 +121,27 @@ export class AuthService {
     this.currentUser.set(null);
   }
 
+  /** Activación de cuenta desde enlace de correo */
   activateAccount(token: string, newPassword: string) {
     return this.http.post<{ message: string }>(`${this.api}/auth/activate`, {
       token,
       newPassword,
     });
+  }
+
+  /** Solicitar restablecimiento de contraseña */
+  requestPasswordReset(email: string) {
+    return this.http.post<{ message: string }>(
+      `${this.api}/auth/request-password-reset`,
+      { email }
+    );
+  }
+
+  /** Completar restablecimiento de contraseña */
+  resetPassword(token: string, newPassword: string) {
+    return this.http.post<{ message: string }>(
+      `${this.api}/auth/reset-password`,
+      { token, newPassword }
+    );
   }
 }
