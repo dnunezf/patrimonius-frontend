@@ -18,18 +18,71 @@ type LoginStep1Resp = { userId: number; message: string };
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = environment.apiUrl;
-  token = signal<string | null>(localStorage.getItem('token'));
-  currentUser = signal<User | null>(this.getStoredUser());
 
-  constructor(private http: HttpClient) {}
+  // Se inicializan en null y luego se restauran en el constructor
+  token = signal<string | null>(null);
+  currentUser = signal<User | null>(null);
 
-  private getStoredUser(): User | null {
+  constructor(private http: HttpClient) {
+    this.restoreSessionFromStorage();
+  }
+
+  /** Decodifica el JWT y verifica si está vencido. */
+  private isTokenExpired(token: string): boolean {
     try {
-      const raw = localStorage.getItem('user');
-      return raw ? JSON.parse(raw) : null;
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return true; // token mal formado => lo consideramos inválido
+      }
+
+      const payloadBase64 = parts[1]
+        .replace(/-/g, '+')
+        .replace(/_/g, '/'); // por si viene en formato base64url
+
+      const payloadJson = atob(payloadBase64);
+      const payload = JSON.parse(payloadJson);
+
+      if (!payload.exp) {
+        return true; // si no trae exp, mejor tratarlo como vencido
+      }
+
+      const nowInSeconds = Math.floor(Date.now() / 1000);
+      return payload.exp < nowInSeconds;
     } catch {
-      return null;
+      // Si algo sale mal decodificando, mejor forzar logout
+      return true;
     }
+  }
+
+  /** Intenta restaurar la sesión desde localStorage, pero solo si el token sigue vigente. */
+  private restoreSessionFromStorage(): void {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+
+    if (storedToken && storedUser && !this.isTokenExpired(storedToken)) {
+      try {
+        const user: User = JSON.parse(storedUser);
+        this.token.set(storedToken);
+        this.currentUser.set(user);
+      } catch {
+        this.logout();
+      }
+    } else {
+      this.logout();
+    }
+  }
+
+  /** Método que usará el guard para saber si hay sesión válida. */
+  isAuthenticated(): boolean {
+    const t = this.token();
+    if (!t) {
+      return false;
+    }
+    if (this.isTokenExpired(t)) {
+      this.logout();
+      return false;
+    }
+    return true;
   }
 
   /** Step 1: credentials. Supports either master-direct or 2FA step1 */
