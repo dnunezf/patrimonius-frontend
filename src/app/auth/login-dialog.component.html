@@ -2,10 +2,14 @@
   <div class="dialog">
     <button class="dialog__close" (click)="close()">×</button>
 
-    <!-- Paso 1 -->
     <h2 *ngIf="step() === 1">Iniciar Sesión</h2>
+
+    <div *ngIf="success()" class="success">
+      ✔ {{ success() }}
+    </div>
+
     <form
-      *ngIf="step() === 1"
+      *ngIf="step() === 1 && !success()"
       [formGroup]="formLogin"
       (ngSubmit)="submitLogin()"
     >
@@ -35,9 +39,12 @@
       <button type="submit" class="btn btn--primary">Entrar</button>
     </form>
 
-    <!-- Paso 2 -->
     <h2 *ngIf="step() === 2">Verificación 2FA</h2>
-    <form *ngIf="step() === 2" [formGroup]="formCode" (ngSubmit)="submitCode()">
+    <form
+      *ngIf="step() === 2 && !success()"
+      [formGroup]="formCode"
+      (ngSubmit)="submitCode()"
+    >
       <p>Ingrese el código enviado a su correo.</p>
       <div class="input-wrapper">
         <input
@@ -56,12 +63,13 @@
       </div>
       <button type="submit" class="btn btn--primary">Verificar</button>
 
-      <!-- reenviar código -->
       <button type="button" class="btn btn--link" (click)="resendCode()">
         Reenviar código
       </button>
     </form>
 
-    <div *ngIf="error()" class="error">{{ error() }}</div>
+    <div *ngIf="error() && !success()" class="error">
+      {{ error() }}
+    </div>
   </div>
 </div>

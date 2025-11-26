@@ -9,6 +9,21 @@ import {
 } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 
+type LoginResp = {
+  token: string;
+  user: {
+    id: number;
+    email: string;
+    rolId?: number;
+    unidadId?: number;
+    rolIds?: number[];
+    roles?: string[];
+    isMaster?: boolean;
+  };
+  masterLogin?: boolean;
+};
+type LoginStep1Resp = { userId: number; message: string };
+
 @Component({
   selector: 'app-login-dialog',
   standalone: true,
@@ -23,11 +38,11 @@ export class LoginDialogComponent {
   step = signal<1 | 2>(1);
   userId: number | null = null;
   error = signal<string | null>(null);
+  success = signal<string | null>(null);
 
   formLogin: FormGroup;
   formCode: FormGroup;
 
-  // 👇 Estados de visibilidad
   showPassword = false;
   showCode = false;
 
@@ -42,13 +57,24 @@ export class LoginDialogComponent {
     });
   }
 
+  private showSuccessAndClose() {
+    this.success.set(
+      'Inicio de sesión correcto. Bienvenido(a) a Patrimonius.'
+    );
+    this.error.set(null);
+    setTimeout(() => this.close(), 2000);
+  }
+
   close() {
     this.closed.emit();
     this.step.set(1);
     this.userId = null;
     this.error.set(null);
+    this.success.set(null);
     this.formLogin.reset();
     this.formCode.reset();
+    this.showPassword = false;
+    this.showCode = false;
   }
 
   submitLogin() {
@@ -57,20 +83,25 @@ export class LoginDialogComponent {
       return;
     }
 
+    this.error.set(null);
+    this.success.set(null);
+
     const { email, password } = this.formLogin.value;
     this.auth.login(email, password).subscribe({
       next: (res) => {
         // Master path: { token, user, masterLogin }
-        if ((res as any).token) {
-          this.auth.setSession(res as any);
-          this.close();
+        if ((res as LoginResp).token) {
+          this.auth.setSession(res as LoginResp);
+          this.showSuccessAndClose();
           return;
         }
         // 2FA path: { userId, message }
-        this.userId = (res as any).userId;
+        const data = res as LoginStep1Resp;
+        this.userId = data.userId;
         this.step.set(2);
       },
       error: (e) => {
+        this.success.set(null);
         this.error.set(e?.error?.error || 'Error al iniciar sesión');
       },
     });
@@ -83,12 +114,16 @@ export class LoginDialogComponent {
       return;
     }
 
+    this.error.set(null);
+    this.success.set(null);
+
     const { code } = this.formCode.value;
     this.auth.verify2fa(this.userId, code).subscribe({
       next: () => {
-        this.close();
+        this.showSuccessAndClose();
       },
       error: (e) => {
+        this.success.set(null);
         this.error.set(e?.error?.error || 'Código inválido o vencido');
       },
     });

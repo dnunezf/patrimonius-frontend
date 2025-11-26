@@ -144,3 +144,38 @@ input:focus-visible {
 @media (max-width: 480px) {
   .dialog { max-width: 92vw; }
 }
+
+/* Errors */
+.error {
+  color: var(--mncr-red-1795, #c33737);
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Success message (banner visible) */
+.success {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ecfdf3; /* verde muy suave de fondo */
+  border: 1px solid #a6f4c5;
+  color: #027a48; /* verde principal */
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Submit button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s;
+}
