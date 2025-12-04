@@ -1,4 +1,4 @@
-<!-- src/app/core/features/editor/document/document-metadata-dialog.component.html -->
+<!-- src/app/core/features/editor/document/metadata/document-metadata-dialog.component.html -->
 <div class="md-backdrop" *ngIf="open" (click)="close()"></div>
 
 <div
@@ -74,6 +74,34 @@
         </div>
       </div>
 
+      <div class="grid-2 mt-24">
+        <div class="ro-field">
+          <label>Autor</label>
+          <input
+            class="ro"
+            [value]="meta?.descriptive?.author ?? '—'"
+            readonly
+          />
+        </div>
+        <div class="ro-field">
+          <label>Unidad responsable (ID)</label>
+          <input
+            class="ro"
+            [value]="meta?.descriptive?.responsibleUnitId ?? '—'"
+            readonly
+          />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label>Código de documento</label>
+        <input
+          class="ro"
+          [value]="meta?.technical?.documentCode ?? '—'"
+          readonly
+        />
+      </div>
+
       <!-- Manual (editable) -->
       <h4 class="md-subtitle mt-24">Información Manual (editable)</h4>
 
@@ -84,35 +112,6 @@
           <small class="err" *ngIf="f['title'].touched && f['title'].invalid"
             >Obligatorio. Máx. 255.</small
           >
-        </div>
-
-        <div class="grid-2">
-          <div class="form-field">
-            <label>Autor <span class="req">*</span></label>
-            <input formControlName="author" placeholder="Autor…" />
-            <small
-              class="err"
-              *ngIf="f['author'].touched && f['author'].invalid"
-              >Obligatorio. Máx. 120.</small
-            >
-          </div>
-          <div class="form-field">
-            <label>Unidad responsable (ID) <span class="req">*</span></label>
-            <input
-              type="number"
-              min="1"
-              formControlName="responsibleUnitId"
-              placeholder="ID de unidad…"
-            />
-            <small
-              class="err"
-              *ngIf="
-                f['responsibleUnitId'].touched && f['responsibleUnitId'].invalid
-              "
-            >
-              ID válido requerido.
-            </small>
-          </div>
         </div>
 
         <div class="form-field">
@@ -149,24 +148,6 @@
               Obligatorio. Máx. 60.
             </small>
           </div>
-          <div class="form-field">
-            <label
-              >Plazo de conservación (años) <span class="req">*</span></label
-            >
-            <input
-              type="number"
-              min="1"
-              max="200"
-              formControlName="retentionYears"
-              placeholder="Años…"
-            />
-            <small
-              class="err"
-              *ngIf="f['retentionYears'].touched && f['retentionYears'].invalid"
-            >
-              Ingrese un número entre 1 y 200.
-            </small>
-          </div>
         </div>
 
         <div class="form-field">
@@ -182,17 +163,6 @@
             "
             >Obligatorio.</small
           >
-        </div>
-
-        <div class="form-field">
-          <label>Número de páginas (opcional)</label>
-          <input
-            type="number"
-            min="1"
-            max="10000"
-            formControlName="pages"
-            placeholder="p. ej., 12"
-          />
         </div>
 
         <div class="md-footer">

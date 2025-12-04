@@ -1,4 +1,4 @@
-// src/app/core/features/editor/document/document-metadata-dialog.component.ts
+// src/app/core/features/editor/document/metadata/document-metadata-dialog.component.ts
 import {
   Component,
   EventEmitter,
@@ -24,6 +24,7 @@ import {
 function toCsv(arr: string[] | null | undefined) {
   return Array.isArray(arr) ? arr.join(', ') : '';
 }
+
 function humanSize(bytes: number | null): string {
   if (bytes == null || bytes < 0) return '—';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -70,18 +71,15 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
   constructor(private fb: FormBuilder, private docs: DocumentService) {}
 
   ngOnInit(): void {
+    /**
+     * Form only contains editable fields for HU-12.
+     * Administrative/automatic fields are read-only and not part of the form.
+     */
     this.form = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(255)]],
-      author: ['', [Validators.required, Validators.maxLength(120)]],
-      responsibleUnitId: [null, [Validators.required, Validators.min(1)]],
-      keywords: ['', [requireKeywords, Validators.maxLength(2000)]], // REQUIRED (>=1)
+      keywords: ['', [requireKeywords, Validators.maxLength(2000)]],
       preliminaryClass: ['', [Validators.required, Validators.maxLength(150)]],
       classificationCode: ['', [Validators.required, Validators.maxLength(60)]],
-      retentionYears: [
-        null,
-        [Validators.required, Validators.min(1), Validators.max(200)],
-      ],
-      pages: [null, [Validators.min(1), Validators.max(10000)]],
     });
     if (this.open) this.load();
   }
@@ -99,13 +97,9 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
         this.meta = m;
         this.form.reset({
           title: m.descriptive.title || '',
-          author: m.descriptive.author || '',
-          responsibleUnitId: m.descriptive.responsibleUnitId || null,
           keywords: toCsv(m.descriptive.keywords),
           preliminaryClass: m.descriptive.preliminaryClass || '',
           classificationCode: m.descriptive.classificationCode || '',
-          retentionYears: m.descriptive.retentionYears ?? null,
-          pages: m.descriptive.pages ?? null,
         });
         this.loading = false;
       },
@@ -128,9 +122,6 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     const title = String(v.title || '')
       .replace(/\s+/g, ' ')
       .trim();
-    const author = String(v.author || '')
-      .replace(/\s+/g, ' ')
-      .trim();
     const preliminaryClass = String(v.preliminaryClass || '')
       .replace(/\s+/g, ' ')
       .trim();
@@ -146,13 +137,9 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     this.docs
       .saveDescriptiveMetadata(this.documentId, {
         title,
-        author,
-        responsibleUnitId: Number(v.responsibleUnitId),
         keywords,
         preliminaryClass,
         classificationCode,
-        retentionYears: Number(v.retentionYears),
-        pages: v.pages != null && v.pages !== '' ? Number(v.pages) : undefined,
       })
       .subscribe({
         next: () => {
@@ -180,6 +167,7 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
   get f() {
     return this.form.controls;
   }
+
   sizeHuman(): string {
     return humanSize(this.meta?.technical?.sizeBytes ?? null);
   }

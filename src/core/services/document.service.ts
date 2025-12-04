@@ -82,6 +82,14 @@ export interface DocumentMetadata {
     storageUri: string | null;
     accessLevel: string | null;
     software: string | null;
+
+    // New technical/administrative metadata
+    descriptionLevel?: string | null;
+    documentCode?: string | null;
+    officialCode?: string | null;
+    currentVersionId?: number | null;
+    currentVersionName?: string | null;
+    totalVersions?: number | null;
   };
   descriptive: {
     title: string | null;
@@ -90,11 +98,9 @@ export interface DocumentMetadata {
     keywords: string[];
     preliminaryClass: string | null;
     classificationCode: string | null;
-    retentionYears: number | null;
-    pages?: number | null;
+    retentionYears: number | null; // kept for future read-only use
   };
 }
-
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private api = environment.api;
@@ -304,13 +310,9 @@ export class DocumentService {
     id: number,
     body: {
       title: string;
-      author: string;
-      responsibleUnitId: number;
       keywords: string[] | string;
       preliminaryClass: string;
       classificationCode: string;
-      retentionYears: number;
-      pages?: number;
     }
   ) {
     return this.http.put<{ ok: true }>(
