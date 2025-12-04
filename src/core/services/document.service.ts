@@ -82,14 +82,7 @@ export interface DocumentMetadata {
     storageUri: string | null;
     accessLevel: string | null;
     software: string | null;
-
-    // New technical/administrative metadata
-    descriptionLevel?: string | null;
-    documentCode?: string | null;
-    officialCode?: string | null;
-    currentVersionId?: number | null;
-    currentVersionName?: string | null;
-    totalVersions?: number | null;
+    documentCode: string | null; // <-- NEW
   };
   descriptive: {
     title: string | null;
@@ -98,7 +91,8 @@ export interface DocumentMetadata {
     keywords: string[];
     preliminaryClass: string | null;
     classificationCode: string | null;
-    retentionYears: number | null; // kept for future read-only use
+    retentionYears: number | null;
+    pages?: number | null;
   };
 }
 @Injectable({ providedIn: 'root' })

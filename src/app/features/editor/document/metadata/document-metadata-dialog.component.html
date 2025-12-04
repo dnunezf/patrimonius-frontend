@@ -72,9 +72,8 @@
             readonly
           />
         </div>
-      </div>
 
-      <div class="grid-2 mt-24">
+        <!-- NEW: automatic author -->
         <div class="ro-field">
           <label>Autor</label>
           <input
@@ -83,6 +82,8 @@
             readonly
           />
         </div>
+
+        <!-- NEW: automatic responsible unit (ID) -->
         <div class="ro-field">
           <label>Unidad responsable (ID)</label>
           <input
@@ -91,15 +92,16 @@
             readonly
           />
         </div>
-      </div>
 
-      <div class="form-field">
-        <label>Código de documento</label>
-        <input
-          class="ro"
-          [value]="meta?.technical?.documentCode ?? '—'"
-          readonly
-        />
+        <!-- NEW: document code, full width -->
+        <div class="ro-field ro-field--full">
+          <label>Código de documento</label>
+          <input
+            class="ro"
+            [value]="meta?.technical?.documentCode ?? '—'"
+            readonly
+          />
+        </div>
       </div>
 
       <!-- Manual (editable) -->
