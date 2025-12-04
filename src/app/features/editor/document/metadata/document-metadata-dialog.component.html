@@ -73,7 +73,7 @@
           />
         </div>
 
-        <!-- NEW: automatic author -->
+        <!-- automatic author -->
         <div class="ro-field">
           <label>Autor</label>
           <input
@@ -83,12 +83,12 @@
           />
         </div>
 
-        <!-- NEW: automatic responsible unit (ID) -->
+        <!-- automatic responsible unit (ID) -->
         <div class="ro-field">
-          <label>Unidad responsable (ID)</label>
+          <label>Unidad responsable</label>
           <input
             class="ro"
-            [value]="meta?.descriptive?.responsibleUnitId ?? '—'"
+            [value]="meta?.technical?.responsibleUnitName ?? '—'"
             readonly
           />
         </div>

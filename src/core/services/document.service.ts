@@ -82,7 +82,13 @@ export interface DocumentMetadata {
     storageUri: string | null;
     accessLevel: string | null;
     software: string | null;
-    documentCode: string | null; // <-- NEW
+
+    // Auto-filled descriptive context
+    authorName?: string | null;
+    responsibleUnitName?: string | null;
+
+    // NEW: external document code (TMP / OFI_…)
+    documentCode?: string | null;
   };
   descriptive: {
     title: string | null;
@@ -95,6 +101,7 @@ export interface DocumentMetadata {
     pages?: number | null;
   };
 }
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private api = environment.api;
