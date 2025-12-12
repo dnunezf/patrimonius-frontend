@@ -15,32 +15,80 @@ import { CatalogosService, Unidad } from '../../../../../core/services/catalogos
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CatalogoUnidadComponent implements OnInit {
-  unidades$!: Observable<Unidad[]>;       // 👈 fuente: store reactivo
+  unidades$!: Observable<Unidad[]>;
   form: Partial<Unidad> = { nombre: '', descripcion: '' };
   editing: Unidad | null = null;
   saving = false;
   errorMessage = '';
 
+  // ✅ Paginación (frontend)
+  page = 1;
+  pageSize = 10;
+
   constructor(private api: CatalogosService) {}
 
   ngOnInit() {
-    this.api.loadUnidades();              // carga una vez
-    this.unidades$ = this.api.unidades$;  // template se reactualiza solo
+    this.api.loadUnidades();
+    this.unidades$ = this.api.unidades$;
   }
 
+  // ====== Paginación helpers ======
+  totalPages(totalItems: number): number {
+    return Math.max(1, Math.ceil((totalItems || 0) / this.pageSize));
+  }
+
+  paged<T>(list: T[]): T[] {
+    const start = (this.page - 1) * this.pageSize;
+    return (list ?? []).slice(start, start + this.pageSize);
+  }
+
+  goPrev(totalItems: number) {
+    this.page = Math.max(1, this.page - 1);
+  }
+
+  goNext(totalItems: number) {
+    const tp = this.totalPages(totalItems);
+    this.page = Math.min(tp, this.page + 1);
+  }
+
+  ensureValidPage(totalItems: number) {
+    const tp = this.totalPages(totalItems);
+    if (this.page > tp) this.page = tp;
+    if (this.page < 1) this.page = 1;
+  }
+
+  resetPage() {
+    this.page = 1;
+  }
+
+  // ====== CRUD ======
   submit() {
     if (!this.form.nombre?.trim()) return;
     this.saving = true;
 
     if (this.editing) {
       this.api.updateUnidad(this.editing.id, this.form).subscribe({
-        next: () => { this.saving = false; this.cancel(); },   // store ya emitió
-        error: () => { this.saving = false; this.errorMessage = 'Error actualizando unidad'; }
+        next: () => {
+          this.saving = false;
+          this.cancel();
+          this.resetPage();
+        },
+        error: () => {
+          this.saving = false;
+          this.errorMessage = 'Error actualizando unidad';
+        }
       });
     } else {
       this.api.createUnidad(this.form).subscribe({
-        next: () => { this.saving = false; this.form = { nombre: '', descripcion: '' }; }, // store ya emitió
-        error: () => { this.saving = false; this.errorMessage = 'Error creando unidad'; }
+        next: () => {
+          this.saving = false;
+          this.form = { nombre: '', descripcion: '' };
+          this.resetPage();
+        },
+        error: () => {
+          this.saving = false;
+          this.errorMessage = 'Error creando unidad';
+        }
       });
     }
   }
@@ -58,8 +106,7 @@ export class CatalogoUnidadComponent implements OnInit {
   remove(u: Unidad) {
     if (!confirm(`¿Eliminar unidad "${u.nombre}"?`)) return;
     this.api.deleteUnidad(u.id).subscribe({
-      // nada más: el store ya quitó el ítem y la tabla se repinta
-      error: () => this.errorMessage = 'No se pudo eliminar la unidad'
+      error: () => (this.errorMessage = 'No se pudo eliminar la unidad')
     });
   }
 

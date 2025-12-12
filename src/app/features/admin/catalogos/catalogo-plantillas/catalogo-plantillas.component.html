@@ -1,69 +1,44 @@
 <main class="container">
-  <!-- 🔙 Volver -->
   <div class="back-bar">
-    <a class="link-back" routerLink="/admin/module/catalogs">
-      ← Volver a Catálogos
-    </a>
+    <a class="link-back" routerLink="/admin/module/catalogs">← Volver a Catálogos</a>
   </div>
 
-  <!-- 🔹 Encabezado -->
-  <header class="page-header">
+  <header class="page-header page-header--audit">
     <h1>Gestión de Plantillas</h1>
-    <p class="sub">
-      Administración de plantillas del sistema — carga, edición y eliminación de archivos DOCX.
-    </p>
+    <p class="sub">Administración de plantillas — carga, edición y eliminación de archivos DOCX.</p>
   </header>
 
-  <!-- 🔹 Formulario de subida -->
+  <!-- Form -->
   <section class="card form-panel">
-    <h2>Nueva Plantilla (.docx)</h2>
+    <h2 class="section-title">Nueva Plantilla (.docx)</h2>
 
     <div class="form-grid">
       <div class="form-group">
         <label>Nombre</label>
-        <input
-          name="nombre"
-          [(ngModel)]="form.nombre"
-          type="text"
-          placeholder="Ej: Plantilla de Informe"
-          required
-        />
+        <input name="nombre" [(ngModel)]="form.nombre" type="text" placeholder="Ej: Plantilla de Informe" />
       </div>
 
       <div class="form-group">
         <label>Versión</label>
-        <input
-          name="version"
-          [(ngModel)]="form.version"
-          type="text"
-          placeholder="Ej: 1.0, 2.1"
-          required
-        />
+        <input name="version" [(ngModel)]="form.version" type="text" placeholder="Ej: 1.0, 2.1" />
       </div>
     </div>
 
     <div class="form-group">
       <label>Descripción</label>
-      <input
-        name="descripcion"
-        [(ngModel)]="form.descripcion"
-        type="text"
-        placeholder="Breve descripción de la plantilla"
-      />
+      <input name="descripcion" [(ngModel)]="form.descripcion" type="text" placeholder="Breve descripción de la plantilla" />
     </div>
 
     <div class="form-group">
       <label>Archivo (.docx)</label>
-      <label class="file-label">
-        📂 Seleccionar archivo
-        <input
-          #fileInput
-          type="file"
-          (change)="onFile($event)"
-          accept=".docx"
-        />
-      </label>
-      <span class="file-name">{{ file?.name || 'Ningún archivo seleccionado' }}</span>
+
+      <div class="file-row">
+        <label class="file-label">
+          📂 Seleccionar archivo
+          <input #fileInput type="file" (change)="onFile($event)" accept=".docx" />
+        </label>
+        <span class="file-name">{{ file?.name || 'Ningún archivo seleccionado' }}</span>
+      </div>
     </div>
 
     <div class="form-actions">
@@ -80,46 +55,84 @@
     <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
   </section>
 
-  <!-- 🔹 Tabla de plantillas -->
+  <!-- Table -->
   <section class="card">
-    <div class="table-header">
-      <h2>Listado de Plantillas</h2>
-      <p class="muted">Plantillas actualmente registradas en el sistema.</p>
+    <div class="table-header audit-header">
+      <div>
+        <h2 class="section-title">Listado de Plantillas</h2>
+        <p class="muted">Plantillas actualmente registradas en el sistema.</p>
+      </div>
     </div>
 
     <div *ngIf="loading" class="muted">Cargando…</div>
     <div *ngIf="!loading && errorMessage" class="error">{{ errorMessage }}</div>
-    <div *ngIf="!loading && !errorMessage && plantillas.length === 0" class="muted">
-      No se encontraron plantillas.
-    </div>
 
-    <table
-      class="table"
-      *ngIf="!loading && !errorMessage && plantillas.length > 0"
-    >
-      <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Versión</th>
-        <th>Archivo</th>
-        <th style="width: 160px">Acciones</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr *ngFor="let p of plantillas">
-        <td>{{ p.nombre }}</td>
-        <td>{{ p.version }}</td>
-        <td>
-          <a [href]="href(p)" target="_blank" class="link-file">
-            {{ p.ruta_archivo }}
-          </a>
-        </td>
-        <td class="actions">
-          <button class="btn btn--ghost" (click)="rename(p)">Renombrar</button>
-          <button class="btn btn--danger" (click)="remove(p.id)">Eliminar</button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+    <ng-container *ngIf="!loading && !errorMessage">
+      <ng-container *ngIf="(plantillas?.length || 0) as totalItems">
+        <ng-container *ngIf="(Math.ceil(totalItems / 10) || 1) as totalPages">
+
+          <div *ngIf="totalItems === 0" class="empty">
+            <div class="empty-title">Sin datos</div>
+            <div class="empty-sub">No se encontraron plantillas.</div>
+          </div>
+
+          <table class="table table--audit" *ngIf="totalItems > 0">
+            <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Versión</th>
+              <th>Archivo</th>
+              <th class="th-actions">Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr *ngFor="let p of plantillas.slice(((page ?? 1) - 1) * 10, ((page ?? 1) - 1) * 10 + 10)">
+              <td class="cell-strong">{{ p.nombre }}</td>
+              <td class="cell-muted">{{ p.version }}</td>
+              <td class="cell-link">
+                <a [href]="href(p)" target="_blank" class="link-file">{{ p.ruta_archivo }}</a>
+              </td>
+              <td class="actions">
+                <button class="btn btn--ghost btn--sm" (click)="rename(p)">Renombrar</button>
+                <button class="btn btn--danger btn--sm" (click)="remove(p.id)">Eliminar</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <div class="pagination" *ngIf="totalItems >= 0">
+            <div class="pagination__info">
+              Página <strong>{{ page ?? 1 }}</strong> de <strong>{{ totalPages }}</strong>
+              <span class="sep">•</span>
+              Mostrando
+              <strong>{{ Math.min(10, totalItems - (((page ?? 1) - 1) * 10)) }}</strong>
+              de <strong>{{ totalItems }}</strong>
+            </div>
+
+            <div class="pagination__controls">
+              <button class="btn btn--ghost btn--sm" [disabled]="(page ?? 1) <= 1" (click)="page = (page ?? 1) - 1">
+                ← Anterior
+              </button>
+
+              <button
+                class="btn btn--ghost btn--sm page-pill"
+                *ngFor="let _ of [].constructor(totalPages); let i = index"
+                [class.page-pill--active]="(page ?? 1) === (i + 1)"
+                (click)="page = i + 1"
+              >
+                {{ i + 1 }}
+              </button>
+
+              <button class="btn btn--ghost btn--sm" [disabled]="(page ?? 1) >= totalPages" (click)="page = (page ?? 1) + 1">
+                Siguiente →
+              </button>
+            </div>
+          </div>
+
+        </ng-container>
+      </ng-container>
+    </ng-container>
   </section>
 </main>

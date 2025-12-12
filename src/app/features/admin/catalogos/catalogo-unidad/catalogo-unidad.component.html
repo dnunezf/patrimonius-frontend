@@ -6,8 +6,8 @@
     </a>
   </div>
 
-  <!-- 🔹 Encabezado -->
-  <header class="page-header">
+  <!-- 🔹 Encabezado (centrado) -->
+  <header class="page-header center">
     <h1>Gestión de Unidades Organizacionales</h1>
     <p class="sub">
       Administración de unidades del sistema — creación, edición y eliminación de unidades organizacionales.
@@ -46,6 +46,7 @@
       >
         {{ editing ? 'Guardar Cambios' : 'Crear Unidad' }}
       </button>
+
       <button
         *ngIf="editing"
         type="button"
@@ -59,31 +60,64 @@
     <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
   </section>
 
-  <!-- 🔹 Tabla -->
-  <section class="card">
-    <div class="table-header">
+  <!-- 🔹 Listado estilo “auditoría” + paginación -->
+  <section class="card list-card">
+    <div class="list-title">
       <h2>Listado de Unidades</h2>
-      <p class="muted">Unidades actualmente registradas en el sistema.</p>
     </div>
+    <p class="muted center-muted">Unidades actualmente registradas en el sistema.</p>
 
-    <table class="table">
-      <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Descripción</th>
-        <th style="width: 150px">Acciones</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr *ngFor="let u of (unidades$ | async) ?? []; trackBy: trackById">
-        <td>{{ u.nombre }}</td>
-        <td>{{ u.descripcion || '—' }}</td>
-        <td class="actions">
-          <button class="btn btn--ghost" (click)="edit(u)">Editar</button>
-          <button class="btn btn--danger" (click)="remove(u)">Eliminar</button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+    <div class="table-wrap" *ngIf="(unidades$ | async) as unidades">
+      <!-- Ajusta la página si borraste y quedaste fuera del rango -->
+      <ng-container *ngIf="ensureValidPage(unidades.length)"></ng-container>
+
+      <table class="table table--audit">
+        <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th class="th-actions">Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngFor="let u of paged(unidades); trackBy: trackById">
+          <td class="td-strong">{{ u.nombre }}</td>
+          <td>{{ u.descripcion || '—' }}</td>
+          <td class="td-actions">
+            <button class="btn btn--ghost" (click)="edit(u)">Editar</button>
+            <button class="btn btn--danger" (click)="remove(u)">Eliminar</button>
+          </td>
+        </tr>
+
+        <tr *ngIf="unidades.length === 0">
+          <td colspan="3" class="empty">No hay unidades registradas.</td>
+        </tr>
+        </tbody>
+      </table>
+
+      <!-- Footer paginación -->
+      <div class="pagination">
+        <button
+          class="pager-btn"
+          (click)="goPrev(unidades.length)"
+          [disabled]="page === 1"
+        >
+          « Anterior
+        </button>
+
+        <span class="page-indicator">
+          Página {{ page }} de {{ totalPages(unidades.length) }}
+        </span>
+
+        <button
+          class="pager-btn"
+          (click)="goNext(unidades.length)"
+          [disabled]="page >= totalPages(unidades.length)"
+        >
+          Siguiente »
+        </button>
+      </div>
+    </div>
   </section>
 </main>

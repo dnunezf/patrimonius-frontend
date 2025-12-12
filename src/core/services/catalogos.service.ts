@@ -1,7 +1,7 @@
 // src/app/core/services/catalogos.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import {BehaviorSubject, Observable, switchMap, throwError} from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
@@ -114,14 +114,29 @@ export class CatalogosService {
   readonly unidades$ = this._unidades$.asObservable();
   private _unidadesLoaded = false;
 
+  /* ===== Helpers UNIDADES (solo unidades) ===== */
+  private mapUnidad = (u: any): Unidad => ({
+    id: u?.id ?? u?.idUnidad ?? u?.id_unidad ?? u?.Id ?? 0,
+    nombre: u?.nombre ?? u?.nombreUnidad ?? u?.nombre_unidad ?? '',
+    descripcion: u?.descripcion ?? u?.descripcionUnidad ?? u?.descripcion_unidad ?? ''
+  });
+
+  private normalizeUnidades = (resp: any): Unidad[] => {
+    const rows = Array.isArray(resp) ? resp : (resp?.data ?? resp?.rows ?? []);
+    return (Array.isArray(rows) ? rows : []).map(this.mapUnidad);
+  };
+
   loadUnidades(): void {
     if (this._unidadesLoaded) return;
     this._unidadesLoaded = true;
-    this.http.get<Unidad[]>(this.unidadBase).pipe(
-      tap(rows => this._unidades$.next(rows ?? [])),
+
+    this.http.get<any>(this.unidadBase).pipe(
+      map(resp => this.normalizeUnidades(resp)),
+      tap(list => this._unidades$.next(list)),
       catchError(this.handleError)
     ).subscribe();
   }
+
 
   getUnidades(): Observable<Unidad[]> {
     if (!this._unidadesLoaded) this.loadUnidades();
@@ -129,11 +144,33 @@ export class CatalogosService {
   }
 
   createUnidad(data: UnidadUpsert): Observable<Unidad> {
-    return this.http.post<Unidad>(this.unidadBase, data).pipe(
-      tap(created => this._unidades$.next([...this._unidades$.value, created])),
+    return this.http.post<any>(this.unidadBase, data).pipe(
+      // refresco real del store con lo que quedó en BD
+      tap(resp => console.log('[POST /admin/unidades] resp:', resp)),
+      // después del POST, traigo el listado actualizado
+      // (esto evita depender de que el POST devuelva la unidad completa)
+      map(resp => resp), // solo para mantener resp disponible
+      // usar switchMap para hacer GET
+      // (importalo arriba: switchMap desde 'rxjs/operators' o 'rxjs')
+      switchMap((resp) =>
+        this.http.get<any>(this.unidadBase).pipe(
+          map(getResp => this.normalizeUnidades(getResp)),
+          tap(list => this._unidades$.next(list)),
+          // intento devolver la unidad creada (por si alguien la usa)
+          map(list => {
+            const nombre = (data.nombre ?? '').trim();
+            const desc = (data.descripcion ?? '').trim();
+            return list.find(u =>
+              u.nombre.trim() === nombre &&
+              (u.descripcion ?? '').trim() === desc
+            ) ?? this.mapUnidad(resp);
+          })
+        )
+      ),
       catchError(this.handleError)
     );
   }
+
 
   updateUnidad(id: number, data: UnidadUpsert): Observable<Unidad> {
     return this.http.patch<Unidad>(`${this.unidadBase}/${id}`, data).pipe(

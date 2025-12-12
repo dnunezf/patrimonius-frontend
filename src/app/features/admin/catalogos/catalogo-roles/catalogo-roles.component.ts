@@ -21,6 +21,10 @@ export class CatalogoRolesComponent implements OnInit {
   saving = false;
   errorMessage = '';
 
+  // ✅ Paginación (frontend)
+  page = 1;
+  pageSize = 10;
+
   constructor(private api: CatalogosService) {}
 
   ngOnInit() {
@@ -28,19 +32,65 @@ export class CatalogoRolesComponent implements OnInit {
     this.roles$ = this.api.roles$;
   }
 
+  // ====== Paginación helpers ======
+  totalPages(totalItems: number): number {
+    return Math.max(1, Math.ceil((totalItems || 0) / this.pageSize));
+  }
+
+  paged<T>(list: T[]): T[] {
+    const start = (this.page - 1) * this.pageSize;
+    return (list ?? []).slice(start, start + this.pageSize);
+  }
+
+  goPrev(totalItems: number) {
+    this.page = Math.max(1, this.page - 1);
+  }
+
+  goNext(totalItems: number) {
+    const tp = this.totalPages(totalItems);
+    this.page = Math.min(tp, this.page + 1);
+  }
+
+  // Ajusta la página si al borrar queda vacía (ej: estabas en pág 2 y ya no hay items)
+  ensureValidPage(totalItems: number) {
+    const tp = this.totalPages(totalItems);
+    if (this.page > tp) this.page = tp;
+    if (this.page < 1) this.page = 1;
+  }
+
+  // Opcional: volver a página 1 cuando se crea/edita para que el usuario vea el cambio arriba
+  resetPage() {
+    this.page = 1;
+  }
+
+  // ====== CRUD ======
   submit() {
     if (!this.form.nombreRol?.trim()) return;
     this.saving = true;
 
     if (this.editing) {
       this.api.updateRol(this.editing.idRol, this.form).subscribe({
-        next: () => { this.saving = false; this.cancel(); },
-        error: () => { this.saving = false; this.errorMessage = 'Error actualizando rol'; }
+        next: () => {
+          this.saving = false;
+          this.cancel();
+          this.resetPage();
+        },
+        error: () => {
+          this.saving = false;
+          this.errorMessage = 'Error actualizando rol';
+        }
       });
     } else {
       this.api.createRol(this.form).subscribe({
-        next: () => { this.saving = false; this.form = { nombreRol: '', descripcion: '' }; },
-        error: () => { this.saving = false; this.errorMessage = 'Error creando rol'; }
+        next: () => {
+          this.saving = false;
+          this.form = { nombreRol: '', descripcion: '' };
+          this.resetPage();
+        },
+        error: () => {
+          this.saving = false;
+          this.errorMessage = 'Error creando rol';
+        }
       });
     }
   }
@@ -57,8 +107,16 @@ export class CatalogoRolesComponent implements OnInit {
 
   remove(r: Rol) {
     if (!confirm(`¿Eliminar rol "${r.nombreRol}"?`)) return;
+
     this.api.deleteRol(r.idRol).subscribe({
-      error: () => this.errorMessage = 'No se pudo eliminar el rol'
+      next: () => {
+        // ✅ No tenemos el total aquí, entonces el ajuste real lo hacemos desde el HTML
+        // llamando ensureValidPage(roles.length) cada vez que se renderiza la tabla.
+        // (Te lo pongo en el HTML con un ng-container, para que no se rompa OnPush)
+      },
+      error: () => {
+        this.errorMessage = 'No se pudo eliminar el rol';
+      }
     });
   }
 

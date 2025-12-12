@@ -6,8 +6,8 @@
     </a>
   </div>
 
-  <!-- 🔹 Título -->
-  <header class="page-header">
+  <!-- 🔹 Encabezado -->
+  <header class="page-header center">
     <h1>Gestión de Roles</h1>
     <p class="sub">
       Administración de roles del sistema — creación, edición y eliminación de roles.
@@ -46,7 +46,13 @@
       >
         {{ editing ? 'Guardar Cambios' : 'Crear Rol' }}
       </button>
-      <button *ngIf="editing" type="button" class="btn btn--ghost" (click)="cancel()">
+
+      <button
+        *ngIf="editing"
+        type="button"
+        class="btn btn--ghost"
+        (click)="cancel()"
+      >
         Cancelar
       </button>
     </div>
@@ -55,30 +61,63 @@
   </section>
 
   <!-- 🔹 Tabla -->
-  <section class="card">
-    <div class="table-header">
+  <section class="card list-card">
+    <div class="list-title">
       <h2>Listado de Roles</h2>
-      <p class="muted">Roles actualmente registrados en el sistema.</p>
     </div>
+    <p class="muted center-muted">Roles actualmente registrados en el sistema.</p>
 
-    <table class="table">
-      <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Descripción</th>
-        <th style="width: 150px">Acciones</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr *ngFor="let rol of (roles$ | async) ?? []; trackBy: trackById">
-        <td>{{ rol.nombreRol }}</td>
-        <td>{{ rol.descripcion || '—' }}</td>
-        <td class="actions">
-          <button class="btn btn--ghost" (click)="edit(rol)">Editar</button>
-          <button class="btn btn--danger" (click)="remove(rol)">Eliminar</button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+    <div class="table-wrap" *ngIf="(roles$ | async) as roles">
+      <!-- ✅ Ajusta página si quedaste fuera del rango (por ejemplo al borrar) -->
+      <ng-container *ngIf="ensureValidPage(roles.length)"></ng-container>
+
+      <table class="table table--audit">
+        <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th class="th-actions">Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngFor="let rol of paged(roles); trackBy: trackById">
+          <td class="td-strong">{{ rol.nombreRol }}</td>
+          <td>{{ rol.descripcion || '—' }}</td>
+          <td class="td-actions">
+            <button class="btn btn--ghost" (click)="edit(rol)">Editar</button>
+            <button class="btn btn--danger" (click)="remove(rol)">Eliminar</button>
+          </td>
+        </tr>
+
+        <tr *ngIf="roles.length === 0">
+          <td colspan="3" class="empty">No hay roles registrados.</td>
+        </tr>
+        </tbody>
+      </table>
+
+      <!-- ✅ Footer paginación -->
+      <div class="pagination">
+        <button
+          class="pager-btn"
+          (click)="goPrev(roles.length)"
+          [disabled]="page === 1"
+        >
+          « Anterior
+        </button>
+
+        <span class="page-indicator">
+          Página {{ page }} de {{ totalPages(roles.length) }}
+        </span>
+
+        <button
+          class="pager-btn"
+          (click)="goNext(roles.length)"
+          [disabled]="page >= totalPages(roles.length)"
+        >
+          Siguiente »
+        </button>
+      </div>
+    </div>
   </section>
 </main>
