@@ -3,11 +3,16 @@ import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
-import { AccessExceptionService } from '../../../../core/services/access-exception.service';
+import {
+  AccessExceptionService,
+  ExceptionPermission,
+  ExceptionRow
+} from '../../../../core/services/access-exception.service';
 import { CategoriaService } from '../../../../core/services/categoria.service';
 import { AuditService } from '../../../../core/services/audit.service';
 
-type UiUser = { id: number; email: string; fullName: string; rol: string; };
+type UiUser = { id: number; email: string; fullName: string; rol: string };
+type UiCategory = { id?: number; nombre: string };
 
 @Component({
   selector: 'app-access-exceptions',
@@ -15,131 +20,336 @@ type UiUser = { id: number; email: string; fullName: string; rol: string; };
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './access-exceptions.component.html',
   styleUrls: ['./access-exceptions.component.css'],
-  providers: [DatePipe]
 })
 export class AccessExceptionsComponent implements OnInit {
-  // Documents
+  // ====== Form (crear excepción) ======
   documents: any[] = [];
   filteredDocuments: any[] = [];
   selectedDocument: any | null = null;
 
-  // Categories
-  categorias: any[] = [];
-  selectedCategoria: string = 'todos';
-
-  // States
-  states: string[] = [];
-  selectedDocumentStatus: string = 'todos';
-
-  // Users
   users: UiUser[] = [];
   filteredUsers: UiUser[] = [];
   selectedUser: UiUser | null = null;
-  roles: string[] = [];
+
+  // ✅ roles SIEMPRE en este shape
+  roles: Array<{ label: string; value: string }> = [];
   selectedRole: string = 'todos';
 
-  // Search inputs
+  categorias: UiCategory[] = [];
+  selectedCategoriaForm: string = 'todos';
+
+  states: string[] = [];
+  selectedDocumentStatusForm: string = 'todos';
+
   userSearchTerm = '';
   documentSearchTerm = '';
 
-  // Form data
   reason = '';
-  permissions = { visualizar: false, editar: false, firmar: false };
+  permissions = {visualizar: false, editar: false, firmar: false};
 
-  // Exceptions list from backend
-  activeExceptions: any[] = [];
+  // ====== Listado (paginación + filtros) ======
+  page = 1;
+  pageSize = 3;
+  totalItems = 0;
+  totalPages = 1;
+
+  filters = {
+    user: 'Todos',
+    category: 'Todas',
+    status: 'Todos',
+    dateFrom: '',
+    dateTo: ''
+  };
+
+  items: ExceptionRow[] = [];
+  loading = false;
+  error: string | null = null;
 
   constructor(
-    private accessExceptionService: AccessExceptionService,
-    private datePipe: DatePipe,
+    private service: AccessExceptionService,
     private categoriaService: CategoriaService,
     private auditService: AuditService
-  ) {}
+  ) {
+  }
 
   ngOnInit() {
-    this.accessExceptionService.getRoles().subscribe({
-      next: roles => this.roles = roles.map(r => r.replace(/_/g,' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())),
-      error: () => this.roles = []
-    });
+    this.loadRoles();
+    this.loadUsers();
+    this.loadCategorias();
+    this.loadStates();
+    this.loadDocuments();
 
-    this.accessExceptionService.getUsers().subscribe({
-      next: users => {
-        this.users = users.map(u => ({
-          id: u.id,
-          email: u.email,
-          rol: u.rol,
-          fullName: `${u.nombre} ${u.apellido1} ${u.apellido2 ?? ''}`.trim()
+    // primer fetch del listado
+    this.fetch();
+  }
+
+  // =======================
+  // Loaders
+  // =======================
+  private loadRoles() {
+    this.service.getRoles().subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.items ?? res?.data ?? []);
+        const list = raw
+          // ✅ en tu BD la columna es nombre
+          .map((r: any) => r?.nombre ?? r?.name ?? r?.rol ?? r)
+          .filter(Boolean)
+          .map((name: string) => String(name).trim())
+          .filter((x: string) => x.length > 0);
+
+        this.roles = list.map((name: string) => ({
+          value: name.toLowerCase(),
+          label: name
+            .replace(/_/g, ' ')
+            .toLowerCase()
+            .replace(/\b\w/g, c => c.toUpperCase())
         }));
-        this.filteredUsers = this.users.slice();
       },
-      error: () => { this.users = []; this.filteredUsers = []; }
+      error: (err) => {
+        console.log('ERROR ROLES =>', err);
+        this.roles = [];
+      }
     });
+  }
 
+  private loadUsers() {
+    this.service.getUsers().subscribe({
+      next: (users: any[]) => {
+        this.users = (users || []).map((u: any) => {
+          const rol =
+            u.rol ??
+            u.rol_nombre ??
+            u.rolName ??
+            u.nombre_rol ??
+            ''; // fallback
+
+          return {
+            id: Number(u.id),
+            email: String(u.email || ''),
+            rol: String(rol || ''),
+            fullName: `${u.nombre ?? ''} ${u.apellido1 ?? ''} ${u.apellido2 ?? ''}`.trim()
+          };
+        });
+
+        this.filteredUsers = this.users.slice();
+
+        // ❌ YA NO recalculamos roles desde users (eso te los pisaba en vacío)
+        // si querés, podés dejar esto SOLO como fallback:
+        if (!this.roles.length) {
+          const uniqueRoles = Array.from(
+            new Set(this.users.map(u => String(u.rol || '').trim()).filter(Boolean))
+          );
+          this.roles = uniqueRoles.map(r => ({
+            value: r.toLowerCase(),
+            label: r
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .replace(/\b\w/g, c => c.toUpperCase())
+          }));
+        }
+      },
+      error: (err) => {
+        console.log('ERROR USERS =>', err);
+        this.users = [];
+        this.filteredUsers = [];
+      }
+    });
+  }
+
+  private loadCategorias() {
     this.categoriaService.getCategorias().subscribe({
-      next: cats => { this.categorias = cats || []; },
-      error: () => { this.categorias = []; }
+      next: (cats: any[]) => {
+        this.categorias = (cats || []).map((c: any) => ({
+          id: c.id ?? c.id_categoria ?? c.categoria_id ?? c.Id ?? undefined,
+          nombre: c.nombre ?? c.name ?? String(c)
+        }));
+      },
+      error: (err) => {
+        console.log('ERROR CATEGORIAS =>', err);
+        this.categorias = [];
+      }
     });
+  }
 
+  private loadStates() {
     this.auditService.getDocumentStates().subscribe({
-      next: states => this.states = (states || []).map((s: string) =>
-        s.replace(/_/g,' ').toLowerCase().replace(/\b\w/g, (ch:string)=>ch.toUpperCase())),
-      error: () => this.states = []
+      next: (states: any[]) => {
+        this.states = (states || []).map((s: string) =>
+          String(s)
+            .replace(/_/g, ' ')
+            .toLowerCase()
+            .replace(/\b\w/g, (ch: string) => ch.toUpperCase())
+        );
+      },
+      error: (err) => {
+        console.log('ERROR STATES =>', err);
+        this.states = [];
+      }
     });
+  }
 
-    this.accessExceptionService.getDocuments().subscribe({
-      next: docs => {
-        this.documents = (docs || []).map((d:any)=>({
+  private loadDocuments() {
+    this.service.getDocuments().subscribe({
+      next: (docs: any[]) => {
+        this.documents = (docs || []).map((d: any) => ({
           ...d,
+          id: d.id ?? d.documentId ?? d.documento_id ?? d.id_documento ?? d.idDocumento,
           categoria: this.formatCategory(d.categoria || 'Sin categoría'),
-          formattedDate: this.formatDate(d.fecha),
-          formattedState: this.formatState(d.estado || '')
+          formattedState: this.formatState(d.estado || ''),
+          formattedDate: d.fecha
         }));
         this.filterDocuments();
       },
-      error: () => { this.documents = []; this.filteredDocuments = []; }
+      error: (err) => {
+        console.log('ERROR DOCUMENTS =>', err);
+        this.documents = [];
+        this.filteredDocuments = [];
+      }
     });
-
-    this.reloadExceptions();
   }
 
-  // ------ Filters ------
+  // =======================
+  // Listado (query + fetch)
+  // =======================
+  private buildQuery() {
+    const q: any = {
+      page: this.page,
+      pageSize: this.pageSize
+    };
+
+    if (this.filters.user !== 'Todos') q.userId = Number(this.filters.user);
+    if (this.filters.category !== 'Todas') q.categoryId = Number(this.filters.category);
+
+    if (this.filters.status !== 'Todos') q.status = String(this.filters.status).toLowerCase();
+
+    if (this.filters.dateFrom) q.dateFrom = this.filters.dateFrom;
+    if (this.filters.dateTo) q.dateTo = this.filters.dateTo;
+
+    return q;
+  }
+
+  fetch() {
+    this.loading = true;
+    this.error = null;
+
+    this.service.listExceptions(this.buildQuery()).subscribe({
+      next: (res) => {
+        this.items = res?.items || [];
+        this.page = res?.page ?? this.page;
+        this.pageSize = res?.pageSize ?? this.pageSize;
+        this.totalItems = res?.totalItems ?? 0;
+        this.totalPages = res?.totalPages ?? 1;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('LIST EXCEPTIONS ERROR =>', err);
+        this.items = [];
+        this.totalItems = 0;
+        this.totalPages = 1;
+        this.error = err?.error?.message || `Error cargando excepciones (${err?.status})`;
+        this.loading = false;
+      }
+    });
+  }
+
+  applyFilters() {
+    this.page = 1;
+    this.fetch();
+  }
+
+  clearFilters() {
+    this.filters = {
+      user: 'Todos',
+      category: 'Todas',
+      status: 'Todos',
+      dateFrom: '',
+      dateTo: ''
+    };
+    this.page = 1;
+    this.fetch();
+  }
+
+  goPrev() {
+    if (this.page > 1) {
+      this.page--;
+      this.fetch();
+    }
+  }
+
+  goNext() {
+    if (this.page < this.totalPages) {
+      this.page++;
+      this.fetch();
+    }
+  }
+
+  goTo(p: number) {
+    if (p !== this.page) {
+      this.page = p;
+      this.fetch();
+    }
+  }
+
+  // =======================
+  // Formulario: filtros locales
+  // =======================
   filterUsers() {
-    const roleNorm = this.selectedRole === 'todos'
-      ? null
-      : this.selectedRole.replace(/ /g,'_').toLowerCase();
+    const roleNorm = this.selectedRole === 'todos' ? null : this.selectedRole;
+    const q = this.userSearchTerm.toLowerCase();
+
     this.filteredUsers = this.users.filter(u => {
-      const matchQ = (u.fullName + ' ' + u.email).toLowerCase().includes(this.userSearchTerm.toLowerCase());
-      const matchR = !roleNorm || u.rol.toLowerCase() === roleNorm;
+      const matchQ = (u.fullName + ' ' + u.email).toLowerCase().includes(q);
+      const matchR = !roleNorm || String(u.rol || '').toLowerCase() === roleNorm;
       return matchQ && matchR;
     });
   }
 
   filterDocuments() {
     const q = this.documentSearchTerm.toLowerCase();
-    const cat = this.selectedCategoria === 'todos' ? null : this.selectedCategoria.toLowerCase();
-    const state = this.selectedDocumentStatus === 'todos' ? null : this.selectedDocumentStatus.toLowerCase();
+    const cat = this.selectedCategoriaForm === 'todos' ? null : this.selectedCategoriaForm.toLowerCase();
+    const state = this.selectedDocumentStatusForm === 'todos' ? null : this.selectedDocumentStatusForm.toLowerCase();
 
-    this.filteredDocuments = this.documents.filter((d:any) => {
-      const byTitle = d.titulo.toLowerCase().includes(q);
-      const byCat = !cat || String(d.categoria).toLowerCase().includes(cat);
+    this.filteredDocuments = this.documents.filter((d: any) => {
+      const byTitle = String(d.titulo || '').toLowerCase().includes(q);
+      const byCat = !cat || String(d.categoria || '').toLowerCase().includes(cat);
       const byState = !state || String(d.estado || '').toLowerCase() === state;
       return byTitle && byCat && byState;
     });
   }
 
-  // ------ Formatting helpers ------
+  // =======================
+  // Helpers
+  // =======================
   formatState(state: string): string {
     return state ? state.charAt(0).toUpperCase() + state.slice(1).toLowerCase() : '';
   }
+
   formatCategory(category: string): string {
-    return category?.toLowerCase().replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Sin categoría';
-  }
-  formatDate(date: string): string {
-    const d = new Date(date);
-    return isNaN(+d) ? '' : `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+    return category?.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Sin categoría';
   }
 
-  // ------ Validation ------
+  formatPermissions(p: string | string[] | null | undefined): string {
+    if (!p) return '';
+
+    const map: Record<string, string> = {
+      VIEW: 'Visualizar',
+      EDIT: 'Editar',
+      SIGN: 'Firmar'
+    };
+
+    const list = Array.isArray(p)
+      ? p
+      : String(p).split(',');
+
+    return list
+      .map(x => map[x.trim()] ?? x)
+      .join(', ');
+  }
+
+
+  // =======================
+  // Validación + permisos
+  // =======================
   isFormValid(): boolean {
     const hasPerms = this.permissions.visualizar || this.permissions.editar || this.permissions.firmar;
     const hasUser = !!this.selectedUser;
@@ -148,77 +358,102 @@ export class AccessExceptionsComponent implements OnInit {
     return hasPerms && hasUser && hasDoc && hasReason;
   }
 
-  // ------ Permissions UI ------
-  togglePermission(p: 'visualizar'|'editar'|'firmar') {
+  togglePermission(p: 'visualizar' | 'editar' | 'firmar') {
     this.permissions[p] = !this.permissions[p];
   }
-  selectedPermissionsApi(): ('VIEW'|'EDIT'|'SIGN')[] {
-    const out: ('VIEW'|'EDIT'|'SIGN')[] = [];
+
+  selectedPermissionsApi(): ExceptionPermission[] {
+    const out: ExceptionPermission[] = [];
     if (this.permissions.visualizar) out.push('VIEW');
     if (this.permissions.editar) out.push('EDIT');
     if (this.permissions.firmar) out.push('SIGN');
     return out;
   }
-  selectedPermissionsLabel(): string {
-    const s: string[] = [];
-    if (this.permissions.visualizar) s.push('Visualizar');
-    if (this.permissions.editar) s.push('Editar');
-    if (this.permissions.firmar) s.push('Firmar');
-    return s.join(', ');
-  }
 
-  // ------ Exceptions CRUD ------
-  reloadExceptions() {
-    this.accessExceptionService.listExceptions().subscribe({
-      next: list => {
-        this.activeExceptions = (list || []).map((e:any)=>({
-          userId: e.userId,
-          documentId: e.documentId,
-          user: `${e.nombre} ${e.apellido1} ${e.apellido2 ?? ''}`.trim(),
-          email: e.email,
-          document: e.titulo,
-          documentNumber: e.numero_serie,
-          permission: String(e.permissions).replace(/,/g, ', '),
-          date: new Date().toLocaleDateString(),
-          reason: e.motive ?? e.reason ?? e.descripcion ?? ''
-          // not stored per row in query; shown when applied
-        }));
-      },
-      error: () => this.activeExceptions = []
-    });
-  }
-
+  // =======================
+  // CRUD
+  // =======================
   applyException() {
     if (!this.isFormValid()) return;
+
     const payload = {
       userId: this.selectedUser!.id,
       documentId: this.selectedDocument!.id,
       permissions: this.selectedPermissionsApi(),
       reason: this.reason.trim()
     };
-    this.accessExceptionService.applyException(payload).subscribe({
-      next: () => { this.resetForm(); this.reloadExceptions(); },
-      error: err => console.error('Error al aplicar excepción:', err)
+
+    this.service.applyException(payload).subscribe({
+      next: () => {
+        this.resetForm();
+        this.page = 1;
+        this.fetch();
+      },
+      error: (err) => {
+        console.error('APPLY EXCEPTION ERROR =>', err);
+        this.error = err?.error?.message || `No se pudo aplicar la excepción (${err?.status})`;
+      }
     });
   }
 
-  deleteException(ex: any) {
-    this.accessExceptionService.deleteException(ex.userId, ex.documentId, 'remoción por admin').subscribe({
-      next: () => this.reloadExceptions(),
-      error: err => console.error('Error al eliminar excepción:', err)
+  deleteException(row: ExceptionRow) {
+
+    const userId = Number(row.userId);
+    const documentId = Number(row.documentId);
+
+    this.service.deleteException(userId, documentId, 'remoción por admin').subscribe({
+      next: () => this.fetch(),
+      error: (err) => console.error('DELETE EXCEPTION ERROR =>', err)
     });
   }
 
-  // ------ Reset ------
   resetForm() {
     this.selectedUser = null;
     this.selectedDocument = null;
-    this.permissions = { visualizar: false, editar: false, firmar: false };
+    this.permissions = {visualizar: false, editar: false, firmar: false};
     this.reason = '';
     this.userSearchTerm = '';
     this.documentSearchTerm = '';
     this.filteredUsers = this.users.slice();
     this.filterDocuments();
   }
-}
 
+  get rangeEnd(): number {
+    return Math.min(this.page * this.pageSize, this.totalItems);
+  }
+
+  // ===== Modal eliminar =====
+  showDeleteModal = false;
+  deleteTarget: ExceptionRow | null = null;
+
+  openDeleteModal(row: ExceptionRow) {
+    this.deleteTarget = row;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.deleteTarget = null;
+  }
+
+  confirmDelete() {
+    if (!this.deleteTarget) return;
+
+    const userId = Number(this.deleteTarget.userId);
+    const documentId = Number(this.deleteTarget.documentId);
+
+    this.service.deleteException(userId, documentId, 'remoción por admin').subscribe({
+      next: () => {
+        this.closeDeleteModal();
+        this.fetch();
+      },
+      error: (err) => {
+        console.error('DELETE EXCEPTION ERROR =>', err);
+        // opcional: mostrar error en pantalla
+        this.error = err?.error?.message || `No se pudo eliminar (${err?.status})`;
+        this.closeDeleteModal();
+      }
+    });
+  }
+
+}
