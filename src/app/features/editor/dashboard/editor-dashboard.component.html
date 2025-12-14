@@ -6,17 +6,7 @@
     </p>
   </header>
 
-  <div class="status-counters">
-    <div *ngFor="let counter of statusCounters" class="status-card">
-      <div class="status-card-content">
-        <img [src]="getIconPath(counter.icon)" alt="icon" class="status-icon" />
-        <div class="text-container">
-          <h4>{{ counter.title }}</h4>
-          <p class="count">{{ counter.count }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
+
 
   <div class="overview-cards">
     <div *ngFor="let card of overviewCards" class="card-wrapper">
@@ -40,12 +30,60 @@
     </div>
   </div>
 
+  <!-- Card filtros (sin categoría) -->
+  <div class="card">
+    <h2 class="text-blue-639">Filtros</h2>
+
+    <div class="filters-grid-4">
+      <!-- Autor -->
+      <div class="input-group">
+        <label>Autor</label>
+        <select [(ngModel)]="filters.author" name="filterAuthor">
+          <option value="Todos">Todos</option>
+          <option *ngFor="let a of authors" [value]="a">
+            {{ a }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Estado -->
+      <div class="input-group">
+        <label>Estado</label>
+        <select [(ngModel)]="filters.status" name="filterStatus">
+          <option value="Todos">Todos</option>
+          <option *ngFor="let s of states" [value]="s.value">
+            {{ s.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Fechas -->
+      <div class="input-group">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="filters.dateFrom" name="dateFrom" />
+      </div>
+
+      <div class="input-group">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="filters.dateTo" name="dateTo" />
+      </div>
+    </div>
+
+    <div class="row-actions">
+      <button class="button-outline" type="button" (click)="clearFilters()">
+        Limpiar
+      </button>
+      <button class="button-outline" type="button" (click)="applyFilters()">
+        Aplicar
+      </button>
+    </div>
+
+  </div>
+
   <!-- Documentos en producción -->
   <div class="document-list">
     <h2 class="text-blue-639">Documentos en Producción</h2>
-    <p>
-      Documentos en borrador y firmados - Fase de producción activa
-    </p>
+    <p>Documentos en borrador y firmados - Fase de producción activa</p>
 
     <table class="document-table">
       <thead>
@@ -53,14 +91,15 @@
         <th>Documento</th>
         <th>Estado</th>
         <th>Autor</th>
-        <th>Última Modificación</th>
+        <th>Fecha de Creación</th>
         <th>Acciones</th>
       </tr>
       </thead>
 
       <tbody>
-      <tr *ngFor="let document of documents">
+      <tr *ngFor="let document of pagedDocuments">
         <td>{{ document.documento_nombre }}</td>
+
         <td>
             <span
               class="badge"
@@ -72,12 +111,14 @@
             >
               {{ document.documento_estado | formatState }}
             </span>
+
           <span *ngIf="document.documento_estado === 'FIRMA_PARCIAL'">
-              ({{ document.firmas_obtenidas }} /
-            {{ document.firmas_requeridas }})
+              ({{ document.firmas_obtenidas }} / {{ document.firmas_requeridas }})
             </span>
         </td>
+
         <td>{{ document.primer_usuario }}</td>
+
         <td>
           {{
             document.fecha_creacion
@@ -85,6 +126,7 @@
               : 'No disponible'
           }}
         </td>
+
         <td>
           <button
             *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
@@ -98,7 +140,39 @@
           <button class="btn btn--gray">Ver</button>
         </td>
       </tr>
+
+      <tr *ngIf="pagedDocuments.length === 0">
+        <td colspan="5" class="muted">No hay resultados con los filtros actuales.</td>
+      </tr>
       </tbody>
     </table>
+
+    <!-- ✅ Paginación (fuera del tbody) -->
+    <div class="pager muted">
+      <button
+        class="button-outline"
+        [disabled]="page <= 1"
+        (click)="goPrev()"
+      >
+        « Anterior
+      </button>
+
+      <span>
+        Página {{ page }} de {{ totalPages }} ·
+        Mostrando
+        {{ totalItems === 0 ? 0 : (page - 1) * pageSize + 1 }}
+        –
+        {{ rangeEnd }}
+        de {{ totalItems }}
+      </span>
+
+      <button
+        class="button-outline"
+        [disabled]="page >= totalPages"
+        (click)="goNext()"
+      >
+        Siguiente »
+      </button>
+    </div>
   </div>
 </div>

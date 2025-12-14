@@ -8,14 +8,14 @@
   min-height: 100vh; /* Minimum height to cover the full viewport */
   display: flex; /* Flexbox for layout */
   flex-direction: column; /* Arrange items vertically */
-  gap: 24px; /* Spacing between child elements */
+  gap: 6px; /* Spacing between child elements */
 }
 
 /* ========================================================
    Header section styles
    ======================================================== */
 .section-header {
-  margin-bottom: 24px;
+  margin-bottom: 6px;
 }
 
 h1 {
@@ -54,8 +54,16 @@ h2 {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  border: 2px solid transparent;   /* borde suave (gris claro) */
   background-color: var(--mncr-white);
-  border: 2px solid transparent;
+}
+
+.card-content{
+  display: flex;
+  flex-direction: column;   /* ⬅️ icon arriba */
+  align-items: center;      /* ⬅️ centrado horizontal */
+  text-align: center;
+  gap: 6px;
 }
 
 .card-button:hover {
@@ -63,11 +71,17 @@ h2 {
   background-color: var(--mncr-white);
 }
 
+.card-button:focus-visible{
+  outline: none;
+  border-color: var(--mncr-blue-639);
+  box-shadow: 0 0 0 3px rgba(0, 95, 255, 0.15);
+}
 .card-button p {
   margin-top: 8px;
   font-weight: 600;
   font-size: 1rem;
 }
+
 
 /* ========================================================
    Status counters layout
@@ -146,7 +160,7 @@ h2 {
    Table styles for the document list
    ======================================================== */
 .document-list {
-  margin-top: 24px;
+  margin-top: 5px;
 }
 
 .document-table {
@@ -288,19 +302,7 @@ h2 {
   flex-direction: column;
 }
 
-.card-button {
-  flex: 1;
-  padding: 24px;
-  border-radius: 8px;
-  text-align: center;
-  cursor: pointer;
-  background-color: var(--mncr-white);
-  border: 2px solid transparent;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.3s ease;
-}
+
 
 .card-button:hover {
   border-color: #6c757d;
@@ -416,4 +418,93 @@ h2 {
 .btn--red:hover,
 .btn--gray:hover {
   background-color: #f7f7f7;
+}
+
+.card {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--mncr-white);
+  margin-top: 6px;
+}
+
+.filters-grid-4{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+@media (max-width: 1100px){
+  .filters-grid-4{ grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px){
+  .filters-grid-4{ grid-template-columns: 1fr; }
+}
+
+.input-group{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row-actions{
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.filter-hint{
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--mncr-gray);
+}
+
+.button-outline{
+  background-color: transparent;
+  color: var(--mncr-blue-639);
+  font-weight: 700;
+  padding: 6px 12px;
+  border: 2px solid var(--mncr-blue-639);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease, filter .2s ease;
+}
+
+.button-outline:hover{
+  background-color: var(--mncr-blue-639);
+  color: var(--mncr-white);
+}
+
+input, select{
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: var(--mncr-white);
+}
+
+
+.pager{
+  margin-top: 12px;
+  display: flex;              /* 🔹 CLAVE */
+  justify-content: center;    /* 🔹 centra horizontal */
+  align-items: center;        /* 🔹 centra vertical */
+  gap: 12px;                  /* 🔹 espacio entre botones y texto */
+}
+
+
+/* disabled: gris, sin hover */
+.button-outline[disabled]{
+  opacity: 1;                 /* para que no se vea “lavado” */
+  border-color: var(--mncr-gray);      /* gris */
+  color: var(--mncr-gray);             /* gris */
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.button-outline[disabled]:hover{
+  background: transparent;
+  color: var(--mncr-gray);
 }
