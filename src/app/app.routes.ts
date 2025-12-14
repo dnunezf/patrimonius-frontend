@@ -34,7 +34,15 @@ export const routes: Routes = [
         (m) => m.ResetPasswordComponent
       ),
   },
+  {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./features/dashboard/main-dashboard.component').then(
+        (m) => m.MainDashboardComponent
+      ),
+  },
   { path: 'access-exceptions', component: AccessExceptionsComponent },
   { path: 'activate', component: ActivateComponent },
+
   { path: '**', redirectTo: '' },
 ];

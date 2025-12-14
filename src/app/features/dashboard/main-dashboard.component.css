@@ -1,0 +1,184 @@
+
+.roles{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 18px;
+  padding: 18px;
+  justify-content: center;
+}
+
+.roles.single{
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+.roles.single .role-card{
+  max-width: 520px;
+  width: 100%;
+}
+
+/* Tarjeta base */
+.role-card{
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 0 rgba(16,24,40,.04);
+}
+
+/* Header de tarjeta (icono + textos) */
+.role-card img{
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  padding: 8px;
+  border-radius: 12px;
+  background: #f2f4f7; /* pill gris claro */
+}
+
+.role-card h3{
+  margin: 0;
+  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.role-card p{
+  margin: 2px 0 0 0;
+  font-size: .9rem;
+  color: #667085;
+}
+
+
+/* Centrar contenido del card */
+.role-card{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Icono centrado */
+.role-card img{
+  margin-bottom: 8px;
+}
+
+/* Texto centrado */
+.role-card h3{
+  margin-top: 4px;
+}
+
+.role-card p{
+  margin-bottom: 12px;
+}
+
+/* Lista alineada tipo ficha (no centrada fea) */
+.role-card ul{
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+
+
+/* Lista (los checks) */
+.role-card ul{
+  list-style: none;
+  margin: 12px 0 0 0;
+  padding: 0;
+}
+.role-card li{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: .92rem;
+  color: #101828;
+}
+.role-card li::before{
+  content: "✓";
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 900;
+  color: currentColor;
+  opacity: .85;
+}
+
+/* Colores por rol (bordes y acentos) */
+.role-card.admin{
+  border-color: var(--mncr-blue-3015);
+}
+.role-card.admin h3{ color: var(--mncr-blue-639); }
+
+.role-card.editor{
+  border-color: var(--mncr-green-355);
+}
+.role-card.editor h3{ color: var(--mncr-green-376) }
+
+.role-card.archivista{
+  border-color: var(--mncr-orange-165);
+}
+.role-card.archivista h3{ color: var(--mncr-orange-165); }
+
+.role-card.usuario{
+  border-color: var(--mncr-blue-3015);
+}
+.role-card.usuario h3{ color: var(--mncr-blue-3015); }
+
+.role-card.externo{
+  border-color: var(--mncr-red-1795);
+}
+.role-card.externo h3{ color: var(--mncr-red-1788); }
+
+/* Responsivo: 1 columna en móvil */
+@media (max-width: 900px){
+  .roles{
+    grid-template-columns: 1fr;
+  }
+
+}
+
+.role-card{
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.role-card:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(16,24,40,.08);
+}
+.role-card:focus-visible{
+  outline: 3px solid var(--mncr-blue-639);
+  outline-offset: 3px;
+}
+
+.dashboard-header{
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 28px auto; /* centrado + espacio abajo */
+  padding: 32px 18px 10px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.dashboard-header h1{
+  margin: 0;
+  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #101828;
+}
+
+.dashboard-subtitle{
+  margin-top: 8px;
+  font-size: 1rem;
+  color: #667085;
+  max-width: 520px; /* evita líneas muy largas */
+}
+

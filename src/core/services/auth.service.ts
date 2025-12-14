@@ -1,7 +1,8 @@
-import { Injectable, signal } from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { tap } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 type User = {
   id: number;
@@ -18,6 +19,7 @@ type LoginStep1Resp = { userId: number; message: string };
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly router = inject(Router);
   private api = environment.apiUrl;
 
   token = signal<string | null>(null);
@@ -112,6 +114,7 @@ export class AuthService {
     localStorage.setItem('user', JSON.stringify(resp.user));
     this.token.set(resp.token);
     this.currentUser.set(resp.user);
+    this.router.navigate(['/dashboard']);
   }
 
   logout() {
@@ -119,6 +122,7 @@ export class AuthService {
     localStorage.removeItem('user');
     this.token.set(null);
     this.currentUser.set(null);
+    this.router.navigate(['/']);
   }
 
   /** Activación de cuenta desde enlace de correo */

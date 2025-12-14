@@ -43,28 +43,41 @@ export class NavComponent {
     const u = this.auth.currentUser?.();
     if (!u) return [];
 
-    // Si vienen nombres de rol (p.ej. "USUARIO_EXTERNO" o "Usuario Externo")
-    if (Array.isArray((u as any).roles) && (u as any).roles.length) {
-      return (u as any).roles.map((r: string) =>
-        r?.toString().trim()
-          .replace(/_/g, ' ')
-          .replace(/\b\w/g, c => c.toUpperCase()) // capitaliza palabras
-      );
+    // 1) Si el backend ya manda nombres de roles (string o array de strings)
+    const roles = (u as any).roles;
+    if (typeof roles === 'string' && roles.trim()) {
+      return [this.prettyRole(roles)];
+    }
+    if (Array.isArray(roles) && roles.length) {
+      return roles.map((r: any) => this.prettyRole(String(r)));
     }
 
-    // Si viene rolId clásico
-    const map: Record<number, string> = {
-      1: 'Administrador',
-      2: 'Editor',
-      3: 'Archivista',
-      4: 'Usuario',
-      5: 'Usuario Externo'
-    };
+    // 2) Si viene rolId (1..5)
+    const names = [
+      'Administrador',
+      'Editor',
+      'Archivista',
+      'Usuario',
+      'Usuario Externo'
+    ];
 
     const id = Number((u as any).rolId);
-    const name = Number.isFinite(id) ? (map[id] ?? 'Usuario') : 'Usuario';
-    return [name];
+    if (Number.isFinite(id) && id >= 1 && id <= names.length) {
+      return [names[id - 1]];
+    }
+
+    return ['Usuario'];
   }
+
+  /** Convierte "USUARIO_EXTERNO" -> "Usuario Externo" */
+  private prettyRole(raw: string): string {
+    return raw
+      .trim()
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+
 
 
   roleDisplay(role: string): string {
@@ -107,13 +120,45 @@ export class NavComponent {
     } catch { return 0; }
   };
 
-  signOut(): void {
-    this.auth.logout?.();
-    this.router.navigate(['/']);
-  }
+
 
   // existente
   isOpen = signal(false);
   toggle() { this.isOpen.update(v => !v); }
   close()  { this.isOpen.set(false); }
+
+  // Drawer
+  drawerOpen = signal(false);
+  openDrawer() { this.drawerOpen.set(true); }
+  closeDrawer() { this.drawerOpen.set(false); }
+
+  roleIcon(role: string): string {
+    const r = role?.toUpperCase().replace(/\s+/g, '_');
+    switch (r) {
+      case 'ADMINISTRADOR':
+      case 'ADMIN':
+        return 'assets/icons/admin_2.png';
+      case 'EDITOR':
+        return 'assets/icons/pencil.png';
+      case 'ARCHIVISTA':
+        return 'assets/icons/archive.png';
+      case 'USUARIO':
+        return 'assets/icons/user_2.png';
+      case 'USUARIO_EXTERNO':
+        return 'assets/icons/users.png';
+      default: return '';
+    }
+  }
+
+  toggleDrawer() {
+    this.drawerOpen.update(v => !v);
+  }
+
+  signOut(): void {
+    this.closeDrawer();          // ✅ cierra menú
+    this.auth.logout?.();
+    this.router.navigate(['/']);
+  }
+
+
 }
