@@ -7,9 +7,7 @@
 }
 
 /* ===== ENCABEZADO ===== */
-.page-header {
-  margin-bottom: 16px;
-}
+.page-header { margin-bottom: 16px; }
 .page-header h1 {
   font-size: 1.8rem;
   font-weight: 700;
@@ -56,6 +54,7 @@
 }
 
 /* ===== TABLA ===== */
+.table-wrap { overflow-x: auto; }
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -81,19 +80,7 @@
   background: #f9fafb;
   color: #1f2937;
 }
-.table tr:hover td {
-  background: #f3f4f6;
-}
-
-/* ===== ESTADOS DE PERMISOS ===== */
-.allowed {
-  color: #16a34a;
-  font-weight: 700;
-}
-.denied {
-  color: #dc2626;
-  font-weight: 700;
-}
+.table tr:hover td { background: #f3f4f6; }
 
 /* ===== BADGE ===== */
 .badge {
@@ -106,33 +93,7 @@
   font-weight: 600;
 }
 
-/* ===== INFO SECTION ===== */
-.info-section {
-  background: #fff;
-}
-.info-section h3 {
-  color: #1f2937;
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-.grid-info {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-.grid-info ul {
-  list-style: disc;
-  padding-left: 20px;
-}
-.grid-info li {
-  color: #374151;
-  font-size: 0.95rem;
-  margin-bottom: 6px;
-}
-.grid-info strong {
-  color: #111827;
-}
+.nowrap { white-space: nowrap; }
 
 /* ===== MENSAJES ===== */
 .error-box {
@@ -145,31 +106,6 @@
   margin-bottom: 20px;
 }
 
-/* ===== RESPONSIVIDAD ===== */
-@media (max-width: 900px) {
-  .grid-info {
-    grid-template-columns: 1fr;
-  }
-  .table th,
-  .table td {
-    font-size: 0.85rem;
-    padding: 10px;
-  }
-  .page-header h1 {
-    font-size: 1.5rem;
-  }
-}
-@media (max-width: 600px) {
-  .table th:nth-child(3),
-  .table td:nth-child(3),
-  .table th:nth-child(4),
-  .table td:nth-child(4) {
-    display: none;
-  }
-}
-
-/* ... (todo tu CSS actual igual) ... */
-
 /* ===== ÍCONOS ===== */
 .icon-status {
   width: 22px;
@@ -178,16 +114,82 @@
   display: block;
   margin: 0 auto;
 }
-.icon-small {
-  width: 16px;
-  height: 16px;
-  vertical-align: middle;
-  margin-right: 4px;
+
+/* ===== filtros + pager (estándar) ===== */
+.filters-grid{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+  gap:16px;
+  align-items:end;
+}
+@media (max-width: 1100px){ .filters-grid{ grid-template-columns: repeat(3, 1fr);} }
+@media (max-width: 700px){ .filters-grid{ grid-template-columns: 1fr; } }
+
+.input-group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
 }
 
-/* Efecto al pasar sobre las celdas de permisos */
-.table td img:hover {
-  transform: scale(1.15);
-  transition: transform 0.2s ease;
+input, select {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #fff;
 }
 
+.row-actions{
+  display:flex;
+  gap:10px;
+  margin-top:16px;
+  margin-bottom:10px;
+}
+
+.filter-hint{
+  margin:0;
+  font-size:.85rem;
+  color:#6b7280;
+}
+
+.button-outline{
+  background:transparent;
+  color: var(--mncr-blue-639);
+  font-weight:700;
+  padding:6px 12px;
+  border:2px solid var(--mncr-blue-639);
+  border-radius:6px;
+  cursor:pointer;
+}
+.button-outline:hover{
+  background: var(--mncr-blue-639);
+  color:#fff;
+}
+.button-outline[disabled]{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+.pager{
+  padding:8px;
+  text-align:center;
+  margin-top:10px;
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+/* ===== RESPONSIVIDAD ===== */
+@media (max-width: 900px) {
+  .table th, .table td { font-size: 0.85rem; padding: 10px; }
+  .page-header h1 { font-size: 1.5rem; }
+}
+@media (max-width: 600px) {
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
+}

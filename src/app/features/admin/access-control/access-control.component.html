@@ -1,12 +1,8 @@
 <main class="container">
-  <!-- 🔙 Volver -->
   <div class="back-bar">
-    <a routerLink="/admin/module" class="link-back">
-      ← Volver al Módulo de Administración
-    </a>
+    <a routerLink="/admin/module" class="link-back">← Volver al Módulo de Administración</a>
   </div>
 
-  <!-- 🔹 Encabezado -->
   <header class="page-header">
     <h1>Acceso por Unidad Organizacional</h1>
     <p class="sub">
@@ -14,119 +10,128 @@
     </p>
   </header>
 
-  <!-- 🔹 Estado de carga -->
-  <div *ngIf="loading" class="muted">Cargando información...</div>
-  <div *ngIf="error" class="error-box">
-    {{ error || 'Error cargando permisos de acceso...' }}
-  </div>
+  <!-- filtros -->
+  <section class="card">
+    <h2>Filtros</h2>
 
-  <!-- 🔹 Contenido principal -->
+    <div class="filters-grid">
+      <div class="input-group">
+        <label>Categoría</label>
+        <select [(ngModel)]="filters.category" name="filterCategory">
+          <option value="Todas">Todas</option>
+          <option *ngFor="let c of categorias" [value]="c.id">{{ c.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Estado</label>
+        <select [(ngModel)]="filters.status" name="filterStatus">
+          <option value="Todos">Todos</option>
+          <option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="filters.dateFrom" name="dateFrom">
+      </div>
+
+      <div class="input-group">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="filters.dateTo" name="dateTo">
+      </div>
+
+      <div class="input-group">
+        <label>Búsqueda</label>
+        <input type="text" [(ngModel)]="filters.search" name="search" placeholder="Título o código (número de serie)">
+      </div>
+    </div>
+
+    <div class="row-actions">
+      <button class="button-outline" type="button" (click)="clearFilters()">Limpiar</button>
+      <button class="button-outline" type="button" (click)="applyFilters()">Aplicar</button>
+    </div>
+
+    <p class="filter-hint">💡 Se recomienda aplicar uno o más filtros para optimizar el listado.</p>
+  </section>
+
+  <!-- estados -->
+  <div *ngIf="loading" class="muted">Cargando información...</div>
+  <div *ngIf="error" class="error-box">{{ error }}</div>
+
   <ng-container *ngIf="!loading && !error">
     <section class="card">
       <h2>Listado de Documentos</h2>
+
       <p class="muted">
-        Matriz de permisos por documento:
-        <span class="allowed">
-          <img src="assets/icons/check.png" alt="Permitido" class="icon-small" />
-          Permitido
-        </span>
-        /
-        <span class="denied">
-          <img src="assets/icons/equis.png" alt="Restringido" class="icon-small" />
-          Restringido
-        </span>
+        Documentos con acceso: <strong>{{ accessibleCount }}</strong> de <strong>{{ totalItems }}</strong>
       </p>
 
-      <table class="table">
-        <thead>
-        <tr>
-          <th>Código</th>
-          <th>Título</th>
-          <th>Unidad Responsable</th>
-          <th>Estado</th>
-          <th>Ver</th>
-          <th>Editar</th>
-          <th>Firmar</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let doc of documents">
-          <td>{{ doc.code }}</td>
-          <td>{{ doc.title }}</td>
-          <td>
-            {{ doc.unit }}
-            <span *ngIf="doc.unit === user.unidadId" class="badge">
-                Su Unidad
-              </span>
-          </td>
-          <td>{{ doc.status }}</td>
-          <td>
-            <img
-              [src]="getIconPath(doc.canView)"
-              [alt]="doc.canView ? 'Permitido' : 'Denegado'"
-              class="icon-status"
-            />
-          </td>
-          <td>
-            <img
-              [src]="getIconPath(doc.canEdit)"
-              [alt]="doc.canEdit ? 'Permitido' : 'Denegado'"
-              class="icon-status"
-            />
-          </td>
-          <td>
-            <img
-              [src]="getIconPath(doc.canSign)"
-              [alt]="doc.canSign ? 'Permitido' : 'Denegado'"
-              class="icon-status"
-            />
-          </td>
-        </tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Categoría</th>
+            <th>Unidad Responsable</th>
+            <th>Estado</th>
+            <th>Ver</th>
+            <th>Editar</th>
+            <th>Firmar</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr *ngFor="let doc of items">
+            <td class="nowrap">{{ doc.created_at ? (doc.created_at | date:'dd/MM/yyyy') : '-' }}</td>
+            <td>{{ doc.code }}</td>
+            <td>{{ doc.title }}</td>
+            <td>{{ doc.categoria || 'Sin categoría' }}</td>
+
+            <td>
+              {{ doc.unit }}
+              <span *ngIf="user && doc.unitId === user.unidadId" class="badge">Su Unidad</span>
+            </td>
+
+            <td>{{ doc.status }}</td>
+
+            <td><img [src]="getIconPath(doc.canView)" class="icon-status" /></td>
+            <td><img [src]="getIconPath(doc.canEdit)" class="icon-status" /></td>
+            <td><img [src]="getIconPath(doc.canSign)" class="icon-status" /></td>
+          </tr>
+
+          <tr *ngIf="items.length === 0">
+            <td colspan="9" class="muted">No hay resultados con los filtros actuales.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- paginación -->
+      <div class="pager muted">
+        <button class="button-outline" [disabled]="page <= 1" (click)="goPrev()">« Anterior</button>
+
+        <span>
+          Página {{ page }} de {{ totalPages }} ·
+          Mostrando {{ totalItems === 0 ? 0 : (page - 1) * pageSize + 1 }} – {{ rangeEnd }} de {{ totalItems }}
+        </span>
+
+        <button class="button-outline" [disabled]="page >= totalPages" (click)="goNext()">Siguiente »</button>
+      </div>
     </section>
 
-    <section class="card info-section">
-      <h2>Información del Control de Acceso</h2>
-      <div class="grid-info">
-        <div>
-          <h3>Tipos de Acceso</h3>
-          <ul>
-            <li>
-              <strong>✔ Unidad Organizacional:</strong>
-              Su unidad coincide con la del documento.
-            </li>
-            <li>
-              <strong>✔ Permiso de Rol / Usuario:</strong>
-              Configuración aplicada al crear o modificar su usuario.
-            </li>
-            <li>
-              <strong>✔ Excepción Autorizada:</strong>
-              Acceso especial otorgado por el administrador.
-            </li>
-            <li>
-              <strong>✘ Denegado:</strong>
-              Documento de otra unidad sin excepción.
-            </li>
-          </ul>
-        </div>
-
-        <div *ngIf="user">
-          <h3>Su Información</h3>
-          <p><strong>Correo:</strong> {{ user.email }}</p>
-          <p>
-            <strong>Roles:</strong>
-            <span *ngFor="let rol of user.roles; let last = last">
-      {{ rol }}<span *ngIf="!last">, </span>
-    </span>
-          </p>
-          <p><strong>Unidad Asignada:</strong> {{ user.unidad }}</p>
-          <p>
-            <strong>Documentos con acceso:</strong>
-            {{ accessibleCount }} de {{ documents.length }}
-          </p>
-        </div>
-      </div>
+    <section class="card info-section" *ngIf="user">
+      <h2>Su Información</h2>
+      <p><strong>Correo:</strong> {{ user.email }}</p>
+      <p>
+        <strong>Roles:</strong>
+        <span *ngFor="let rol of user.roles; let last = last">
+          {{ rol }}<span *ngIf="!last">, </span>
+        </span>
+      </p>
+      <p><strong>Unidad Asignada:</strong> {{ user.unidad }}</p>
     </section>
   </ng-container>
 </main>
