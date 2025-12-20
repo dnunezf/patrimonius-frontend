@@ -1,3 +1,4 @@
+<!-- src/app/features/admin/access-control/access-control.component.html -->
 <main class="container">
   <div class="back-bar">
     <a routerLink="/admin/module" class="link-back">← Volver al Módulo de Administración</a>
@@ -43,7 +44,11 @@
 
       <div class="input-group">
         <label>Búsqueda</label>
-        <input type="text" [(ngModel)]="filters.search" name="search" placeholder="Título o código (número de serie)">
+        <input
+          type="text"
+          [(ngModel)]="filters.search"
+          name="search"
+          placeholder="Título o código (número de serie)">
       </div>
     </div>
 
@@ -97,9 +102,30 @@
 
             <td>{{ doc.status }}</td>
 
-            <td><img [src]="getIconPath(doc.canView)" class="icon-status" /></td>
-            <td><img [src]="getIconPath(doc.canEdit)" class="icon-status" /></td>
-            <td><img [src]="getIconPath(doc.canSign)" class="icon-status" /></td>
+            <td>
+              <img
+                [src]="getIconPath(doc.canView)"
+                class="icon-status"
+                alt="Ver"
+                loading="lazy"
+              />
+            </td>
+            <td>
+              <img
+                [src]="getIconPath(doc.canEdit)"
+                class="icon-status"
+                alt="Editar"
+                loading="lazy"
+              />
+            </td>
+            <td>
+              <img
+                [src]="getIconPath(doc.canSign)"
+                class="icon-status"
+                alt="Firmar"
+                loading="lazy"
+              />
+            </td>
           </tr>
 
           <tr *ngIf="items.length === 0">
@@ -125,12 +151,6 @@
     <section class="card info-section" *ngIf="user">
       <h2>Su Información</h2>
       <p><strong>Correo:</strong> {{ user.email }}</p>
-      <p>
-        <strong>Roles:</strong>
-        <span *ngFor="let rol of user.roles; let last = last">
-          {{ rol }}<span *ngIf="!last">, </span>
-        </span>
-      </p>
       <p><strong>Unidad Asignada:</strong> {{ user.unidad }}</p>
     </section>
   </ng-container>

@@ -1,3 +1,4 @@
+// src/app/features/admin/access-control/access-control.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -83,7 +84,7 @@ export class AccessControlComponent implements OnInit {
     const q: any = { page: this.page, pageSize: this.pageSize };
 
     if (this.filters.category !== 'Todas') q.categoryId = Number(this.filters.category);
-    if (this.filters.status !== 'Todos') q.status = String(this.filters.status); // ✅ ENUM real
+    if (this.filters.status !== 'Todos') q.status = String(this.filters.status);
 
     if (this.filters.dateFrom) q.dateFrom = this.filters.dateFrom;
     if (this.filters.dateTo) q.dateTo = this.filters.dateTo;
@@ -108,6 +109,13 @@ export class AccessControlComponent implements OnInit {
         this.totalPages = res.totalPages ?? 1;
 
         this.accessibleCount = res.accessibleCount ?? 0;
+
+        // 👇 Si querés confirmar tipos en consola:
+        // console.log('DEBUG icons types:', this.items.slice(0, 3).map(d => ({
+        //   id: d.id, canView: [d.canView, typeof d.canView],
+        //   canEdit: [d.canEdit, typeof d.canEdit],
+        //   canSign: [d.canSign, typeof d.canSign],
+        // })));
 
         this.loading = false;
       },
@@ -157,7 +165,32 @@ export class AccessControlComponent implements OnInit {
     return Math.min(this.page * this.pageSize, this.totalItems);
   }
 
-  getIconPath(allowed: boolean): string {
-    return allowed ? 'assets/icons/check.png' : 'assets/icons/equis.png';
+  // ✅ Convierte cualquier "boolean raro" a boolean real
+  private toBool(value: any): boolean {
+    if (value === true) return true;
+    if (value === false) return false;
+
+    // números
+    if (value === 1) return true;
+    if (value === 0) return false;
+
+    // strings comunes
+    if (typeof value === 'string') {
+      const v = value.trim().toLowerCase();
+      if (v === 'true' || v === '1' || v === 'yes' || v === 'y') return true;
+      if (v === 'false' || v === '0' || v === 'no' || v === 'n' || v === '') return false;
+    }
+
+    // null/undefined
+    if (value == null) return false;
+
+    // fallback: truthy/falsy estándar
+    return !!value;
+  }
+
+  // ✅ Paths absolutos para evitar problemas en rutas
+  getIconPath(allowed: any): string {
+    const ok = this.toBool(allowed);
+    return ok ? '/assets/icons/check.png' : '/assets/icons/equis.png';
   }
 }
