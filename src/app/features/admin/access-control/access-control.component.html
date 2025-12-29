@@ -85,14 +85,30 @@
             <th>Ver</th>
             <th>Editar</th>
             <th>Firmar</th>
+            <th>Abrir</th>
           </tr>
           </thead>
 
           <tbody>
-          <tr *ngFor="let doc of items">
+          <tr
+            *ngFor="let doc of items"
+            class="row-clickable"
+            [class.row-disabled]="!canOpen(doc)"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="'Abrir documento ' + doc.code + ': ' + doc.title"
+            (click)="openDoc(doc)"
+            (keydown)="onRowKeydown($event, doc)"
+            title="Click para abrir (Enter o Espacio)"
+          >
             <td class="nowrap">{{ doc.created_at ? (doc.created_at | date:'dd/MM/yyyy') : '-' }}</td>
             <td>{{ doc.code }}</td>
-            <td>{{ doc.title }}</td>
+
+            <td class="td-title">
+              {{ doc.title }}
+              <div class="muted small">Click en la fila para abrir</div>
+            </td>
+
             <td>{{ doc.categoria || 'Sin categoría' }}</td>
 
             <td>
@@ -129,10 +145,23 @@
                 loading="lazy"
               />
             </td>
+
+            <!-- ✅ NUEVO: botón grande “Abrir” -->
+            <td>
+              <button
+                type="button"
+                class="btn-open"
+                [disabled]="!canOpen(doc)"
+                (click)="$event.stopPropagation(); openDoc(doc)"
+                [title]="getOpenHint(doc)"
+              >
+                Abrir
+              </button>
+            </td>
           </tr>
 
           <tr *ngIf="items.length === 0">
-            <td colspan="9" class="muted">No hay resultados con los filtros actuales.</td>
+            <td colspan="10" class="muted">No hay resultados con los filtros actuales.</td>
           </tr>
           </tbody>
         </table>

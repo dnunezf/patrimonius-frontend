@@ -1,7 +1,7 @@
 // src/app/features/admin/access-control/access-control.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -60,14 +60,58 @@ export class AccessControlComponent implements OnInit {
 
   constructor(
     private accessService: AccessControlService,
-    private categoriaService: CategoriaService
+    private categoriaService: CategoriaService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
     this.loadCategorias();
+    this.restoreFromUrl();
     this.fetch();
   }
 
+  private restoreFromUrl() {
+    const qp = this.route.snapshot.queryParamMap;
+
+    const page = Number(qp.get('page') || 1);
+    const pageSize = Number(qp.get('pageSize') || 10);
+    this.page = Number.isFinite(page) && page > 0 ? page : 1;
+    this.pageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 10;
+
+    const categoryId = qp.get('categoryId');
+    const status = qp.get('status');
+    const dateFrom = qp.get('dateFrom');
+    const dateTo = qp.get('dateTo');
+    const search = qp.get('search');
+
+    this.filters.category = categoryId ? String(categoryId) : 'Todas';
+    this.filters.status = status ? String(status) : 'Todos';
+    this.filters.dateFrom = dateFrom ? String(dateFrom) : '';
+    this.filters.dateTo = dateTo ? String(dateTo) : '';
+    this.filters.search = search ? String(search) : '';
+  }
+
+  private syncUrl() {
+    const q = this.buildQuery();
+
+    // No ensuciamos URL con vacíos
+    const qp: any = {};
+    Object.keys(q).forEach((k) => {
+      const v = (q as any)[k];
+      if (v !== null && v !== undefined && v !== '') qp[k] = v;
+    });
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: qp,
+      replaceUrl: true,
+    });
+  }
+
+  // =========================
+  // Data
+  // =========================
   private loadCategorias() {
     this.categoriaService.getCategorias().subscribe({
       next: (cats: any[]) => {
@@ -98,6 +142,8 @@ export class AccessControlComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
+    this.syncUrl();
+
     this.accessService.getAccessControl(this.buildQuery()).subscribe({
       next: (res: AccessControlResponsePaged) => {
         this.user = res.user;
@@ -109,13 +155,6 @@ export class AccessControlComponent implements OnInit {
         this.totalPages = res.totalPages ?? 1;
 
         this.accessibleCount = res.accessibleCount ?? 0;
-
-        // 👇 Si querés confirmar tipos en consola:
-        // console.log('DEBUG icons types:', this.items.slice(0, 3).map(d => ({
-        //   id: d.id, canView: [d.canView, typeof d.canView],
-        //   canEdit: [d.canEdit, typeof d.canEdit],
-        //   canSign: [d.canSign, typeof d.canSign],
-        // })));
 
         this.loading = false;
       },
@@ -165,32 +204,68 @@ export class AccessControlComponent implements OnInit {
     return Math.min(this.page * this.pageSize, this.totalItems);
   }
 
-  // ✅ Convierte cualquier "boolean raro" a boolean real
+  // =========================
+  // Helpers UI
+  // =========================
   private toBool(value: any): boolean {
     if (value === true) return true;
     if (value === false) return false;
 
-    // números
     if (value === 1) return true;
     if (value === 0) return false;
 
-    // strings comunes
     if (typeof value === 'string') {
       const v = value.trim().toLowerCase();
       if (v === 'true' || v === '1' || v === 'yes' || v === 'y') return true;
       if (v === 'false' || v === '0' || v === 'no' || v === 'n' || v === '') return false;
     }
 
-    // null/undefined
     if (value == null) return false;
 
-    // fallback: truthy/falsy estándar
     return !!value;
   }
 
-  // ✅ Paths absolutos para evitar problemas en rutas
   getIconPath(allowed: any): string {
     const ok = this.toBool(allowed);
     return ok ? '/assets/icons/check.png' : '/assets/icons/equis.png';
+  }
+
+  // =========================
+  // ✅ NUEVO: Navegar directo al documento (UX museo)
+  // =========================
+  canOpen(doc: DocumentRow): boolean {
+    return this.toBool(doc.canView) || this.toBool(doc.canEdit) || this.toBool(doc.canSign) || this.toBool(doc.hasSign);
+  }
+
+  getOpenHint(doc: DocumentRow): string {
+    if (!this.canOpen(doc)) return 'Sin acceso a este documento';
+    if (this.toBool(doc.canEdit)) return 'Abrir en edición';
+    return 'Abrir en vista';
+  }
+
+  openDoc(doc: DocumentRow): void {
+    if (!this.canOpen(doc)) return;
+
+    // ✅ RUTA CONOCIDA EN TU APP: /editor/document/:id/edit
+    // - Si NO puede editar, lo abrimos igual pero en modo lectura por query param readonly=1
+    const readonly = this.toBool(doc.canEdit) ? 0 : 1;
+
+    this.router.navigate(
+      ['/editor/document', doc.id, 'edit'],
+      {
+        queryParams: {
+          readonly,
+          // guardamos “de dónde vino” para retorno (opcional)
+          returnTo: this.router.url
+        }
+      }
+    );
+  }
+
+  onRowKeydown(ev: KeyboardEvent, doc: DocumentRow) {
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      this.openDoc(doc);
+    }
   }
 }

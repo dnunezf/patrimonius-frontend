@@ -52,6 +52,7 @@
   color: #6b7280;
   font-size: 0.9rem;
 }
+.small { font-size: 0.75rem; }
 
 /* ===== TABLA ===== */
 .table-wrap { overflow-x: auto; }
@@ -81,6 +82,23 @@
   color: #1f2937;
 }
 .table tr:hover td { background: #f3f4f6; }
+
+.td-title{
+  text-align: left;
+}
+
+/* ✅ Fila clickeable (UX museo) */
+.row-clickable {
+  cursor: pointer;
+  outline: none;
+}
+.row-clickable:focus td{
+  box-shadow: inset 0 0 0 2px var(--mncr-blue-639);
+}
+.row-disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
 
 /* ===== BADGE ===== */
 .badge {
@@ -113,6 +131,24 @@
   object-fit: contain;
   display: block;
   margin: 0 auto;
+}
+
+/* ✅ Botón Abrir (grande, amigable) */
+.btn-open{
+  background: var(--mncr-blue-639);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  min-width: 90px;
+}
+.btn-open:hover{ filter: brightness(0.95); }
+.btn-open:active{ transform: scale(0.98); }
+.btn-open[disabled]{
+  opacity: .6;
+  cursor: not-allowed;
 }
 
 /* ===== filtros + pager (estándar) ===== */
