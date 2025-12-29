@@ -1,17 +1,19 @@
-// src/app/core/features/editor/document/document-editor.component.ts
+// FRONTEND: src/app/core/features/editor/document/document-editor.component.ts
 import {
   Component,
   ElementRef,
   OnDestroy,
   OnInit,
   ViewChild,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import Quill from 'quill';
 import * as mammoth from 'mammoth';
-import { interval, Subscription, switchMap } from 'rxjs';
+import { interval, Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { DocumentService, VersionDoc } from 'core/services/document.service';
 import { RealtimeService } from 'core/services/realtime.service';
@@ -62,13 +64,18 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   private readonly clientId =
     (globalThis as any).crypto?.randomUUID?.() ?? this.fallbackUuid();
+
   private subs: Subscription[] = [];
+
+  // ✅ Polling de comentarios cuando el panel está abierto
+  private commentsPollSub?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private docs: DocumentService,
-    private rt: RealtimeService
+    private rt: RealtimeService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -129,10 +136,24 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         .subscribe((v) => (this.baseVersionId = v?.id ?? 0));
     });
 
-    // 7.b) Realtime comment badge (HU-016)
+    // ✅ Realtime: cuando alguien agrega comentario (evento)
     this.rt.on('comentario:nuevo', (comentario: any) => {
-      this.comentarios.push(comentario);
+      // ✅ inmutable, fuerza render
+      this.comentarios = [...this.comentarios, comentario];
       this.unreadCount++;
+      this.cdr.detectChanges();
+    });
+
+    // ✅ Realtime: cuando alguien marca resuelto (evento)
+    this.rt.on('comentario:resuelto', (payload: any) => {
+      const id = Number(payload?.id);
+      if (!id) return;
+
+      this.comentarios = this.comentarios.map((c) =>
+        Number(c.id) === id ? { ...c, resuelto: true } : c
+      );
+
+      this.cdr.detectChanges();
     });
 
     // 8) Presence heartbeat
@@ -142,7 +163,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         .subscribe()
     );
 
-    // 9) Comments
+    // 9) Comments initial load
     this.loadComentarios();
   }
 
@@ -167,10 +188,36 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Toggle comments side panel (badge reset) */
+  /** Toggle comments side panel (badge reset + polling) */
   toggleComentarios(): void {
     this.showComentarios = !this.showComentarios;
-    if (this.showComentarios) this.unreadCount = 0;
+
+    if (this.showComentarios) {
+      this.unreadCount = 0;
+      this.loadComentarios();
+      this.startCommentsPolling();
+    } else {
+      this.stopCommentsPolling();
+    }
+  }
+
+  /** ✅ Polling cada 2s solo con panel abierto */
+  private startCommentsPolling(): void {
+    this.stopCommentsPolling();
+    this.commentsPollSub = interval(2000)
+      .pipe(switchMap(() => this.docs.listarComentarios(this.documentoId)))
+      .subscribe({
+        next: (rows) => {
+          this.comentarios = [...(rows ?? [])];
+          this.cdr.detectChanges();
+        },
+        error: () => {},
+      });
+  }
+
+  private stopCommentsPolling(): void {
+    this.commentsPollSub?.unsubscribe();
+    this.commentsPollSub = undefined;
   }
 
   /** Save version */
@@ -180,42 +227,36 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.sigMsg = '';
     const html = this.html();
 
-    this.docs
-      .guardarColab(this.documentoId, html, this.baseVersionId)
-      .subscribe({
-        next: (r) => {
-          this.saving = false;
-          this.baseVersionId = r?.version_id ?? this.baseVersionId;
-          this.rt.emit('editor:saved', {
-            documentoId: this.documentoId,
-            versionId: this.baseVersionId,
-            from: this.clientId,
-          });
-          this.info = 'Documento guardado con éxito.';
-          setTimeout(() => (this.info = ''), 4000);
-        },
-        error: (e) => {
-          this.saving = false;
-          if (e?.status === 409) {
-            this.docs
-              .ultimaVersion(this.documentoId)
-              .subscribe(
-                (v) => (this.baseVersionId = v?.id ?? this.baseVersionId)
-              );
-          } else {
-            this.error = e?.error?.message || 'No se pudo guardar';
-          }
-        },
-      });
+    this.docs.guardarColab(this.documentoId, html, this.baseVersionId).subscribe({
+      next: (r) => {
+        this.saving = false;
+        this.baseVersionId = r?.version_id ?? this.baseVersionId;
+        this.rt.emit('editor:saved', {
+          documentoId: this.documentoId,
+          versionId: this.baseVersionId,
+          from: this.clientId,
+        });
+        this.info = 'Documento guardado con éxito.';
+        setTimeout(() => (this.info = ''), 4000);
+      },
+      error: (e) => {
+        this.saving = false;
+        if (e?.status === 409) {
+          this.docs
+            .ultimaVersion(this.documentoId)
+            .subscribe((v) => (this.baseVersionId = v?.id ?? this.baseVersionId));
+        } else {
+          this.error = e?.error?.message || 'No se pudo guardar';
+        }
+      },
+    });
   }
 
   /** HU-12: open metadata modal */
   openMetadata(): void {
     this.metadataOpen = true;
   }
-  onMetadataSaved(): void {
-    // optional refresh actions
-  }
+  onMetadataSaved(): void {}
 
   /** HU-12: backend enforces metadata completeness */
   requestSignature(): void {
@@ -248,28 +289,85 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.quill.setSelection(end, 0, 'silent');
   }
 
-  /** Comments (HU-016) */
+  /** ✅ Comentarios (sin recargar + realtime) */
   addComentario(desc: string): void {
-    if (!desc?.trim()) return;
-    this.docs.agregarComentario(this.documentoId, desc).subscribe(() => {
-      const comentario = {
-        descripcion: desc,
-        usuario: 'Tú',
-        fecha: new Date(),
-      };
-      this.rt.emit('comentario:nuevo', comentario);
-      this.comentarios.push(comentario);
+    const texto = String(desc ?? '').trim();
+    if (!texto) return;
+
+    // ✅ optimista local (se ve al instante)
+    const optimisticId = -Date.now();
+    const optimistic = {
+      id: optimisticId,
+      descripcion: texto,
+      usuario: 'Tú',
+      fecha: new Date().toISOString(),
+      resuelto: false,
+    };
+    this.comentarios = [...this.comentarios, optimistic];
+    this.cdr.detectChanges();
+
+    this.docs.agregarComentario(this.documentoId, texto).subscribe({
+      next: (list) => {
+        // ✅ Si backend devuelve lista, la usamos
+        if (Array.isArray(list)) {
+          this.comentarios = [...list];
+        }
+        this.cdr.detectChanges();
+
+        // ✅ Emitir evento para otros clientes (si tu WS lo comparte)
+        // Si el backend devolvió lista, enviamos el último como "nuevo"
+        const last = Array.isArray(list) && list.length ? list[list.length - 1] : optimistic;
+        this.rt.emit('comentario:nuevo', last);
+      },
+      error: () => {
+        // revertir optimista si falló
+        this.comentarios = this.comentarios.filter((c) => c.id !== optimisticId);
+        this.cdr.detectChanges();
+      },
     });
   }
+
   markResolved(id: number): void {
-    this.docs
-      .marcarComentarioResuelto(id)
-      .subscribe(() => this.loadComentarios());
+    const cid = Number(id);
+    if (!cid) return;
+
+    // ✅ optimista: se marca resuelto ya
+    this.comentarios = this.comentarios.map((c) =>
+      Number(c.id) === cid ? { ...c, resuelto: true } : c
+    );
+    this.cdr.detectChanges();
+
+    this.docs.marcarComentarioResuelto(cid).subscribe({
+      next: (list) => {
+        if (Array.isArray(list)) {
+          this.comentarios = [...list];
+          this.cdr.detectChanges();
+        } else {
+          // fallback si el backend no devolvió lista
+          this.loadComentarios();
+        }
+
+        // ✅ avisar a otros clientes
+        this.rt.emit('comentario:resuelto', { id: cid });
+      },
+      error: () => {
+        // revertir si falló
+        this.comentarios = this.comentarios.map((c) =>
+          Number(c.id) === cid ? { ...c, resuelto: false } : c
+        );
+        this.cdr.detectChanges();
+      },
+    });
   }
+
   private loadComentarios(): void {
-    this.docs
-      .listarComentarios(this.documentoId)
-      .subscribe((c) => (this.comentarios = c));
+    this.docs.listarComentarios(this.documentoId).subscribe({
+      next: (c) => {
+        this.comentarios = [...(c ?? [])];
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
   }
 
   /** Back to dashboard */
@@ -278,13 +376,13 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopCommentsPolling();
     this.subs.forEach((s) => s.unsubscribe());
     this.docs.endSession(this.documentoId).subscribe();
   }
 
   /* ==== Quill helpers ==== */
   private html(): string {
-    // Quill v2: getSemanticHTML(); Quill v1: root.innerHTML
     // @ts-ignore
     return (this.quill as any).getSemanticHTML?.() ?? this.quill.root.innerHTML;
   }
@@ -338,11 +436,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     if (!this.selectedVersionId) return;
     this.restoring = true;
     this.docs
-      .restoreVersion(
-        this.documentoId,
-        this.selectedVersionId,
-        this.restoreMotivo || ''
-      )
+      .restoreVersion(this.documentoId, this.selectedVersionId, this.restoreMotivo || '')
       .subscribe({
         next: () => {
           this.restoring = false;

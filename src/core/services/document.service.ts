@@ -207,17 +207,22 @@ export class DocumentService {
     return this.http.delete(`${this.api}/documentos/${id}/sessions`);
   }
 
+  // FRONTEND: src/core/services/document.service.ts
+
   listarComentarios(id: number) {
     return this.http.get<any[]>(`${this.api}/documentos/${id}/comentarios`);
   }
+
   agregarComentario(id: number, descripcion: string) {
-    return this.http.post(`${this.api}/documentos/${id}/comentarios`, {
+    return this.http.post<any[]>(`${this.api}/documentos/${id}/comentarios`, {
       descripcion,
     });
   }
+
   marcarComentarioResuelto(id: number) {
-    return this.http.patch(`${this.api}/comentarios/${id}/resolver`, {});
+    return this.http.patch<any[]>(`${this.api}/comentarios/${id}/resolver`, {});
   }
+
 
   /** Crear BORRADOR (Express: POST /api/documentos) */
   createDraft(
