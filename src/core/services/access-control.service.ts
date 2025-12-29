@@ -17,7 +17,12 @@ export interface DocumentRow {
 
   canView: boolean;
   canEdit: boolean;
+
+  // canSign = acción habilitada ahora (depende de estado)
   canSign: boolean;
+
+  // hasSign = permiso asignado (lo que marcás al crear usuario)
+  hasSign?: boolean;
 
   source?: string;
 }
@@ -29,6 +34,9 @@ export interface AccessControlResponsePaged {
     roles: string[];
     unidad: string;
     unidadId: number;
+
+    // útil si querés ver qué columnas detectó el backend
+    caps?: { canEdit: boolean; canSign: boolean; source?: string };
   };
 
   items: DocumentRow[];

@@ -110,6 +110,7 @@
                 loading="lazy"
               />
             </td>
+
             <td>
               <img
                 [src]="getIconPath(doc.canEdit)"
@@ -118,9 +119,11 @@
                 loading="lazy"
               />
             </td>
+
+            <!-- ✅ MOSTRAR PERMISO ASIGNADO (hasSign) -->
             <td>
               <img
-                [src]="getIconPath(doc.canSign)"
+                [src]="getIconPath(doc.hasSign ?? doc.canSign)"
                 class="icon-status"
                 alt="Firmar"
                 loading="lazy"
@@ -152,6 +155,11 @@
       <h2>Su Información</h2>
       <p><strong>Correo:</strong> {{ user.email }}</p>
       <p><strong>Unidad Asignada:</strong> {{ user.unidad }}</p>
+
+      <!-- opcional para debug -->
+      <p class="muted" *ngIf="user.caps">
+        Caps: editar={{ user.caps.canEdit }} · firmar={{ user.caps.canSign }} · ({{ user.caps.source }})
+      </p>
     </section>
   </ng-container>
 </main>
