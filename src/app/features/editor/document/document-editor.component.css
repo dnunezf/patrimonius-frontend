@@ -1,420 +1,224 @@
-/* src/app/core/features/editor/document/document-editor.component.css */
+/* =========================================================
+   Editor UI – fijo a viewport + scroll interno + botones bonitos
+   SOLO CSS (no toca TS/HTML)
+   ========================================================= */
 
-/* ===== LAYOUT ===== */
-.editor-grid {
-  display: grid;
+:host{
+  display:block;
+  background:#f6f7fb;
+  color:#111827;
+}
+
+/* --- Layout general: ocupa pantalla y evita scroll “raro” del body --- */
+.container, main.container, main{
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 14px 16px 18px;
+}
+
+/* Si tu editor tiene una grilla tipo “contenido + sidebar” */
+.editor-layout,
+.editor-grid,
+.layout{
+  display:grid;
   grid-template-columns: 1fr 320px;
-  gap: 16px;
-  padding: 10px;
+  gap: 14px;
+  align-items:start;
 }
 
-/* ===== COLUMNA PRINCIPAL ===== */
-.editor-main {
-  background: #fff;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(2, 8, 23, 0.08);
-}
-
-/* ===== BOTÓN VOLVER ===== */
-.top-bar {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 10px;
-}
-
-.btn-back {
-  background: #e2e8f0;
-  color: #1e293b;
-  border: 1px solid #cbd5e1;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  text-decoration: none;
-}
-
-.btn-back:hover {
-  background: #bfdbfe;
-  border-color: #93c5fd;
-  color: #1e3a8a;
-  transform: translateY(-1px);
-}
-
-/* ===== TOOLBAR ===== */
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.toolbar h2 {
-  color: #1e293b;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.buttons {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-/* ===== BOTONES ===== */
-.btn-primary {
-  position: relative;
-  background: linear-gradient(90deg, #bae6fd, #7dd3fc);
-  color: #0c4a6e;
-  border: 1px solid #7dd3fc;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(90deg, #7dd3fc, #38bdf8);
-  transform: translateY(-1px);
-}
-
-.btn-primary input[type="file"] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.btn-save {
-  background: linear-gradient(90deg, #2563eb, #1e40af);
-  color: #fff;
-  border: none;
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.btn-save:hover {
-  background: linear-gradient(90deg, #1e40af, #1d4ed8);
-  transform: translateY(-1px);
-}
-
-.btn-save:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-secondary {
-  background: #f1f5f9;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background: #e2e8f0;
-  transform: translateY(-1px);
-}
-
-.btn-accent {
-  background: #0ea5e9;
-  color: #fff;
-  border: 0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-accent:hover {
-  background: #0284c7;
-  transform: translateY(-1px);
-}
-
-/* ===== FEEDBACK INLINE ===== */
-.muted {
-  color: #64748b;
-  margin-left: 8px;
-}
-
-.err {
-  color: #b91c1c;
-  margin-left: 8px;
-}
-
-.ok {
-  color: #065f46;
-  margin-left: 8px;
-}
-
-/* ===== EDITOR (Quill) ===== */
-.quill-host {
-  min-height: 65vh;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  border-radius: 6px;
-  padding: 10px;
-}
-
-/* ===== COLUMNA DERECHA ===== */
-.editor-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 14px;
-  box-shadow: 0 1px 3px rgba(2, 8, 23, 0.1);
-}
-
-.card h4 {
-  margin-bottom: 8px;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #1e293b;
-}
-
-/* ===== USUARIOS ACTIVOS ===== */
-.user-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f8fafc;
-  border-radius: 6px;
-  padding: 6px 8px;
-  margin-bottom: 6px;
-  border: 1px solid #e2e8f0;
-}
-
-.avatar {
-  background: #2563eb;
-  color: white;
-  font-weight: 700;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ===== COMENTARIOS / NOTIFICACIONES ===== */
-.notif-card {
-  position: relative;
-}
-
-.notif-badge {
-  background-color: #2563eb;
-  color: white;
-  border-radius: 10px;
-  padding: 2px 6px;
-  font-size: 12px;
-  margin-left: 8px;
-  font-weight: 500;
-}
-
-.btn-outline {
-  width: 100%;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-outline:hover {
-  background: #e0f2fe;
-  border-color: #93c5fd;
-  transform: translateY(-1px);
-}
-
-.presence {
-  margin: 10px 0 16px;
-  color: #334155;
-}
-
-.comments h3 {
-  margin: 16px 0 8px;
-}
-
-.comment-new {
-  display: flex;
-  gap: 8px;
-}
-
-.comment-new input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-}
-
-/* ===== MODAL RESTAURAR VERSIÓN ===== */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 2000;
-}
-
-.modal {
-  position: fixed;
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(900px, 92vw);
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 12px 24px rgba(2, 8, 23, 0.2);
-  display: flex;
-  flex-direction: column;
-  max-height: 80vh;
-  z-index: 2001;
-}
-
-.modal__header,
-.modal__footer {
-  padding: 12px 16px;
-  border-bottom: 1px solid #eef2f7;
-}
-
-.modal__footer {
-  border-top: 1px solid #eef2f7;
-  border-bottom: none;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.modal__body {
-  padding: 12px 16px;
-  overflow: auto;
-}
-
-.close {
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.versions {
-  display: flex;
-  gap: 16px;
-}
-
-.versions__list {
-  width: 48%;
-  max-height: 56vh;
-  overflow: auto;
-  border: 1px solid #eef2f7;
-  border-radius: 8px;
-  padding: 8px;
-}
-
-.version-item {
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.version-item:hover {
-  background: #f7f9fc;
-}
-
-.version-item.active {
-  outline: 2px solid #2563eb;
-  background: #eef3ff;
-}
-
-.version-item__title {
-  font-weight: 600;
-}
-
-.version-item__meta {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.versions__details {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-textarea {
-  width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 8px;
-}
-
-/* Botones genéricos del modal */
-.btn {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  background: #f7f7f7;
-  cursor: pointer;
-}
-
-.btn--gray {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-  color: #111827;
-}
-
-.btn--gray:hover {
-  background: #e5e7eb;
-}
-
-.btn--red {
-  background: #ef4444;
-  border-color: #dc2626;
-  color: #fff;
-}
-
-.btn--red:hover {
-  background: #dc2626;
-}
-
-.ro-field--full {
-  grid-column: 1 / -1;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 900px) {
-  .editor-grid {
+/* Responsive */
+@media (max-width: 980px){
+  .editor-layout,
+  .editor-grid,
+  .layout{
     grid-template-columns: 1fr;
   }
-
-  .editor-sidebar {
-    order: 2;
-  }
 }
 
-@media (max-width: 720px) {
-  .toolbar {
-    gap: 6px;
-  }
+/* --- Cards / paneles --- */
+.card, section.card, .panel, .box{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:14px;
+  padding:14px 16px;
+  box-shadow: 0 8px 24px rgba(17,24,39,.06);
+}
+
+/* --- Barra superior (donde están Importar/Guardar/etc) --- */
+.topbar, .editor-topbar, .toolbar, .header-actions, .actions-bar{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 12px;
+  border-radius:14px;
+  background: linear-gradient(180deg, #ffffff, #fbfbfe);
+  border:1px solid #eef2f7;
+  box-shadow: 0 8px 18px rgba(17,24,39,.05);
+  margin-bottom: 12px;
+}
+
+.topbar__left, .topbar__right,
+.toolbar-left, .toolbar-right,
+.actions, .action-group{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* =========================================================
+   ✅ 1) HOJA “NO SE EXPANDE”: alto fijo + scroll interno
+   ========================================================= */
+
+/* Panel que envuelve la hoja del editor */
+.editor-sheet,
+.document-sheet,
+.paper,
+.sheet,
+.editor-canvas{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:16px;
+  box-shadow: 0 12px 30px rgba(17,24,39,.06);
+  padding: 12px;
+  overflow: hidden; /* <- clave: no deja que crezca por contenido */
+}
+
+/*
+  Ajuste de altura: la hoja ocupará la pantalla.
+  Si te queda muy alto/bajo, cambia el 230px.
+*/
+.editor-sheet,
+.document-sheet,
+.paper,
+.sheet,
+.editor-canvas{
+  height: calc(100vh - 230px);
+  min-height: 520px;
+}
+
+/* Sidebar (editores/comentarios) también con altura “bonita” */
+.sidebar, .right-panel, .aside, .panel-right{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:16px;
+  box-shadow: 0 12px 30px rgba(17,24,39,.06);
+  padding: 14px;
+  height: fit-content;
+}
+
+/* --- Quill: forzar scroll dentro del editor --- */
+:host ::ng-deep .ql-container{
+  height: calc(100% - 44px); /* toolbar quill */
+  overflow: hidden;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+:host ::ng-deep .ql-editor{
+  height: 100%;
+  overflow-y: auto;           /* ✅ scroll interno */
+  padding: 18px 22px;
+}
+
+/* Toolbar de quill: que se vea más “Notion” */
+:host ::ng-deep .ql-toolbar{
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  background: #f8fafc;
+  border-color: #eef2f7;
+}
+
+/* =========================================================
+   ✅ 2) BOTONES CON COLOR (sin tocar HTML)
+   ========================================================= */
+
+button, .btn{
+  appearance:none;
+  border:1px solid transparent;
+  border-radius:10px;
+  padding: 9px 14px;
+  font-weight: 800;
+  font-size: .92rem;
+  cursor:pointer;
+  transition: transform .08s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  line-height:1;
+}
+
+/* Default: “pill” elegante */
+button, .btn{
+  background:#f3f6ff;
+  color:#1f2a44;
+  border-color:#dbe5ff;
+}
+button:hover, .btn:hover{
+  background:#eaf1ff;
+  border-color:#c9d9ff;
+  transform: translateY(-1px);
+}
+
+/* Guardar (primary) */
+button.btn--primary, .btn--primary{
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color:#fff;
+  border-color: transparent;
+  box-shadow: 0 10px 18px rgba(37,99,235,.28);
+}
+button.btn--primary:hover, .btn--primary:hover{
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 14px 26px rgba(37,99,235,.32);
+}
+
+/* Danger */
+button.btn--danger, .btn--danger{
+  background: linear-gradient(135deg, #ffe8e8, #ffd4d4);
+  color:#8b1d1d;
+  border-color:#ffc0c0;
+}
+button.btn--danger:hover, .btn--danger:hover{
+  background: linear-gradient(135deg, #ffdcdc, #ffbfbf);
+  color:#7a1010;
+}
+
+/* Botón “Ver anotaciones” y similares (ghost) */
+button.btn--ghost, .btn--ghost{
+  background:#ffffff;
+  color:#1d2939;
+  border-color:#d0d5dd;
+}
+button.btn--ghost:hover, .btn--ghost:hover{
+  background:#f3f5f7;
+}
+
+/* Disabled */
+button:disabled, .btn:disabled{
+  background:#e5e7eb !important;
+  color:#9ca3af !important;
+  border-color:#e5e7eb !important;
+  box-shadow:none !important;
+  transform:none !important;
+  cursor:not-allowed;
+}
+
+/* =========================================================
+   ✅ Avatar del editor (sin tocar HTML)
+   ========================================================= */
+.avatar, .user-avatar, .profile-avatar, .editor-avatar{
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  box-shadow: 0 10px 18px rgba(37,99,235,.18);
+  border: 2px solid rgba(255,255,255,.9);
+}
+
+/* Si la “F” está en un span */
+.avatar span, .user-avatar span, .profile-avatar span, .editor-avatar span{
+  font-size: .95rem;
 }

@@ -1,25 +1,44 @@
 <!-- src/app/core/features/editor/document/document-editor.component.html -->
+
 <div class="editor-grid">
-  <!-- ===== COLUMNA IZQUIERDA (principal) ===== -->
+  <!-- =======================
+       COLUMNA IZQUIERDA
+  ======================== -->
   <div class="editor-main">
     <div class="top-bar">
-      <button class="btn-back" (click)="goBack()">← Volver al Dashboard</button>
+      <button class="btn-back" type="button" (click)="goBack()">
+        ← Volver al Dashboard
+      </button>
     </div>
 
     <div class="toolbar">
-      <h2>Editor Colaborativo</h2>
+      <div class="toolbar__title">
+        <h2>Editor Colaborativo</h2>
+        <p class="toolbar__hint">
+          Cambios en tiempo real • Guardado por versiones • Comentarios
+        </p>
+      </div>
 
       <div class="buttons">
-        <label class="btn-primary">
+        <!-- Import DOCX -->
+        <label class="btn-primary" title="Importar un archivo .docx">
           Importar DOCX
           <input type="file" accept=".docx" (change)="importDocx($event)" />
         </label>
 
-        <button class="btn-save" (click)="save()" [disabled]="saving">
-          Guardar
+        <!-- Guardar -->
+        <button class="btn-save" type="button" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Guardando…' : 'Guardar' }}
         </button>
 
-        <button class="btn-save" type="button" (click)="openRestoreModal()" [disabled]="restoring">
+        <!-- Restaurar versión (HU-010) -->
+        <button
+          class="btn-save"
+          type="button"
+          (click)="openRestoreModal()"
+          [disabled]="restoring"
+          title="Restaurar una versión anterior"
+        >
           Restaurar versión
         </button>
 
@@ -27,71 +46,101 @@
         <button type="button" class="btn-secondary" (click)="openMetadata()">
           Metadatos
         </button>
+
         <button type="button" class="btn-accent" (click)="requestSignature()">
           Solicitar Firma
         </button>
+      </div>
 
-        <span *ngIf="saving" class="muted">guardando…</span>
-        <span *ngIf="error" class="err">{{ error }}</span>
-        <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
+      <!-- Mensajes -->
+      <div class="status">
         <span *ngIf="info" class="muted">{{ info }}</span>
+        <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
+        <span *ngIf="error" class="err">{{ error }}</span>
       </div>
     </div>
 
-    <!-- 📝 CONTENIDO DEL DOCUMENTO -->
-    <div class="section">
+    <!-- =======================
+         CONTENIDO / QUILL
+    ======================== -->
+    <div class="sheet">
       <div #editor class="quill-host"></div>
     </div>
   </div>
 
-  <!-- ===== COLUMNA DERECHA (sidebar) ===== -->
-  <div class="editor-sidebar">
+  <!-- =======================
+       COLUMNA DERECHA (SIDEBAR)
+  ======================== -->
+  <aside class="editor-sidebar">
+    <!-- Editores activos -->
     <div class="card">
-      <h4>
-        <img src="assets/icons/activeUser.png" width="18" />
+      <h4 class="card-title">
+        <img src="assets/icons/activeUser.png" width="18" alt="" />
         Editores Activos
       </h4>
+
       <div *ngIf="presence?.length; else noUsers" class="user-list">
         <div *ngFor="let u of presence" class="user-card">
-          <div class="avatar">
+          <div class="avatar" aria-hidden="true">
             {{ (u.nombre?.[0] ?? '?') | uppercase }}
           </div>
-          <b>{{ u.nombre }} {{ u.apellido1 }} {{ u.apellido2 }}</b>
+          <div class="user-meta">
+            <b>{{ u.nombre }} {{ u.apellido1 }} {{ u.apellido2 }}</b>
+          </div>
         </div>
       </div>
-      <ng-template #noUsers><small>No hay editores activos</small></ng-template>
+
+      <ng-template #noUsers>
+        <small class="muted">No hay editores activos</small>
+      </ng-template>
     </div>
 
+    <!-- Comentarios -->
     <div class="card notif-card">
-      <h4>
-        <img src="assets/icons/comentario.png" width="18" />
+      <h4 class="card-title">
+        <img src="assets/icons/comentario.png" width="18" alt="" />
         Comentarios
         <span *ngIf="unreadCount > 0" class="notif-badge">+{{ unreadCount }}</span>
       </h4>
-      <button class="btn-outline" (click)="toggleComentarios()">Ver Anotaciones</button>
+
+      <button class="btn-outline" type="button" (click)="toggleComentarios()">
+        Ver Anotaciones
+      </button>
     </div>
-  </div>
+  </aside>
 
-  <!-- ===== MODAL: Restaurar versión (HU-010) ===== -->
-  <div class="modal-backdrop" *ngIf="showRestoreModal" (click)="closeRestoreModal()"></div>
+  <!-- =======================
+       MODAL: Restaurar versión (HU-010)
+  ======================== -->
+  <div
+    class="modal-backdrop"
+    *ngIf="showRestoreModal"
+    (click)="closeRestoreModal()"
+  ></div>
 
-  <div class="modal" *ngIf="showRestoreModal" role="dialog" aria-modal="true" aria-labelledby="restoreTitle">
+  <div
+    class="modal"
+    *ngIf="showRestoreModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="restoreTitle"
+  >
     <header class="modal__header">
       <h3 id="restoreTitle">Restaurar versión</h3>
-      <button class="close" (click)="closeRestoreModal()">×</button>
+      <button class="close" type="button" (click)="closeRestoreModal()">×</button>
     </header>
 
     <section class="modal__body">
       <div class="versions">
-        <div class="versions__list">
+        <div class="versions__list" role="radiogroup" aria-label="Versiones disponibles">
           <div
             *ngFor="let v of versiones; let i = index"
             class="version-item"
             [class.active]="v.id === selectedVersionId"
             (click)="selectVersion(v)"
             tabindex="0"
-            [attr.aria-checked]="v.id === selectedVersionId"
             role="radio"
+            [attr.aria-checked]="v.id === selectedVersionId"
           >
             <div class="version-item__title">
               {{ v.nombre_versionado || ('Versión #' + (versiones.length - i)) }}
@@ -104,7 +153,12 @@
 
         <div class="versions__details" *ngIf="selectedVersionId">
           <label for="motivo">Motivo de la restauración</label>
-          <textarea id="motivo" [(ngModel)]="restoreMotivo" rows="3" placeholder="Describe por qué restauras esta versión..."></textarea>
+          <textarea
+            id="motivo"
+            [(ngModel)]="restoreMotivo"
+            rows="3"
+            placeholder="Describe por qué restauras esta versión..."
+          ></textarea>
 
           <div class="preview-hint">
             *El contenido restaurado reemplazará el contenido actual del documento y se creará una nueva entrada en el historial.
@@ -114,16 +168,24 @@
     </section>
 
     <footer class="modal__footer">
-      <button class="btn btn--gray" (click)="closeRestoreModal()">Cancelar</button>
-      <button class="btn btn--red"
-              (click)="confirmRestore()"
-              [disabled]="!selectedVersionId || restoring">
+      <button class="btn btn--gray" type="button" (click)="closeRestoreModal()">
+        Cancelar
+      </button>
+
+      <button
+        class="btn btn--red"
+        type="button"
+        (click)="confirmRestore()"
+        [disabled]="!selectedVersionId || restoring"
+      >
         {{ restoring ? 'Restaurando…' : 'Restaurar' }}
       </button>
     </footer>
   </div>
 
-  <!-- Panel lateral de comentarios -->
+  <!-- =======================
+       PANEL LATERAL DE COMENTARIOS
+  ======================== -->
   <app-comment-panel
     [open]="showComentarios"
     [comentarios]="comentarios"
@@ -134,15 +196,20 @@
   ></app-comment-panel>
 </div>
 
-<!-- Historial (diálogo) -->
+<!-- =======================
+     HISTORIAL (DIALOG)
+======================== -->
 <app-version-history-dialog
   [open]="showHistory"
   [documentoId]="documentoId"
-  (close)="showHistory=false"
-  (restored)="onRestored($event)">
+  (close)="showHistory = false"
+  (restored)="onRestored($event)"
+>
 </app-version-history-dialog>
 
-<!-- HU-11/12: Diálogo de metadatos -->
+<!-- =======================
+     METADATOS (HU-11/12)
+======================== -->
 <app-document-metadata-dialog
   [documentId]="documentoId"
   [open]="metadataOpen"
