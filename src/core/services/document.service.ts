@@ -298,12 +298,14 @@ export class DocumentService {
     const url = `${this.api}/documentos/${documentId}/restaurar-version/${versionId}`;
     return this.http.post<any>(url, { motivo }).pipe(
       map((res) => ({
-        newVersionId: res?.version_restaurada_id ?? 0,
-        html: '',
+        // soporta ambos nombres por si tu backend devuelve newVersionId o version_restaurada_id
+        newVersionId: res?.newVersionId ?? res?.version_restaurada_id ?? 0,
+        html: res?.html ?? res?.contenido ?? '',   // ✅ ahora sí viaja el contenido
         nombre_versionado: res?.nombre_versionado ?? null,
       }))
     );
   }
+
 
   // ========== HU-011/012 metadata ==========
   getMetadata(id: number) {

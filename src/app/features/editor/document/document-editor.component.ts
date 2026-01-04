@@ -175,11 +175,15 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   /** Callback after restore from VersionHistoryDialog */
   onRestored(e: { newVersionId: number; html: string }) {
-    this.pasteHtml(e.html);
+    if (e?.html != null) this.pasteHtml(e.html);
+
     const end = Math.max(0, this.quill.getLength() - 1);
     this.quill.setSelection(end, 0, 'silent');
-    this.baseVersionId = e.newVersionId;
-    this.info = `Documento restaurado (v${e.newVersionId}). El historial se conserva.`;
+
+    this.baseVersionId = e?.newVersionId ?? this.baseVersionId;
+
+    this.info = `Documento restaurado (v${this.baseVersionId}). El historial se conserva.`;
+
     this.rt.emit('editor:saved', {
       documentoId: this.documentoId,
       versionId: this.baseVersionId,
@@ -187,6 +191,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       reason: 'RESTORE',
     });
   }
+
+
 
   /** Toggle comments side panel (badge reset + polling) */
   toggleComentarios(): void {
@@ -438,19 +444,17 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.docs
       .restoreVersion(this.documentoId, this.selectedVersionId, this.restoreMotivo || '')
       .subscribe({
-        next: () => {
+        next: (res: any) => {
           this.restoring = false;
           this.showRestoreModal = false;
-          this.docs.getContenido(this.documentoId).subscribe({
-            next: (d) => {
-              const html = d?.contenido || '';
-              this.pasteHtml(html);
-              this.baseVersionId = d?.latest_version_id ?? 0;
-            },
-            error: () => {
-              this.error = 'No se pudo cargar el contenido';
-            },
-          });
+
+          if (res?.html != null) this.pasteHtml(res.html);
+
+          const end = Math.max(0, this.quill.getLength() - 1);
+          this.quill.setSelection(end, 0, 'silent');
+
+          this.baseVersionId = res?.newVersionId ?? this.baseVersionId;
+
           alert('Versión restaurada con éxito.');
         },
         error: (e) => {
