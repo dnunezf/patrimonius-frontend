@@ -1,5 +1,5 @@
 // src/app/admin/catalogos/catalogo-roles/catalogo-roles.component.ts
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -20,12 +20,15 @@ export class CatalogoRolesComponent implements OnInit {
   editing: Rol | null = null;
   saving = false;
   errorMessage = '';
-
+  // ✅ Modal eliminar
+  showDeleteModal = false;
+  deleting: Rol | null = null;
+  deletingBusy = false;
   // ✅ Paginación (frontend)
   page = 1;
   pageSize = 10;
 
-  constructor(private api: CatalogosService) {}
+  constructor(private api: CatalogosService,private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.api.loadRoles();
@@ -105,20 +108,42 @@ export class CatalogoRolesComponent implements OnInit {
     this.form = { nombreRol: '', descripcion: '' };
   }
 
-  remove(r: Rol) {
-    if (!confirm(`¿Eliminar rol "${r.nombreRol}"?`)) return;
+  openDelete(r: Rol) {
+    this.deleting = r;
+    this.showDeleteModal = true;
+    this.deletingBusy = false;
+    this.errorMessage = '';
+    this.cdr.markForCheck();
+  }
 
-    this.api.deleteRol(r.idRol).subscribe({
+  closeDelete() {
+    this.showDeleteModal = false;
+    this.deleting = null;
+    this.deletingBusy = false;
+    this.cdr.markForCheck();
+  }
+
+  confirmDelete() {
+    if (!this.deleting) return;
+
+    this.deletingBusy = true;
+    this.cdr.markForCheck();
+
+    this.api.deleteRol(this.deleting.idRol).subscribe({
       next: () => {
-        // ✅ No tenemos el total aquí, entonces el ajuste real lo hacemos desde el HTML
-        // llamando ensureValidPage(roles.length) cada vez que se renderiza la tabla.
-        // (Te lo pongo en el HTML con un ng-container, para que no se rompa OnPush)
+        this.deletingBusy = false;
+        this.closeDelete();
+        this.resetPage();
+        this.cdr.markForCheck();
       },
       error: () => {
-        this.errorMessage = 'No se pudo eliminar el rol';
+        this.deletingBusy = false;
+        this.errorMessage = 'No se pudo eliminar el rol (puede estar asignado a usuarios).';
+        this.cdr.markForCheck();
       }
     });
   }
+
 
   trackById = (_: number, it: Rol) => it.idRol;
 }

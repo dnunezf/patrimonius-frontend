@@ -20,6 +20,41 @@ export class CatalogoUnidadComponent implements OnInit {
   editing: Unidad | null = null;
   saving = false;
   errorMessage = '';
+  // ===== Modal del sistema (reemplaza confirm) =====
+  modalOpen = false;
+  modalTitle = '';
+  modalMessage = '';
+  modalOkText = 'Eliminar';
+  modalCancelText = 'Cancelar';
+  pendingDelete?: Unidad;
+
+  openDeleteModal(u: Unidad) {
+    this.pendingDelete = u;
+    this.modalTitle = 'Eliminar unidad';
+    this.modalMessage = `Esta acción no se puede deshacer. ¿Eliminar "${u.nombre}"?`;
+    this.modalOpen = true;
+  }
+
+  closeModal() {
+    this.modalOpen = false;
+    this.pendingDelete = undefined;
+  }
+
+  confirmDelete() {
+    if (!this.pendingDelete) return;
+
+    const u = this.pendingDelete;
+    this.closeModal();
+
+    this.api.deleteUnidad(u.id).subscribe({
+      next: () => {
+        this.errorMessage = '';
+        // si borraste el último de la página, ajusta paginación
+        this.api.loadUnidades();
+      },
+      error: () => (this.errorMessage = 'No se pudo eliminar la unidad')
+    });
+  }
 
   // ✅ Paginación (frontend)
   page = 1;
@@ -104,11 +139,9 @@ export class CatalogoUnidadComponent implements OnInit {
   }
 
   remove(u: Unidad) {
-    if (!confirm(`¿Eliminar unidad "${u.nombre}"?`)) return;
-    this.api.deleteUnidad(u.id).subscribe({
-      error: () => (this.errorMessage = 'No se pudo eliminar la unidad')
-    });
+    this.openDeleteModal(u);
   }
+
 
   trackById = (_: number, item: Unidad) => item.id;
 }

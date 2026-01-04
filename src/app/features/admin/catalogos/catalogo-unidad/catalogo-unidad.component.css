@@ -155,3 +155,67 @@
   margin-top: 10px;
   font-weight: 500;
 }
+/* ===== Modal del sistema ===== */
+.sys-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+}
+
+.sys-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 1001;
+  padding: 16px;
+}
+
+.sys-modal__card {
+  width: min(520px, 100%);
+  border-radius: 14px;
+  overflow: hidden;
+  animation: sysModalIn .12s ease-out;
+}
+
+@keyframes sysModalIn {
+  from { transform: translateY(6px); opacity: .85; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.sys-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sys-modal__title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.sys-modal__close {
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: .75;
+}
+
+.sys-modal__close:hover { opacity: 1; }
+
+.sys-modal__message {
+  margin: 10px 0 14px;
+  opacity: .9;
+}
+
+.sys-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}

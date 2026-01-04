@@ -21,6 +21,96 @@ export class CatalogoPlantillasComponent implements OnInit {
   loading = false;
   uploading = false;
   errorMessage = '';
+  // ===== Modal del sistema (reemplaza prompt/confirm) =====
+  modalOpen = false;
+  modalMode: 'rename' | 'confirmDelete' = 'rename';
+  modalTitle = '';
+  modalMessage = '';
+  modalOkText = 'Aceptar';
+  modalCancelText = 'Cancelar';
+
+  modalInputLabel = 'Nuevo nombre';
+  modalInputValue = '';
+
+  pendingPlantilla?: Plantilla;
+  pendingDeleteId?: number;
+
+  openRenameModal(p: Plantilla) {
+    this.pendingPlantilla = p;
+    this.pendingDeleteId = undefined;
+
+    this.modalMode = 'rename';
+    this.modalTitle = 'Renombrar plantilla';
+    this.modalMessage = 'Escribe el nuevo nombre para la plantilla:';
+    this.modalOkText = 'Guardar';
+    this.modalCancelText = 'Cancelar';
+
+    this.modalInputValue = p.nombre ?? '';
+    this.modalOpen = true;
+  }
+
+  openDeleteModal(id: number) {
+    this.pendingDeleteId = id;
+    this.pendingPlantilla = undefined;
+
+    this.modalMode = 'confirmDelete';
+    this.modalTitle = 'Eliminar plantilla';
+    this.modalMessage = 'Esta acción no se puede deshacer. ¿Deseas continuar?';
+    this.modalOkText = 'Eliminar';
+    this.modalCancelText = 'Cancelar';
+
+    this.modalOpen = true;
+  }
+
+  closeModal() {
+    this.modalOpen = false;
+    this.pendingPlantilla = undefined;
+    this.pendingDeleteId = undefined;
+  }
+
+  confirmModal() {
+    // RENOMBRAR
+    if (this.modalMode === 'rename' && this.pendingPlantilla) {
+      const nuevo = (this.modalInputValue || '').trim();
+      if (!nuevo || nuevo === this.pendingPlantilla.nombre) {
+        this.closeModal();
+        return;
+      }
+
+      this.api.updatePlantilla(this.pendingPlantilla.id, { nombre: nuevo }).subscribe({
+        next: () => {
+          this.closeModal();
+          this.load();
+        },
+        error: () => {
+          this.closeModal();
+          alert('Error renombrando plantilla'); // si quieres, luego también lo cambias a modal toast
+        },
+      });
+
+      return;
+    }
+
+    // ELIMINAR
+    if (this.modalMode === 'confirmDelete' && this.pendingDeleteId != null) {
+      const id = this.pendingDeleteId;
+
+      this.api.deletePlantilla(id).subscribe({
+        next: () => {
+          this.closeModal();
+          this.load();
+        },
+        error: () => {
+          this.closeModal();
+          alert('No se pudo eliminar plantilla');
+        },
+      });
+
+      return;
+    }
+
+    this.closeModal();
+  }
 
   // ✅ Paginación frontend (page size = 10)
   page = 1;
@@ -139,23 +229,13 @@ export class CatalogoPlantillasComponent implements OnInit {
   }
 
   rename(p: Plantilla) {
-    const nuevo = prompt('Nuevo nombre', p.nombre);
-    if (!nuevo || nuevo === p.nombre) return;
-
-    this.api.updatePlantilla(p.id, { nombre: nuevo }).subscribe({
-      next: () => this.load(),
-      error: () => alert('Error renombrando plantilla'),
-    });
+    this.openRenameModal(p);
   }
 
   remove(id: number) {
-    if (!confirm('¿Eliminar plantilla?')) return;
-
-    this.api.deletePlantilla(id).subscribe({
-      next: () => this.load(),
-      error: () => alert('No se pudo eliminar plantilla'),
-    });
+    this.openDeleteModal(id);
   }
+
 
   /** Para abrir el archivo */
   href(p: Plantilla) {

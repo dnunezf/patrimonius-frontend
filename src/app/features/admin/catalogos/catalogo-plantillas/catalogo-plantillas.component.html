@@ -136,3 +136,42 @@
     </ng-container>
   </section>
 </main>
+<!-- Modal del sistema -->
+<div class="sys-modal__backdrop" *ngIf="modalOpen" (click)="closeModal()"></div>
+
+<div class="sys-modal" *ngIf="modalOpen" role="dialog" aria-modal="true">
+  <div class="card sys-modal__card" (click)="$event.stopPropagation()">
+    <div class="sys-modal__header">
+      <h3 class="sys-modal__title">{{ modalTitle }}</h3>
+      <button class="sys-modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
+    </div>
+
+    <p class="sys-modal__message">{{ modalMessage }}</p>
+
+    <!-- Prompt (rename) -->
+    <div *ngIf="modalMode === 'rename'" class="sys-modal__form">
+      <label class="sys-modal__label">{{ modalInputLabel }}</label>
+      <input
+        class="sys-modal__input"
+        type="text"
+        [(ngModel)]="modalInputValue"
+        (keydown.enter)="confirmModal()"
+        autofocus
+      />
+    </div>
+
+    <div class="sys-modal__actions">
+      <button class="btn btn--ghost" (click)="closeModal()">
+        {{ modalCancelText }}
+      </button>
+
+      <button
+        class="btn"
+        [ngClass]="modalMode === 'confirmDelete' ? 'btn--danger' : 'btn--primary'"
+        (click)="confirmModal()"
+      >
+        {{ modalOkText }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -86,7 +86,7 @@
           <td>{{ rol.descripcion || '—' }}</td>
           <td class="td-actions">
             <button class="btn btn--ghost" (click)="edit(rol)">Editar</button>
-            <button class="btn btn--danger" (click)="remove(rol)">Eliminar</button>
+            <button class="btn btn--danger" (click)="openDelete(rol)">Eliminar</button>
           </td>
         </tr>
 
@@ -121,3 +121,24 @@
     </div>
   </section>
 </main>
+<!-- ✅ Modal Eliminar (estética del sistema) -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDelete()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3 class="modal-title">Eliminar rol</h3>
+
+    <p class="modal-text">
+      ¿Seguro que querés eliminar el rol
+      <strong>"{{ deleting?.nombreRol }}"</strong>?
+    </p>
+
+    <div class="modal-actions">
+      <button class="btn btn--ghost" (click)="closeDelete()" [disabled]="deletingBusy">
+        Cancelar
+      </button>
+
+      <button class="btn btn--danger" (click)="confirmDelete()" [disabled]="deletingBusy">
+        {{ deletingBusy ? 'Eliminando...' : 'Eliminar' }}
+      </button>
+    </div>
+  </div>
+</div>
