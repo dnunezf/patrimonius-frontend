@@ -1,4 +1,4 @@
-/* ---------- Page header ---------- */
+/* Header */
 .head .back {
   color: var(--mncr-blue-639);
   display: inline-block;
@@ -9,30 +9,30 @@
   margin: 0 0 8px;
 }
 
-/* ---------- Tabs (Control / Log) ---------- */
+/* Tabs */
 .tabs {
   display: flex;
   gap: 8px;
-  background: #f3f4f6; /* subtle rail */
-  border-radius: 8px;
-  padding: 4px;
-  margin: 8px 0 16px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 6px;
+  margin: 10px 0 16px;
 }
 .tab {
   flex: 1;
   padding: 10px 12px;
   border: 0;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
 }
 .tab.is-active {
-  background: var(--mncr-white);
+  background: #fff;
   border: 1px solid #e5e7eb;
 }
 
-/* ---------- Simple responsive rows ---------- */
+/* Metrics */
 .row {
   display: grid;
   gap: 16px;
@@ -51,11 +51,10 @@
   }
 }
 
-/* ---------- Card + metrics ---------- */
 .card {
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 16px;
 }
 .metric__title {
@@ -63,17 +62,44 @@
   font-size: 0.9rem;
 }
 .metric__value {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: 1.7rem;
+  font-weight: 800;
   margin-top: 6px;
 }
 
-/* ---------- Document picker grid ---------- */
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+/* Alerts */
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+.alert__text {
+  color: #9a3412;
+  font-weight: 600;
+}
+.alert__close {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* Picker */
 .config__picker {
   display: grid;
   gap: 16px;
   grid-template-columns: 1fr 1fr;
-  margin-bottom: 16px;
+  margin: 10px 0 16px;
 }
 @media (max-width: 700px) {
   .config__picker {
@@ -82,96 +108,298 @@
 }
 .field label {
   display: block;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 6px;
 }
 
-/* ---------- Chips (levels / actions) ---------- */
-.levels {
+.input-icon {
+  position: relative;
+}
+.input-icon__left {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+}
+.input-icon .form__control {
+  padding-left: 34px;
+}
+
+/* Document summary */
+.doc-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1.3fr 0.7fr 0.7fr;
+}
+@media (max-width: 900px) {
+  .doc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.doc-label {
+  color: #6b7280;
+  font-weight: 800;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+.doc-title {
+  font-weight: 900;
+  font-size: 1.05rem;
+}
+.doc-code {
+  color: #6b7280;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.doc-value {
+  font-weight: 800;
+}
+
+/* Level row */
+.level-row {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
 }
-.chip {
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  padding: 8px 12px;
-  border-radius: 99px;
-  cursor: pointer;
-  font-weight: 700;
+.level-left {
+  min-width: 320px;
+  flex: 1;
 }
-.chip.on {
-  background: #e8f2fb; /* lighter brand fill */
-  border-color: var(--mncr-blue-639);
-  color: var(--mncr-blue-639);
-}
-
-/* Hint text under level selector */
-.hint {
-  color: #374151;
-  font-size: 0.9rem;
-  margin-top: 8px;
-}
-
-/* ---------- Two-column grid for level & action button ---------- */
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr auto;
+.level-right {
+  display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
-.actions-right {
-  text-align: right;
+.level-select {
+  max-width: 420px;
 }
 
-/* ---------- Section headers with action buttons ---------- */
-.flex-head {
+.current-pill {
+  color: #374151;
+  font-weight: 800;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-left: 6px;
+  font-weight: 900;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+}
+.pill--public {
+  background: #e5e7eb;
+}
+.pill--internal {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+.pill--high {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+.pill--restricted {
+  background: #ede9fe;
+  border-color: #ddd6fe;
+}
+
+/* Priority box */
+.priority-box {
+  margin-top: 12px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 12px;
+}
+.priority-title {
+  font-weight: 900;
+  margin-bottom: 4px;
+  color: #1f2937;
+}
+.priority-text {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Rules head */
+.rules-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
-}
-
-/* ---------- Generic table for users/roles ---------- */
-.table .t-head,
-.log-table .t-head {
-  display: grid;
-  grid-template-columns: 120px 1fr 260px 80px;
-  gap: 8px;
-  font-weight: 700;
-  color: #374151;
-}
-.table .t-row {
-  display: grid;
-  grid-template-columns: 120px 1fr 260px 80px;
-  gap: 8px;
-  padding: 8px 0;
-  border-top: 1px solid #f1f5f9;
-}
-.table .twocol {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 1fr 1fr;
-}
-.table .acts {
-  display: flex;
-  gap: 8px;
   flex-wrap: wrap;
 }
 
-/* Stack columns on smaller screens */
-@media (max-width: 900px) {
-  .table .t-head,
-  .table .t-row {
-    grid-template-columns: 80px 1fr 1fr 60px;
-  }
-  .table .twocol {
-    grid-template-columns: 1fr;
-  }
+/* Rules table (mockup-like) */
+.rules-table {
+  width: 100%;
+  overflow: auto;
+  border-radius: 10px;
+}
+.rt-head,
+.rt-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1.1fr 0.9fr 0.8fr 0.8fr 0.8fr;
+  gap: 10px;
+  align-items: center;
+  min-width: 980px;
+}
+.rt-head {
+  font-weight: 900;
+  color: #374151;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.rt-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.rt-empty {
+  padding: 12px 0;
+  color: #6b7280;
+  font-weight: 700;
 }
 
-/* ---------- Filters grid (Log tab) ---------- */
+.usercell .uname {
+  font-weight: 900;
+}
+.usercell .uemail {
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.tag {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  font-weight: 800;
+}
+.tag--editor {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.perm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.perm {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  border: 1px solid transparent;
+}
+.perm--view {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+.perm--edit {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+.perm--sign {
+  background: #ffedd5;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Roles simple table */
+.simple-table {
+  width: 100%;
+  overflow: auto;
+  border-radius: 10px;
+}
+.st-head,
+.st-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 280px 120px;
+  gap: 10px;
+  align-items: center;
+  min-width: 760px;
+}
+.st-head {
+  font-weight: 900;
+  color: #374151;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.st-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Log table */
+.log-table {
+  width: 100%;
+  overflow: auto;
+}
+.lt-head,
+.lt-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 110px 1.3fr 130px 1fr;
+  gap: 10px;
+  align-items: center;
+  min-width: 980px;
+}
+.lt-head {
+  font-weight: 900;
+  color: #374151;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.lt-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.muted {
+  color: #6b7280;
+}
+.muted2 {
+  color: #6b7280;
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+.muted3 {
+  color: #6b7280;
+  font-weight: 700;
+}
+
+/* Badges */
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  background: #e5e7eb;
+  display: inline-flex;
+}
+.badge.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Filters */
 .grid-4 {
   display: grid;
   gap: 12px;
@@ -187,36 +415,122 @@
     grid-template-columns: 1fr;
   }
 }
+.filters-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
 
-/* ---------- Log table (wider columns for document) ---------- */
-.log-table .t-head {
-  grid-template-columns: 160px 1fr 100px 1.2fr 120px 1fr;
+/* Modals */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
 }
-.log-table .t-row {
-  display: grid;
-  grid-template-columns: 160px 1fr 100px 1.2fr 120px 1fr;
-  gap: 8px;
-  padding: 10px 0;
-  border-top: 1px solid #f1f5f9;
+.modal {
+  width: min(680px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 16px;
 }
-.muted {
+.modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.modal__title {
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+.modal__sub {
   color: #6b7280;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.modal__x {
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+}
+.modal__body {
+  display: grid;
+  gap: 12px;
+}
+.modal__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
 }
 
-/* ---------- Result badges (Permitido / Denegado) ---------- */
-.badge {
-  padding: 4px 8px;
-  border-radius: 999px;
+.checklist {
+  display: grid;
+  gap: 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 700;
+}
+
+/* Buttons (assumes your global button classes exist; add fallbacks if needed) */
+.btn {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 900;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn--primary {
+  background: #0b66c3;
+  color: #fff;
+}
+.btn--secondary {
   background: #e5e7eb;
+  color: #111827;
 }
-.badge.success {
-  /* OK / Permitido */
-  background: #d1fae5; /* soft green background */
-  color: #065f46; /* readable green text */
+.btn--success {
+  background: #16a34a;
+  color: #fff;
 }
-.badge.danger {
-  /* DENIED / Denegado */
-  background: #fee2e2; /* soft red background */
-  color: #991b1b; /* readable red text */
+.btn--danger {
+  background: #dc2626;
+  color: #fff;
+}
+.btn--light {
+  background: #fff;
+  border-color: #e5e7eb;
+  color: #111827;
+}
+
+/* Form control fallback (if not defined globally) */
+.form__control {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+}
+.form__control:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.form__label {
+  font-weight: 900;
+  display: block;
+  margin-bottom: 6px;
 }

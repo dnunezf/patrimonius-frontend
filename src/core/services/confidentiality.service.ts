@@ -1,5 +1,6 @@
+// src/app/core/services/confidentiality.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
 
@@ -24,11 +25,29 @@ export interface ConfConfig extends ConfDto {
   title?: string;
 }
 
+export interface ConfDocumentOption {
+  id: number;
+  title: string;
+  code?: string;
+  status?: string;
+  level?: ConfLevel;
+  unit?: string;
+  unitId?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ConfidentialityService {
   private base = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
+
+  listDocuments(search = ''): Observable<ConfDocumentOption[]> {
+    const params = new HttpParams().set('search', search || '');
+    return this.http.get<ConfDocumentOption[]>(
+      `${this.base}/admin/confidentiality/documents`,
+      { params }
+    );
+  }
 
   getConfig(docId: number): Observable<ConfConfig> {
     return this.http.get<ConfConfig>(
