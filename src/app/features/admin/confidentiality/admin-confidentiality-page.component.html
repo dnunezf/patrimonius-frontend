@@ -1,3 +1,4 @@
+<!-- admin-confidentiality-page.component.html -->
 <main class="container">
   <!-- Back & title -->
   <section class="head">
@@ -78,6 +79,9 @@
             placeholder="Buscar por título, ID o tipo..."
           />
         </div>
+        <div class="muted2" style="margin-top: 6px">
+          Resultados: {{ filteredDocumentsCount() }}
+        </div>
       </div>
 
       <div class="field">
@@ -92,6 +96,14 @@
             {{ d.title }} ({{ d.code }})
           </option>
         </select>
+
+        <div
+          class="muted2"
+          style="margin-top: 6px"
+          *ngIf="searchQuery().trim()"
+        >
+          Abra el selector para ver la lista filtrada.
+        </div>
       </div>
     </div>
 
@@ -225,9 +237,7 @@
           <div>
             <span class="tag tag--editor">{{ row.editorAccessLabel }}</span>
           </div>
-
           <div class="muted3">{{ row.restrictions || "Ninguna" }}</div>
-
           <div class="muted3">{{ row.authorizedAt || "—" }}</div>
 
           <div class="actions">
@@ -310,8 +320,9 @@
     </div>
   </section>
 
-  <!-- LOG TAB -->
+  <!-- LOG TAB (unchanged) -->
   <section *ngIf="activeTab() === 'log'">
+    <!-- ... keep your existing log UI ... -->
     <div class="filters card">
       <div class="grid-4">
         <div>
@@ -451,6 +462,9 @@
               placeholder="Buscar por nombre, correo o unidad..."
             />
           </div>
+          <div class="muted2" style="margin-top: 6px">
+            Resultados: {{ filteredUsersCount() }}
+          </div>
         </div>
 
         <div class="field">
@@ -465,6 +479,14 @@
               {{ u.nombre }} {{ u.apellido1 }} — {{ u.email }}
             </option>
           </select>
+
+          <div
+            class="muted2"
+            style="margin-top: 6px"
+            *ngIf="isSelectedUserAlreadyAuthorized()"
+          >
+            Este usuario ya fue agregado anteriormente.
+          </div>
         </div>
 
         <div class="field">
@@ -510,6 +532,7 @@
           class="btn btn--success"
           type="button"
           (click)="confirmAddUser()"
+          [disabled]="isAddUserDisabled()"
         >
           Agregar Usuario
         </button>
@@ -545,6 +568,14 @@
               {{ r.nombre }} (ID: {{ r.id }})
             </option>
           </select>
+
+          <div
+            class="muted2"
+            style="margin-top: 6px"
+            *ngIf="isSelectedRoleAlreadyAuthorized()"
+          >
+            Este rol ya fue agregado anteriormente.
+          </div>
         </div>
 
         <div class="field">
@@ -590,6 +621,7 @@
           class="btn btn--primary"
           type="button"
           (click)="confirmAddRole()"
+          [disabled]="isAddRoleDisabled()"
         >
           Agregar Rol
         </button>
@@ -668,8 +700,9 @@
           class="btn btn--primary"
           type="button"
           (click)="saveEditorPerms()"
+          [disabled]="editorPermsSaving()"
         >
-          Guardar cambios
+          {{ editorPermsSaving() ? "Guardando…" : "Guardar cambios" }}
         </button>
       </div>
     </div>

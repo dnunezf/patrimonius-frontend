@@ -51,6 +51,14 @@
   }
 }
 
+select.form__control option[disabled] {
+  color: #6b7280;
+}
+
+select.form__control option[disabled] {
+  color: #6b7280;
+}
+
 .card {
   background: #fff;
   border: 1px solid #e5e7eb;
