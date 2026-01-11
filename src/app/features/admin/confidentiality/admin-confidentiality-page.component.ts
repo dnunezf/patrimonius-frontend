@@ -519,10 +519,20 @@ export class AdminConfidentialityPageComponent {
     return true;
   }
 
-  private normalizeActions(actions: Action[] | any): Action[] {
-    const a = Array.isArray(actions) ? actions : [];
+  private normalizeActions(actions: Action[] | string | any): Action[] {
+    // Accept array or MySQL SET string: "VIEW,EDIT,SIGN"
+    let arr: any[] = [];
+
+    if (Array.isArray(actions)) {
+      arr = actions;
+    } else if (typeof actions === 'string') {
+      arr = actions.split(',').map((s) => s.trim());
+    } else {
+      arr = [];
+    }
+
     const set = new Set<Action>();
-    for (const x of a) {
+    for (const x of arr) {
       if (x === 'VIEW' || x === 'EDIT' || x === 'SIGN') set.add(x);
     }
     return Array.from(set);
