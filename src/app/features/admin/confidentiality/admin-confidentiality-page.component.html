@@ -1,6 +1,5 @@
 <!-- admin-confidentiality-page.component.html -->
 <main class="container">
-  <!-- Back & title -->
   <section class="head">
     <a routerLink="/admin/module" class="back"
       >← Volver al Módulo de Administración</a
@@ -9,7 +8,6 @@
     <p class="sub">Control de acceso por nivel de confidencialidad</p>
   </section>
 
-  <!-- Tabs -->
   <div class="tabs">
     <button
       class="tab"
@@ -29,7 +27,6 @@
     </button>
   </div>
 
-  <!-- Metrics -->
   <section class="row cols-4 mb-16" *ngIf="activeTab() === 'control'">
     <div class="card metric">
       <div class="metric__title">Documentos Alta Confidencialidad</div>
@@ -49,14 +46,6 @@
     </div>
   </section>
 
-  <!-- Message -->
-  <div class="alert" *ngIf="uiMessage()">
-    <div class="alert__text">{{ uiMessage() }}</div>
-    <button class="alert__close" type="button" (click)="uiMessage.set('')">
-      ×
-    </button>
-  </div>
-
   <!-- CONTROL TAB -->
   <section class="config" *ngIf="activeTab() === 'control'">
     <h2>Configuración de Confidencialidad</h2>
@@ -65,7 +54,6 @@
       usuarios autorizados
     </p>
 
-    <!-- Picker -->
     <div class="config__picker">
       <div class="field">
         <label>Buscar documento</label>
@@ -107,7 +95,6 @@
       </div>
     </div>
 
-    <!-- Selected document summary -->
     <div class="card" *ngIf="selectedDocument() as doc">
       <div class="doc-grid">
         <div>
@@ -115,12 +102,10 @@
           <div class="doc-title">{{ doc.title }}</div>
           <div class="doc-code">{{ doc.code }}</div>
         </div>
-
         <div>
           <div class="doc-label">Tipo</div>
           <div class="doc-value">{{ doc.type || "—" }}</div>
         </div>
-
         <div>
           <div class="doc-label">Unidad autora</div>
           <div class="doc-value">{{ doc.unit || "—" }}</div>
@@ -128,12 +113,10 @@
       </div>
     </div>
 
-    <!-- Level config -->
     <div class="card" *ngIf="selectedDocumentId()">
       <div class="level-row">
         <div class="level-left">
           <label class="form__label">Nivel de confidencialidad</label>
-
           <select
             class="form__control level-select"
             [ngModel]="editLevel()"
@@ -182,7 +165,7 @@
       </div>
     </div>
 
-    <!-- Rules table -->
+    <!-- Users table -->
     <div class="card" *ngIf="selectedDocumentId()">
       <div class="rules-head">
         <div>
