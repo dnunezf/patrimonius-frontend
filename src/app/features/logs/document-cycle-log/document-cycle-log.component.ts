@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { AuditService, AuditItem, AuditDetail } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 
-type ResultType = 'Permitida' | 'Denegada';
+type ResultType = 'Permitido' | 'Denegado';
 
 @Component({
   selector: 'app-document-cycle-log',
@@ -14,6 +14,8 @@ type ResultType = 'Permitida' | 'Denegada';
   templateUrl: './document-cycle-log.component.html',
   styleUrls: ['./document-cycle-log.component.css'],
 })
+
+
 export class DocumentCycleLogComponent implements OnInit {
 
   // Backend-fed combos
@@ -22,7 +24,7 @@ export class DocumentCycleLogComponent implements OnInit {
   actions: string[] = []; // Array de acciones dinámico
 
   results: Array<'Todos los resultados' | ResultType> = [
-    'Todos los resultados', 'Permitida', 'Denegada'
+    'Todos los resultados', 'Permitido', 'Denegado'
   ];
 
   // Filters
@@ -47,11 +49,7 @@ export class DocumentCycleLogComponent implements OnInit {
   totalItems = 0;
   totalPages = 1;
 
-  // Detail modal state
-  showDetail = false;
-  detailLoading = false;
-  detailError: string | null = null;
-  detail: AuditDetail | null = null;
+
 
   constructor(
     private audit: AuditService,
@@ -77,7 +75,9 @@ export class DocumentCycleLogComponent implements OnInit {
     };
     if (this.filters.q?.trim()) qp.q = this.filters.q.trim();
     if (this.filters.user !== 'Todos los usuarios') qp.usuario = this.filters.user;
-    if (this.filters.result !== 'Todos los resultados') qp.resultado = this.filters.result as ResultType;
+    const dbResult = this.mapUiResultToDbResult(this.filters.result);
+    if (dbResult) qp.resultado = dbResult;
+
     if (this.filters.document?.trim()) qp.documento = this.filters.document.trim();
 
     const dbState = this.mapUiLabelToDbState(this.filters.state);
@@ -163,41 +163,17 @@ export class DocumentCycleLogComponent implements OnInit {
     });
   }
 
-  // ---- Detail modal handlers ----
-  openDetail(e: AuditItem) {
-    if (!e?.id_evento) return;
-    this.showDetail = true;
-    this.detail = null;
-    this.detailError = null;
-    this.detailLoading = true;
 
-    this.audit.getEventDetail(e.id_evento).subscribe({
-      next: (d) => {
-        this.detail = d;
-        this.detailLoading = false;
-      },
-      error: (err) => {
-        console.error('Failed to load detail', err);
-        this.detailError = 'No se pudo cargar el detalle del evento.';
-        this.detailLoading = false;
-      }
-    });
-  }
-
-  closeDetail() {
-    this.showDetail = false;
-    this.detail = null;
-    this.detailError = null;
-    this.detailLoading = false;
-  }
 
   resultClass(res: string | null | undefined) {
-    switch ((res || '').toLowerCase()) {
-      case 'permitida': return 'badge badge-green';
-      case 'denegada':  return 'badge badge-red';
-      default:          return 'badge';
-    }
+    const v = (res || '').trim().toLowerCase();
+
+    if (v === 'permitida' || v === 'permitido') return 'badge badge-green';
+    if (v === 'denegada'  || v === 'denegado')  return 'badge badge-red';
+
+    return 'badge';
   }
+
 
   stateClass(state: string | null | undefined) {
     const stateClasses = {
@@ -269,5 +245,14 @@ export class DocumentCycleLogComponent implements OnInit {
       .replace(/_/g, ' ')  // replace underscores with spaces
       .replace(/\b\w/g, (char) => char.toUpperCase());  // put first letter of each word to uppercase
   }
+
+  private mapUiResultToDbResult(uiValue: string): string | null {
+    const v = (uiValue || '').trim().toLowerCase();
+    if (!v || v === 'todos los resultados') return null;
+    if (v === 'permitido') return 'PERMITIDO';
+    if (v === 'denegado') return 'DENEGADO';
+    return null;
+  }
+
 
 }

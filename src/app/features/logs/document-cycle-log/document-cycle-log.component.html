@@ -81,36 +81,64 @@
         <tr>
           <th>Fecha y hora</th>
           <th>Usuario</th>
-          <th>Documento </th>
+          <th>Documento</th>
+          <th>Código (serie)</th>
+
           <th>Acción solicitada</th>
           <th>Estado del documento</th>
           <th>Resultado</th>
           <th>Razón</th>
-          <th>Detalles</th>
+
         </tr>
         </thead>
+
         <tbody>
         <tr *ngFor="let e of events">
           <td class="nowrap">{{ e.fecha_hora }}</td>
-          <td><div class="bold">{{ e.usuario }}</div></td>
+
+          <td>
+            <div class="bold">{{ e.usuario }}</div>
+          </td>
+
           <td>
             <div class="bold">{{ e.documento_titulo || '—' }}</div>
+          </td>
+
+          <td>
             <div class="codes">
-              <span *ngIf="e.documento_codigo_unico" class="badge badge-blue">{{ e.documento_codigo_unico }}</span>
-              <span *ngIf="e.documento_codigo_oficial" class="badge badge-green">{{ e.documento_codigo_oficial }}</span>
+            <span *ngIf="e.documento_codigo_unico" class="badge badge-blue">
+              {{ e.documento_codigo_unico }}
+            </span>
+
+              <span *ngIf="e.documento_codigo_oficial" class="badge badge-green">
+              {{ e.documento_codigo_oficial }}
+            </span>
+
+              <span *ngIf="!e.documento_codigo_unico && !e.documento_codigo_oficial">—</span>
             </div>
           </td>
+
           <td>{{ e.accion_solicitada || '—' }}</td>
-          <td><span class="{{ stateClass(e.estado_documento) }}">{{ e.estado_documento || '—' }}</span></td>
-          <td><span class="{{ resultClass(e.resultado) }}">{{ e.resultado || '—' }}</span></td>
-          <td>{{ e.razon || '—' }}</td>
+
           <td>
-            <button type="button" class="button-outline" (click)="openDetail(e)">Ver detalles</button>
+          <span class="{{ stateClass(e.estado_documento) }}">
+            {{ e.estado_documento || '—' }}
+          </span>
           </td>
+
+          <td>
+          <span class="{{ resultClass(e.resultado) }}">
+            {{ e.resultado || '—' }}
+          </span>
+          </td>
+
+          <td>{{ e.razon || '—' }}</td>
+
         </tr>
         </tbody>
       </table>
     </div>
+
 
     <div class="pager muted">
       <button class="button-outline" [disabled]="page<=1" (click)="goPrev()">« Anterior</button>
