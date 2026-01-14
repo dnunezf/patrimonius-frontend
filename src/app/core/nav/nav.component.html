@@ -36,7 +36,7 @@
               [routerLink]="notificationsLink()"
               aria-label="Notificaciones">
         🔔
-        <span *ngIf="noticeCount() > 0" class="badge">{{ noticeCount() }}</span>
+        <span *ngIf="noticeCount() > 0" class="badge">{{ badgeText() }}</span>
       </button>
 
       <span class="email">{{ userEmail() }}</span>

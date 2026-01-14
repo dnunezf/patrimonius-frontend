@@ -34,7 +34,7 @@ export class LogQueriesComponent {
         'Detectar anomalías',
         'Reportes de seguridad'
       ],
-      link: 'document-cycle', // Example link, adjust as needed
+      link: '/logs/security',
     },
     {
       title: 'Bitácora de Actividad de Usuario',

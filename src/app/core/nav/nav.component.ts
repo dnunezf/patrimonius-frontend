@@ -160,5 +160,13 @@ export class NavComponent {
     this.router.navigate(['/']);
   }
 
+  badgeText(): string {
+    const n = Number(this.noticeCount?.() ?? 0);
+
+    if (!Number.isFinite(n) || n <= 0) return '';
+    if (n > 99) return '99+';
+    return String(n);
+  }
+
 
 }

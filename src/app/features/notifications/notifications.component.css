@@ -1,0 +1,131 @@
+/* Usa tus variables MNCR (pegá tu :root en styles.css global).
+   Aquí solo consumo las variables. */
+
+.page { padding: 18px; }
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.title { margin: 0; font-size: 20px; color: var(--mncr-brown); }
+.subtitle { margin: 4px 0 0; color: var(--mncr-gray); font-size: 13px; }
+
+.badge-unread {
+  background: rgba(0, 145, 205, 0.12);
+  color: var(--mncr-blue-3015);
+  border: 1px solid rgba(0, 145, 205, 0.25);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.state { padding: 12px; color: var(--mncr-gray); }
+.state.err { color: var(--mncr-red-1795); }
+
+.list { display: flex; flex-direction: column; gap: 12px; }
+
+.card {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(17,17,17,0.08);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.left { display: flex; align-items: flex-start; justify-content: center; padding-top: 2px; }
+
+.icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: rgba(0, 145, 205, 0.12);
+  border: 1px solid rgba(0, 145, 205, 0.25);
+}
+
+.icon.warn { background: rgba(195, 55, 55, 0.12); border-color: rgba(195, 55, 55, 0.25); }
+.icon.ok { background: rgba(0, 140, 70, 0.12); border-color: rgba(0, 140, 70, 0.25); }
+.icon.info { background: rgba(0, 145, 205, 0.12); border-color: rgba(0, 145, 205, 0.25); }
+
+.body { min-width: 0; }
+
+.row1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-title {
+  font-weight: 800;
+  color: var(--mncr-brown);
+  font-size: 14px;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 800;
+  border: 1px solid rgba(17,17,17,0.12);
+}
+
+.pill-new {
+  background: rgba(0, 145, 205, 0.12);
+  border-color: rgba(0, 145, 205, 0.25);
+  color: var(--mncr-blue-3015);
+}
+
+.desc {
+  margin-top: 6px;
+  color: #2b2b2b;
+  font-size: 13px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.meta {
+  margin-top: 8px;
+  color: var(--mncr-gray);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.btn {
+  border-radius: 10px;
+  border: 1px solid rgba(17,17,17,0.15);
+  padding: 8px 12px;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+.empty{
+  padding: 18px;
+  border: 1px dashed rgba(0,0,0,.15);
+  border-radius: 12px;
+  text-align: center;
+  opacity: .9;
+}
+.empty h3{
+  margin: 0 0 6px 0;
+}
+.empty p{
+  margin: 0;
+  color: var(--mncr-gray);
+}

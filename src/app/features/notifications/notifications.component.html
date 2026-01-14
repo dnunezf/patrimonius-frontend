@@ -1,0 +1,53 @@
+<!-- Si hay notificaciones -->
+<div *ngIf="items.length > 0; else emptyState">
+  <div class="card" *ngFor="let n of items">
+    <div class="left">
+      <div class="icon" [ngClass]="iconFor(n)"></div>
+    </div>
+
+    <div class="body">
+      <div class="row1">
+        <div class="card-title">{{ titleFor(n.tipo) }}</div>
+        <span class="pill pill-new" *ngIf="isUnread(n)">Nueva</span>
+      </div>
+
+      <div class="notif-body">
+        <div><b>Título:</b> "{{ n.documento_titulo || 'Sin título' }}"</div>
+
+        <div *ngIf="n.tipo === 'DOC_FIRMA_SOLICITADA'">
+          <b>Acción requerida:</b> Firmar
+        </div>
+
+        <div *ngIf="n.tipo === 'DOC_ARCHIVADO'">
+          <b>Estado:</b> Archivado
+        </div>
+
+        <div *ngIf="n.tipo === 'DOC_EDITADO'">
+          <b>Editado por:</b> {{ cleanEditor(n.resultado ?? undefined) }}
+        </div>
+
+        <div *ngIf="n.tipo === 'DOC_ELIMINACION'">
+          <b>Creado en:</b> {{ getCreadoEn(n.resultado ?? undefined) }}
+        </div>
+      </div>
+
+      <div class="meta">
+        {{ formatDate(n.fecha) }}
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" (click)="markAsRead(n)" [disabled]="!isUnread(n)">
+        Marcar como leída
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Si NO hay notificaciones -->
+<ng-template #emptyState>
+  <div class="empty">
+    <h3>No hay notificaciones</h3>
+    <p>Cuando haya una nueva, te va a aparecer aquí.</p>
+  </div>
+</ng-template>

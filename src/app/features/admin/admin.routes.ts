@@ -2,7 +2,7 @@
 import { Routes } from '@angular/router';
 import { AdminShellComponent } from './admin-shell.component';
 import { AdminDashboardComponent } from './dashboard/admin-dashboard.component';
-import { AdminNotificationsComponent } from './notifications/admin-notifications.component';
+import { NotificationsComponent } from '../notifications/notifications.component';
 import { AccessExceptionsComponent } from './access-exceptions/access-exceptions.component';
 import { CatalogoRolesComponent } from './catalogos/catalogo-roles/catalogo-roles.component';
 import { CatalogoUnidadComponent } from './catalogos/catalogo-unidad/catalogo-unidad.component';
@@ -17,7 +17,7 @@ export const ADMIN_ROUTES: Routes = [
     component: AdminShellComponent,
     children: [
       { path: 'dashboard', component: AdminDashboardComponent },
-      { path: 'notifications', component: AdminNotificationsComponent },
+      { path: 'notifications', component: NotificationsComponent },
       { path: 'access-exceptions', component: AccessExceptionsComponent },
       { path: 'access-control', component: AccessControlComponent },
 

@@ -46,6 +46,44 @@ export interface AuditDetail {
   descripcion: string | null;
 }
 
+export interface SecurityItem {
+  id_evento: number;
+  fecha_hora: string;
+  usuario: string | null;
+  accion: string | null;
+  resultado: string | null;
+  tipo_evento: string | null;
+  ip: string | null;
+  user_agent: string | null;
+}
+
+export interface SecurityDetail {
+  id_evento: number;
+  fecha_evento: string;
+  accion: string | null;
+  resultado: string | null;
+  usuario_email: string | null;
+  usuario_nombre: string | null;
+  usuario_apellido1: string | null;
+  usuario_apellido2: string | null;
+  rol_usuario: string | null;
+  tipo_evento: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  detalle: any; // JSON
+}
+
+export interface SecurityPage {
+  items: SecurityItem[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+
 @Injectable({ providedIn: 'root' })
 export class AuditService {
   private base = `${environment.apiUrl}/audit`;
@@ -61,7 +99,7 @@ export class AuditService {
     usuario?: string;
     documento?: string;
     sortBy?: string;
-    sortDir?: 'asc' | 'desc'; 
+    sortDir?: 'asc' | 'desc';
   }) {
     let params = new HttpParams();
     Object.entries(opts || {}).forEach(([k, v]) => {
@@ -119,5 +157,43 @@ export class AuditService {
     return this.http
       .get<{ items: string[] }>(`${this.base}/log/events`)
       .pipe(map((res) => res.items || []));
+  }
+
+  listSecurityEvents(opts: {
+    page?: number;
+    pageSize?: number;
+    q?: string;
+    usuario?: string;
+    tipoEvento?: string;
+    accion?: string;
+    resultado?: string;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+  }) {
+    let params = new HttpParams();
+    Object.entries(opts || {}).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+        params = params.set(k, String(v));
+      }
+    });
+    return this.http.get<SecurityPage>(`${this.base}/security/events`, { params });
+  }
+
+  getSecurityTypes(): Observable<string[]> {
+    return this.http
+      .get<{ items: string[] }>(`${this.base}/security/types`)
+      .pipe(map((res) => res.items || []));
+  }
+
+  getSecurityActions(): Observable<string[]> {
+    return this.http
+      .get<{ items: string[] }>(`${this.base}/security/actions`)
+      .pipe(map((res) => res.items || []));
+  }
+
+  getSecurityEventDetail(id: number): Observable<SecurityDetail> {
+    return this.http
+      .get<{ item: SecurityDetail }>(`${this.base}/security/events/${id}`)
+      .pipe(map((res) => res.item));
   }
 }
