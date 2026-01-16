@@ -336,4 +336,47 @@ export class DocumentService {
       numero_serie_oficial: string;
     }>(`${this.api}/documentos/${id}/preparar-firma`, {});
   }
+
+  // =========================
+  // HU-018/HU-017 Firma (MVP)
+  // =========================
+
+  /** Info para firmar: valida si el usuario puede firmar y devuelve estado */
+  getSignatureInfo(id: number) {
+    return this.http.get<{
+      documento_id: number;
+      titulo: string;
+      estado: string;
+      firmas_requeridas: number;
+      firmas_obtenidas: number;
+      ya_firmo: boolean;
+      puede_firmar: boolean;
+      motivo?: string | null;
+    }>(`${this.api}/documentos/${id}/firma/info`);
+  }
+
+  /** Confirmar firma subiendo el PDF firmado (campo: file) */
+  confirmSignature(id: number, file: File) {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<{
+      ok: boolean;
+      documento_id: number;
+      estado: string;
+      firmas_obtenidas: number;
+      firmas_requeridas: number;
+    }>(`${this.api}/documentos/${id}/firma/confirmar`, fd);
+  }
+
+  /** (Opcional) mejorar prepareForSignature para pasar firmantes y fecha límite */
+  prepareForSignatureV2(
+    id: number,
+    body: { firmantesIds?: number[]; fecha_limite?: string | null }
+  ) {
+    return this.http.put<{
+      documento_id: number;
+      numero_serie_oficial: string;
+    }>(`${this.api}/documentos/${id}/preparar-firma`, body);
+  }
+
 }

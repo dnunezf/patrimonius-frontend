@@ -1,13 +1,28 @@
 // src/app/editor/dashboard/editor-dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { DocumentService, VDocumentModel } from '../../../../core/services/document.service';
-import { DatePipe } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
+import {
+  DocumentService,
+  VDocumentModel,
+} from '../../../../core/services/document.service';
 import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 
 type UiState = { label: string; value: string };
+
+// 👇 Esto debe calzar con lo que responde tu backend
+type SignatureInfo = {
+  documento_id: number;
+  titulo: string;
+  estado: string;
+  firmas_requeridas: number;
+  firmas_obtenidas: number;
+  ya_firmo: boolean;
+  puede_firmar: boolean;
+  motivo?: string | null;
+};
 
 @Component({
   selector: 'app-editor-dashboard',
@@ -20,7 +35,7 @@ type UiState = { label: string; value: string };
 export class EditorDashboardComponent implements OnInit {
   documents: VDocumentModel[] = [];
   filteredDocuments: VDocumentModel[] = [];
-  // 🔹 Ahora solo se muestran las opciones principales sin "Con Plantilla"
+
   overviewCards = [
     { title: 'Crear Documento', description: 'Nuevo documento', icon: 'plus.png' },
     { title: 'Firmar', description: 'Documentos pendientes', icon: 'signature.png' },
@@ -34,7 +49,31 @@ export class EditorDashboardComponent implements OnInit {
     FIRMA_PARCIAL: 'Firma parcial',
   };
 
+  // ✅ listas para selects
+  authors: string[] = [];
+  states: UiState[] = [];
 
+  // ✅ filtros (sin categoria)
+  filters = {
+    author: 'Todos',
+    status: 'Todos',
+    dateFrom: '',
+    dateTo: '',
+  };
+
+  // ✅ paginación
+  page = 1;
+  pageSize = 10;
+
+  // ✅ modal / firma
+  signModalOpen = false;
+  signDocId: number | null = null;
+  signLoading = false;
+  signError: string | null = null;
+  selectedPdf: File | null = null;
+
+  // info útil para mostrar en modal (opcional)
+  signInfo: SignatureInfo | null = null;
 
   constructor(private documentService: DocumentService, private router: Router) {}
 
@@ -46,11 +85,8 @@ export class EditorDashboardComponent implements OnInit {
     this.documentService.getDocumentsFromProduction().subscribe({
       next: (data) => {
         this.documents = data || [];
-
-        // ✅ inicializar lo que muestra la tabla
         this.filteredDocuments = this.documents.slice();
-
-        // ✅ llenar opciones de selects
+        this.page = 1;
         this.refreshFilterLists();
       },
       error: (err) => {
@@ -59,12 +95,10 @@ export class EditorDashboardComponent implements OnInit {
     });
   }
 
-
   getIconPath(iconName: string): string {
     return `assets/icons/${iconName}`;
   }
 
-  // 🚀 Navegar a la pantalla de crear documento
   goToCreate(): void {
     this.router.navigate(['/editor', 'document', 'create']);
   }
@@ -77,73 +111,144 @@ export class EditorDashboardComponent implements OnInit {
     this.router.navigate(['/editor', 'document', documentoId, 'edit']);
   }
 
+  // =========================
+  // ✅ Firma (modal)
+  // =========================
+  openSignModal(documentId: number) {
+    this.signError = null;
+    this.selectedPdf = null;
+    this.signDocId = documentId;
+    this.signModalOpen = true;
+    this.signInfo = null;
 
+    this.signLoading = true;
 
-// ✅ listas para selects
-  authors: string[] = [];
-  states: UiState[] = [];
+    this.documentService.getSignatureInfo(documentId).subscribe({
+      next: (info: SignatureInfo) => {
+        this.signLoading = false;
+        this.signInfo = info;
 
+        if (!info?.puede_firmar) {
+          this.signError = info?.motivo || 'No puedes firmar este documento.';
+        }
+      },
+      error: (err: HttpErrorResponse) => {
+        this.signLoading = false;
+        this.signError =
+          (err?.error?.message as string) || 'Error consultando firma.';
+      },
+    });
+  }
 
-// ✅ filtros (sin categoria)
-  filters = {
-    author: 'Todos',
-    status: 'Todos',
-    dateFrom: '',
-    dateTo: ''
-  };
+  closeSignModal() {
+    this.signModalOpen = false;
+    this.signDocId = null;
+    this.selectedPdf = null;
+    this.signError = null;
+    this.signLoading = false;
+    this.signInfo = null;
+  }
 
+  onPdfSelected(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+
+    if (!file) return;
+
+    const isPdf =
+      file.type === 'application/pdf' ||
+      file.name.toLowerCase().endsWith('.pdf');
+
+    if (!isPdf) {
+      this.signError = 'El archivo debe ser un PDF.';
+      this.selectedPdf = null;
+      return;
+    }
+
+    this.signError = null;
+    this.selectedPdf = file;
+  }
+
+  confirmSign() {
+    if (!this.signDocId) return;
+
+    if (!this.selectedPdf) {
+      this.signError = 'Debes adjuntar el PDF firmado.';
+      return;
+    }
+
+    this.signLoading = true;
+    this.signError = null;
+
+    this.documentService.confirmSignature(this.signDocId, this.selectedPdf).subscribe({
+      next: () => {
+        this.signLoading = false;
+        this.closeSignModal();
+        this.loadDocuments(); // refresca tabla
+      },
+      error: (err: HttpErrorResponse) => {
+        this.signLoading = false;
+        this.signError =
+          (err?.error?.message as string) || 'Error confirmando firma.';
+      },
+    });
+  }
+
+  // =========================
+  // ✅ Filtros
+  // =========================
   private normalizeDateOnly(dateStr: string): string {
-    // Espera algo ISO o MySQL "YYYY-MM-DD..." y devuelve "YYYY-MM-DD"
     return (dateStr || '').slice(0, 10);
   }
 
   private refreshFilterLists() {
-    // Autores (igual que antes)
-    this.authors = Array.from(
-      new Set(
-        (this.documents || [])
-          .map(d => (d.primer_usuario || '').trim())
-          .filter(Boolean)
-      )
-    ).sort((a, b) => a.localeCompare(b));
+    // ✅ OJO: acá estaba tu typo Seteduce -> Set
+    const authorSet = new Set<string>(
+      (this.documents || [])
+        .map((d) => (d.primer_usuario || '').trim())
+        .filter(Boolean)
+    );
 
-    // Estados: label bonito + value real
+    this.authors = Array.from(authorSet).sort((a, b) => a.localeCompare(b));
+
     const rawStates = Array.from(
-      new Set(
+      new Set<string>(
         (this.documents || [])
-          .map(d => (d.documento_estado || '').trim())
+          .map((d) => (d.documento_estado || '').trim())
           .filter(Boolean)
       )
     );
 
     this.states = rawStates.map((s) => ({
-      value: s, // valor real: CREACION, EDICION...
-      label: this.STATE_LABELS[s] ?? (
-        s.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-      )
+      value: s,
+      label:
+        this.STATE_LABELS[s] ??
+        s
+          .toLowerCase()
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
     }));
-
   }
-
 
   applyFilters() {
     this.page = 1;
 
-    const author = this.filters.author !== 'Todos' ? this.filters.author : null;
+    const author =
+      this.filters.author !== 'Todos' ? this.filters.author : null;
+
     const status =
-      this.filters.status !== 'Todos'
-        ? this.filters.status
-        : null;
+      this.filters.status !== 'Todos' ? this.filters.status : null;
 
-
-    const from = this.filters.dateFrom ? this.filters.dateFrom : null; // "YYYY-MM-DD"
+    const from = this.filters.dateFrom ? this.filters.dateFrom : null;
     const to = this.filters.dateTo ? this.filters.dateTo : null;
 
-    this.filteredDocuments = (this.documents || []).filter(d => {
-      const okAuthor = !author || (d.primer_usuario || '').trim() === author;
+    this.filteredDocuments = (this.documents || []).filter((d) => {
+      const okAuthor =
+        !author || (d.primer_usuario || '').trim() === author;
+
       const okStatus = !status || (d.documento_estado || '') === status;
 
-      const docDate = this.normalizeDateOnly(d.fecha_creacion || ''); // "YYYY-MM-DD"
+      const docDate = this.normalizeDateOnly(d.fecha_creacion || '');
       const okFrom = !from || (docDate && docDate >= from);
       const okTo = !to || (docDate && docDate <= to);
 
@@ -153,14 +258,13 @@ export class EditorDashboardComponent implements OnInit {
 
   clearFilters() {
     this.page = 1;
-
     this.filters = { author: 'Todos', status: 'Todos', dateFrom: '', dateTo: '' };
     this.filteredDocuments = this.documents.slice();
   }
-// ✅ paginación
-  page = 1;
-  pageSize = 10;
 
+  // =========================
+  // ✅ Paginación
+  // =========================
   get totalItems(): number {
     return this.filteredDocuments.length;
   }
@@ -185,6 +289,4 @@ export class EditorDashboardComponent implements OnInit {
   goNext() {
     if (this.page < this.totalPages) this.page++;
   }
-
 }
-

@@ -6,8 +6,6 @@
     </p>
   </header>
 
-
-
   <div class="overview-cards">
     <div *ngFor="let card of overviewCards" class="card-wrapper">
       <div
@@ -77,7 +75,6 @@
         Aplicar
       </button>
     </div>
-
   </div>
 
   <!-- Documentos en producción -->
@@ -136,42 +133,92 @@
             Editar
           </button>
 
-          <button class="btn btn--red">Firmar</button>
-          <button class="btn btn--gray">Ver</button>
+          <!-- ✅ Firmar: abre modal -->
+          <button
+            class="btn btn--red"
+            type="button"
+            (click)="openSignModal(document.id)"
+          >
+            Firmar
+          </button>
+
+          <button class="btn btn--gray" type="button">
+            Ver
+          </button>
         </td>
       </tr>
 
       <tr *ngIf="pagedDocuments.length === 0">
-        <td colspan="5" class="muted">No hay resultados con los filtros actuales.</td>
+        <td colspan="5" class="muted">
+          No hay resultados con los filtros actuales.
+        </td>
       </tr>
       </tbody>
     </table>
 
-    <!-- ✅ Paginación (fuera del tbody) -->
+    <!-- ✅ Paginación -->
     <div class="pager muted">
-      <button
-        class="button-outline"
-        [disabled]="page <= 1"
-        (click)="goPrev()"
-      >
+      <button class="button-outline" [disabled]="page <= 1" (click)="goPrev()">
         « Anterior
       </button>
 
       <span>
-        Página {{ page }} de {{ totalPages }} ·
-        Mostrando
+        Página {{ page }} de {{ totalPages }} · Mostrando
         {{ totalItems === 0 ? 0 : (page - 1) * pageSize + 1 }}
-        –
-        {{ rangeEnd }}
-        de {{ totalItems }}
+        – {{ rangeEnd }} de {{ totalItems }}
       </span>
 
-      <button
-        class="button-outline"
-        [disabled]="page >= totalPages"
-        (click)="goNext()"
-      >
+      <button class="button-outline" [disabled]="page >= totalPages" (click)="goNext()">
         Siguiente »
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ MODAL FIRMA -->
+<div class="modal-backdrop" *ngIf="signModalOpen" (click)="closeSignModal()"></div>
+
+<div class="modal" *ngIf="signModalOpen" role="dialog" aria-modal="true">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Confirmar firma</h3>
+      <button class="modal-close" type="button" (click)="closeSignModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p class="muted" *ngIf="signInfo">
+        <strong>Documento:</strong> {{ signInfo.titulo }} <br />
+        <strong>Estado:</strong> {{ signInfo.estado | formatState }} <br />
+        <strong>Firmas:</strong> {{ signInfo.firmas_obtenidas }} / {{ signInfo.firmas_requeridas }}
+      </p>
+
+      <div *ngIf="signLoading" class="muted">
+        Cargando información de firma...
+      </div>
+
+      <div *ngIf="signError" class="alert-error">
+        {{ signError }}
+      </div>
+
+      <div class="input-group">
+        <label>Adjuntar PDF firmado</label>
+        <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" />
+        <small class="muted">Debe ser un archivo .pdf</small>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="button-outline" type="button" (click)="closeSignModal()">
+        Cancelar
+      </button>
+
+      <button
+        class="btn btn--red"
+        type="button"
+        [disabled]="signLoading || !!signError || !selectedPdf"
+        (click)="confirmSign()"
+      >
+        Confirmar firma
       </button>
     </div>
   </div>
