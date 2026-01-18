@@ -10,7 +10,7 @@
     <div *ngFor="let card of overviewCards" class="card-wrapper">
       <div
         class="card-button"
-        (click)="card.title === 'Crear Documento' ? goToCreate() : null"
+        (click)="onCardClick(card, $event)"
         role="button"
         [attr.tabindex]="0"
         [attr.aria-label]="card.title"
@@ -28,34 +28,27 @@
     </div>
   </div>
 
-  <!-- Card filtros (sin categoría) -->
+  <!-- Card filtros -->
   <div class="card">
     <h2 class="text-blue-639">Filtros</h2>
 
     <div class="filters-grid-4">
-      <!-- Autor -->
       <div class="input-group">
         <label>Autor</label>
         <select [(ngModel)]="filters.author" name="filterAuthor">
           <option value="Todos">Todos</option>
-          <option *ngFor="let a of authors" [value]="a">
-            {{ a }}
-          </option>
+          <option *ngFor="let a of authors" [value]="a">{{ a }}</option>
         </select>
       </div>
 
-      <!-- Estado -->
       <div class="input-group">
         <label>Estado</label>
         <select [(ngModel)]="filters.status" name="filterStatus">
           <option value="Todos">Todos</option>
-          <option *ngFor="let s of states" [value]="s.value">
-            {{ s.label }}
-          </option>
+          <option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
         </select>
       </div>
 
-      <!-- Fechas -->
       <div class="input-group">
         <label>Desde</label>
         <input type="date" [(ngModel)]="filters.dateFrom" name="dateFrom" />
@@ -77,7 +70,7 @@
     </div>
   </div>
 
-  <!-- Documentos en producción -->
+  <!-- Documentos -->
   <div class="document-list">
     <h2 class="text-blue-639">Documentos en Producción</h2>
     <p>Documentos en borrador y firmados - Fase de producción activa</p>
@@ -103,7 +96,8 @@
               [ngClass]="{
                 'badge-yellow': document.documento_estado === 'EDICION',
                 'badge-blue': document.documento_estado === 'FIRMA_PARCIAL',
-                'badge-gray': document.documento_estado === 'CREACION'
+                'badge-gray': document.documento_estado === 'CREACION',
+                'badge-red': document.documento_estado === 'FIRMA'
               }"
             >
               {{ document.documento_estado | formatState }}
@@ -128,21 +122,21 @@
           <button
             *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
             class="btn btn--gray"
-            (click)="editarDocumento(document.id)"
+            type="button"
+            (click)="editarDocumento(document.id); $event.stopPropagation()"
           >
             Editar
           </button>
 
-          <!-- ✅ Firmar: abre modal -->
           <button
             class="btn btn--red"
             type="button"
-            (click)="openSignModal(document.id)"
+            (click)="openSignModal(document.id); $event.stopPropagation()"
           >
             Firmar
           </button>
 
-          <button class="btn btn--gray" type="button">
+          <button class="btn btn--gray" type="button" (click)="$event.stopPropagation()">
             Ver
           </button>
         </td>
@@ -156,7 +150,6 @@
       </tbody>
     </table>
 
-    <!-- ✅ Paginación -->
     <div class="pager muted">
       <button class="button-outline" [disabled]="page <= 1" (click)="goPrev()">
         « Anterior
@@ -175,7 +168,7 @@
   </div>
 </div>
 
-<!-- ✅ MODAL FIRMA -->
+<!-- ✅ MODAL FIRMA (POPUP REAL) -->
 <div class="modal-backdrop" *ngIf="signModalOpen" (click)="closeSignModal()"></div>
 
 <div class="modal" *ngIf="signModalOpen" role="dialog" aria-modal="true">
@@ -198,6 +191,15 @@
 
       <div *ngIf="signError" class="alert-error">
         {{ signError }}
+      </div>
+
+      <div class="row-download" *ngIf="!signLoading">
+        <button class="button-outline" type="button" (click)="downloadPdf()">
+          Descargar PDF
+        </button>
+        <button class="button-outline" type="button" (click)="downloadDocx()">
+          Descargar DOCX
+        </button>
       </div>
 
       <div class="input-group">

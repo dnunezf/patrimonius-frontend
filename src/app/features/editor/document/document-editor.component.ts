@@ -21,6 +21,8 @@ import { CommentPanelComponent } from './comment/comment-panel.component';
 import { VersionHistoryDialogComponent } from './version-history-dialog.component';
 import { DocumentMetadataDialogComponent } from './metadata/document-metadata-dialog.component';
 
+type UiUser = { id: number; label: string };
+
 @Component({
   standalone: true,
   selector: 'app-document-editor',
@@ -62,12 +64,29 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   sigMsg = '';
   metadataOpen = false;
 
+  // =========================
+  // ✅ MODAL: Solicitar firma (NUEVO UI)
+  // =========================
+  requestSigModalOpen = false;
+  requestSigLoading = false;
+  requestSigError = '';
+
+  // buscador grande
+  firmantesQuery = '';
+
+  // lista total desde backend
+  firmantes: UiUser[] = [];
+
+  // "combobox" (select) elegido
+  selectedCandidateId: number | null = null;
+
+  // firmantes agregados (en orden)
+  selectedFirmantesList: UiUser[] = [];
+
   private readonly clientId =
     (globalThis as any).crypto?.randomUUID?.() ?? this.fallbackUuid();
 
   private subs: Subscription[] = [];
-
-  // ✅ Polling de comentarios cuando el panel está abierto
   private commentsPollSub?: Subscription;
 
   constructor(
@@ -87,9 +106,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     // 2) Emit only user changes (deltas)
     this.quill.on('text-change', (delta, _oldDelta, source) => {
       if (source !== 'user') return;
+
       this.rt.emit('delta', { delta, ts: Date.now(), from: this.clientId });
 
-      // Fallback compatibility for old clients
+      // fallback compatibility
       this.rt.emit('content:patch', {
         content: this.html(),
         ts: Date.now(),
@@ -111,7 +131,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.rt.connect();
     this.rt.emit('editor:join', { documentoId: this.documentoId });
 
-    // 5) Presence and incoming patches
+    // 5) Presence
     this.rt.on('presence:update', (u: any[]) => (this.presence = u));
 
     // 5.a) Apply deltas
@@ -120,14 +140,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       this.quill.updateContents(m.delta as any, 'api');
     });
 
-    // 5.b) Fallback HTML patch
     this.rt.on('content:patch', (m: any) => {
       if (!m?.content || m.from === this.clientId) return;
       this.setHtmlPreservingCaretAndScroll(m.content);
     });
-
-    // 6) Saved notif
-    this.rt.on('editor:saved', (_: any) => {});
 
     // 7) Conflicts → refresh base version
     this.rt.on('editor:conflict', (_: any) => {
@@ -136,15 +152,13 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         .subscribe((v) => (this.baseVersionId = v?.id ?? 0));
     });
 
-    // ✅ Realtime: cuando alguien agrega comentario (evento)
+    // ✅ Realtime comments
     this.rt.on('comentario:nuevo', (comentario: any) => {
-      // ✅ inmutable, fuerza render
       this.comentarios = [...this.comentarios, comentario];
       this.unreadCount++;
       this.cdr.detectChanges();
     });
 
-    // ✅ Realtime: cuando alguien marca resuelto (evento)
     this.rt.on('comentario:resuelto', (payload: any) => {
       const id = Number(payload?.id);
       if (!id) return;
@@ -152,7 +166,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       this.comentarios = this.comentarios.map((c) =>
         Number(c.id) === id ? { ...c, resuelto: true } : c
       );
-
       this.cdr.detectChanges();
     });
 
@@ -167,13 +180,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.loadComentarios();
   }
 
-  /** Open history (HU-010) */
+  // =========================
+  // HU-010
+  // =========================
   openHistory(): void {
     this.showHistory = true;
     this.info = '';
   }
 
-  /** Callback after restore from VersionHistoryDialog */
   onRestored(e: { newVersionId: number; html: string }) {
     if (e?.html != null) this.pasteHtml(e.html);
 
@@ -181,7 +195,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.quill.setSelection(end, 0, 'silent');
 
     this.baseVersionId = e?.newVersionId ?? this.baseVersionId;
-
     this.info = `Documento restaurado (v${this.baseVersionId}). El historial se conserva.`;
 
     this.rt.emit('editor:saved', {
@@ -192,9 +205,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-
-
-  /** Toggle comments side panel (badge reset + polling) */
+  // =========================
+  // Comentarios
+  // =========================
   toggleComentarios(): void {
     this.showComentarios = !this.showComentarios;
 
@@ -207,7 +220,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** ✅ Polling cada 2s solo con panel abierto */
   private startCommentsPolling(): void {
     this.stopCommentsPolling();
     this.commentsPollSub = interval(2000)
@@ -226,81 +238,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.commentsPollSub = undefined;
   }
 
-  /** Save version */
-  save(): void {
-    this.saving = true;
-    this.error = '';
-    this.sigMsg = '';
-    const html = this.html();
-
-    this.docs.guardarColab(this.documentoId, html, this.baseVersionId).subscribe({
-      next: (r) => {
-        this.saving = false;
-        this.baseVersionId = r?.version_id ?? this.baseVersionId;
-        this.rt.emit('editor:saved', {
-          documentoId: this.documentoId,
-          versionId: this.baseVersionId,
-          from: this.clientId,
-        });
-        this.info = 'Documento guardado con éxito.';
-        setTimeout(() => (this.info = ''), 4000);
-      },
-      error: (e) => {
-        this.saving = false;
-        if (e?.status === 409) {
-          this.docs
-            .ultimaVersion(this.documentoId)
-            .subscribe((v) => (this.baseVersionId = v?.id ?? this.baseVersionId));
-        } else {
-          this.error = e?.error?.message || 'No se pudo guardar';
-        }
-      },
-    });
-  }
-
-  /** HU-12: open metadata modal */
-  openMetadata(): void {
-    this.metadataOpen = true;
-  }
-  onMetadataSaved(): void {}
-
-  /** HU-12: backend enforces metadata completeness */
-  requestSignature(): void {
-    this.error = '';
-    this.sigMsg = '';
-    this.docs.prepareForSignature(this.documentoId).subscribe({
-      next: (r) => {
-        this.sigMsg = `Índice oficial asignado: ${r.numero_serie_oficial}`;
-      },
-      error: (e) => {
-        if (e?.error?.error === 'missing_required_metadata') {
-          this.error = 'Faltan metadatos requeridos. Complete “Metadatos”.';
-          this.metadataOpen = true;
-        } else {
-          this.error = e?.error?.message || 'No se pudo preparar la firma';
-        }
-      },
-    });
-  }
-
-  /** Import DOCX → HTML (Mammoth) */
-  async importDocx(evt: Event): Promise<void> {
-    const file = (evt.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    const buf = await file.arrayBuffer();
-    const res = await mammoth.convertToHtml({ arrayBuffer: buf });
-
-    this.pasteHtml(res.value || '');
-    const end = Math.max(0, this.quill.getLength() - 1);
-    this.quill.setSelection(end, 0, 'silent');
-  }
-
-  /** ✅ Comentarios (sin recargar + realtime) */
   addComentario(desc: string): void {
     const texto = String(desc ?? '').trim();
     if (!texto) return;
 
-    // ✅ optimista local (se ve al instante)
     const optimisticId = -Date.now();
     const optimistic = {
       id: optimisticId,
@@ -309,24 +250,21 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       fecha: new Date().toISOString(),
       resuelto: false,
     };
+
     this.comentarios = [...this.comentarios, optimistic];
     this.cdr.detectChanges();
 
     this.docs.agregarComentario(this.documentoId, texto).subscribe({
       next: (list) => {
-        // ✅ Si backend devuelve lista, la usamos
-        if (Array.isArray(list)) {
-          this.comentarios = [...list];
-        }
+        if (Array.isArray(list)) this.comentarios = [...list];
         this.cdr.detectChanges();
 
-        // ✅ Emitir evento para otros clientes (si tu WS lo comparte)
-        // Si el backend devolvió lista, enviamos el último como "nuevo"
-        const last = Array.isArray(list) && list.length ? list[list.length - 1] : optimistic;
+        const last =
+          Array.isArray(list) && list.length ? list[list.length - 1] : optimistic;
+
         this.rt.emit('comentario:nuevo', last);
       },
       error: () => {
-        // revertir optimista si falló
         this.comentarios = this.comentarios.filter((c) => c.id !== optimisticId);
         this.cdr.detectChanges();
       },
@@ -337,7 +275,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const cid = Number(id);
     if (!cid) return;
 
-    // ✅ optimista: se marca resuelto ya
     this.comentarios = this.comentarios.map((c) =>
       Number(c.id) === cid ? { ...c, resuelto: true } : c
     );
@@ -349,15 +286,11 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           this.comentarios = [...list];
           this.cdr.detectChanges();
         } else {
-          // fallback si el backend no devolvió lista
           this.loadComentarios();
         }
-
-        // ✅ avisar a otros clientes
         this.rt.emit('comentario:resuelto', { id: cid });
       },
       error: () => {
-        // revertir si falló
         this.comentarios = this.comentarios.map((c) =>
           Number(c.id) === cid ? { ...c, resuelto: false } : c
         );
@@ -376,7 +309,228 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Back to dashboard */
+  // =========================
+  // Guardado / Metadata
+  // =========================
+  save(): void {
+    this.saving = true;
+    this.error = '';
+    this.sigMsg = '';
+    const html = this.html();
+
+    this.docs.guardarColab(this.documentoId, html, this.baseVersionId).subscribe({
+      next: (r) => {
+        this.saving = false;
+        this.baseVersionId = r?.version_id ?? this.baseVersionId;
+
+        this.rt.emit('editor:saved', {
+          documentoId: this.documentoId,
+          versionId: this.baseVersionId,
+          from: this.clientId,
+        });
+
+        this.info = 'Documento guardado con éxito.';
+        setTimeout(() => (this.info = ''), 4000);
+      },
+      error: (e) => {
+        this.saving = false;
+        if (e?.status === 409) {
+          this.docs
+            .ultimaVersion(this.documentoId)
+            .subscribe((v) => (this.baseVersionId = v?.id ?? this.baseVersionId));
+        } else {
+          this.error = e?.error?.message || 'No se pudo guardar';
+        }
+      },
+    });
+  }
+
+  openMetadata(): void {
+    this.metadataOpen = true;
+  }
+  onMetadataSaved(): void {}
+
+  // =========================
+  // ✅ Solicitar firma (Modal) — SOLO ESTA PARTE CAMBIÓ
+  // =========================
+  openRequestSignatureModal(): void {
+    this.requestSigError = '';
+    this.sigMsg = '';
+    this.error = '';
+
+    this.requestSigModalOpen = true;
+    this.requestSigLoading = true;
+
+    this.firmantesQuery = '';
+    this.selectedCandidateId = null;
+    this.selectedFirmantesList = [];
+
+    // ✅ Cargar usuarios del backend
+    this.docs.listUsers().subscribe({
+      next: (rows: any[]) => {
+        this.requestSigLoading = false;
+
+        this.firmantes = (rows ?? [])
+          .map((u: any) => {
+            const label =
+              `${u.nombre ?? ''} ${u.apellido1 ?? ''} ${u.apellido2 ?? ''}`.trim() ||
+              `${u.email ?? ''}`.trim() ||
+              `Usuario ${u.id}`;
+
+            return { id: Number(u.id), label };
+          })
+          .filter((u: UiUser) => !!u.id)
+          .sort((a: UiUser, b: UiUser) => a.label.localeCompare(b.label));
+
+        // si hay texto ya escrito, revalida el select
+        this.ensureSelectedCandidateStillValid();
+      },
+      error: (e: any) => {
+        this.requestSigLoading = false;
+        this.requestSigError =
+          e?.error?.message || 'No se pudieron cargar los usuarios.';
+      },
+    });
+  }
+
+  closeRequestSignatureModal(): void {
+    this.requestSigModalOpen = false;
+    this.requestSigLoading = false;
+    this.requestSigError = '';
+    this.firmantesQuery = '';
+    this.selectedCandidateId = null;
+    this.selectedFirmantesList = [];
+  }
+
+  // ✅ Buscar por nombre o apellido (es sobre label completo)
+  get filteredFirmantes(): UiUser[] {
+    const q = this.normalize(this.firmantesQuery);
+    if (!q) return this.excludeAlreadySelected(this.firmantes);
+
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const filtered = this.firmantes.filter((u) => {
+      const hay = this.normalize(u.label);
+      return tokens.every((t) => hay.includes(t));
+    });
+
+    return this.excludeAlreadySelected(filtered);
+  }
+
+  // se llama desde (input) del search
+  onFirmanteQueryChange(): void {
+    // Si el usuario seleccionado ya no está en la lista filtrada, lo “reseteamos”
+    this.ensureSelectedCandidateStillValid();
+  }
+
+  private ensureSelectedCandidateStillValid(): void {
+    if (this.selectedCandidateId == null) return;
+    const exists = this.filteredFirmantes.some((u) => u.id === this.selectedCandidateId);
+    if (!exists) this.selectedCandidateId = null;
+  }
+
+  private excludeAlreadySelected(list: UiUser[]): UiUser[] {
+    const selectedIds = new Set(this.selectedFirmantesList.map((x) => x.id));
+    return list.filter((u) => !selectedIds.has(u.id));
+  }
+
+  // ✅ Agregar desde el “combo”
+  addSelectedFirmante(): void {
+    const id = Number(this.selectedCandidateId);
+    if (!id) return;
+
+    const user = this.firmantes.find((u) => u.id === id);
+    if (!user) return;
+
+    // evitar duplicados
+    if (this.selectedFirmantesList.some((x) => x.id === id)) {
+      this.selectedCandidateId = null;
+      return;
+    }
+
+    this.selectedFirmantesList = [...this.selectedFirmantesList, user];
+    this.selectedCandidateId = null;
+
+    // para que el select no quede con algo inválido
+    this.ensureSelectedCandidateStillValid();
+  }
+
+  // ✅ Quitar “chip”
+  removeFirmante(id: number): void {
+    const uid = Number(id);
+    if (!uid) return;
+    this.selectedFirmantesList = this.selectedFirmantesList.filter((x) => x.id !== uid);
+    this.ensureSelectedCandidateStillValid();
+  }
+
+  // ✅ Confirmar: manda firmantesIds al backend
+  confirmRequestSignature(): void {
+    this.requestSigError = '';
+    this.error = '';
+    this.sigMsg = '';
+
+    const firmantesIds = this.selectedFirmantesList.map((u) => u.id);
+
+    if (!firmantesIds.length) {
+      this.requestSigError = 'Debe agregar al menos un firmante.';
+      return;
+    }
+
+    this.requestSigLoading = true;
+
+    this.docs
+      .prepareForSignature(this.documentoId, {
+        firmantesIds,
+        // ✅ ya NO mandamos fecha limite porque quitaste ese campo en UI
+        fecha_limite: null,
+      })
+      .subscribe({
+        next: (r: any) => {
+          this.requestSigLoading = false;
+          this.sigMsg = `Índice oficial asignado: ${r.numero_serie_oficial}`;
+          this.closeRequestSignatureModal();
+        },
+        error: (e: any) => {
+          this.requestSigLoading = false;
+
+          if (e?.error?.error === 'missing_required_metadata') {
+            this.requestSigError =
+              'Faltan metadatos requeridos. Complete “Metadatos”.';
+            this.metadataOpen = true;
+            return;
+          }
+
+          this.requestSigError =
+            e?.error?.message || 'No se pudo preparar la firma';
+        },
+      });
+  }
+
+  private normalize(s: string): string {
+    return String(s ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  // =========================
+  // Import DOCX
+  // =========================
+  async importDocx(evt: Event): Promise<void> {
+    const file = (evt.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    const buf = await file.arrayBuffer();
+    const res = await mammoth.convertToHtml({ arrayBuffer: buf });
+
+    this.pasteHtml(res.value || '');
+    const end = Math.max(0, this.quill.getLength() - 1);
+    this.quill.setSelection(end, 0, 'silent');
+  }
+
+  // =========================
+  // Navegación / Destroy
+  // =========================
   goBack(): void {
     this.router.navigate(['/editor/dashboard']);
   }
@@ -387,15 +541,19 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.docs.endSession(this.documentoId).subscribe();
   }
 
-  /* ==== Quill helpers ==== */
+  // =========================
+  // Helpers Quill
+  // =========================
   private html(): string {
     // @ts-ignore
     return (this.quill as any).getSemanticHTML?.() ?? this.quill.root.innerHTML;
   }
+
   private pasteHtml(html: string): void {
     this.quill.setContents([], 'silent');
     this.quill.clipboard.dangerouslyPasteHTML(0, html, 'api');
   }
+
   private setHtmlPreservingCaretAndScroll(html: string): void {
     const sel = this.quill.getSelection();
     const scroller = this.quill.root.parentElement!;
@@ -413,6 +571,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     scroller.scrollTop = prevScrollTop;
   }
+
   private fallbackUuid(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
@@ -421,28 +580,37 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===== HU-010: restore modal helpers =====
+  // ===== HU-010: restore modal helpers (si aún los usas) =====
   openRestoreModal() {
     this.showRestoreModal = true;
     this.selectedVersionId = null;
     this.restoreMotivo = '';
+
     this.docs.listVersions(this.documentoId).subscribe({
       next: (rows: VersionDoc[]) => (this.versiones = rows),
       error: (e: any) =>
         (this.error = e?.error?.message || 'No se pudieron cargar versiones'),
     });
   }
+
   closeRestoreModal() {
     this.showRestoreModal = false;
   }
+
   selectVersion(v: VersionDoc) {
     this.selectedVersionId = v.id;
   }
+
   confirmRestore() {
     if (!this.selectedVersionId) return;
     this.restoring = true;
+
     this.docs
-      .restoreVersion(this.documentoId, this.selectedVersionId, this.restoreMotivo || '')
+      .restoreVersion(
+        this.documentoId,
+        this.selectedVersionId,
+        this.restoreMotivo || ''
+      )
       .subscribe({
         next: (res: any) => {
           this.restoring = false;

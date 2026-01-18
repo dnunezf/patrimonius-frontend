@@ -83,11 +83,8 @@ export interface DocumentMetadata {
     accessLevel: string | null;
     software: string | null;
 
-    // Auto-filled descriptive context
     authorName?: string | null;
     responsibleUnitName?: string | null;
-
-    // NEW: external document code (TMP / OFI_…)
     documentCode?: string | null;
   };
   descriptive: {
@@ -109,51 +106,59 @@ export class DocumentService {
 
   constructor(private http: HttpClient) {}
 
+  // =========================
+  // ✅ NUEVO: usuarios para firmantes
+  // =========================
+  listUsers() {
+    // ⚠️ Ajusta esta ruta si tu backend usa otra.
+    return this.http.get<any[]>(`${this.api}/admin/users`);
+  }
+
   // ========== Existing endpoints ==========
   getAll(): Observable<DocumentModel[]> {
     return this.http.get<DocumentModel[]>(`${this.api}/documents`);
   }
+
   getById(id: string): Observable<DocumentModel> {
     return this.http.get<DocumentModel>(`${this.api}/documents/${id}`);
   }
+
   create(document: DocumentModel): Observable<DocumentModel> {
     return this.http.post<DocumentModel>(`${this.api}/documents`, document);
   }
+
   update(id: string, document: DocumentModel): Observable<DocumentModel> {
-    return this.http.put<DocumentModel>(
-      `${this.api}/documents/${id}`,
-      document
-    );
+    return this.http.put<DocumentModel>(`${this.api}/documents/${id}`, document);
   }
+
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/documents/${id}`);
   }
 
+  // Documentos accesibles (lo que alimenta el dashboard)
   getDocumentsFromProduction(): Observable<VDocumentModel[]> {
-    return this.http
-      .get<AccessibleDocRow[]>(`${this.api}/view/production`)
-      .pipe(
-        map((rows) =>
-          rows.map(
-            (r) =>
-              ({
-                id: r.documento_id,
-                documento_nombre: r.titulo,
-                documento_estado: r.estado,
-                primer_usuario: r.creador_nombre,
-                fecha_creacion: r.fecha_creacion,
-                unidad_nombre: r.unidad_nombre,
-                categoria_nombre: r.categoria_nombre || 'Sin categoría',
-                firmas_obtenidas: r.firmas_obtenidas,
-                firmas_requeridas: r.firmas_requeridas,
-              } satisfies VDocumentModel)
-          )
+    return this.http.get<AccessibleDocRow[]>(`${this.api}/view/production`).pipe(
+      map((rows) =>
+        rows.map(
+          (r) =>
+            ({
+              id: r.documento_id,
+              documento_nombre: r.titulo,
+              documento_estado: r.estado,
+              primer_usuario: r.creador_nombre,
+              fecha_creacion: r.fecha_creacion,
+              unidad_nombre: r.unidad_nombre,
+              categoria_nombre: r.categoria_nombre || 'Sin categoría',
+              firmas_obtenidas: r.firmas_obtenidas,
+              firmas_requeridas: r.firmas_requeridas,
+            } satisfies VDocumentModel)
         )
-      );
+      )
+    );
   }
 
   // ========== Draft / collaboration ==========
-  /** Crear documento desde plantilla (solo título, sin número de firmas) */
+  /** Crear documento desde plantilla */
   crearDesdePlantilla(body: {
     plantilla_id: number;
     titulo: string;
@@ -200,15 +205,16 @@ export class DocumentService {
   touchSession(id: number) {
     return this.http.post(`${this.api}/documentos/${id}/sessions`, {});
   }
+
   listSession(id: number) {
     return this.http.get<any[]>(`${this.api}/documentos/${id}/sessions`);
   }
+
   endSession(id: number) {
     return this.http.delete(`${this.api}/documentos/${id}/sessions`);
   }
 
-  // FRONTEND: src/core/services/document.service.ts
-
+  // ========== Comentarios ==========
   listarComentarios(id: number) {
     return this.http.get<any[]>(`${this.api}/documentos/${id}/comentarios`);
   }
@@ -223,44 +229,7 @@ export class DocumentService {
     return this.http.patch<any[]>(`${this.api}/comentarios/${id}/resolver`, {});
   }
 
-
-  /** Crear BORRADOR (Express: POST /api/documentos) */
-  createDraft(
-    titulo: string,
-    plantillaId?: number
-  ): Observable<{ id: number; numero_borrador: number }> {
-    const body: any = { titulo };
-    if (plantillaId != null) body.plantillaId = plantillaId;
-    return this.http.post<{ id: number; numero_borrador: number }>(
-      this.docsApi,
-      body
-    );
-  }
-
-  importDocx(file: File): Observable<{ html: string }> {
-    const fd = new FormData();
-    fd.append('file', file);
-    return this.http.post<{ html: string }>(`${this.docsApi}/import-docx`, fd);
-  }
-
-  checkpoint(id: number, snapshot: any): Observable<void> {
-    return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, {
-      snapshot,
-    });
-  }
-
-  approve(id: number, snapshot: any): Observable<{ codigo_oficial: string }> {
-    return this.http.post<{ codigo_oficial: string }>(
-      `${this.docsApi}/${id}/aprobar`,
-      { snapshot }
-    );
-  }
-
-  wsUrl(docId: number): string {
-    const wsBase = (environment as any).ws ?? 'ws://localhost:1234';
-    return `${wsBase}?doc=${docId}`;
-  }
-
+  // ========== Contenido ==========
   getContenido(id: number): Observable<{
     documento_id: number;
     titulo: string;
@@ -277,7 +246,7 @@ export class DocumentService {
     }>(`${this.api}/documentos/${id}/contenido`);
   }
 
-  /** HU-010: listar versiones de un documento */
+  // ========== HU-010 Versiones ==========
   listVersions(documentId: number) {
     const url1 = `${this.api}/documentos/${documentId}/versiones`;
     const url2 = `${this.api}/documentos/${documentId}/versions`;
@@ -293,25 +262,20 @@ export class DocumentService {
     );
   }
 
-  /** HU-010: restaurar versión */
   restoreVersion(documentId: number, versionId: number, motivo: string) {
     const url = `${this.api}/documentos/${documentId}/restaurar-version/${versionId}`;
     return this.http.post<any>(url, { motivo }).pipe(
       map((res) => ({
-        // soporta ambos nombres por si tu backend devuelve newVersionId o version_restaurada_id
         newVersionId: res?.newVersionId ?? res?.version_restaurada_id ?? 0,
-        html: res?.html ?? res?.contenido ?? '',   // ✅ ahora sí viaja el contenido
+        html: res?.html ?? res?.contenido ?? '',
         nombre_versionado: res?.nombre_versionado ?? null,
       }))
     );
   }
 
-
   // ========== HU-011/012 metadata ==========
   getMetadata(id: number) {
-    return this.http.get<DocumentMetadata>(
-      `${this.api}/documentos/${id}/metadata`
-    );
+    return this.http.get<DocumentMetadata>(`${this.api}/documentos/${id}/metadata`);
   }
 
   saveDescriptiveMetadata(
@@ -329,19 +293,27 @@ export class DocumentService {
     );
   }
 
-  /** Backend enforces completeness and returns official index */
-  prepareForSignature(id: number) {
+  // =========================
+  // HU-017: Solicitar firma
+  // =========================
+  prepareForSignature(
+    id: number,
+    body?: { firmantesIds?: number[]; fecha_limite?: string | null }
+  ) {
     return this.http.put<{
+      ok?: boolean;
       documento_id: number;
       numero_serie_oficial: string;
-    }>(`${this.api}/documentos/${id}/preparar-firma`, {});
+      firmantes?: number[];
+      fecha_limite?: string | null;
+      estado?: string;
+    }>(`${this.api}/documentos/${id}/preparar-firma`, body ?? {});
   }
 
   // =========================
-  // HU-018/HU-017 Firma (MVP)
+  // HU-018: Firma (descarga + upload)
   // =========================
 
-  /** Info para firmar: valida si el usuario puede firmar y devuelve estado */
   getSignatureInfo(id: number) {
     return this.http.get<{
       documento_id: number;
@@ -355,10 +327,22 @@ export class DocumentService {
     }>(`${this.api}/documentos/${id}/firma/info`);
   }
 
-  /** Confirmar firma subiendo el PDF firmado (campo: file) */
+  downloadPdfForSignature(id: number) {
+    return this.http.get(`${this.api}/documentos/${id}/firma/descargar/pdf`, {
+      responseType: 'blob',
+    });
+  }
+
+  downloadDocxForSignature(id: number) {
+    return this.http.get(`${this.api}/documentos/${id}/firma/descargar/docx`, {
+      responseType: 'blob',
+    });
+  }
+
   confirmSignature(id: number, file: File) {
     const fd = new FormData();
     fd.append('file', file);
+
     return this.http.post<{
       ok: boolean;
       documento_id: number;
@@ -368,15 +352,34 @@ export class DocumentService {
     }>(`${this.api}/documentos/${id}/firma/confirmar`, fd);
   }
 
-  /** (Opcional) mejorar prepareForSignature para pasar firmantes y fecha límite */
-  prepareForSignatureV2(
-    id: number,
-    body: { firmantesIds?: number[]; fecha_limite?: string | null }
-  ) {
-    return this.http.put<{
-      documento_id: number;
-      numero_serie_oficial: string;
-    }>(`${this.api}/documentos/${id}/preparar-firma`, body);
+  // ====== Helpers viejos (si aún los usás en algún lado) ======
+  wsUrl(docId: number): string {
+    const wsBase = (environment as any).ws ?? 'ws://localhost:1234';
+    return `${wsBase}?doc=${docId}`;
   }
 
+  createDraft(
+    titulo: string,
+    plantillaId?: number
+  ): Observable<{ id: number; numero_borrador: number }> {
+    const body: any = { titulo };
+    if (plantillaId != null) body.plantillaId = plantillaId;
+    return this.http.post<{ id: number; numero_borrador: number }>(this.docsApi, body);
+  }
+
+  importDocx(file: File): Observable<{ html: string }> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<{ html: string }>(`${this.docsApi}/import-docx`, fd);
+  }
+
+  checkpoint(id: number, snapshot: any): Observable<void> {
+    return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, { snapshot });
+  }
+
+  approve(id: number, snapshot: any): Observable<{ codigo_oficial: string }> {
+    return this.http.post<{ codigo_oficial: string }>(`${this.docsApi}/${id}/aprobar`, {
+      snapshot,
+    });
+  }
 }
