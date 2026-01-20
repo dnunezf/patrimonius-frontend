@@ -9,12 +9,7 @@
   </section>
 
   <!-- Metrics -->
-  <section class="row cols-4 mb-16">
-    <div class="card metric">
-      <div class="metric__title">Documentos Alta Confidencialidad</div>
-      <div class="metric__value">{{ sensitiveDocsCount() }}</div>
-    </div>
-
+  <section class="row cols-3 mb-16">
     <div class="card metric">
       <div class="metric__title">Usuarios con Permisos</div>
       <div class="metric__value">{{ allowedUsersCount() }}</div>
@@ -170,9 +165,7 @@
           <div>Unidad</div>
           <div>Nivel de Permisos</div>
           <div>Tipo de Acceso del Editor</div>
-          <div>Restricciones</div>
-          <div>Fecha de Autorización</div>
-          <div>Acciones</div>
+          <div></div>
         </div>
 
         <div class="rt-row" *ngFor="let row of userRuleRows(); let i = index">
@@ -200,21 +193,14 @@
           <div>
             <span class="tag tag--editor">{{ row.editorAccessLabel }}</span>
           </div>
-          <div class="muted3">{{ row.restrictions || "Ninguna" }}</div>
-          <div class="muted3">{{ row.authorizedAt || "—" }}</div>
 
           <div class="actions">
-            <button
-              class="btn btn--light"
-              type="button"
-              (click)="openEditorPermsModal(row.userId)"
-            >
-              Permisos
-            </button>
             <button
               class="btn btn--danger"
               type="button"
               (click)="removeUserRule(i)"
+              aria-label="Eliminar usuario autorizado"
+              title="Eliminar"
             >
               🗑
             </button>
@@ -245,14 +231,12 @@
 
       <div class="simple-table">
         <div class="st-head">
-          <div>Role ID</div>
           <div>Nombre</div>
           <div>Acciones</div>
           <div></div>
         </div>
 
         <div class="st-row" *ngFor="let r of roleRules(); let i = index">
-          <div class="muted3">{{ r.roleId }}</div>
           <div>{{ r.roleName || "—" }}</div>
           <div class="perm-badges">
             <span class="perm perm--view" *ngIf="r.actions.includes('VIEW')"
@@ -414,7 +398,7 @@
           >
             <option [ngValue]="null" disabled>Seleccionar rol</option>
             <option *ngFor="let r of allRoles()" [ngValue]="r.id">
-              {{ r.nombre }} (ID: {{ r.id }})
+              {{ r.nombre }}
             </option>
           </select>
 
@@ -473,85 +457,6 @@
           [disabled]="isAddRoleDisabled()"
         >
           Agregar Rol
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Editor Permissions -->
-  <div class="modal-backdrop" *ngIf="isEditorPermsOpen()">
-    <div class="modal">
-      <div class="modal__head">
-        <div>
-          <div class="modal__title">Configuración de Permisos del Editor</div>
-          <div class="modal__sub">
-            Configure los permisos específicos para {{ editorPermsUserLabel() }}
-          </div>
-        </div>
-        <button
-          type="button"
-          class="modal__x"
-          (click)="closeEditorPermsModal()"
-        >
-          ×
-        </button>
-      </div>
-
-      <div class="modal__body">
-        <div class="field">
-          <label>Rol asignado</label>
-          <input
-            class="form__control"
-            type="text"
-            [value]="editorPermsRoleLabel()"
-            disabled
-          />
-        </div>
-
-        <div class="field">
-          <label>Permisos disponibles</label>
-          <div class="checklist">
-            <label class="check">
-              <input
-                type="checkbox"
-                [checked]="tempEditorPerms().includes('EDIT')"
-                (change)="toggleTempEditorPerm('EDIT')"
-              />
-              Editar documento
-            </label>
-            <label class="check">
-              <input
-                type="checkbox"
-                [checked]="tempEditorPerms().includes('SIGN')"
-                (change)="toggleTempEditorPerm('SIGN')"
-              />
-              Firmar documento
-            </label>
-          </div>
-        </div>
-
-        <div class="priority-box">
-          <div class="priority-text">
-            Los cambios se registrarán en la bitácora del sistema.
-          </div>
-        </div>
-      </div>
-
-      <div class="modal__foot">
-        <button
-          class="btn btn--light"
-          type="button"
-          (click)="closeEditorPermsModal()"
-        >
-          Cancelar
-        </button>
-        <button
-          class="btn btn--primary"
-          type="button"
-          (click)="saveEditorPerms()"
-          [disabled]="editorPermsSaving()"
-        >
-          {{ editorPermsSaving() ? "Guardando…" : "Guardar cambios" }}
         </button>
       </div>
     </div>

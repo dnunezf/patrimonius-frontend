@@ -28,8 +28,10 @@ import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 
+/** Minimal role row returned by /admin/roles */
 type RoleRowApi = { id: number; nombre: string };
 
+/** Document selector option (combines multiple sources depending on availability). */
 type DocumentOption = {
   id: number;
   code: string;
@@ -40,6 +42,10 @@ type DocumentOption = {
   level?: ConfLevel | null;
 };
 
+/**
+ * UI row for the "Configured Access Rules" table.
+ * NOTE: Restrictions/authorizedAt/actions buttons were removed in the redesigned UI.
+ */
 type UserRuleRow = {
   userId: number;
   actions: Action[];
@@ -47,10 +53,12 @@ type UserRuleRow = {
   email: string;
   unit?: string | null;
   editorAccessLabel: string;
-  restrictions?: string | null;
-  authorizedAt?: string | null;
 };
 
+/**
+ * UI row for the "Authorized Roles" table.
+ * NOTE: Role ID column was removed in the redesigned UI.
+ */
 type RoleRuleRow = {
   roleId: number;
   roleName?: string | null;
@@ -67,56 +75,62 @@ const LEVEL_LABEL: Record<ConfLevel, string> = {
 @Component({
   selector: 'app-admin-confidentiality-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NgIf, NgFor],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './admin-confidentiality-page.component.html',
   styleUrls: ['./admin-confidentiality-page.component.css'],
 })
 export class AdminConfidentialityPageComponent {
+  // ----------------------------
   // UI state
+  // ----------------------------
   saving = signal(false);
   loading = signal(false);
 
+  // ----------------------------
   // Documents
+  // ----------------------------
   searchQuery = signal<string>('');
   selectedDocumentId = signal<number | null>(null);
   selectedDocument = signal<DocumentOption | null>(null);
   documentOptions = signal<DocumentOption[]>([]);
 
-  // Config state
+  // ----------------------------
+  // Config state (allow-lists)
+  // ----------------------------
   currentLevel = signal<ConfLevel>('PUBLIC');
   editLevel = signal<ConfLevel>('PUBLIC');
   allowedUsers = signal<{ userId: number; actions: Action[] }[]>([]);
   allowedRoles = signal<{ roleId: number; actions: Action[] }[]>([]);
 
+  // ----------------------------
   // Reference data
+  // ----------------------------
   allUsers = signal<AdminUser[]>([]);
   allRoles = signal<RoleRowApi[]>([]);
 
-  // Metrics
-  sensitiveDocsCount = computed(
-    () =>
-      this.documentOptions().filter(
-        (d) => d.level === 'HIGH' || d.level === 'RESTRICTED',
-      ).length,
-  );
+  /** Metric: number of users explicitly allowed for the selected document. */
   allowedUsersCount = computed(() => this.allowedUsers().length);
 
+  // ----------------------------
   // Add user modal
+  // ----------------------------
   isAddUserOpen = signal(false);
   userSearchQuery = signal('');
   selectedUserId = signal<number | null>(null);
   tempUserActions = signal<Action[]>(['VIEW']);
 
+  // ----------------------------
   // Add role modal
+  // ----------------------------
   isAddRoleOpen = signal(false);
   selectedRoleId = signal<number | null>(null);
   tempRoleActions = signal<Action[]>(['VIEW']);
 
-  // Editor permissions modal
-  isEditorPermsOpen = signal(false);
-  editorPermsUserId = signal<number | null>(null);
-  tempEditorPerms = signal<Perm[]>(['EDIT']);
-  editorPermsSaving = signal(false);
+  /**
+   * Redesign change:
+   * The "Editor Permissions" modal and its actions were removed from the UI.
+   * Keep no state/methods for that modal to avoid dead code and accidental triggers.
+   */
 
   constructor(
     private confSvc: ConfidentialityService,
@@ -128,12 +142,14 @@ export class AdminConfidentialityPageComponent {
   ) {
     this.bootstrap();
 
+    // Keep a derived "selectedDocument" for summary rendering.
     effect(() => {
       const id = this.selectedDocumentId();
       const doc = this.documentOptions().find((d) => d.id === id) || null;
       this.selectedDocument.set(doc);
     });
 
+    // Debounced server-side document search.
     effect((onCleanup) => {
       const q = this.searchQuery();
       const handle = window.setTimeout(
@@ -144,6 +160,9 @@ export class AdminConfidentialityPageComponent {
     });
   }
 
+  // ----------------------------
+  // Bootstrap
+  // ----------------------------
   private bootstrap(): void {
     this.loadUsers();
     this.loadRoles();
@@ -170,6 +189,10 @@ export class AdminConfidentialityPageComponent {
     });
   }
 
+  /**
+   * Preferred source: confidentiality service which can provide per-document level.
+   * Falls back to the access control listing when confidentiality listing is unavailable.
+   */
   private fetchDocumentsFromServer(search: string): void {
     this.confSvc.listDocuments(search || '').subscribe({
       next: (rows: ConfDocumentOption[]) => {
@@ -184,14 +207,10 @@ export class AdminConfidentialityPageComponent {
         }));
         this.documentOptions.set(options);
 
+        // If the previously selected document disappears from the filtered list, reset state.
         const selectedId = this.selectedDocumentId();
         if (selectedId && !options.some((x) => x.id === selectedId)) {
-          this.selectedDocumentId.set(null);
-          this.selectedDocument.set(null);
-          this.allowedUsers.set([]);
-          this.allowedRoles.set([]);
-          this.currentLevel.set('PUBLIC');
-          this.editLevel.set('PUBLIC');
+          this.resetSelectionState();
         }
       },
       error: () => this.loadDocumentsFallback(),
@@ -220,6 +239,9 @@ export class AdminConfidentialityPageComponent {
     });
   }
 
+  // ----------------------------
+  // Labels / helpers
+  // ----------------------------
   levelLabel(lv: ConfLevel): string {
     return LEVEL_LABEL[lv];
   }
@@ -248,6 +270,7 @@ export class AdminConfidentialityPageComponent {
     const q = (this.userSearchQuery() || '').trim().toLowerCase();
     const base = this.allUsers();
     if (!q) return base;
+
     return base.filter((u) => {
       const full =
         `${u.nombre} ${u.apellido1} ${u.apellido2 || ''}`.toLowerCase();
@@ -264,6 +287,9 @@ export class AdminConfidentialityPageComponent {
     return this.filteredUsers().length;
   }
 
+  // ----------------------------
+  // Document selection & config load
+  // ----------------------------
   onSelectDocument(raw: any): void {
     const parsed = Number(raw);
     if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -298,6 +324,7 @@ export class AdminConfidentialityPageComponent {
           })),
         );
 
+        // Optional toast; keep if you want explicit feedback.
         this.toasts.info('Configuration loaded.');
       },
       error: (e) => {
@@ -305,14 +332,39 @@ export class AdminConfidentialityPageComponent {
         this.allowedRoles.set([]);
         this.currentLevel.set('PUBLIC');
         this.editLevel.set('PUBLIC');
-        this.toasts.error(
-          this.humanHttpError(e, 'Failed to load configuration.'),
-        );
+        this.toasts.error(this.humanHttpError(e, 'Failed to load configuration.'));
       },
       complete: () => this.loading.set(false),
     });
   }
 
+  private resetSelectionState(): void {
+    this.selectedDocumentId.set(null);
+    this.selectedDocument.set(null);
+    this.allowedUsers.set([]);
+    this.allowedRoles.set([]);
+    this.currentLevel.set('PUBLIC');
+    this.editLevel.set('PUBLIC');
+  }
+
+  // ----------------------------
+  // UI rows (Redesign)
+  // ----------------------------
+  /**
+   * Redesign: table columns kept:
+   * - User
+   * - Unit
+   * - Permission Level (VIEW/EDIT/SIGN)
+   * - Editor Access Type (derived from user's editorPermissions/permisosEditor)
+   *
+   * Removed:
+   * - restrictions
+   * - authorizedAt
+   * - actions buttons (per-user "Permisos" + delete icon)
+   *
+   * Delete action still exists via removeUserRule(index).
+   * The template should call removeUserRule(i) from a single delete button/icon if desired.
+   */
   userRuleRows = computed<UserRuleRow[]>(() => {
     const users = this.allUsers();
     const mapById = new Map<number, AdminUser>(users.map((u) => [u.id, u]));
@@ -327,15 +379,14 @@ export class AdminConfidentialityPageComponent {
       const email = found?.email || '';
       const unit = ((found as any)?.unidad as string) || '';
 
+      // Derive editor access from user global editor permissions (EDIT/SIGN).
       const rawEditorPerms =
         ((found as any)?.editorPermissions as Perm[]) ??
         ((found as any)?.permisosEditor as Perm[]) ??
         [];
 
       const editorPerms = Array.from(
-        new Set(
-          (rawEditorPerms || []).filter((p) => p === 'EDIT' || p === 'SIGN'),
-        ),
+        new Set((rawEditorPerms || []).filter((p) => p === 'EDIT' || p === 'SIGN')),
       ) as Perm[];
 
       const editorAccessLabel =
@@ -354,15 +405,23 @@ export class AdminConfidentialityPageComponent {
         email,
         unit,
         editorAccessLabel,
-        restrictions: null,
-        authorizedAt: null,
       };
     });
   });
 
+  /**
+   * Redesign: role table columns kept:
+   * - Name
+   * - Actions (VIEW/EDIT/SIGN)
+   * - Remove button
+   *
+   * Removed:
+   * - Role ID column (still kept internally for saving).
+   */
   roleRules = computed<RoleRuleRow[]>(() => {
     const roles = this.allRoles();
     const mapById = new Map<number, RoleRowApi>(roles.map((r) => [r.id, r]));
+
     return this.allowedRoles().map((r) => ({
       roleId: r.roleId,
       roleName: mapById.get(r.roleId)?.nombre || null,
@@ -370,6 +429,9 @@ export class AdminConfidentialityPageComponent {
     }));
   });
 
+  // ----------------------------
+  // Save config
+  // ----------------------------
   saveConfig(): void {
     const docId = this.selectedDocumentId();
     if (!docId) {
@@ -381,6 +443,7 @@ export class AdminConfidentialityPageComponent {
     const users = this.allowedUsers();
     const roles = this.allowedRoles();
 
+    // For non-public levels, require at least one explicit authorization.
     const sensitive = level !== 'PUBLIC';
     if (sensitive && users.length === 0 && roles.length === 0) {
       this.toasts.error(
@@ -482,6 +545,11 @@ export class AdminConfidentialityPageComponent {
     return true;
   }
 
+  /**
+   * Normalizes actions coming from:
+   * - UI arrays: ['VIEW','EDIT']
+   * - Backend SET string: "VIEW,EDIT,SIGN"
+   */
   private normalizeActions(actions: Action[] | string | any): Action[] {
     let arr: any[] = [];
 
@@ -497,33 +565,38 @@ export class AdminConfidentialityPageComponent {
     return Array.from(set);
   }
 
-  // Add user modal (unchanged behavior)
+  // ----------------------------
+  // Add user modal
+  // ----------------------------
   openAddUserModal(): void {
     this.isAddUserOpen.set(true);
     this.userSearchQuery.set('');
     this.selectedUserId.set(null);
     this.tempUserActions.set(['VIEW']);
   }
+
   closeAddUserModal(): void {
     this.isAddUserOpen.set(false);
   }
+
   toggleTempUserAction(a: Action): void {
     const cur = this.tempUserActions();
     this.tempUserActions.set(
       cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a],
     );
   }
+
   isSelectedUserAlreadyAuthorized(): boolean {
     const id = this.selectedUserId();
     return !!id && this.allowedUsers().some((u) => u.userId === id);
   }
+
   isAddUserDisabled(): boolean {
     const id = this.selectedUserId();
     const actions = this.normalizeActions(this.tempUserActions());
-    return (
-      !id || actions.length === 0 || this.isSelectedUserAlreadyAuthorized()
-    );
+    return !id || actions.length === 0 || this.isSelectedUserAlreadyAuthorized();
   }
+
   confirmAddUser(): void {
     const id = this.selectedUserId();
     if (!id) return this.toasts.error('Please select a user.');
@@ -549,32 +622,37 @@ export class AdminConfidentialityPageComponent {
     this.toasts.info('User removed (pending save).');
   }
 
-  // Add role modal (unchanged behavior)
+  // ----------------------------
+  // Add role modal
+  // ----------------------------
   openAddRoleModal(): void {
     this.isAddRoleOpen.set(true);
     this.selectedRoleId.set(null);
     this.tempRoleActions.set(['VIEW']);
   }
+
   closeAddRoleModal(): void {
     this.isAddRoleOpen.set(false);
   }
+
   toggleTempRoleAction(a: Action): void {
     const cur = this.tempRoleActions();
     this.tempRoleActions.set(
       cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a],
     );
   }
+
   isSelectedRoleAlreadyAuthorized(): boolean {
     const id = this.selectedRoleId();
     return !!id && this.allowedRoles().some((r) => r.roleId === id);
   }
+
   isAddRoleDisabled(): boolean {
     const id = this.selectedRoleId();
     const actions = this.normalizeActions(this.tempRoleActions());
-    return (
-      !id || actions.length === 0 || this.isSelectedRoleAlreadyAuthorized()
-    );
+    return !id || actions.length === 0 || this.isSelectedRoleAlreadyAuthorized();
   }
+
   confirmAddRole(): void {
     const id = this.selectedRoleId();
     if (!id) return this.toasts.error('Please select a role.');
@@ -600,82 +678,9 @@ export class AdminConfidentialityPageComponent {
     this.toasts.info('Role removed (pending save).');
   }
 
-  // Editor perms (keep; backend must respect subset)
-  openEditorPermsModal(userId: number): void {
-    this.editorPermsUserId.set(userId);
-
-    const u = this.allUsers().find((x) => x.id === userId);
-    const raw =
-      ((u as any)?.editorPermissions as Perm[]) ??
-      ((u as any)?.permisosEditor as Perm[]) ??
-      [];
-
-    const normalized = Array.from(
-      new Set((raw || []).filter((p) => p === 'EDIT' || p === 'SIGN')),
-    ) as Perm[];
-    this.tempEditorPerms.set(normalized.length ? normalized : ([] as Perm[])); // allow empty selection initially
-    this.isEditorPermsOpen.set(true);
-  }
-  closeEditorPermsModal(): void {
-    this.isEditorPermsOpen.set(false);
-  }
-  editorPermsUserLabel(): string {
-    const id = this.editorPermsUserId();
-    const u = this.allUsers().find((x) => x.id === id);
-    return u ? `${u.nombre} ${u.apellido1}` : '';
-  }
-  editorPermsRoleLabel(): string {
-    return 'Editor';
-  }
-  toggleTempEditorPerm(p: Perm): void {
-    const cur = this.tempEditorPerms();
-    this.tempEditorPerms.set(
-      cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p],
-    );
-  }
-
-  saveEditorPerms(): void {
-    const id = this.editorPermsUserId();
-    if (!id) return;
-
-    const perms = Array.from(
-      new Set(
-        this.tempEditorPerms().filter((p) => p === 'EDIT' || p === 'SIGN'),
-      ),
-    ) as Perm[];
-
-    this.editorPermsSaving.set(true);
-
-    this.adminUsers.update(id, { permisosEditor: perms }).subscribe({
-      next: (updated) => {
-        const backendPerms =
-          ((updated as any)?.editorPermissions as Perm[]) ??
-          ((updated as any)?.permisosEditor as Perm[]) ??
-          perms;
-
-        this.allUsers.update((arr) =>
-          arr.map((u) =>
-            u.id === id
-              ? ({
-                  ...u,
-                  editorPermissions: backendPerms,
-                  permisosEditor: backendPerms,
-                } as any)
-              : u,
-          ),
-        );
-
-        this.closeEditorPermsModal();
-        this.toasts.success('Editor permissions updated.');
-      },
-      error: (e) =>
-        this.toasts.error(
-          this.humanHttpError(e, 'Failed to update editor permissions.'),
-        ),
-      complete: () => this.editorPermsSaving.set(false),
-    });
-  }
-
+  // ----------------------------
+  // Error formatting
+  // ----------------------------
   private humanHttpError(err: any, fallback: string): string {
     const e = err as HttpErrorResponse;
     if (!e) return fallback;

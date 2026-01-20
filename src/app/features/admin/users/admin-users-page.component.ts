@@ -63,7 +63,7 @@ export class AdminUsersPageComponent {
 
   readonly totalCount = computed(() => this.users().length);
   readonly editorsCount = computed(
-    () => this.users().filter((u) => u.rolId === EDITOR_ID).length
+    () => this.users().filter((u) => u.rolId === EDITOR_ID).length,
   );
 
   readonly ROLES = ROLES;
@@ -74,7 +74,7 @@ export class AdminUsersPageComponent {
     private api: AdminUsersService,
     private toast: ToastService,
     private confirm: ConfirmService,
-    private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef,
   ) {
     effect(() => void this.load());
   }
@@ -117,7 +117,7 @@ export class AdminUsersPageComponent {
   async delete(u: AdminUser): Promise<void> {
     const ok = await this.confirm.ask(
       `Eliminar al usuario ${u.nombre} ${u.apellido1}?`,
-      'Confirmar eliminación'
+      'Confirmar eliminación',
     );
     if (!ok) return;
     this.api.remove(u.id).subscribe({
@@ -133,18 +133,37 @@ export class AdminUsersPageComponent {
 
   /** Create/Update flow with success + error toasts and dialog auto-close. */
   /** Create/Update without reload. Cierra el modal y parchea la lista. */
-  onSubmit(data: UpsertUserDto, editedId?: number): void {
+  onSubmit(evtOrData: any, editedId?: number): void {
+    // Accept either:
+    // 1) (submit)="onSubmit($event)"  where $event = { data, id }
+    // 2) (submit)="onSubmit($event.data, $event.id)"
+    // 3) dialog emits the DTO directly (data-only)
+
+    const inferredId =
+      (evtOrData && typeof evtOrData === 'object' && 'id' in evtOrData
+        ? Number(evtOrData.id)
+        : undefined) ?? editedId;
+
+    const inferredData = (
+      evtOrData && typeof evtOrData === 'object' && 'data' in evtOrData
+        ? evtOrData.data
+        : evtOrData
+    ) as UpsertUserDto;
+
+     if (!inferredData) return;
+
     this.isBusy.set(true);
-    const req = editedId
-      ? this.api.update(editedId, data)
-      : this.api.create(data);
+
+    const req = inferredId
+      ? this.api.update(inferredId, inferredData)
+      : this.api.create(inferredData);
 
     req.subscribe({
       next: (saved) => {
         this.showForm.set(false);
-        if (editedId) {
+        if (inferredId) {
           this.users.update((list) =>
-            list.map((u) => (u.id === saved.id ? saved : u))
+            list.map((u) => (u.id === saved.id ? saved : u)),
           );
           this.toast.success('Cambios guardados');
         } else {
@@ -159,8 +178,8 @@ export class AdminUsersPageComponent {
           e?.status === 409
             ? 'El correo ya existe'
             : e?.status === 400
-            ? e?.error?.message || 'Datos inválidos'
-            : 'Operación no completada';
+              ? e?.error?.message || 'Datos inválidos'
+              : 'Operación no completada';
         this.toast.error(msg);
       },
       complete: () => this.isBusy.set(false),
