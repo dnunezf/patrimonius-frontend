@@ -14,20 +14,17 @@ import {
 } from '../../../../core/services/confidentiality.service';
 
 import {
-  AuditService,
-  AuditItem,
-} from '../../../../core/services/audit.service';
-import {
   AccessControlService,
   DocumentRow,
 } from '../../../../core/services/access-control.service';
+
 import {
   AdminUsersService,
   AdminUser,
   Perm,
 } from '../../../../core/services/admin-users.service';
-import { environment } from '../../../../environments/environment';
 
+import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 
@@ -76,7 +73,6 @@ const LEVEL_LABEL: Record<ConfLevel, string> = {
 })
 export class AdminConfidentialityPageComponent {
   // UI state
-  activeTab = signal<'control' | 'log'>('control');
   saving = signal(false);
   loading = signal(false);
 
@@ -86,7 +82,7 @@ export class AdminConfidentialityPageComponent {
   selectedDocument = signal<DocumentOption | null>(null);
   documentOptions = signal<DocumentOption[]>([]);
 
-  // Config state (server vs edit)
+  // Config state
   currentLevel = signal<ConfLevel>('PUBLIC');
   editLevel = signal<ConfLevel>('PUBLIC');
   allowedUsers = signal<{ userId: number; actions: Action[] }[]>([]);
@@ -100,19 +96,10 @@ export class AdminConfidentialityPageComponent {
   sensitiveDocsCount = computed(
     () =>
       this.documentOptions().filter(
-        (d) => d.level === 'HIGH' || d.level === 'RESTRICTED'
-      ).length
+        (d) => d.level === 'HIGH' || d.level === 'RESTRICTED',
+      ).length,
   );
-  denied24hCount = signal<number>(0);
   allowedUsersCount = computed(() => this.allowedUsers().length);
-
-  // Log
-  logLoading = signal(false);
-  logItems = signal<AuditItem[]>([]);
-  logPeriod = signal<'24h' | '7d' | '30d'>('24h');
-  logResult = signal<'ALL' | 'PERMITTED' | 'DENIED'>('ALL');
-  logAction = signal<'ALL' | Action>('ALL');
-  logEventType = signal<'ALL' | 'ACCESS' | 'CONFIG'>('ALL');
 
   // Add user modal
   isAddUserOpen = signal(false);
@@ -133,28 +120,25 @@ export class AdminConfidentialityPageComponent {
 
   constructor(
     private confSvc: ConfidentialityService,
-    private auditSvc: AuditService,
     private accessCtrl: AccessControlService,
     private adminUsers: AdminUsersService,
     private http: HttpClient,
     private toasts: ToastService,
-    private confirm: ConfirmService
+    private confirm: ConfirmService,
   ) {
     this.bootstrap();
 
-    // keep selectedDocument in sync
     effect(() => {
       const id = this.selectedDocumentId();
       const doc = this.documentOptions().find((d) => d.id === id) || null;
       this.selectedDocument.set(doc);
     });
 
-    // debounce search
     effect((onCleanup) => {
       const q = this.searchQuery();
       const handle = window.setTimeout(
         () => this.fetchDocumentsFromServer(q),
-        200
+        200,
       );
       onCleanup(() => window.clearTimeout(handle));
     });
@@ -164,7 +148,6 @@ export class AdminConfidentialityPageComponent {
     this.loadUsers();
     this.loadRoles();
     this.fetchDocumentsFromServer('');
-    this.refreshDenied24hMetric();
   }
 
   private loadUsers(): void {
@@ -187,9 +170,6 @@ export class AdminConfidentialityPageComponent {
     });
   }
 
-  /**
-   * GET /admin/confidentiality/documents?search=
-   */
   private fetchDocumentsFromServer(search: string): void {
     this.confSvc.listDocuments(search || '').subscribe({
       next: (rows: ConfDocumentOption[]) => {
@@ -214,10 +194,7 @@ export class AdminConfidentialityPageComponent {
           this.editLevel.set('PUBLIC');
         }
       },
-      error: () => {
-        // fallback to original source
-        this.loadDocumentsFallback();
-      },
+      error: () => this.loadDocumentsFallback(),
     });
   }
 
@@ -259,7 +236,7 @@ export class AdminConfidentialityPageComponent {
         (d.title || '').toLowerCase().includes(q) ||
         (d.code || '').toLowerCase().includes(q) ||
         String(d.id).includes(q) ||
-        (d.type || '').toLowerCase().includes(q)
+        (d.type || '').toLowerCase().includes(q),
     );
   }
 
@@ -272,9 +249,8 @@ export class AdminConfidentialityPageComponent {
     const base = this.allUsers();
     if (!q) return base;
     return base.filter((u) => {
-      const full = `${u.nombre} ${u.apellido1} ${
-        u.apellido2 || ''
-      }`.toLowerCase();
+      const full =
+        `${u.nombre} ${u.apellido1} ${u.apellido2 || ''}`.toLowerCase();
       const unit = ((u as any).unidad || '').toLowerCase();
       return (
         full.includes(q) ||
@@ -312,14 +288,14 @@ export class AdminConfidentialityPageComponent {
           (cfg.users || []).map((u) => ({
             userId: Number(u.userId),
             actions: this.normalizeActions(u.actions),
-          }))
+          })),
         );
 
         this.allowedRoles.set(
           (cfg.roles || []).map((r) => ({
             roleId: Number(r.roleId),
             actions: this.normalizeActions(r.actions),
-          }))
+          })),
         );
 
         this.toasts.info('Configuration loaded.');
@@ -330,7 +306,7 @@ export class AdminConfidentialityPageComponent {
         this.currentLevel.set('PUBLIC');
         this.editLevel.set('PUBLIC');
         this.toasts.error(
-          this.humanHttpError(e, 'Failed to load configuration.')
+          this.humanHttpError(e, 'Failed to load configuration.'),
         );
       },
       complete: () => this.loading.set(false),
@@ -345,9 +321,7 @@ export class AdminConfidentialityPageComponent {
       const found = mapById.get(u.userId);
 
       const displayName = found
-        ? `${found.nombre} ${found.apellido1}${
-            found.apellido2 ? ' ' + found.apellido2 : ''
-          }`
+        ? `${found.nombre} ${found.apellido1}${found.apellido2 ? ' ' + found.apellido2 : ''}`
         : `Usuario #${u.userId}`;
 
       const email = found?.email || '';
@@ -360,18 +334,18 @@ export class AdminConfidentialityPageComponent {
 
       const editorPerms = Array.from(
         new Set(
-          (rawEditorPerms || []).filter((p) => p === 'EDIT' || p === 'SIGN')
-        )
+          (rawEditorPerms || []).filter((p) => p === 'EDIT' || p === 'SIGN'),
+        ),
       ) as Perm[];
 
       const editorAccessLabel =
         editorPerms.includes('EDIT') && editorPerms.includes('SIGN')
           ? 'Edición y Firma'
           : editorPerms.includes('EDIT')
-          ? 'Edición'
-          : editorPerms.includes('SIGN')
-          ? 'Firma'
-          : '—';
+            ? 'Edición'
+            : editorPerms.includes('SIGN')
+              ? 'Firma'
+              : '—';
 
       return {
         userId: u.userId,
@@ -410,7 +384,7 @@ export class AdminConfidentialityPageComponent {
     const sensitive = level !== 'PUBLIC';
     if (sensitive && users.length === 0 && roles.length === 0) {
       this.toasts.error(
-        'Sensitive levels require at least one authorized user or role.'
+        'Sensitive levels require at least one authorized user or role.',
       );
       return;
     }
@@ -441,30 +415,19 @@ export class AdminConfidentialityPageComponent {
           (saved?.users || dto.users).map((u) => ({
             userId: Number(u.userId),
             actions: this.normalizeActions(u.actions),
-          }))
+          })),
         );
-
         this.allowedRoles.set(
           (saved?.roles || dto.roles).map((r) => ({
             roleId: Number(r.roleId),
             actions: this.normalizeActions(r.actions),
-          }))
+          })),
         );
 
         this.toasts.success('Changes saved.');
-        this.refreshDenied24hMetric();
       },
       error: (err: unknown) => {
-        const httpErr = err as HttpErrorResponse;
-        // Handle servers that return 204/empty body (should be fixed in backend, but keep UX resilient)
-        if (httpErr && (httpErr.status === 200 || httpErr.status === 204)) {
-          this.loadConfig(docId);
-          this.toasts.success('Changes saved.');
-        } else {
-          this.toasts.error(
-            this.humanHttpError(err, 'Failed to save changes.')
-          );
-        }
+        this.toasts.error(this.humanHttpError(err, 'Failed to save changes.'));
       },
       complete: () => this.saving.set(false),
     });
@@ -472,7 +435,7 @@ export class AdminConfidentialityPageComponent {
 
   private validateAllowLists(
     users: { userId: number; actions: Action[] }[],
-    roles: { roleId: number; actions: Action[] }[]
+    roles: { roleId: number; actions: Action[] }[],
   ): boolean {
     const userIds = new Set<number>();
     for (const u of users) {
@@ -489,7 +452,7 @@ export class AdminConfidentialityPageComponent {
       const a = this.normalizeActions(u.actions);
       if (a.length === 0) {
         this.toasts.error(
-          'Validation: each authorized user must have at least one action.'
+          'Validation: each authorized user must have at least one action.',
         );
         return false;
       }
@@ -510,7 +473,7 @@ export class AdminConfidentialityPageComponent {
       const a = this.normalizeActions(r.actions);
       if (a.length === 0) {
         this.toasts.error(
-          'Validation: each authorized role must have at least one action.'
+          'Validation: each authorized role must have at least one action.',
         );
         return false;
       }
@@ -520,16 +483,12 @@ export class AdminConfidentialityPageComponent {
   }
 
   private normalizeActions(actions: Action[] | string | any): Action[] {
-    // Accept array or MySQL SET string: "VIEW,EDIT,SIGN"
     let arr: any[] = [];
 
-    if (Array.isArray(actions)) {
-      arr = actions;
-    } else if (typeof actions === 'string') {
+    if (Array.isArray(actions)) arr = actions;
+    else if (typeof actions === 'string')
       arr = actions.split(',').map((s) => s.trim());
-    } else {
-      arr = [];
-    }
+    else arr = [];
 
     const set = new Set<Action>();
     for (const x of arr) {
@@ -538,7 +497,7 @@ export class AdminConfidentialityPageComponent {
     return Array.from(set);
   }
 
-  // Add user modal
+  // Add user modal (unchanged behavior)
   openAddUserModal(): void {
     this.isAddUserOpen.set(true);
     this.userSearchQuery.set('');
@@ -551,7 +510,7 @@ export class AdminConfidentialityPageComponent {
   toggleTempUserAction(a: Action): void {
     const cur = this.tempUserActions();
     this.tempUserActions.set(
-      cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a]
+      cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a],
     );
   }
   isSelectedUserAlreadyAuthorized(): boolean {
@@ -583,14 +542,14 @@ export class AdminConfidentialityPageComponent {
   async removeUserRule(index: number): Promise<void> {
     const ok = await this.confirm.ask(
       '¿Eliminar este usuario autorizado?',
-      'Confirmar eliminación'
+      'Confirmar eliminación',
     );
     if (!ok) return;
     this.allowedUsers.update((arr) => arr.filter((_, i) => i !== index));
     this.toasts.info('User removed (pending save).');
   }
 
-  // Add role modal
+  // Add role modal (unchanged behavior)
   openAddRoleModal(): void {
     this.isAddRoleOpen.set(true);
     this.selectedRoleId.set(null);
@@ -602,7 +561,7 @@ export class AdminConfidentialityPageComponent {
   toggleTempRoleAction(a: Action): void {
     const cur = this.tempRoleActions();
     this.tempRoleActions.set(
-      cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a]
+      cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a],
     );
   }
   isSelectedRoleAlreadyAuthorized(): boolean {
@@ -634,45 +593,14 @@ export class AdminConfidentialityPageComponent {
   async removeRoleRule(index: number): Promise<void> {
     const ok = await this.confirm.ask(
       '¿Eliminar este rol autorizado?',
-      'Confirmar eliminación'
+      'Confirmar eliminación',
     );
     if (!ok) return;
     this.allowedRoles.update((arr) => arr.filter((_, i) => i !== index));
     this.toasts.info('Role removed (pending save).');
   }
 
-  // Log
-  loadLog(): void {
-    this.logLoading.set(true);
-
-    const filters: Record<string, string> = {};
-    if (this.logResult() === 'PERMITTED') filters['resultado'] = 'OK';
-    if (this.logResult() === 'DENIED') filters['resultado'] = 'DENIED';
-    if (this.logAction() !== 'ALL')
-      filters['accion_solicitada'] = this.logAction();
-
-    if (this.logEventType() === 'ACCESS') filters['tipo_evento'] = 'ACCESS';
-    if (this.logEventType() === 'CONFIG') filters['tipo_evento'] = 'CONFIG';
-
-    this.auditSvc
-      .listEvents({
-        page: 1,
-        pageSize: 25,
-        ...filters,
-        sortBy: 'fecha_hora',
-        sortDir: 'desc',
-      })
-      .subscribe({
-        next: (page) => this.logItems.set(page.items || []),
-        error: (e) =>
-          this.toasts.error(
-            this.humanHttpError(e, 'Failed to load audit log.')
-          ),
-        complete: () => this.logLoading.set(false),
-      });
-  }
-
-  // Editor perms
+  // Editor perms (keep; backend must respect subset)
   openEditorPermsModal(userId: number): void {
     this.editorPermsUserId.set(userId);
 
@@ -683,12 +611,9 @@ export class AdminConfidentialityPageComponent {
       [];
 
     const normalized = Array.from(
-      new Set((raw || []).filter((p) => p === 'EDIT' || p === 'SIGN'))
+      new Set((raw || []).filter((p) => p === 'EDIT' || p === 'SIGN')),
     ) as Perm[];
-    this.tempEditorPerms.set(
-      normalized.length ? normalized : (['EDIT'] as Perm[])
-    );
-
+    this.tempEditorPerms.set(normalized.length ? normalized : ([] as Perm[])); // allow empty selection initially
     this.isEditorPermsOpen.set(true);
   }
   closeEditorPermsModal(): void {
@@ -705,7 +630,7 @@ export class AdminConfidentialityPageComponent {
   toggleTempEditorPerm(p: Perm): void {
     const cur = this.tempEditorPerms();
     this.tempEditorPerms.set(
-      cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]
+      cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p],
     );
   }
 
@@ -715,12 +640,12 @@ export class AdminConfidentialityPageComponent {
 
     const perms = Array.from(
       new Set(
-        this.tempEditorPerms().filter((p) => p === 'EDIT' || p === 'SIGN')
-      )
+        this.tempEditorPerms().filter((p) => p === 'EDIT' || p === 'SIGN'),
+      ),
     ) as Perm[];
+
     this.editorPermsSaving.set(true);
 
-    // Backend compatibility: accepts permisosEditor
     this.adminUsers.update(id, { permisosEditor: perms }).subscribe({
       next: (updated) => {
         const backendPerms =
@@ -736,8 +661,8 @@ export class AdminConfidentialityPageComponent {
                   editorPermissions: backendPerms,
                   permisosEditor: backendPerms,
                 } as any)
-              : u
-          )
+              : u,
+          ),
         );
 
         this.closeEditorPermsModal();
@@ -745,27 +670,10 @@ export class AdminConfidentialityPageComponent {
       },
       error: (e) =>
         this.toasts.error(
-          this.humanHttpError(e, 'Failed to update editor permissions.')
+          this.humanHttpError(e, 'Failed to update editor permissions.'),
         ),
       complete: () => this.editorPermsSaving.set(false),
     });
-  }
-
-  private refreshDenied24hMetric(): void {
-    // Best-effort: relies on your AuditService supporting totalItems.
-    this.auditSvc
-      .listEvents({
-        page: 1,
-        pageSize: 1,
-        resultado: 'DENIED',
-        sortBy: 'fecha_hora',
-        sortDir: 'desc',
-      })
-      .subscribe({
-        next: (page: any) =>
-          this.denied24hCount.set(Number(page?.totalItems ?? 0)),
-        error: () => this.denied24hCount.set(0),
-      });
   }
 
   private humanHttpError(err: any, fallback: string): string {
@@ -778,7 +686,6 @@ export class AdminConfidentialityPageComponent {
       e.message ||
       fallback;
 
-    // keep it short for toasts
     return msg.length > 120 ? msg.slice(0, 117) + '...' : msg;
   }
 }
