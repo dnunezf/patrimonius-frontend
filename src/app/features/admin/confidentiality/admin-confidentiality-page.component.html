@@ -1,56 +1,63 @@
-<!-- admin-confidentiality-page.component.html -->
-<main class="container">
-  <section class="head">
-    <a routerLink="/admin/module" class="back"
-      >← Volver al Módulo de Administración</a
-    >
-    <h1>Gestión de Acceso</h1>
-    <p class="sub">Control de acceso por nivel de confidencialidad</p>
-  </section>
+<!--admin-confidentiality-page.component.html-->
+<main class="page">
+  <!-- Page header -->
+  <header class="page__header">
+    <a routerLink="/admin/module" class="back-link" aria-label="Back to Admin Module">
+      <span class="back-link__icon" aria-hidden="true">←</span>
+      <span class="back-link__text">Volver al Módulo de Administración</span>
+    </a>
+
+    <div class="page__title">
+      <h1>Gestión de Acceso</h1>
+      <p class="page__subtitle">Control de acceso por nivel de confidencialidad</p>
+    </div>
+  </header>
 
   <!-- Metrics -->
-  <section class="row cols-3 mb-16">
-    <div class="card metric">
-      <div class="metric__title">Usuarios con Permisos</div>
-      <div class="metric__value">{{ allowedUsersCount() }}</div>
-    </div>
+  <section class="metrics" aria-label="Summary metrics">
+    <article class="metric-card">
+      <div class="metric-card__label">Usuarios con Permisos</div>
+      <div class="metric-card__value">{{ allowedUsersCount() }}</div>
+    </article>
 
-    <div class="card metric">
-      <div class="metric__title">Total Documentos</div>
-      <div class="metric__value">{{ documentOptions().length }}</div>
-    </div>
+    <article class="metric-card">
+      <div class="metric-card__label">Total Documentos</div>
+      <div class="metric-card__value">{{ documentOptions().length }}</div>
+    </article>
   </section>
 
-  <!-- CONTROL -->
-  <section class="config">
-    <h2>Configuración de Confidencialidad</h2>
-    <p class="muted2">
-      Seleccione un documento para configurar su nivel de confidencialidad y
-      usuarios autorizados
-    </p>
+  <!-- Main content -->
+  <section class="panel">
+    <div class="panel__head">
+      <div>
+        <h2 class="panel__title">Configuración de Confidencialidad</h2>
+        <p class="panel__subtitle muted2">
+          Seleccione un documento para configurar su nivel de confidencialidad y usuarios autorizados.
+        </p>
+      </div>
+    </div>
 
-    <div class="config__picker">
+    <!-- Document picker -->
+    <div class="grid-2">
       <div class="field">
-        <label>Buscar documento</label>
-        <div class="input-icon">
-          <span class="input-icon__left">🔎</span>
+        <label class="field__label">Buscar documento</label>
+        <div class="input">
+          <span class="input__icon" aria-hidden="true">🔎</span>
           <input
-            class="form__control"
+            class="input__control"
             type="text"
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
             placeholder="Buscar por título, ID o tipo..."
           />
         </div>
-        <div class="muted2" style="margin-top: 6px">
-          Resultados: {{ filteredDocumentsCount() }}
-        </div>
+        <div class="field__hint muted2">Resultados: {{ filteredDocumentsCount() }}</div>
       </div>
 
       <div class="field">
-        <label>Seleccionar documento</label>
+        <label class="field__label">Seleccionar documento</label>
         <select
-          class="form__control"
+          class="select"
           [ngModel]="selectedDocumentId()"
           (ngModelChange)="onSelectDocument($event)"
         >
@@ -60,40 +67,32 @@
           </option>
         </select>
 
-        <div
-          class="muted2"
-          style="margin-top: 6px"
-          *ngIf="searchQuery().trim()"
-        >
+        <div class="field__hint muted2" *ngIf="searchQuery().trim()">
           Abra el selector para ver la lista filtrada.
         </div>
       </div>
     </div>
 
-    <div class="card" *ngIf="selectedDocument() as doc">
-      <div class="doc-grid">
-        <div>
-          <div class="doc-label">Documento seleccionado</div>
-          <div class="doc-title">{{ doc.title }}</div>
-          <div class="doc-code">{{ doc.code }}</div>
-        </div>
-        <div>
-          <div class="doc-label">Tipo</div>
-          <div class="doc-value">{{ doc.type || "—" }}</div>
-        </div>
-        <div>
-          <div class="doc-label">Unidad autora</div>
-          <div class="doc-value">{{ doc.unit || "—" }}</div>
+    <!-- Selected document summary -->
+    <article class="doc-card" *ngIf="selectedDocument() as doc">
+      <div class="doc-card__main">
+        <div class="doc-card__kicker">Documento seleccionado</div>
+        <div class="doc-card__title">{{ doc.title }}</div>
+        <div class="doc-card__meta">
+          <span class="chip chip--neutral">{{ doc.code }}</span>
+          <span class="chip chip--neutral">{{ doc.type || "—" }}</span>
+          <span class="chip chip--neutral">{{ doc.unit || "—" }}</span>
         </div>
       </div>
-    </div>
+    </article>
 
-    <div class="card" *ngIf="selectedDocumentId()">
-      <div class="level-row">
-        <div class="level-left">
-          <label class="form__label">Nivel de confidencialidad</label>
+    <!-- Level config -->
+    <article class="level-card" *ngIf="selectedDocumentId()">
+      <div class="level-card__row">
+        <div class="field level-card__left">
+          <label class="field__label">Nivel de confidencialidad</label>
           <select
-            class="form__control level-select"
+            class="select"
             [ngModel]="editLevel()"
             (ngModelChange)="editLevel.set($event)"
           >
@@ -104,9 +103,9 @@
           </select>
         </div>
 
-        <div class="level-right">
-          <div class="current-pill">
-            Actual:
+        <div class="level-card__right">
+          <div class="current">
+            <span class="current__label">Actual</span>
             <span
               class="pill"
               [class.pill--public]="currentLevel() === 'PUBLIC'"
@@ -119,7 +118,7 @@
           </div>
 
           <button
-            class="btn btn--primary"
+            class="btn btn--primary btn--lg"
             [disabled]="saving() || !selectedDocumentId()"
             type="button"
             (click)="saveConfig()"
@@ -129,181 +128,156 @@
         </div>
       </div>
 
-      <div class="priority-box">
-        <div class="priority-title">
-          Prioridad del control de confidencialidad:
-        </div>
-        <div class="priority-text">
-          Este control tiene precedencia sobre los permisos de unidad
-          organizacional. Los usuarios deben estar explícitamente autorizados.
+      <div class="callout callout--info">
+        <div class="callout__title">Prioridad del control de confidencialidad</div>
+        <div class="callout__text">
+          Este control tiene precedencia sobre los permisos de unidad organizacional.
+          Los usuarios deben estar explícitamente autorizados.
         </div>
       </div>
-    </div>
+    </article>
 
     <!-- Users table -->
-    <div class="card" *ngIf="selectedDocumentId()">
-      <div class="rules-head">
+    <article class="card" *ngIf="selectedDocumentId()">
+      <div class="card__head">
         <div>
-          <h3>Reglas de Acceso Configuradas</h3>
-          <p class="muted2">
-            Configure los usuarios con acceso explícito al documento
-            seleccionado
-          </p>
+          <h3 class="card__title">Reglas de Acceso Configuradas</h3>
+          <p class="muted2">Configure los usuarios con acceso explícito al documento seleccionado.</p>
         </div>
-        <button
-          class="btn btn--success"
-          type="button"
-          (click)="openAddUserModal()"
-        >
+
+        <button class="btn btn--success btn--lg" type="button" (click)="openAddUserModal()">
           + Agregar Usuario
         </button>
       </div>
 
-      <div class="rules-table">
-        <div class="rt-head">
-          <div>Usuario</div>
-          <div>Unidad</div>
-          <div>Nivel de Permisos</div>
-          <div>Tipo de Acceso del Editor</div>
-          <div></div>
-        </div>
-
-        <div class="rt-row" *ngFor="let row of userRuleRows(); let i = index">
-          <div class="usercell">
-            <div class="uname">{{ row.displayName }}</div>
-            <div class="uemail">{{ row.email }}</div>
+      <div class="table-wrap">
+        <div class="table table--rules">
+          <div class="table__head">
+            <div>Usuario</div>
+            <div>Unidad</div>
+            <div>Nivel de Permisos</div>
+            <div>Tipo de Acceso del Editor</div>
+            <div class="table__actions-col"></div>
           </div>
 
-          <div>
-            <span class="tag">{{ row.unit || "—" }}</span>
+          <div class="table__row" *ngFor="let row of userRuleRows(); let i = index">
+            <div class="user">
+              <div class="user__name">{{ row.displayName }}</div>
+              <div class="user__email">{{ row.email }}</div>
+            </div>
+
+            <div>
+              <span class="chip chip--neutral">{{ row.unit || "—" }}</span>
+            </div>
+
+            <div class="badges">
+              <span class="badge badge--view" *ngIf="row.actions.includes('VIEW')">Visualizar</span>
+              <span class="badge badge--edit" *ngIf="row.actions.includes('EDIT')">Editar</span>
+              <span class="badge badge--sign" *ngIf="row.actions.includes('SIGN')">Firmar</span>
+            </div>
+
+            <div>
+              <span class="chip chip--editor">{{ row.editorAccessLabel }}</span>
+            </div>
+
+            <div class="row-actions">
+              <button
+                class="icon-btn icon-btn--danger"
+                type="button"
+                (click)="removeUserRule(i)"
+                aria-label="Eliminar usuario autorizado"
+                title="Eliminar"
+              >
+                🗑
+              </button>
+            </div>
           </div>
 
-          <div class="perm-badges">
-            <span class="perm perm--view" *ngIf="row.actions.includes('VIEW')"
-              >Visualizar</span
-            >
-            <span class="perm perm--edit" *ngIf="row.actions.includes('EDIT')"
-              >Editar</span
-            >
-            <span class="perm perm--sign" *ngIf="row.actions.includes('SIGN')"
-              >Firmar</span
-            >
+          <div class="table__empty" *ngIf="userRuleRows().length === 0">
+            No hay usuarios autorizados para este documento.
           </div>
-
-          <div>
-            <span class="tag tag--editor">{{ row.editorAccessLabel }}</span>
-          </div>
-
-          <div class="actions">
-            <button
-              class="btn btn--danger"
-              type="button"
-              (click)="removeUserRule(i)"
-              aria-label="Eliminar usuario autorizado"
-              title="Eliminar"
-            >
-              🗑
-            </button>
-          </div>
-        </div>
-
-        <div class="rt-empty" *ngIf="userRuleRows().length === 0">
-          No hay usuarios autorizados para este documento.
         </div>
       </div>
-    </div>
+    </article>
 
     <!-- Roles table -->
-    <div class="card" *ngIf="selectedDocumentId()">
-      <div class="rules-head">
+    <article class="card" *ngIf="selectedDocumentId()">
+      <div class="card__head">
         <div>
-          <h3>Roles Autorizados</h3>
-          <p class="muted2">Autorice roles completos para este documento</p>
+          <h3 class="card__title">Roles Autorizados</h3>
+          <p class="muted2">Autorice roles completos para este documento.</p>
         </div>
-        <button
-          class="btn btn--secondary"
-          type="button"
-          (click)="openAddRoleModal()"
-        >
+
+        <button class="btn btn--secondary btn--lg" type="button" (click)="openAddRoleModal()">
           + Agregar Rol
         </button>
       </div>
 
-      <div class="simple-table">
-        <div class="st-head">
-          <div>Nombre</div>
-          <div>Acciones</div>
-          <div></div>
-        </div>
-
-        <div class="st-row" *ngFor="let r of roleRules(); let i = index">
-          <div>{{ r.roleName || "—" }}</div>
-          <div class="perm-badges">
-            <span class="perm perm--view" *ngIf="r.actions.includes('VIEW')"
-              >Ver</span
-            >
-            <span class="perm perm--edit" *ngIf="r.actions.includes('EDIT')"
-              >Editar</span
-            >
-            <span class="perm perm--sign" *ngIf="r.actions.includes('SIGN')"
-              >Firmar</span
-            >
+      <div class="table-wrap">
+        <div class="table table--roles">
+          <div class="table__head">
+            <div>Nombre</div>
+            <div>Acciones</div>
+            <div class="table__actions-col"></div>
           </div>
-          <div class="actions">
-            <button
-              class="btn btn--danger"
-              type="button"
-              (click)="removeRoleRule(i)"
-            >
-              Eliminar
-            </button>
-          </div>
-        </div>
 
-        <div class="rt-empty" *ngIf="roleRules().length === 0">
-          No hay roles autorizados para este documento.
+          <div class="table__row" *ngFor="let r of roleRules(); let i = index">
+            <div class="role-name">{{ r.roleName || "—" }}</div>
+
+            <div class="badges">
+              <span class="badge badge--view" *ngIf="r.actions.includes('VIEW')">Ver</span>
+              <span class="badge badge--edit" *ngIf="r.actions.includes('EDIT')">Editar</span>
+              <span class="badge badge--sign" *ngIf="r.actions.includes('SIGN')">Firmar</span>
+            </div>
+
+            <div class="row-actions">
+              <button class="btn btn--danger" type="button" (click)="removeRoleRule(i)">
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+          <div class="table__empty" *ngIf="roleRules().length === 0">
+            No hay roles autorizados para este documento.
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   </section>
 
   <!-- MODAL: Add Authorized User -->
-  <div class="modal-backdrop" *ngIf="isAddUserOpen()">
+  <div class="modal-backdrop" *ngIf="isAddUserOpen()" role="dialog" aria-modal="true" aria-label="Agregar Usuario Autorizado">
     <div class="modal">
       <div class="modal__head">
         <div>
           <div class="modal__title">Agregar Usuario Autorizado</div>
-          <div class="modal__sub">
-            Seleccione un usuario y configure sus permisos específicos
-          </div>
+          <div class="modal__sub">Seleccione un usuario y configure sus permisos específicos.</div>
         </div>
-        <button type="button" class="modal__x" (click)="closeAddUserModal()">
+        <button type="button" class="modal__x" (click)="closeAddUserModal()" aria-label="Close">
           ×
         </button>
       </div>
 
       <div class="modal__body">
         <div class="field">
-          <label>Buscar usuario</label>
-          <div class="input-icon">
-            <span class="input-icon__left">🔎</span>
+          <label class="field__label">Buscar usuario</label>
+          <div class="input">
+            <span class="input__icon" aria-hidden="true">🔎</span>
             <input
-              class="form__control"
+              class="input__control"
               type="text"
               [ngModel]="userSearchQuery()"
               (ngModelChange)="userSearchQuery.set($event)"
               placeholder="Buscar por nombre, correo o unidad..."
             />
           </div>
-          <div class="muted2" style="margin-top: 6px">
-            Resultados: {{ filteredUsersCount() }}
-          </div>
+          <div class="field__hint muted2">Resultados: {{ filteredUsersCount() }}</div>
         </div>
 
         <div class="field">
-          <label>Seleccionar usuario</label>
+          <label class="field__label">Seleccionar usuario</label>
           <select
-            class="form__control"
+            class="select"
             [ngModel]="selectedUserId()"
             (ngModelChange)="selectedUserId.set($event)"
           >
@@ -313,17 +287,13 @@
             </option>
           </select>
 
-          <div
-            class="muted2"
-            style="margin-top: 6px"
-            *ngIf="isSelectedUserAlreadyAuthorized()"
-          >
+          <div class="field__hint muted2" *ngIf="isSelectedUserAlreadyAuthorized()">
             Este usuario ya fue agregado anteriormente.
           </div>
         </div>
 
         <div class="field">
-          <label>Permisos específicos</label>
+          <label class="field__label">Permisos específicos</label>
           <div class="checklist">
             <label class="check">
               <input
@@ -331,7 +301,7 @@
                 [checked]="tempUserActions().includes('VIEW')"
                 (change)="toggleTempUserAction('VIEW')"
               />
-              Visualizar documento
+              <span>Visualizar documento</span>
             </label>
             <label class="check">
               <input
@@ -339,7 +309,7 @@
                 [checked]="tempUserActions().includes('EDIT')"
                 (change)="toggleTempUserAction('EDIT')"
               />
-              Editar documento
+              <span>Editar documento</span>
             </label>
             <label class="check">
               <input
@@ -347,18 +317,14 @@
                 [checked]="tempUserActions().includes('SIGN')"
                 (change)="toggleTempUserAction('SIGN')"
               />
-              Firmar documento
+              <span>Firmar documento</span>
             </label>
           </div>
         </div>
       </div>
 
       <div class="modal__foot">
-        <button
-          class="btn btn--light"
-          type="button"
-          (click)="closeAddUserModal()"
-        >
+        <button class="btn btn--light" type="button" (click)="closeAddUserModal()">
           Cancelar
         </button>
         <button
@@ -374,25 +340,23 @@
   </div>
 
   <!-- MODAL: Add Authorized Role -->
-  <div class="modal-backdrop" *ngIf="isAddRoleOpen()">
+  <div class="modal-backdrop" *ngIf="isAddRoleOpen()" role="dialog" aria-modal="true" aria-label="Agregar Rol Autorizado">
     <div class="modal">
       <div class="modal__head">
         <div>
           <div class="modal__title">Agregar Rol Autorizado</div>
-          <div class="modal__sub">
-            Seleccione un rol y configure sus acciones permitidas
-          </div>
+          <div class="modal__sub">Seleccione un rol y configure sus acciones permitidas.</div>
         </div>
-        <button type="button" class="modal__x" (click)="closeAddRoleModal()">
+        <button type="button" class="modal__x" (click)="closeAddRoleModal()" aria-label="Close">
           ×
         </button>
       </div>
 
       <div class="modal__body">
         <div class="field">
-          <label>Seleccionar rol</label>
+          <label class="field__label">Seleccionar rol</label>
           <select
-            class="form__control"
+            class="select"
             [ngModel]="selectedRoleId()"
             (ngModelChange)="selectedRoleId.set($event)"
           >
@@ -402,17 +366,13 @@
             </option>
           </select>
 
-          <div
-            class="muted2"
-            style="margin-top: 6px"
-            *ngIf="isSelectedRoleAlreadyAuthorized()"
-          >
+          <div class="field__hint muted2" *ngIf="isSelectedRoleAlreadyAuthorized()">
             Este rol ya fue agregado anteriormente.
           </div>
         </div>
 
         <div class="field">
-          <label>Acciones</label>
+          <label class="field__label">Acciones</label>
           <div class="checklist">
             <label class="check">
               <input
@@ -420,7 +380,7 @@
                 [checked]="tempRoleActions().includes('VIEW')"
                 (change)="toggleTempRoleAction('VIEW')"
               />
-              Ver
+              <span>Ver</span>
             </label>
             <label class="check">
               <input
@@ -428,7 +388,7 @@
                 [checked]="tempRoleActions().includes('EDIT')"
                 (change)="toggleTempRoleAction('EDIT')"
               />
-              Editar
+              <span>Editar</span>
             </label>
             <label class="check">
               <input
@@ -436,18 +396,14 @@
                 [checked]="tempRoleActions().includes('SIGN')"
                 (change)="toggleTempRoleAction('SIGN')"
               />
-              Firmar
+              <span>Firmar</span>
             </label>
           </div>
         </div>
       </div>
 
       <div class="modal__foot">
-        <button
-          class="btn btn--light"
-          type="button"
-          (click)="closeAddRoleModal()"
-        >
+        <button class="btn btn--light" type="button" (click)="closeAddRoleModal()">
           Cancelar
         </button>
         <button
