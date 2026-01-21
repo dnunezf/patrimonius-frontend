@@ -231,10 +231,12 @@ export class AccessControlComponent implements OnInit {
   }
 
   // =========================
-  // ✅ NUEVO: Navegar directo al documento (UX museo)
+  // ✅ Navegar directo al documento (UX museo)
   // =========================
   canOpen(doc: DocumentRow): boolean {
-    return this.toBool(doc.canView) || this.toBool(doc.canEdit) || this.toBool(doc.canSign) || this.toBool(doc.hasSign);
+    // ✅ IMPORTANTE: para abrir, usamos SOLO lo que es posible ahora (canX)
+    // (hasSign es informativo, pero NO debe permitir abrir)
+    return this.toBool(doc.canView) || this.toBool(doc.canEdit) || this.toBool(doc.canSign);
   }
 
   getOpenHint(doc: DocumentRow): string {
