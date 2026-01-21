@@ -119,6 +119,7 @@
         </td>
 
         <td>
+          <!-- ✅ Editar -->
           <button
             *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
             class="btn btn--gray"
@@ -128,6 +129,7 @@
             Editar
           </button>
 
+          <!-- ✅ Firmar (NO SE ELIMINA) -->
           <button
             class="btn btn--red"
             type="button"
@@ -136,7 +138,12 @@
             Firmar
           </button>
 
-          <button class="btn btn--gray" type="button" (click)="$event.stopPropagation()">
+          <!-- ✅ Ver (modo lectura usando /edit?readonly=1) -->
+          <button
+            class="btn btn--gray"
+            type="button"
+            (click)="verDocumento(document.id); $event.stopPropagation()"
+          >
             Ver
           </button>
         </td>

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { DocumentService, VDocumentModel } from 'core/services/document.service';
-import {FormatStatePipe} from '../../../pipes/capitalize.pipe'; // <-- ajusta si tu ruta es distinta
+import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
 
 @Component({
   selector: 'app-editor-dashboard',
@@ -86,9 +86,26 @@ export class EditorDashboardComponent implements OnInit {
     this.router.navigate(['/editor/document/create']);
   }
 
+  onCardClick(card: any, ev: MouseEvent) {
+    ev.stopPropagation();
+    if (card?.title === 'Crear Documento') {
+      this.goToCreate();
+    }
+  }
 
+  // ✅ Editar (modo normal)
   editarDocumento(id: number): void {
     this.router.navigate([`/editor/document/${id}/edit`]);
+  }
+
+  // ✅ Ver (modo lectura) — EXACTAMENTE como Acceso por Unidad
+  verDocumento(id: number): void {
+    this.router.navigate([`/editor/document/${id}/edit`], {
+      queryParams: {
+        readonly: 1,
+        returnTo: '/editor/dashboard',
+      },
+    });
   }
 
   // ===== Data =====
@@ -97,7 +114,6 @@ export class EditorDashboardComponent implements OnInit {
       next: (rows) => {
         this.allDocuments = rows ?? [];
 
-        // autores únicos
         const set = new Set<string>();
         for (const d of this.allDocuments) set.add(d.primer_usuario || 'No disponible');
         this.authors = ['Todos', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
@@ -144,10 +160,8 @@ export class EditorDashboardComponent implements OnInit {
 
       const fecha = d.fecha_creacion ? new Date(d.fecha_creacion) : null;
 
-      const okFrom =
-        !dateFrom || !fecha ? true : fecha >= new Date(`${dateFrom}T00:00:00`);
-      const okTo =
-        !dateTo || !fecha ? true : fecha <= new Date(`${dateTo}T23:59:59`);
+      const okFrom = !dateFrom || !fecha ? true : fecha >= new Date(`${dateFrom}T00:00:00`);
+      const okTo = !dateTo || !fecha ? true : fecha <= new Date(`${dateTo}T23:59:59`);
 
       return okAuthor && okStatus && okFrom && okTo;
     });
@@ -214,7 +228,7 @@ export class EditorDashboardComponent implements OnInit {
       next: () => {
         this.signLoading = false;
         this.closeSignModal();
-        this.loadDocuments(); // refresca tabla (firmas_obtenidas/estado)
+        this.loadDocuments();
       },
       error: (e) => {
         this.signLoading = false;
@@ -249,11 +263,4 @@ export class EditorDashboardComponent implements OnInit {
     a.click();
     URL.revokeObjectURL(url);
   }
-  onCardClick(card: any, ev: MouseEvent) {
-    ev.stopPropagation();
-    if (card?.title === 'Crear Documento') {
-      this.goToCreate();
-    }
-  }
-
 }
