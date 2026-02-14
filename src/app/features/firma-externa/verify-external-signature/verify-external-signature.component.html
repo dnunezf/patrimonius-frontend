@@ -1,0 +1,75 @@
+<div class="wrap">
+  <h3>Verificar firma externa</h3>
+
+  <div class="block">
+    <label>Documento (PDF/DOCX)</label><br />
+    <input
+      type="file"
+      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      (change)="onDocChange($event)"
+    />
+    <div *ngIf="docFile" class="hint">
+      Seleccionado: {{ docFile.name }}
+    </div>
+  </div>
+
+  <div class="block">
+    <label>Certificado (CER/CRT/PEM)</label><br />
+    <input type="file" accept=".cer,.crt,.pem" (change)="onCertChange($event)" />
+    <div *ngIf="certFile" class="hint">
+      Seleccionado: {{ certFile.name }}
+    </div>
+  </div>
+
+  <button class="btn" (click)="verify()" [disabled]="loading">
+    {{ loading ? "Verificando..." : "Verificar" }}
+  </button>
+
+  <div *ngIf="errorMsg" class="error">
+    {{ errorMsg }}
+  </div>
+
+  <div *ngIf="result" class="card">
+    <div>
+      <b>Estado:</b>
+      <span [class]="badgeClass(result.estado)">{{ result.estado }}</span>
+    </div>
+    <div class="mt6">
+      <b>Reason:</b> {{ result?.detalle?.reason ?? "N/A" }}
+    </div>
+
+    <pre class="pre">{{ result | json }}</pre>
+  </div>
+
+  <!-- ✅ NUEVO: latest + history -->
+  <hr />
+
+  <div class="row">
+    <button class="btn" (click)="loadLatest()">Cargar última verificación</button>
+
+    <button class="btn" (click)="loadHistory(true)" [disabled]="historyLoading">
+      {{ historyLoading ? "Cargando..." : "Cargar historial" }}
+    </button>
+  </div>
+
+  <div *ngIf="latestItem" class="card">
+    <b>Última verificación:</b>
+    <pre class="pre">{{ latestItem | json }}</pre>
+  </div>
+
+  <div *ngIf="historyItems?.length" class="block">
+    <b>Historial:</b>
+
+    <div *ngFor="let it of historyItems" class="card mt8">
+      <div><b>Estado:</b> {{ it.estado }}</div>
+      <div><b>Fecha:</b> {{ it.fecha || it.created_at || "N/A" }}</div>
+      <div><b>Verificado por:</b> {{ it.verificado_por_usuario_id || "N/A" }}</div>
+
+      <pre class="pre mt6">{{ it | json }}</pre>
+    </div>
+  </div>
+
+  <div *ngIf="!historyItems?.length" class="empty">
+    Sin historial todavía.
+  </div>
+</div>
