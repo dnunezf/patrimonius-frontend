@@ -2,6 +2,9 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './features/home/home.component';
 import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
 import { ActivateComponent } from './auth/activate.component';
+import { VerifyExternalSignaturePageComponent } from "app/pages/verify-external-signature-page/verify-external-signature-page.component";
+import { VerifyExternalSignatureComponent } from "app/features/firma-externa/verify-external-signature/verify-external-signature.component";
+
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -43,6 +46,13 @@ export const routes: Routes = [
   },
   { path: 'access-exceptions', component: AccessExceptionsComponent },
   { path: 'activate', component: ActivateComponent },
-
+  {
+    path: "archivo/external-signatures/:documentoId/verify",
+    component: VerifyExternalSignaturePageComponent,
+  },
+  {
+    path: "archivo/external-signatures/:documentoId/verify",
+    component: VerifyExternalSignatureComponent,
+  },
   { path: '**', redirectTo: '' },
 ];
