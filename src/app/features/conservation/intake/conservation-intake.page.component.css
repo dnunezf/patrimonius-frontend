@@ -1,0 +1,655 @@
+/* src/app/features/conservation/intake/conservation-intake.page.component.css */
+
+/* =========================================================
+   Base
+   ========================================================= */
+:host {
+  display: block;
+  background: #f8fafc;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Prevent grid children from overflowing into the other column */
+.left,
+.right,
+.card,
+.table {
+  min-width: 0;
+}
+
+/* =========================================================
+   Page header
+   ========================================================= */
+.page-header {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 26px 18px 10px;
+  text-align: center;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  color: #0f172a;
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 1.9rem);
+}
+
+.page-header .sub {
+  margin: 10px auto 0;
+  max-width: 820px;
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* =========================================================
+   Layout (fixed: no overlap, clean separation)
+   ========================================================= */
+.layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 18px 28px;
+
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 28px;
+  align-items: start;
+
+  position: relative;
+}
+
+@media (max-width: 1020px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* Vertical separator (kept, but cannot cover content) */
+@media (min-width: 1021px) {
+  .layout::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+
+    left: calc(420px + 14px); /* left col + half gap */
+    width: 1px;
+    background: #e5e7eb;
+    pointer-events: none;
+
+    z-index: 0; /* ensure it stays behind cards */
+  }
+
+  .left {
+    padding-right: 10px;
+  }
+
+  .right {
+    padding-left: 10px;
+  }
+}
+
+/* Left column behaves as a control panel */
+.left {
+  display: grid;
+  gap: 16px;
+}
+
+/* Sticky panel (safe: no overlay) */
+@media (min-width: 1021px) {
+  .left {
+    position: sticky;
+    top: 88px;
+    align-self: start;
+    z-index: 1;
+  }
+}
+
+/* Right column */
+.right {
+  display: grid;
+  gap: 16px;
+  z-index: 1; /* keep above separator */
+}
+
+/* =========================================================
+   Card
+   ========================================================= */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+  outline: 1px solid rgba(15, 23, 42, 0.03);
+
+  position: relative;
+  z-index: 1; /* cards always above separator */
+  overflow: hidden; /* prevents inner content from bleeding into other column */
+}
+
+.card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
+  color: #0f172a;
+}
+
+.card .hint {
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  max-width: 60ch;
+  text-align: right;
+}
+
+/* =========================================================
+   Form controls
+   ========================================================= */
+.filters {
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 11px;
+  font-size: 0.95rem;
+  outline: none;
+  background: #fff;
+  color: #0f172a;
+}
+
+input::placeholder {
+  color: #94a3b8;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--mncr-blue-639);
+  box-shadow: 0 0 0 3px rgba(32, 98, 255, 0.12);
+}
+
+/* ✅ Fix: “Solo PDF/A” label broken / separated */
+label.chk {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  user-select: none;
+}
+label.chk input {
+  margin: 0;
+}
+
+/* Buttons row */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* Prevent primary button from overflowing on narrow widths */
+.actions .btn.primary {
+  max-width: 320px;
+  width: 100%;
+}
+@media (min-width: 560px) {
+  .actions .btn.primary {
+    width: auto;
+  }
+}
+
+/* =========================================================
+   Buttons
+   ========================================================= */
+.btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-weight: 900;
+  cursor: pointer;
+  color: #0f172a;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(16, 24, 40, 0.08);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn.primary {
+  border-color: var(--mncr-blue-639);
+  background: var(--mncr-blue-639);
+  color: #fff;
+}
+
+.btn.ghost {
+  background: #fff;
+}
+
+.btn.mini {
+  padding: 6px 10px;
+  border-radius: 9px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   Candidates table (fixed: no overflow into right panel)
+   ========================================================= */
+.table {
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  overflow: auto; /* horizontal scroll if needed */
+  max-height: 300px; /* vertical scroll */
+  background: #fff;
+
+  width: 100%;
+}
+
+/* Remove the hard min-width that caused visual bleeding */
+.thead,
+.trow {
+  display: grid;
+  grid-template-columns: 1.2fr 1.6fr 0.7fr 0.9fr;
+  gap: 10px;
+  padding: 10px 10px;
+  align-items: center;
+}
+
+@media (max-width: 560px) {
+  .thead,
+  .trow {
+    grid-template-columns: 1.2fr 1.4fr 0.7fr 0.9fr;
+    gap: 8px;
+  }
+}
+
+.thead {
+  background: #f8fafc;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #334155;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.trow {
+  cursor: pointer;
+  border-top: 1px solid #eef2f7;
+  background: #fff;
+}
+
+.trow:hover {
+  background: #fbfdff;
+}
+
+.trow.selected {
+  background: #f2f7ff;
+  box-shadow: inset 4px 0 0 var(--mncr-blue-639);
+}
+
+/* Ensure long codes never push the layout */
+.mono {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Badges
+   ========================================================= */
+.badge {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 0.82rem;
+  border: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.badge.ok {
+  background: #ecfdf5;
+  border-color: #c6f6d5;
+  color: #065f46;
+}
+
+.badge.bad {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.badge.inf {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
+/* =========================================================
+   Eligibility checklist
+   ========================================================= */
+.checklist {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.checklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  border: 2px solid #e5e7eb;
+  flex: 0 0 auto;
+}
+
+.dot.ok {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.dot.bad {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+.dot.warn {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.state {
+  color: #64748b;
+  margin-left: 6px;
+  font-size: 0.9rem;
+}
+
+/* =========================================================
+   Right column form
+   ========================================================= */
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.section {
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+.section-title {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.err {
+  color: #991b1b;
+  font-weight: 800;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.validation-banner {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 10px;
+  border-radius: 12px;
+  font-weight: 900;
+}
+
+.meta-line {
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.divider {
+  height: 1px;
+  background: #eef2f7;
+  margin: 10px 0;
+}
+
+/* =========================================================
+   Classification list
+   ========================================================= */
+.class-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.class-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.class-item:hover {
+  background: #fbfdff;
+}
+
+.class-item.active {
+  border-color: var(--mncr-green-376);
+  background: #ecfdf5;
+}
+
+.picked {
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.picked .cap {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.picked .val {
+  font-weight: 900;
+  color: #0f172a;
+}
+
+/* =========================================================
+   Access rules
+   ========================================================= */
+.access-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.access-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rule {
+  display: grid;
+  grid-template-columns: 1.2fr 1.6fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .rule {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pill {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  font-weight: 900;
+  font-size: 0.8rem;
+  color: #0f172a;
+  background: #f8fafc;
+  margin-right: 8px;
+}
+
+.acts {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: #64748b;
+  font-weight: 700;
+}
+
+/* =========================================================
+   Retention preview
+   ========================================================= */
+.infobox {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+/* =========================================================
+   Summary + Save
+   ========================================================= */
+.summary ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.form > .actions {
+  margin-top: 12px;
+  margin-bottom: 10px;
+}
+
+.blocked {
+  margin-top: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+/* Empty state */
+.empty {
+  text-align: center;
+  padding: 22px;
+  color: #64748b;
+}
