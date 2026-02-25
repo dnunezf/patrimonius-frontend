@@ -5,6 +5,7 @@ import { ActivateComponent } from './auth/activate.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
+
   {
     path: 'admin',
     loadChildren: () =>
@@ -20,6 +21,16 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/editor/editor.routes').then(m => m.EDITOR_ROUTES),
   },
+
+  // ✅ HU-21: Carga masiva de documentos
+  {
+    path: 'documentos/carga-masiva',
+    loadComponent: () =>
+      import('./features/documents/carga-masiva.component').then(
+        (m) => m.CargaMasivaPageComponent
+      ),
+  },
+
   {
     path: 'reset-password-request',
     loadComponent: () =>
@@ -41,6 +52,7 @@ export const routes: Routes = [
         (m) => m.MainDashboardComponent
       ),
   },
+
   { path: 'access-exceptions', component: AccessExceptionsComponent },
   { path: 'activate', component: ActivateComponent },
 
