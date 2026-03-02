@@ -1,3 +1,5 @@
+<!-- document-editor.component.html -->
+
 <div class="editor-grid">
   <div class="editor-main">
     <div class="top-bar">
@@ -10,7 +12,11 @@
       <div class="toolbar__title">
         <h2>{{ isReadOnly ? 'Visualizador de Documento' : 'Editor Colaborativo' }}</h2>
         <p class="toolbar__hint">
-          {{ isReadOnly ? 'Modo lectura • Sin edición' : 'Cambios en tiempo real • Guardado por versiones • Comentarios' }}
+          {{
+            isReadOnly
+              ? 'Modo lectura • Sin edición'
+              : 'Cambios en tiempo real • Guardado por versiones • Comentarios'
+          }}
         </p>
       </div>
 
@@ -103,6 +109,7 @@
   ></app-comment-panel>
 </div>
 
+<!-- Dialog historial versiones -->
 <app-version-history-dialog
   [open]="showHistory"
   [documentoId]="documentoId"
@@ -111,6 +118,7 @@
 >
 </app-version-history-dialog>
 
+<!-- Dialog metadatos -->
 <app-document-metadata-dialog
   [documentId]="documentoId"
   [open]="metadataOpen"
@@ -118,3 +126,93 @@
   (saved)="onMetadataSaved()"
 >
 </app-document-metadata-dialog>
+
+<!-- ✅ MODAL: Solicitar firma (inline, usa tu lógica existente) -->
+<div
+  class="modal-backdrop sig-backdrop"
+  *ngIf="requestSigModalOpen"
+  (click)="closeRequestSignatureModal()"
+></div>
+
+<div class="modal sig-modal" *ngIf="requestSigModalOpen" role="dialog" aria-modal="true">
+  <div class="modal__header">
+    <h3>Solicitar firma</h3>
+    <button type="button" class="modal__close" (click)="closeRequestSignatureModal()">
+      ✕
+    </button>
+  </div>
+
+  <div class="modal__body">
+    <p class="muted">
+      Seleccioná los firmantes que deben firmar este documento. Luego confirmá la solicitud.
+    </p>
+
+    <div *ngIf="requestSigLoading" class="muted">Cargando usuarios…</div>
+
+    <div *ngIf="requestSigError" class="err" style="margin-top: 8px;">
+      {{ requestSigError }}
+    </div>
+
+    <ng-container *ngIf="!requestSigLoading">
+      <label class="field">
+        Buscar firmante
+        <input
+          type="text"
+          [(ngModel)]="firmantesQuery"
+          (input)="onFirmanteQueryChange()"
+          placeholder="Ej: Juan Pérez"
+        />
+      </label>
+
+      <label class="field">
+        Lista de usuarios
+        <select [(ngModel)]="selectedCandidateId">
+          <option [ngValue]="null">-- Seleccione --</option>
+          <option *ngFor="let u of filteredFirmantes" [ngValue]="u.id">
+            {{ u.label }}
+          </option>
+        </select>
+      </label>
+
+      <button type="button" class="btn-secondary" (click)="addSelectedFirmante()">
+        Agregar firmante
+      </button>
+
+      <div class="selected" style="margin-top: 12px;">
+        <p><b>Firmantes seleccionados:</b></p>
+
+        <div *ngIf="!selectedFirmantesList.length" class="muted">
+          Aún no hay firmantes.
+        </div>
+
+        <ul *ngIf="selectedFirmantesList.length">
+          <li *ngFor="let u of selectedFirmantesList">
+            {{ u.label }}
+            <button type="button" class="btn-link" (click)="removeFirmante(u.id)">
+              Quitar
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="requestSigError" class="err" style="margin-top: 8px;">
+        {{ requestSigError }}
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="modal__footer">
+    <button type="button" class="btn-outline" (click)="closeRequestSignatureModal()">
+      Cancelar
+    </button>
+
+    <button
+      type="button"
+      class="btn-accent"
+      (click)="confirmRequestSignature()"
+      [disabled]="requestSigLoading"
+    >
+      {{ requestSigLoading ? 'Solicitando…' : 'Confirmar solicitud' }}
+    </button>
+  </div>
+</div>

@@ -4,11 +4,8 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import {FormatStatePipe} from '../../../../pipes/capitalize.pipe';
-import {DocumentService} from '../../../../../core/services/document.service';
-
-
-
+import { FormatStatePipe } from '../../../../pipes/capitalize.pipe';
+import { DocumentService } from '../../../../../core/services/document.service';
 
 type SignatureInfo = {
   documento_id: number;
@@ -21,9 +18,8 @@ type SignatureInfo = {
   motivo?: string | null;
 };
 
-// NOTA: este endpoint lo agregaremos luego en backend.
-// Por ahora dejamos el boton, pero lo deshabilitamos si no existe.
-const EXPORTS_ENABLED = false;
+// ✅ YA HAY BACKEND, entonces lo activamos
+const EXPORTS_ENABLED = true;
 
 @Component({
   selector: 'app-document-sign',
@@ -114,7 +110,7 @@ export class DocumentSignComponent {
     this.confirmMsg = null;
 
     this.docs.confirmSignature(this.docId, this.selectedPdf).subscribe({
-      next: (res) => {
+      next: () => {
         this.confirmLoading = false;
         this.confirmMsg = 'Firma registrada correctamente.';
         this.selectedPdf = null;
@@ -130,14 +126,53 @@ export class DocumentSignComponent {
     });
   }
 
-  // ====== (para cuando activemos export en backend) ======
+  // ✅ DESCARGA PDF REAL (Blob -> archivo)
   downloadPdf() {
     if (!this.exportsEnabled) return;
-    // this.docs.downloadPdf(this.docId).subscribe(...)
+
+    this.error = null;
+
+    this.docs.downloadPdfForSignature(this.docId).subscribe({
+      next: (blob) => {
+        const fileBlob = new Blob([blob], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(fileBlob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `documento_${this.docId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.error =
+          (err?.error?.message as string) || 'No se pudo descargar el PDF.';
+      },
+    });
   }
 
+  // ✅ DESCARGA DOCX REAL (Blob -> archivo)
   downloadDocx() {
     if (!this.exportsEnabled) return;
-    // this.docs.downloadDocx(this.docId).subscribe(...)
+
+    this.error = null;
+
+    this.docs.downloadDocxForSignature(this.docId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `documento_${this.docId}.docx`;
+        a.click();
+
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.error = (err?.error?.message as string) || 'No se pudo descargar el DOCX.';
+      },
+    });
   }
 }
