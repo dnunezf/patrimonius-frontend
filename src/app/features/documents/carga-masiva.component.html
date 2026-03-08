@@ -1,0 +1,107 @@
+<div class="overlay">
+  <section class="modal" role="dialog" aria-label="Importar Documentos Archivados">
+
+    <header class="modal__header">
+      <div class="header__left">
+        <div class="header__icon" aria-hidden="true">⬆</div>
+
+        <div class="header__text">
+          <h2 class="header__title">Importar Documentos Archivados</h2>
+          <p class="header__subtitle">Paso 1 de 4: Selecciona cómo cargar los documentos</p>
+        </div>
+      </div>
+
+      <button class="header__close" type="button" (click)="onClose()" aria-label="Cerrar">✕</button>
+    </header>
+
+    <div class="stepper" aria-label="Progreso">
+      <div class="stepper__item is-active">
+        <span class="stepper__circle">1</span>
+        <span class="stepper__label">
+          Método <span class="stepper__labelBreak">de carga</span>
+        </span>
+      </div>
+
+      <div class="stepper__line"></div>
+
+      <div class="stepper__item">
+        <span class="stepper__circle is-muted">2</span>
+        <span class="stepper__label is-muted">Metadatos</span>
+      </div>
+
+      <div class="stepper__line"></div>
+
+      <div class="stepper__item">
+        <span class="stepper__circle is-muted">3</span>
+        <span class="stepper__label is-muted">Validación</span>
+      </div>
+
+      <div class="stepper__line"></div>
+
+      <div class="stepper__item">
+        <span class="stepper__circle is-muted">4</span>
+      </div>
+    </div>
+
+    <main class="modal__body">
+
+      <div class="tabs" role="tablist" aria-label="Método de carga">
+        <button
+          class="tab"
+          type="button"
+          role="tab"
+          [class.is-active]="mode === 'FILES'"
+          (click)="setMode('FILES')">
+          <span class="tab__icon" aria-hidden="true">📄</span>
+          <span>Subir archivos</span>
+        </button>
+
+        <button
+          class="tab"
+          type="button"
+          role="tab"
+          [class.is-active]="mode === 'CSV'"
+          (click)="setMode('CSV')">
+          <span class="tab__icon" aria-hidden="true">🧾</span>
+          <span>Importar CSV</span>
+        </button>
+
+        <button
+          class="tab"
+          type="button"
+          role="tab"
+          [class.is-active]="mode === 'FOLDER'"
+          (click)="setMode('FOLDER')">
+          <span class="tab__icon" aria-hidden="true">📁</span>
+          <span>Cargar carpeta</span>
+        </button>
+      </div>
+
+      <section class="dropzone" aria-label="Área de carga">
+        <div class="dropzone__inner">
+          <div class="dropzone__bigicon" aria-hidden="true">⬆</div>
+
+          <p class="dropzone__title">Arrastra y suelta archivos aquí o</p>
+
+          <button class="dropzone__btn" type="button">
+            Seleccionar archivos
+          </button>
+
+          <p class="dropzone__hint">
+            Formatos permitidos: PDF, TIFF, DOCX (máx. 50MB por archivo)
+          </p>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="modal__footer">
+      <button class="btn btn--ghost" type="button" (click)="onCancel()">Cancelar</button>
+
+      <button class="btn btn--primary" type="button" (click)="onNext()">
+        Siguiente <span class="btn__chev" aria-hidden="true">›</span>
+      </button>
+    </footer>
+
+  </section>
+</div>

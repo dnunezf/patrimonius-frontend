@@ -1,4 +1,4 @@
-// src/app/editor/editor.routes.ts
+// src/app/features/editor/editor.routes.ts
 import { Routes } from '@angular/router';
 import { EditorDashboardComponent } from './dashboard/editor-dashboard.component';
 import { EditorCreateDocumentComponent } from './document/create/editor-create-document.component';
@@ -6,12 +6,18 @@ import { DocumentEditorComponent } from './document/document-editor.component';
 import { DocumentSignComponent } from './document/sign/document-sign.component';
 
 export const EDITOR_ROUTES: Routes = [
-  { path: 'dashboard', component: EditorDashboardComponent, title: 'Patrimonius | Dashboard del Editor' },
+  {
+    path: 'dashboard',
+    component: EditorDashboardComponent,
+    title: 'Patrimonius | Dashboard del Editor',
+  },
   { path: 'document/create', component: EditorCreateDocumentComponent, title: 'Crear documento' },
-  { path: 'document/:id/edit', component: DocumentEditorComponent, title: 'Editar documento' },
 
-  // ✅ NUEVO: Firmar documento
+  // ✅ Editor (también sirve para modo lectura con ?readonly=1)
+  { path: 'document/:id/edit', component: DocumentEditorComponent, title: 'Documento' },
+
+  // ✅ Firmar documento
   { path: 'document/:id/sign', component: DocumentSignComponent, title: 'Firmar documento' },
 
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' }
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 ];

@@ -33,12 +33,18 @@ export class NavComponent {
   private readonly store = inject(NotificationsStore);
   private readonly router = inject(Router);
 
-  private readonly currentUser = computed(() => this.auth.currentUser?.() ?? this.auth.currentUser?.() ?? this.auth.currentUser?.call?.(this.auth) ?? this.auth.currentUser?.()); // tolerante
+  private readonly currentUser = computed(() =>
+    this.auth.currentUser?.() ??
+    this.auth.currentUser?.() ??
+    this.auth.currentUser?.call?.(this.auth) ??
+    this.auth.currentUser?.()
+  ); // tolerante
+
   isLoggedIn = () => !!this.auth.currentUser?.();
 
   userEmail = () => this.auth.currentUser?.()?.email ?? '';
 
-// Reemplaza TU método roles(): string[] { ... } por este getter:
+  // Reemplaza TU método roles(): string[] { ... } por este getter:
   get rolesList(): string[] {
     const u = this.auth.currentUser?.();
     if (!u) return [];
@@ -78,8 +84,6 @@ export class NavComponent {
       .replace(/\b\w/g, c => c.toUpperCase());
   }
 
-
-
   roleDisplay(role: string): string {
     const r = role?.toUpperCase().replace(/\s+/g, '_');
     const map: Record<string, string> = {
@@ -91,7 +95,6 @@ export class NavComponent {
     };
     return map[r] ?? role;
   }
-
 
   roleLink(role: string): string {
     const r = role?.toUpperCase().replace(/\s+/g, '_');
@@ -106,9 +109,6 @@ export class NavComponent {
     }
   }
 
-
-
-
   notificationsLink(): string {
     // Por ahora siempre a admin/notifications como pediste:
     return '/admin/notifications';
@@ -119,8 +119,6 @@ export class NavComponent {
       return this.store.count?.() ?? 0;
     } catch { return 0; }
   };
-
-
 
   // existente
   isOpen = signal(false);
@@ -168,5 +166,28 @@ export class NavComponent {
     return String(n);
   }
 
+  // ==========================
+  // HU-21: Carga de documentos
+  // ==========================
 
+  /** Mostrar la opción en el drawer (temporal: cualquier logueado) */
+  canSeeUpload = (): boolean => {
+    const u: any = this.auth.currentUser?.();
+    if (!u) return false;
+
+    // ✅ Temporal mientras confirman: cualquiera logueado
+    return true;
+
+    // ✅ Cuando confirmen permiso:
+    // return u.canUpload === true;
+
+    // ✅ O si el backend manda permisos:
+    // const perms = Array.isArray(u.permissions) ? u.permissions : [];
+    // return perms.map((p:any) => String(p).toUpperCase()).includes('UPLOAD');
+  };
+
+  /** Ruta a la pantalla HU-21 (ajustá si cambia) */
+  uploadLink(): string {
+    return '/documentos/carga-masiva';
+  }
 }

@@ -1,4 +1,3 @@
-// FRONTEND: src/app/core/features/editor/document/document-editor.component.ts
 import {
   Component,
   ElementRef,
@@ -43,6 +42,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   documentoId!: number;
   baseVersionId = 0;
 
+  // ✅ NUEVO
+  isReadOnly = false;
+
   presence: any[] = [];
   comentarios: any[] = [];
   unreadCount = 0;
@@ -52,7 +54,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   error = '';
   info = '';
 
-  // HU-010 (historial / restauración)
+  // HU-010
   showHistory = false;
   showRestoreModal = false;
   versiones: VersionDoc[] = [];
@@ -64,23 +66,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   sigMsg = '';
   metadataOpen = false;
 
-  // =========================
-  // ✅ MODAL: Solicitar firma (NUEVO UI)
-  // =========================
+  // Solicitar firma
   requestSigModalOpen = false;
   requestSigLoading = false;
   requestSigError = '';
 
-  // buscador grande
   firmantesQuery = '';
-
-  // lista total desde backend
   firmantes: UiUser[] = [];
-
-  // "combobox" (select) elegido
   selectedCandidateId: number | null = null;
-
-  // firmantes agregados (en orden)
   selectedFirmantesList: UiUser[] = [];
 
   private readonly clientId =
@@ -100,22 +93,36 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.documentoId = Number(this.route.snapshot.paramMap.get('id'));
 
+    // ✅ Detecta modo lectura por query param
+    const qp = this.route.snapshot.queryParamMap;
+    const ro = qp.get('readonly');
+    this.isReadOnly = ro === '1' || ro === 'true';
+
     // 1) Init Quill
-    this.quill = new Quill(this.editorRef.nativeElement, { theme: 'snow' });
-
-    // 2) Emit only user changes (deltas)
-    this.quill.on('text-change', (delta, _oldDelta, source) => {
-      if (source !== 'user') return;
-
-      this.rt.emit('delta', { delta, ts: Date.now(), from: this.clientId });
-
-      // fallback compatibility
-      this.rt.emit('content:patch', {
-        content: this.html(),
-        ts: Date.now(),
-        from: this.clientId,
-      });
+    this.quill = new Quill(this.editorRef.nativeElement, {
+      theme: 'snow',
+      readOnly: this.isReadOnly,
     });
+
+    // Si es lectura: deshabilitar explícitamente (por seguridad)
+    if (this.isReadOnly) {
+      this.quill.enable(false);
+    }
+
+    // 2) Emit only user changes (deltas) — SOLO si NO es readonly
+    if (!this.isReadOnly) {
+      this.quill.on('text-change', (delta, _oldDelta, source) => {
+        if (source !== 'user') return;
+
+        this.rt.emit('delta', { delta, ts: Date.now(), from: this.clientId });
+
+        this.rt.emit('content:patch', {
+          content: this.html(),
+          ts: Date.now(),
+          from: this.clientId,
+        });
+      });
+    }
 
     // 3) Load initial content and base version
     this.docs.getContenido(this.documentoId).subscribe({
@@ -127,14 +134,15 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       error: () => (this.error = 'No se pudo cargar el contenido'),
     });
 
-    // 4) Connect WS and join doc
+    // 4) Realtime: si es readonly, podés decidir si conectarte o no.
+    //    Aquí lo dejamos conectado para ver cambios en vivo, PERO sin emitir cambios.
     this.rt.connect();
     this.rt.emit('editor:join', { documentoId: this.documentoId });
 
-    // 5) Presence
+    // Presence
     this.rt.on('presence:update', (u: any[]) => (this.presence = u));
 
-    // 5.a) Apply deltas
+    // Apply deltas
     this.rt.on('delta', (m: any) => {
       if (!m?.delta || m.from === this.clientId) return;
       this.quill.updateContents(m.delta as any, 'api');
@@ -145,14 +153,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       this.setHtmlPreservingCaretAndScroll(m.content);
     });
 
-    // 7) Conflicts → refresh base version
+    // Conflicts → refresh base version
     this.rt.on('editor:conflict', (_: any) => {
       this.docs
         .ultimaVersion(this.documentoId)
         .subscribe((v) => (this.baseVersionId = v?.id ?? 0));
     });
 
-    // ✅ Realtime comments
+    // Realtime comments
     this.rt.on('comentario:nuevo', (comentario: any) => {
       this.comentarios = [...this.comentarios, comentario];
       this.unreadCount++;
@@ -169,20 +177,20 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    // 8) Presence heartbeat
-    this.subs.push(
-      interval(20000)
-        .pipe(switchMap(() => this.docs.touchSession(this.documentoId)))
-        .subscribe()
-    );
+    // ✅ Presence heartbeat solo si NO es readonly (para no aparecer como “editor”)
+    if (!this.isReadOnly) {
+      this.subs.push(
+        interval(20000)
+          .pipe(switchMap(() => this.docs.touchSession(this.documentoId)))
+          .subscribe()
+      );
+    }
 
-    // 9) Comments initial load
+    // Comments initial load
     this.loadComentarios();
   }
 
-  // =========================
   // HU-010
-  // =========================
   openHistory(): void {
     this.showHistory = true;
     this.info = '';
@@ -205,9 +213,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  // =========================
   // Comentarios
-  // =========================
   toggleComentarios(): void {
     this.showComentarios = !this.showComentarios;
 
@@ -239,6 +245,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   addComentario(desc: string): void {
+    // En modo lectura, no permitimos comentar (si querés permitirlo, me decís)
+    if (this.isReadOnly) return;
+
     const texto = String(desc ?? '').trim();
     if (!texto) return;
 
@@ -272,6 +281,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   markResolved(id: number): void {
+    if (this.isReadOnly) return;
+
     const cid = Number(id);
     if (!cid) return;
 
@@ -309,10 +320,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  // =========================
   // Guardado / Metadata
-  // =========================
   save(): void {
+    if (this.isReadOnly) return;
+
     this.saving = true;
     this.error = '';
     this.sigMsg = '';
@@ -346,14 +357,15 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   openMetadata(): void {
+    if (this.isReadOnly) return;
     this.metadataOpen = true;
   }
   onMetadataSaved(): void {}
 
-  // =========================
-  // ✅ Solicitar firma (Modal) — SOLO ESTA PARTE CAMBIÓ
-  // =========================
+  // Solicitar firma (Modal)
   openRequestSignatureModal(): void {
+    if (this.isReadOnly) return;
+
     this.requestSigError = '';
     this.sigMsg = '';
     this.error = '';
@@ -365,7 +377,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.selectedCandidateId = null;
     this.selectedFirmantesList = [];
 
-    // ✅ Cargar usuarios del backend
     this.docs.listUsers().subscribe({
       next: (rows: any[]) => {
         this.requestSigLoading = false;
@@ -382,13 +393,11 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           .filter((u: UiUser) => !!u.id)
           .sort((a: UiUser, b: UiUser) => a.label.localeCompare(b.label));
 
-        // si hay texto ya escrito, revalida el select
         this.ensureSelectedCandidateStillValid();
       },
       error: (e: any) => {
         this.requestSigLoading = false;
-        this.requestSigError =
-          e?.error?.message || 'No se pudieron cargar los usuarios.';
+        this.requestSigError = e?.error?.message || 'No se pudieron cargar los usuarios.';
       },
     });
   }
@@ -402,7 +411,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.selectedFirmantesList = [];
   }
 
-  // ✅ Buscar por nombre o apellido (es sobre label completo)
   get filteredFirmantes(): UiUser[] {
     const q = this.normalize(this.firmantesQuery);
     if (!q) return this.excludeAlreadySelected(this.firmantes);
@@ -416,9 +424,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     return this.excludeAlreadySelected(filtered);
   }
 
-  // se llama desde (input) del search
   onFirmanteQueryChange(): void {
-    // Si el usuario seleccionado ya no está en la lista filtrada, lo “reseteamos”
     this.ensureSelectedCandidateStillValid();
   }
 
@@ -433,7 +439,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     return list.filter((u) => !selectedIds.has(u.id));
   }
 
-  // ✅ Agregar desde el “combo”
   addSelectedFirmante(): void {
     const id = Number(this.selectedCandidateId);
     if (!id) return;
@@ -441,7 +446,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const user = this.firmantes.find((u) => u.id === id);
     if (!user) return;
 
-    // evitar duplicados
     if (this.selectedFirmantesList.some((x) => x.id === id)) {
       this.selectedCandidateId = null;
       return;
@@ -450,11 +454,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.selectedFirmantesList = [...this.selectedFirmantesList, user];
     this.selectedCandidateId = null;
 
-    // para que el select no quede con algo inválido
     this.ensureSelectedCandidateStillValid();
   }
 
-  // ✅ Quitar “chip”
   removeFirmante(id: number): void {
     const uid = Number(id);
     if (!uid) return;
@@ -462,8 +464,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.ensureSelectedCandidateStillValid();
   }
 
-  // ✅ Confirmar: manda firmantesIds al backend
   confirmRequestSignature(): void {
+    if (this.isReadOnly) return;
+
     this.requestSigError = '';
     this.error = '';
     this.sigMsg = '';
@@ -480,7 +483,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.docs
       .prepareForSignature(this.documentoId, {
         firmantesIds,
-        // ✅ ya NO mandamos fecha limite porque quitaste ese campo en UI
         fecha_limite: null,
       })
       .subscribe({
@@ -493,14 +495,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           this.requestSigLoading = false;
 
           if (e?.error?.error === 'missing_required_metadata') {
-            this.requestSigError =
-              'Faltan metadatos requeridos. Complete “Metadatos”.';
+            this.requestSigError = 'Faltan metadatos requeridos. Complete “Metadatos”.';
             this.metadataOpen = true;
             return;
           }
 
-          this.requestSigError =
-            e?.error?.message || 'No se pudo preparar la firma';
+          this.requestSigError = e?.error?.message || 'No se pudo preparar la firma';
         },
       });
   }
@@ -513,10 +513,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       .trim();
   }
 
-  // =========================
   // Import DOCX
-  // =========================
   async importDocx(evt: Event): Promise<void> {
+    if (this.isReadOnly) return;
+
     const file = (evt.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
@@ -528,9 +528,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.quill.setSelection(end, 0, 'silent');
   }
 
-  // =========================
   // Navegación / Destroy
-  // =========================
   goBack(): void {
     this.router.navigate(['/editor/dashboard']);
   }
@@ -538,12 +536,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopCommentsPolling();
     this.subs.forEach((s) => s.unsubscribe());
-    this.docs.endSession(this.documentoId).subscribe();
+
+    // solo cerrar session si estabas “editando”
+    if (!this.isReadOnly) {
+      this.docs.endSession(this.documentoId).subscribe();
+    }
   }
 
-  // =========================
   // Helpers Quill
-  // =========================
   private html(): string {
     // @ts-ignore
     return (this.quill as any).getSemanticHTML?.() ?? this.quill.root.innerHTML;
@@ -580,16 +580,17 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===== HU-010: restore modal helpers (si aún los usas) =====
+  // restore modal helpers
   openRestoreModal() {
+    if (this.isReadOnly) return;
+
     this.showRestoreModal = true;
     this.selectedVersionId = null;
     this.restoreMotivo = '';
 
     this.docs.listVersions(this.documentoId).subscribe({
       next: (rows: VersionDoc[]) => (this.versiones = rows),
-      error: (e: any) =>
-        (this.error = e?.error?.message || 'No se pudieron cargar versiones'),
+      error: (e: any) => (this.error = e?.error?.message || 'No se pudieron cargar versiones'),
     });
   }
 
@@ -602,15 +603,13 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   confirmRestore() {
+    if (this.isReadOnly) return;
     if (!this.selectedVersionId) return;
+
     this.restoring = true;
 
     this.docs
-      .restoreVersion(
-        this.documentoId,
-        this.selectedVersionId,
-        this.restoreMotivo || ''
-      )
+      .restoreVersion(this.documentoId, this.selectedVersionId, this.restoreMotivo || '')
       .subscribe({
         next: (res: any) => {
           this.restoring = false;

@@ -1,16 +1,14 @@
-
 <header class="dashboard-header">
   <h1>Panel principal</h1>
 
   <p class="dashboard-subtitle" *ngIf="visibleCards.length === 1">
-    Acceso disponible según su rol asignado
+    Acceso disponible según sus permisos
   </p>
 
   <p class="dashboard-subtitle" *ngIf="visibleCards.length > 1">
-    Seleccione el rol con el que desea trabajar
+    Seleccione una opción para continuar
   </p>
 </header>
-
 
 <section class="roles" [class.single]="visibleCards.length === 1">
 
@@ -19,9 +17,9 @@
            [ngClass]="c.cssClass"
            role="button"
            tabindex="0"
-           (click)="goToRole(c.key)"
-           (keydown.enter)="goToRole(c.key)"
-           (keydown.space)="goToRole(c.key)">
+           (click)="goToCard(c)"
+           (keydown.enter)="goToCard(c)"
+           (keydown.space)="goToCard(c)">
 
     <img [src]="c.icon" alt="" aria-hidden="true" />
     <h3>{{ c.title }}</h3>
@@ -36,4 +34,3 @@
   </article>
 
 </section>
-

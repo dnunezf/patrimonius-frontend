@@ -83,4 +83,20 @@
       <span class="drawer__chev">›</span>
     </a>
   </nav>
+
+  <!-- ✅ NUEVO: sección independiente (NO es rol) -->
+  <ng-container *ngIf="canSeeUpload()">
+    <div class="drawer__section">ACCIONES</div>
+
+    <nav class="drawer__nav">
+      <a class="drawer__item"
+         [routerLink]="uploadLink()"
+         routerLinkActive="is-active"
+         (click)="closeDrawer()">
+        <img class="drawer__icon" src="assets/icons/upload.png" alt="" aria-hidden="true" />
+        <span class="drawer__label">Carga de documentos</span>
+        <span class="drawer__chev">›</span>
+      </a>
+    </nav>
+  </ng-container>
 </aside>

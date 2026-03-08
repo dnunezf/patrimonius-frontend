@@ -1,0 +1,63 @@
+export type ConfidentialityLevel =
+  | 'PUBLIC'
+  | 'INTERNAL'
+  | 'HIGH'
+  | 'RESTRICTED';
+
+export type CandidateDoc = {
+  id: number;
+  officialCode: string;
+  title: string;
+  producingUnit: string;
+  createdAtISO: string;
+  isPDFA: boolean;
+  signaturesComplete: boolean;
+  keywords?: string[];
+};
+
+export type EligibilityState = {
+  pdfa: boolean;
+  signatures: boolean;
+  officialCodeComplete: boolean;
+  requiredMetadata: boolean;
+  duplicateChecked: 'PENDING' | 'OK' | 'DUPLICATE' | 'NOT_CHECKED';
+};
+
+export type AccessRule = {
+  kind: 'USER' | 'ROLE';
+  subjectId: number;
+  subjectLabel: string;
+  actions: Array<'VIEW' | 'EDIT' | 'SIGN'>;
+};
+
+export type RetentionRule = {
+  id: number;
+  label: string;
+  years: number;
+};
+
+export type IntakePayload = {
+  candidateId: number;
+  officialCode: string;
+
+  metadata: {
+    title: string;
+    producingUnit: string;
+    author: string;
+    keywords: string[];
+    accessLevel: ConfidentialityLevel;
+  };
+
+  classification: {
+    code: string;
+    label: string;
+  };
+
+  accessRules: AccessRule[];
+
+  retention: {
+    ruleId: number;
+    startDateISO: string;
+    trackingEnabled: boolean;
+  };
+};
