@@ -21,7 +21,6 @@ export class EditorDashboardComponent implements OnInit {
     { title: 'Consultas', description: 'Revisar documentos', icon: 'search' },
   ];
 
-  // Filtros
   filters = {
     author: 'Todos',
     status: 'Todos',
@@ -39,7 +38,6 @@ export class EditorDashboardComponent implements OnInit {
     { value: 'ARCHIVADO', label: 'Archivado' },
   ];
 
-  // Data tabla
   allDocuments: VDocumentModel[] = [];
   pagedDocuments: VDocumentModel[] = [];
   page = 1;
@@ -63,13 +61,20 @@ export class EditorDashboardComponent implements OnInit {
     motivo?: string | null;
   } | null = null;
 
+  // ✅ Anexos
+  anexos: any[] = [];
+  anexosLoading = false;
+  anexosError = '';
+  selectedAnexoFile: File | null = null;
+  anexoDescripcion = '';
+  uploadAnexoLoading = false;
+
   constructor(private docs: DocumentService, private router: Router) {}
 
   ngOnInit(): void {
     this.loadDocuments();
   }
 
-  // ===== Helpers UI =====
   get totalItems(): number {
     return this.filteredDocuments().length;
   }
@@ -97,14 +102,10 @@ export class EditorDashboardComponent implements OnInit {
     }
   }
 
-  // ✅ Editar (modo normal)
   editarDocumento(id: number): void {
     this.router.navigate([`/editor/document/${id}/edit`]);
   }
 
-  // ✅ Ver
-  // Si el documento ya tiene PDF firmado (FIRMA_PARCIAL o ARCHIVADO),
-  // abrimos el PDF actual. Si no, abrimos el editor readonly.
   verDocumento(id: number): void {
     const doc = this.allDocuments.find((d) => Number(d.id) === Number(id));
 
@@ -113,8 +114,6 @@ export class EditorDashboardComponent implements OnInit {
         next: (blob) => {
           const url = URL.createObjectURL(blob);
           window.open(url, '_blank');
-
-          // liberar después de un rato
           setTimeout(() => URL.revokeObjectURL(url), 10000);
         },
         error: () => {
@@ -132,7 +131,6 @@ export class EditorDashboardComponent implements OnInit {
     });
   }
 
-  // ===== Data =====
   loadDocuments(): void {
     this.docs.getDocumentsFromProduction().subscribe({
       next: (rows) => {
@@ -198,7 +196,7 @@ export class EditorDashboardComponent implements OnInit {
   }
 
   // =========================
-  // ✅ MODAL FIRMA (POPUP)
+  // MODAL FIRMA
   // =========================
   openSignModal(documentId: number): void {
     this.signModalOpen = true;
@@ -208,6 +206,14 @@ export class EditorDashboardComponent implements OnInit {
     this.signDocId = documentId;
     this.signInfo = null;
 
+    // reset anexos
+    this.anexos = [];
+    this.anexosLoading = false;
+    this.anexosError = '';
+    this.selectedAnexoFile = null;
+    this.anexoDescripcion = '';
+    this.uploadAnexoLoading = false;
+
     this.docs.getSignatureInfo(documentId).subscribe({
       next: (info) => {
         this.signLoading = false;
@@ -216,6 +222,8 @@ export class EditorDashboardComponent implements OnInit {
         if (!info?.puede_firmar) {
           this.signError = info?.motivo || 'No puedes firmar este documento.';
         }
+
+        this.loadAnexos();
       },
       error: (e) => {
         this.signLoading = false;
@@ -231,6 +239,13 @@ export class EditorDashboardComponent implements OnInit {
     this.selectedPdf = null;
     this.signDocId = null;
     this.signInfo = null;
+
+    this.anexos = [];
+    this.anexosLoading = false;
+    this.anexosError = '';
+    this.selectedAnexoFile = null;
+    this.anexoDescripcion = '';
+    this.uploadAnexoLoading = false;
   }
 
   onPdfSelected(evt: Event): void {
@@ -263,6 +278,7 @@ export class EditorDashboardComponent implements OnInit {
 
   confirmSign(): void {
     if (!this.signDocId) return;
+
     if (!this.selectedPdf) {
       this.signError = 'Adjunta el PDF firmado antes de confirmar.';
       return;
@@ -274,13 +290,26 @@ export class EditorDashboardComponent implements OnInit {
     this.docs.confirmSignature(this.signDocId, this.selectedPdf).subscribe({
       next: () => {
         this.signLoading = false;
-        this.closeSignModal();
+        this.selectedPdf = null;
         this.loadDocuments();
+        this.reloadSignatureInfo();
+        this.loadAnexos();
       },
       error: (e) => {
         this.signLoading = false;
         this.signError = e?.error?.message || 'No se pudo confirmar la firma.';
       },
+    });
+  }
+
+  private reloadSignatureInfo(): void {
+    if (!this.signDocId) return;
+
+    this.docs.getSignatureInfo(this.signDocId).subscribe({
+      next: (info) => {
+        this.signInfo = info;
+      },
+      error: () => {},
     });
   }
 
@@ -299,6 +328,83 @@ export class EditorDashboardComponent implements OnInit {
     this.docs.downloadDocxForSignature(this.signDocId).subscribe({
       next: (blob) => this.saveBlob(blob, `documento_${this.signDocId}.docx`),
       error: () => (this.signError = 'No se pudo descargar el DOCX.'),
+    });
+  }
+
+  // =========================
+  // ANEXOS
+  // =========================
+  loadAnexos(): void {
+    if (!this.signDocId) return;
+
+    this.anexosLoading = true;
+    this.anexosError = '';
+
+    this.docs.listAnexos(this.signDocId).subscribe({
+      next: (rows) => {
+        this.anexosLoading = false;
+        this.anexos = rows ?? [];
+      },
+      error: (e) => {
+        this.anexosLoading = false;
+        this.anexosError = e?.error?.message || 'No se pudieron cargar los anexos.';
+      },
+    });
+  }
+
+  onAnexoSelected(evt: Event): void {
+    const input = evt.target as HTMLInputElement;
+    this.selectedAnexoFile = input.files?.[0] ?? null;
+  }
+
+  uploadAnexo(): void {
+    if (!this.signDocId) return;
+
+    if (!this.selectedAnexoFile) {
+      this.anexosError = 'Debes seleccionar un archivo anexo.';
+      return;
+    }
+
+    this.uploadAnexoLoading = true;
+    this.anexosError = '';
+
+    this.docs
+      .uploadAnexo(this.signDocId, this.selectedAnexoFile, this.anexoDescripcion)
+      .subscribe({
+        next: () => {
+          this.uploadAnexoLoading = false;
+          this.selectedAnexoFile = null;
+          this.anexoDescripcion = '';
+          this.loadAnexos();
+        },
+        error: (e) => {
+          this.uploadAnexoLoading = false;
+          this.anexosError = e?.error?.message || 'No se pudo subir el anexo.';
+        },
+      });
+  }
+
+  downloadAnexo(anexoId: number, nombre: string): void {
+    if (!this.signDocId) return;
+
+    this.docs.downloadAnexo(this.signDocId, anexoId).subscribe({
+      next: (blob) => this.saveBlob(blob, nombre),
+      error: () => {
+        this.anexosError = 'No se pudo descargar el anexo.';
+      },
+    });
+  }
+
+  deleteAnexo(anexoId: number): void {
+    if (!this.signDocId) return;
+
+    this.docs.deleteAnexo(this.signDocId, anexoId).subscribe({
+      next: () => {
+        this.loadAnexos();
+      },
+      error: (e) => {
+        this.anexosError = e?.error?.message || 'No se pudo eliminar el anexo.';
+      },
     });
   }
 

@@ -392,4 +392,32 @@ export class DocumentService {
       snapshot,
     });
   }
+
+  // =========================
+  // 📎 Anexos
+  // =========================
+  listAnexos(documentId: number) {
+    return this.http.get<any[]>(`${this.api}/documentos/${documentId}/anexos`);
+  }
+
+  uploadAnexo(documentId: number, file: File, descripcion?: string) {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (descripcion != null && descripcion !== '') {
+      fd.append('descripcion', descripcion);
+    }
+
+    return this.http.post<any>(`${this.api}/documentos/${documentId}/anexos`, fd);
+  }
+
+  downloadAnexo(documentId: number, anexoId: number) {
+    return this.http.get(
+      `${this.api}/documentos/${documentId}/anexos/${anexoId}/descargar`,
+      { responseType: 'blob' }
+    );
+  }
+
+  deleteAnexo(documentId: number, anexoId: number) {
+    return this.http.delete<any>(`${this.api}/documentos/${documentId}/anexos/${anexoId}`);
+  }
 }

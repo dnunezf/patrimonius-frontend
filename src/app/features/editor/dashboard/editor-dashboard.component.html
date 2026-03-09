@@ -28,7 +28,6 @@
     </div>
   </div>
 
-  <!-- Card filtros -->
   <div class="card">
     <h2 class="text-blue-639">Filtros</h2>
 
@@ -70,7 +69,6 @@
     </div>
   </div>
 
-  <!-- Documentos -->
   <div class="document-list">
     <h2 class="text-blue-639">Documentos en Producción</h2>
     <p>Documentos en borrador y firmados - Fase de producción activa</p>
@@ -119,7 +117,6 @@
         </td>
 
         <td>
-          <!-- ✅ Editar -->
           <button
             *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
             class="btn btn--gray"
@@ -129,7 +126,6 @@
             Editar
           </button>
 
-          <!-- ✅ Firmar (NO SE ELIMINA) -->
           <button
             class="btn btn--red"
             type="button"
@@ -138,7 +134,6 @@
             Firmar
           </button>
 
-          <!-- ✅ Ver (modo lectura usando /edit?readonly=1) -->
           <button
             class="btn btn--gray"
             type="button"
@@ -175,7 +170,7 @@
   </div>
 </div>
 
-<!-- ✅ MODAL FIRMA (POPUP REAL) -->
+<!-- ✅ MODAL FIRMA -->
 <div class="modal-backdrop" *ngIf="signModalOpen" (click)="closeSignModal()"></div>
 
 <div class="modal" *ngIf="signModalOpen" role="dialog" aria-modal="true">
@@ -211,8 +206,105 @@
 
       <div class="input-group">
         <label>Adjuntar PDF firmado</label>
-        <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" />
+        <input
+          type="file"
+          accept=".pdf,application/pdf"
+          (change)="onPdfSelected($event)"
+          [disabled]="signLoading || signInfo?.ya_firmo || !(signInfo?.puede_firmar)"
+        />
         <small class="muted">Debe ser un archivo .pdf</small>
+      </div>
+
+      <!-- ✅ ANEXOS -->
+      <hr />
+
+      <div class="anexos-section">
+        <h4 class="text-blue-639">Documentos anexos</h4>
+        <p class="muted">
+          Adjunte aquí los documentos anexos relacionados con este documento firmado.
+        </p>
+
+        <div *ngIf="anexosError" class="alert-error">
+          {{ anexosError }}
+        </div>
+
+        <div class="input-group">
+          <label>Archivo anexo</label>
+          <input
+            type="file"
+            (change)="onAnexoSelected($event)"
+            [disabled]="uploadAnexoLoading"
+          />
+        </div>
+
+        <div class="input-group">
+          <label>Descripción (opcional)</label>
+          <input
+            type="text"
+            [(ngModel)]="anexoDescripcion"
+            placeholder="Ej: Evidencia, oficio, respaldo, anexo 1..."
+            [disabled]="uploadAnexoLoading"
+          />
+        </div>
+
+        <div class="row-actions">
+          <button
+            class="button-outline"
+            type="button"
+            [disabled]="uploadAnexoLoading || !selectedAnexoFile"
+            (click)="uploadAnexo()"
+          >
+            {{ uploadAnexoLoading ? 'Subiendo...' : 'Subir anexo' }}
+          </button>
+        </div>
+
+        <div *ngIf="anexosLoading" class="muted" style="margin-top: 10px;">
+          Cargando anexos...
+        </div>
+
+        <div *ngIf="!anexosLoading && !anexos.length" class="muted" style="margin-top: 10px;">
+          No hay anexos cargados para este documento.
+        </div>
+
+        <div *ngIf="!anexosLoading && anexos.length" class="anexos-list">
+          <div class="anexo-item" *ngFor="let anexo of anexos">
+            <div class="anexo-main">
+              <div class="label">Archivo</div>
+              <div class="value">{{ anexo.nombre_original }}</div>
+
+              <div class="muted" *ngIf="anexo.descripcion">
+                {{ anexo.descripcion }}
+              </div>
+
+              <div class="muted">
+                Subido por: {{ anexo.usuario_nombre || ('Usuario ' + anexo.usuario_id) }}
+              </div>
+
+              <div class="muted">
+                {{ anexo.fecha_subida | date:'short' }}
+              </div>
+            </div>
+
+            <div class="row-actions">
+              <button
+                class="button-outline"
+                type="button"
+                (click)="downloadAnexo(anexo.id, anexo.nombre_original)"
+              >
+                Descargar
+              </button>
+
+              <button
+                class="btn btn--red"
+                type="button"
+                (click)="deleteAnexo(anexo.id)"
+                [disabled]="signInfo?.estado === 'ARCHIVADO'"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -224,10 +316,10 @@
       <button
         class="btn btn--red"
         type="button"
-        [disabled]="signLoading || !!signError || !selectedPdf"
+        [disabled]="signLoading || !!signError || !selectedPdf || signInfo?.ya_firmo || !(signInfo?.puede_firmar)"
         (click)="confirmSign()"
       >
-        Confirmar firma
+        {{ signLoading ? 'Confirmando...' : 'Confirmar firma' }}
       </button>
     </div>
   </div>
