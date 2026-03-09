@@ -110,7 +110,6 @@ export class DocumentService {
   // ✅ NUEVO: usuarios para firmantes
   // =========================
   listUsers() {
-    // ⚠️ Ajusta esta ruta si tu backend usa otra.
     return this.http.get<any[]>(`${this.api}/admin/users`);
   }
 
@@ -158,7 +157,6 @@ export class DocumentService {
   }
 
   // ========== Draft / collaboration ==========
-  /** Crear documento desde plantilla */
   crearDesdePlantilla(body: {
     plantilla_id: number;
     titulo: string;
@@ -236,6 +234,9 @@ export class DocumentService {
     estado: string;
     contenido: string;
     latest_version_id: number;
+    has_signed_pdf?: boolean;
+    signed_pdf_url?: string | null;
+    prefer_signed_pdf_view?: boolean;
   }> {
     return this.http.get<{
       documento_id: number;
@@ -243,6 +244,9 @@ export class DocumentService {
       estado: string;
       contenido: string;
       latest_version_id: number;
+      has_signed_pdf?: boolean;
+      signed_pdf_url?: string | null;
+      prefer_signed_pdf_view?: boolean;
     }>(`${this.api}/documentos/${id}/contenido`);
   }
 
@@ -313,7 +317,6 @@ export class DocumentService {
   // =========================
   // HU-018: Firma (descarga + upload)
   // =========================
-
   getSignatureInfo(id: number) {
     return this.http.get<{
       documento_id: number;
@@ -325,6 +328,13 @@ export class DocumentService {
       puede_firmar: boolean;
       motivo?: string | null;
     }>(`${this.api}/documentos/${id}/firma/info`);
+  }
+
+  // ✅ NUEVO: obtener PDF firmado actual con auth
+  getCurrentSignedPdf(id: number) {
+    return this.http.get(`${this.api}/documentos/${id}/firma/pdf-actual`, {
+      responseType: 'blob',
+    });
   }
 
   downloadPdfForSignature(id: number) {
