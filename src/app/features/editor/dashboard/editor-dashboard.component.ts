@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 
 import { DocumentService, VDocumentModel } from 'core/services/document.service';
 import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-editor-dashboard',
@@ -35,6 +36,7 @@ export class EditorDashboardComponent implements OnInit {
     { value: 'EDICION', label: 'Edición' },
     { value: 'FIRMA', label: 'Firma' },
     { value: 'FIRMA_PARCIAL', label: 'Firma parcial' },
+    { value: 'ARCHIVADO', label: 'Archivado' },
   ];
 
   // Data tabla
@@ -71,9 +73,11 @@ export class EditorDashboardComponent implements OnInit {
   get totalItems(): number {
     return this.filteredDocuments().length;
   }
+
   get totalPages(): number {
     return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
   }
+
   get rangeEnd(): number {
     return Math.min(this.page * this.pageSize, this.totalItems);
   }
@@ -98,8 +102,28 @@ export class EditorDashboardComponent implements OnInit {
     this.router.navigate([`/editor/document/${id}/edit`]);
   }
 
-  // ✅ Ver (modo lectura) — EXACTAMENTE como Acceso por Unidad
+  // ✅ Ver
+  // Si el documento ya tiene PDF firmado (FIRMA_PARCIAL o ARCHIVADO),
+  // abrimos el PDF actual. Si no, abrimos el editor readonly.
   verDocumento(id: number): void {
+    const doc = this.allDocuments.find((d) => Number(d.id) === Number(id));
+
+    if (doc && ['FIRMA_PARCIAL', 'ARCHIVADO'].includes(doc.documento_estado)) {
+      this.docs.getCurrentSignedPdf(id).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+
+          // liberar después de un rato
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        },
+        error: () => {
+          this.signError = 'No se pudo abrir el PDF firmado.';
+        },
+      });
+      return;
+    }
+
     this.router.navigate([`/editor/document/${id}/edit`], {
       queryParams: {
         readonly: 1,
@@ -210,7 +234,30 @@ export class EditorDashboardComponent implements OnInit {
   }
 
   onPdfSelected(evt: Event): void {
-    const f = (evt.target as HTMLInputElement).files?.[0] ?? null;
+    const input = evt.target as HTMLInputElement;
+    const f = input.files?.[0] ?? null;
+
+    if (!f) {
+      this.selectedPdf = null;
+      return;
+    }
+
+    const fileName = String(f.name || '').trim().toLowerCase();
+    const fileType = String(f.type || '').trim().toLowerCase();
+
+    const isPdf =
+      fileName.endsWith('.pdf') ||
+      fileType === 'application/pdf' ||
+      fileType === 'application/x-pdf';
+
+    if (!isPdf) {
+      this.signError = 'El archivo debe ser un PDF.';
+      this.selectedPdf = null;
+      input.value = '';
+      return;
+    }
+
+    this.signError = '';
     this.selectedPdf = f;
   }
 
