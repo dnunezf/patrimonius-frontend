@@ -624,3 +624,79 @@ input, select{
     border-radius: 12px;
   }
 }
+
+
+
+/* ============================
+   ✅ ANEXOS EN MODAL DE FIRMA
+============================ */
+
+.anexos-section {
+  margin-top: 14px;
+}
+
+.anexos-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.anexos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.anexo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid #e4e7ec;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.anexo-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.anexo-main .value {
+  word-break: break-word;
+}
+
+.anexo-main .muted {
+  margin-top: 4px;
+}
+
+.row-download {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0 12px 0;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #eaecf0;
+  margin: 16px 0;
+}
+
+.modal-body .input-group input[type="text"],
+.modal-body .input-group input[type="file"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .anexo-item {
+    flex-direction: column;
+  }
+
+  .anexo-item .row-actions {
+    width: 100%;
+  }
+}
