@@ -324,3 +324,207 @@
     </div>
   </div>
 </div>
+<!-- ✅ MODAL RESULTADO VALIDACIÓN DE FIRMA -->
+<div
+  class="modal-backdrop"
+  *ngIf="validationModalOpen"
+  (click)="closeValidationModal()"
+></div>
+
+<div
+  class="modal validation-modal"
+  *ngIf="validationModalOpen"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-card validation-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Resultado de validación de firma digital</h3>
+      <button
+        class="modal-close"
+        type="button"
+        (click)="closeValidationModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="validationResult as vr">
+      <p class="muted">
+        Se validó el documento firmado antes de completar el proceso.
+      </p>
+
+      <div
+        class="validation-nav"
+        *ngIf="validationTotalItems > 1"
+      >
+        <button
+          class="button-outline"
+          type="button"
+          (click)="prevValidationItem()"
+          [disabled]="validationCurrentIndex === 0"
+        >
+          ← Anterior
+        </button>
+
+        <span class="validation-counter">
+    Firma {{ validationCurrentIndex + 1 }} de {{ validationTotalItems }}
+  </span>
+
+        <button
+          class="button-outline"
+          type="button"
+          (click)="nextValidationItem()"
+          [disabled]="validationCurrentIndex >= validationTotalItems - 1"
+        >
+          Siguiente →
+        </button>
+      </div>
+
+      <div class="validation-summary">
+
+      <div class="validation-summary">
+        <div class="validation-row">
+          <div class="label">Nombre del archivo</div>
+          <div class="value">{{ validationFileName || 'No disponible' }}</div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Estado</div>
+          <div class="value">
+            <span [class]="validationStatusClass">
+              {{ validationStatusLabel }}
+            </span>
+          </div>
+        </div>
+        <div class="validation-row">
+          <div class="label">Firmante</div>
+          <div class="value">
+            {{ validationMainItem?.firmante || 'No disponible' }}
+          </div>
+        </div>
+        <div class="validation-row" *ngIf="validationMainItem?.cedula">
+          <div class="label">Cédula</div>
+          <div class="value">
+            {{ validationMainItem?.cedula }}
+          </div>
+        </div>
+        <div class="validation-row">
+          <div class="label">Fecha de firma</div>
+          <div class="value">
+            {{
+              formatValidationDate(validationMainItem?.detalle?.fechaFirma)
+            }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Algoritmo hash</div>
+          <div class="value">
+            {{ validationMainItem?.detalle?.algoritmoHash || 'No disponible' }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Válido desde</div>
+          <div class="value">
+            {{
+              formatValidationDate(validationMainItem?.detalle?.certificadoDesde)
+            }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Válido hasta</div>
+          <div class="value">
+            {{
+              formatValidationDate(validationMainItem?.detalle?.certificadoHasta)
+            }}
+          </div>
+        </div>
+
+        <div class="validation-row" *ngIf="isValidationValid">
+          <div class="label">Revocación</div>
+          <div class="value">
+            {{ validationMainItem?.detalle?.revocacion || 'good' }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Resumen</div>
+          <div class="value">
+            {{ vr.mensaje || validationMainItem?.mensaje || 'Sin detalle.' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ BLOQUE SI ES VÁLIDA -->
+      <div class="validation-ok-box" *ngIf="isValidationValid">
+        La firma digital es válida y el documento puede continuar en el flujo
+        normal del sistema.
+      </div>
+
+      <!-- ✅ BLOQUE SI ES INVÁLIDA -->
+      <div class="validation-bad-box" *ngIf="!isValidationValid">
+        <strong>Documento no confiable.</strong><br />
+        Este documento no debe archivarse y debe solicitarse su reenvío con una
+        firma digital válida.
+      </div>
+
+<!--      <div class="validation-alert-box" *ngIf="!isValidationValid">-->
+<!--        <div class="alert-title">Notificación automática</div>-->
+<!--        <div class="alert-text">-->
+<!--          Se notificará al responsable del archivo y al remitente del documento-->
+<!--          para solicitar el reenvío.-->
+<!--        </div>-->
+
+<!--        <div class="alert-meta" *ngIf="validationRecipient">-->
+<!--          <strong>Destinatario:</strong> {{ validationRecipient }}-->
+<!--        </div>-->
+
+<!--        <div class="alert-meta" *ngIf="validationAlertSent">-->
+<!--          Correo de alerta generado correctamente.-->
+<!--        </div>-->
+<!--      </div>-->
+        <div class="validation-alert-box" *ngIf="!isValidationValid">
+          <div class="alert-title">Notificación automática</div>
+          <div class="alert-text">
+            Este documento no debe archivarse y debe solicitarse su reenvío.
+          </div>
+
+          <div class="alert-meta" *ngIf="validationRecipient">
+            <strong>Destinatario:</strong> {{ validationRecipient }}
+          </div>
+
+          <div class="alert-meta" *ngIf="validationAlertSent">
+            Correo de alerta generado correctamente.
+          </div>
+
+          <div class="alert-meta" *ngIf="!validationAlertSent">
+            No se ha confirmado el envío del correo desde el sistema.
+          </div>
+        </div>
+    </div>
+
+      <div class="modal-footer">
+        <button
+          *ngIf="!isValidationValid"
+          class="button-outline"
+          type="button"
+          (click)="closeValidationModal()"
+        >
+          Cerrar
+        </button>
+
+        <button
+          *ngIf="isValidationValid"
+          class="button-outline"
+          type="button"
+          (click)="confirmValidatedSignature()"
+        >
+          OK
+        </button>
+      </div>
+  </div>
+</div>
+</div>

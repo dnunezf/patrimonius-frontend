@@ -99,6 +99,51 @@ export interface DocumentMetadata {
   };
 }
 
+export type ValidationBusinessState =
+  | 'VALIDA'
+  | 'INVALIDA'
+  | 'CADUCADA'
+  | 'REVOCADA';
+
+export interface SignatureValidationItem {
+  valido?: boolean;
+  firmante?: string | null;
+  cedula?: string | null;
+  mensaje?: string | null;
+  detalle?: {
+    fechaFirma?: string | null;
+    algoritmoHash?: string | null;
+    certificadoDesde?: string | null;
+    certificadoHasta?: string | null;
+    revocacion?: string | null;
+  } | null;
+}
+
+export interface SignatureValidationResult {
+  valido?: boolean;
+  estadoVerificacion?: ValidationBusinessState;
+  mensaje?: string;
+  firmas?: SignatureValidationItem[];
+}
+
+export interface ConfirmSignatureResponse {
+  ok?: boolean;
+  documento_id: number;
+  estado?: string;
+  firmas_obtenidas?: number;
+  firmas_requeridas?: number;
+
+  validacion?: SignatureValidationResult;
+
+  valido?: boolean;
+  estadoVerificacion?: ValidationBusinessState;
+  mensaje?: string;
+  firmas?: SignatureValidationItem[];
+
+  alertaEnviada?: boolean;
+  destinatarioAlerta?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private api = environment.api;
@@ -349,18 +394,45 @@ export class DocumentService {
     });
   }
 
+  // confirmSignature(id: number, file: File) {
+  //   const fd = new FormData();
+  //   fd.append('file', file);
+  //
+  //   return this.http.post<{
+  //     ok: boolean;
+  //     documento_id: number;
+  //     estado: string;
+  //     firmas_obtenidas: number;
+  //     firmas_requeridas: number;
+  //   }>(`${this.api}/documentos/${id}/firma/confirmar`, fd);
+  // }
+
+  validateSignedPdf(file: File, documentoId?: number) {
+    const fd = new FormData();
+    fd.append('file', file);
+
+    if (documentoId != null) {
+      fd.append('documentoId', String(documentoId));
+    }
+
+    return this.http.post<SignatureValidationResult>(
+      `${this.api}/api/firma/validar`,
+      fd
+    );
+  }
+
   confirmSignature(id: number, file: File) {
     const fd = new FormData();
     fd.append('file', file);
 
-    return this.http.post<{
-      ok: boolean;
-      documento_id: number;
-      estado: string;
-      firmas_obtenidas: number;
-      firmas_requeridas: number;
-    }>(`${this.api}/documentos/${id}/firma/confirmar`, fd);
+    return this.http.post<ConfirmSignatureResponse>(
+      `${this.api}/documentos/${id}/firma/confirmar`,
+     fd
+    );
   }
+
+
+
 
   // ====== Helpers viejos (si aún los usás en algún lado) ======
   wsUrl(docId: number): string {
