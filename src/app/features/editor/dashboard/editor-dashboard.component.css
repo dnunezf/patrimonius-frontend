@@ -264,6 +264,24 @@ h2 {
   color: var(--mncr-gray);
 }
 
+.badge-green {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: #ecfdf5;
+}
+
+.badge-red {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.badge-orange {
+  border-color: #d97706;
+  color: #d97706;
+  background: #fff7ed;
+}
+
 /* ========================================================
    Responsividad
    ======================================================== */
@@ -306,12 +324,6 @@ h2 {
 
 .card-button:hover {
   border-color: #6c757d;
-}
-
-.card-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .toggle-icon {
@@ -699,4 +711,116 @@ hr {
   .anexo-item .row-actions {
     width: 100%;
   }
+}
+/* =========================
+   Modal validación firma
+   ========================= */
+
+.validation-modal .validation-card {
+  width: min(760px, 92vw);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.validation-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.validation-row {
+  background: #f7f7fb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.validation-row .label {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.validation-row .value {
+  font-size: 1rem;
+  color: #111827;
+  font-weight: 500;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.status-pill--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-pill--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-pill--bad {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.validation-ok-box,
+.validation-bad-box,
+.validation-alert-box {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.validation-ok-box {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.validation-bad-box {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.validation-alert-box {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.validation-alert-box .alert-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.validation-alert-box .alert-text {
+  margin-bottom: 8px;
+}
+
+.validation-alert-box .alert-meta {
+  font-size: 0.92rem;
+}
+.validation-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 12px 0 16px 0;
+  flex-wrap: wrap;
+}
+
+.validation-counter {
+  font-weight: 700;
+  color: #374151;
 }
