@@ -29,6 +29,10 @@
         <div *ngIf="n.tipo === 'DOC_ELIMINACION'">
           <b>Creado en:</b> {{ getCreadoEn(n.resultado ?? undefined) }}
         </div>
+
+        <div *ngIf="n.tipo === 'DOC_FIRMA_INVALIDA'">
+          <b>Resultado:</b> {{ n.resultado || 'Se detectó un problema con la firma digital.' }}
+        </div>
       </div>
 
       <div class="meta">
