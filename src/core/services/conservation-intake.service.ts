@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { delay, Observable, of, throwError } from 'rxjs';
-import { CandidateDoc, IntakePayload, RetentionRule } from './models';
+import { CandidateDoc, IntakePayload, RetentionRule } from '../../app/features/conservation/intake/models';
 
 type DuplicateCheckResult =
   | { status: 'OK' }
