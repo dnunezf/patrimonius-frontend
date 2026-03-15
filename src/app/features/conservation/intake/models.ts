@@ -23,13 +23,6 @@ export type EligibilityState = {
   duplicateChecked: 'PENDING' | 'OK' | 'DUPLICATE' | 'NOT_CHECKED';
 };
 
-export type AccessRule = {
-  kind: 'USER' | 'ROLE';
-  subjectId: number;
-  subjectLabel: string;
-  actions: Array<'VIEW' | 'EDIT' | 'SIGN'>;
-};
-
 export type RetentionRule = {
   id: number;
   label: string;
@@ -39,7 +32,6 @@ export type RetentionRule = {
 export type IntakePayload = {
   candidateId: number;
   officialCode: string;
-
   metadata: {
     title: string;
     producingUnit: string;
@@ -47,14 +39,10 @@ export type IntakePayload = {
     keywords: string[];
     accessLevel: ConfidentialityLevel;
   };
-
   classification: {
     code: string;
     label: string;
   };
-
-  accessRules: AccessRule[];
-
   retention: {
     ruleId: number;
     startDateISO: string;

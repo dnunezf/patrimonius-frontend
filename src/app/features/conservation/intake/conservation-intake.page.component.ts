@@ -7,7 +7,6 @@ import { ToastService } from '../../../shared/ui/toast.service';
 
 import { ConservationIntakeService } from '../../../../core/services/conservation-intake.service';
 import {
-  AccessRule,
   CandidateDoc,
   ConfidentialityLevel,
   EligibilityState,
@@ -27,23 +26,19 @@ export class ConservationIntakePageComponent {
   private readonly confirm = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
 
-  // -----------------------------
-  // UI State
-  // -----------------------------
   readonly loading = signal(false);
   readonly candidates = signal<CandidateDoc[]>([]);
   readonly selected = signal<CandidateDoc | null>(null);
-
   readonly retentionRules = signal<RetentionRule[]>([]);
   readonly duplicateState =
     signal<EligibilityState['duplicateChecked']>('NOT_CHECKED');
 
-  // Classification (institutional chart placeholder)
   readonly classificationQuery = signal('');
   readonly classificationSelected = signal<{
     code: string;
     label: string;
   } | null>(null);
+
   readonly classificationOptions = signal<
     Array<{ code: string; label: string }>
   >([
@@ -52,48 +47,33 @@ export class ConservationIntakePageComponent {
     { code: '2.3.10', label: 'Serie 2 — Correspondencia' },
   ]);
 
-  // Access rules (UI-only; integration-ready)
-  readonly accessRules = signal<AccessRule[]>([]);
-
-  // -----------------------------
-  // Forms
-  // -----------------------------
-  /** Search filters (UI) */
   readonly searchForm = this.fb.group({
     q: [''],
     officialCode: [''],
     producingUnit: [''],
     dateFrom: [''],
     dateTo: [''],
-    signatureState: ['ALL'], // ALL | COMPLETE | INCOMPLETE
+    signatureState: ['ALL'],
     pdfaOnly: [true],
-    classification: [''],
   });
 
-  /** Main archival intake form (strict required fields) */
   readonly archivalForm = this.fb.group({
     officialCode: [{ value: '', disabled: true }, [Validators.required]],
     title: ['', [Validators.required, Validators.minLength(3)]],
     producingUnit: ['', [Validators.required]],
     author: ['', [Validators.required]],
-    keywords: ['', [Validators.required]], // comma-separated UI
+    keywords: ['', [Validators.required]],
     accessLevel: ['INTERNAL' as ConfidentialityLevel, [Validators.required]],
     trackingEnabled: [true, [Validators.requiredTrue]],
-
-    retentionRuleId: [null as any, [Validators.required]],
+    retentionRuleId: [null as number | null, [Validators.required]],
     retentionStartDateISO: [
       { value: '', disabled: true },
       [Validators.required],
     ],
   });
 
-  // -----------------------------
-  // Derived state (eligibility + UX helpers)
-  // -----------------------------
-  /** Core eligibility checks required by HU-019 */
   readonly eligibility = computed<EligibilityState>(() => {
     const doc = this.selected();
-    const requiredMetaOk = this.hasRequiredArchivalMetadata();
     const officialOk =
       !!doc?.officialCode && doc.officialCode.trim().length >= 8;
 
@@ -101,67 +81,57 @@ export class ConservationIntakePageComponent {
       pdfa: !!doc?.isPDFA,
       signatures: !!doc?.signaturesComplete,
       officialCodeComplete: officialOk,
-      requiredMetadata: requiredMetaOk,
+      requiredMetadata: this.hasRequiredArchivalMetadata(),
       duplicateChecked: this.duplicateState(),
     };
   });
 
-  /** True only when every rule is satisfied and UI is ready to save */
   readonly canSave = computed(() => {
     const e = this.eligibility();
-    const formOk = this.archivalForm.valid;
-    const classificationOk = !!this.classificationSelected();
-    const duplicateOk = e.duplicateChecked === 'OK';
-
     return (
       e.pdfa &&
       e.signatures &&
       e.officialCodeComplete &&
       e.requiredMetadata &&
-      formOk &&
-      classificationOk &&
-      duplicateOk
+      this.archivalForm.valid &&
+      !!this.classificationSelected() &&
+      e.duplicateChecked === 'OK'
     );
   });
 
-  /** Optional: compact validation summary shown above the form */
   readonly formErrorSummary = computed<string | null>(() => {
-    // Only show after user touched something to avoid "red wall" on first open
     if (!this.archivalForm.touched) return null;
     if (this.archivalForm.valid) return null;
 
     const missing: string[] = [];
     const requiredFields: Array<[string, string]> = [
-      ['title', 'Título'],
-      ['producingUnit', 'Unidad productora'],
-      ['author', 'Autor/Productor'],
-      ['keywords', 'Palabras clave'],
-      ['retentionRuleId', 'Plazo de retención'],
-      ['trackingEnabled', 'Seguimiento de vigencia'],
+      ['title', 'Title'],
+      ['producingUnit', 'Producing unit'],
+      ['author', 'Author'],
+      ['keywords', 'Keywords'],
+      ['retentionRuleId', 'Retention rule'],
+      ['trackingEnabled', 'Tracking'],
     ];
 
     for (const [key, label] of requiredFields) {
       const c = this.archivalForm.get(key);
-      if (c?.errors?.['required'] || c?.errors?.['requiredTrue'])
+      if (c?.errors?.['required'] || c?.errors?.['requiredTrue']) {
         missing.push(label);
+      }
     }
 
-    if (!missing.length) return 'Revise los campos marcados como obligatorios.';
-    return `Campos obligatorios pendientes: ${missing.join(', ')}.`;
+    return missing.length
+      ? `Required fields pending: ${missing.join(', ')}.`
+      : 'Please review the required fields.';
   });
 
   constructor() {
     this.loadRetentionRules();
-    this.search(); // initial load
+    this.search();
   }
 
-  // -----------------------------
-  // Search + Selection
-  // -----------------------------
   async search(): Promise<void> {
     this.loading.set(true);
-
-    // Reset selection & duplicate state on each new search
     this.selected.set(null);
     this.duplicateState.set('NOT_CHECKED');
 
@@ -174,41 +144,56 @@ export class ConservationIntakePageComponent {
         this.candidates.set(rows);
         this.loading.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.toasts.error('Error al buscar candidatos.');
+
+        if (err?.status === 401) {
+          this.toasts.error('Session expired. Please sign in again.');
+          return;
+        }
+
+        if (err?.status === 403) {
+          this.toasts.error(
+            'You do not have permission to access conservation.',
+          );
+          return;
+        }
+
+        this.toasts.error(
+          err?.error?.message || 'Could not load conservation candidates.',
+        );
       },
     });
   }
 
-  /** Select a candidate and prefill the intake form */
-  selectDoc(d: CandidateDoc): void {
-    this.selected.set(d);
+  selectDoc(doc: CandidateDoc): void {
+    this.selected.set(doc);
     this.duplicateState.set('NOT_CHECKED');
     this.classificationSelected.set(null);
-    this.accessRules.set([]);
 
-    // Prefill fields (some are read-only)
     this.archivalForm.patchValue({
-      officialCode: d.officialCode || '',
-      title: d.title || '',
-      producingUnit: d.producingUnit || '',
-      retentionStartDateISO: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+      officialCode: doc.officialCode || '',
+      title: doc.title || '',
+      producingUnit: doc.producingUnit || '',
+      author: '',
+      keywords: Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
+      retentionStartDateISO: new Date().toISOString().slice(0, 10),
+      accessLevel: 'INTERNAL',
+      trackingEnabled: true,
+      retentionRuleId: null,
     });
 
-    // Mark untouched to keep UX clean (no immediate validation banner)
     this.archivalForm.markAsUntouched();
     this.archivalForm.updateValueAndValidity();
 
     this.api
-      .audit('CANDIDATE_SELECTED', { id: d.id, officialCode: d.officialCode })
+      .audit('CANDIDATE_SELECTED', {
+        id: doc.id,
+        officialCode: doc.officialCode,
+      })
       .subscribe();
   }
 
-  // -----------------------------
-  // Eligibility helpers
-  // -----------------------------
-  /** Minimal metadata completeness check (UI rule) */
   private hasRequiredArchivalMetadata(): boolean {
     const fg = this.archivalForm;
     return (
@@ -219,50 +204,47 @@ export class ConservationIntakePageComponent {
     );
   }
 
-  // -----------------------------
-  // Duplicate check (integration-ready)
-  // -----------------------------
   async verifyDuplicate(): Promise<void> {
     const doc = this.selected();
 
     if (!doc?.officialCode?.trim()) {
-      this.toasts.error('El documento no tiene identificador oficial.');
+      this.toasts.error(
+        'The selected document does not have an official code.',
+      );
       return;
     }
 
     this.duplicateState.set('PENDING');
+
     this.api
-      .audit('DUPLICATE_CHECK_REQUESTED', { code: doc.officialCode })
+      .audit('DUPLICATE_CHECK_REQUESTED', {
+        code: doc.officialCode,
+      })
       .subscribe();
 
     this.api.checkDuplicateOfficialCode(doc.officialCode).subscribe({
-      next: async (r) => {
-        if (r.status === 'DUPLICATE') {
+      next: async (result) => {
+        if (result.status === 'DUPLICATE') {
           this.duplicateState.set('DUPLICATE');
-          this.api.audit('DUPLICATE_CHECK_RESULT_DUPLICATE', r).subscribe();
-
           await this.confirm.ask(
-            `Conflicto: el código ya existe (ID ${r.existingId}). No se puede ingresar a conservación.`,
-            'Código duplicado',
+            `Duplicate code detected. Existing document ID: ${result.existingId}.`,
+            'Duplicate code',
           );
           return;
         }
 
         this.duplicateState.set('OK');
-        this.api.audit('DUPLICATE_CHECK_RESULT_OK').subscribe();
-        this.toasts.success('Código verificado: no hay duplicidad.');
+        this.toasts.success('Official code verified successfully.');
       },
-      error: () => {
+      error: (err) => {
         this.duplicateState.set('NOT_CHECKED');
-        this.api.audit('DUPLICATE_CHECK_ERROR').subscribe();
-        this.toasts.error('No fue posible verificar duplicidad.');
+        this.toasts.error(
+          err?.error?.message || 'Could not verify duplicate code.',
+        );
       },
     });
   }
 
-  // -----------------------------
-  // Classification (UI)
-  // -----------------------------
   pickClassification(opt: { code: string; label: string }): void {
     this.classificationSelected.set(opt);
   }
@@ -270,60 +252,27 @@ export class ConservationIntakePageComponent {
   classificationFiltered(): Array<{ code: string; label: string }> {
     const q = (this.classificationQuery() || '').trim().toLowerCase();
     if (!q) return this.classificationOptions();
+
     return this.classificationOptions().filter(
-      (o) =>
-        o.code.toLowerCase().includes(q) || o.label.toLowerCase().includes(q),
+      (item) =>
+        item.code.toLowerCase().includes(q) ||
+        item.label.toLowerCase().includes(q),
     );
   }
 
-  // -----------------------------
-  // Access rules (UI-only)
-  // -----------------------------
-  addAccessRule(kind: 'USER' | 'ROLE'): void {
-    // Placeholder for a future picker modal (users/roles).
-    const id = Math.floor(Math.random() * 1000) + 1;
-    const label = kind === 'USER' ? `Usuario #${id}` : `Rol #${id}`;
-
-    const rule: AccessRule = {
-      kind,
-      subjectId: id,
-      subjectLabel: label,
-      actions: ['VIEW'],
-    };
-
-    this.accessRules.update((arr) => [rule, ...arr]);
-    this.toasts.info('Regla agregada (UI).');
-  }
-
-  toggleAction(rule: AccessRule, action: 'VIEW' | 'EDIT' | 'SIGN'): void {
-    this.accessRules.update((arr) =>
-      arr.map((r) => {
-        if (r !== rule) return r;
-
-        const set = new Set(r.actions);
-        if (set.has(action)) set.delete(action);
-        else set.add(action);
-
-        // UX guard: never allow empty actions; keep at least VIEW
-        if (set.size === 0) set.add('VIEW');
-
-        return { ...r, actions: Array.from(set) as any };
-      }),
-    );
-  }
-
-  removeRule(rule: AccessRule): void {
-    this.accessRules.update((arr) => arr.filter((r) => r !== rule));
-  }
-
-  // -----------------------------
-  // Retention + Preview (UI)
-  // -----------------------------
   private loadRetentionRules(): void {
     this.api.getRetentionRules().subscribe({
-      next: (r) => this.retentionRules.set(r),
-      error: () =>
-        this.toasts.error('No se pudieron cargar plazos de retención.'),
+      next: (rules) => this.retentionRules.set(rules),
+      error: (err) => {
+        if (err?.status === 401) {
+          this.toasts.error('Session expired. Please sign in again.');
+          return;
+        }
+
+        this.toasts.error(
+          err?.error?.message || 'Could not load retention rules.',
+        );
+      },
     });
   }
 
@@ -334,88 +283,97 @@ export class ConservationIntakePageComponent {
     );
     const rule = this.retentionRules().find((r) => r.id === ruleId);
 
-    if (!rule || !start) return 'Seleccione un plazo para ver la vigencia.';
+    if (!rule || !start) {
+      return 'Select a retention rule to preview the validity period.';
+    }
 
     const dt = new Date(start);
     dt.setFullYear(dt.getFullYear() + rule.years);
     const endISO = dt.toISOString().slice(0, 10);
 
-    return `Inicio: ${start} · Duración: ${rule.years} año(s) · Fin estimado: ${endISO}`;
+    return `Start: ${start} · Duration: ${rule.years} year(s) · Estimated end: ${endISO}`;
   }
 
-  // -----------------------------
-  // Save (UI workflow + hooks)
-  // -----------------------------
   async save(): Promise<void> {
     const doc = this.selected();
-    if (!doc) return;
+    if (!doc) {
+      this.toasts.error('Please select a document first.');
+      return;
+    }
 
-    // Show validation messages
     this.archivalForm.markAllAsTouched();
 
     if (!this.archivalForm.valid) {
-      this.toasts.error('Revise los campos obligatorios.');
+      this.toasts.error('Please complete the required fields.');
       return;
     }
 
-    if (!this.classificationSelected()) {
+    const classification = this.classificationSelected();
+    if (!classification) {
+      this.toasts.error('You must select an institutional classification.');
+      return;
+    }
+
+    const eligibility = this.eligibility();
+
+    if (!eligibility.pdfa) {
       this.toasts.error(
-        'Debe seleccionar una clasificación del cuadro institucional.',
+        'The selected document is not eligible for PDF/A intake.',
       );
       return;
     }
 
-    // Enforce eligibility rules
-    const e = this.eligibility();
-    if (
-      !e.pdfa ||
-      !e.signatures ||
-      !e.officialCodeComplete ||
-      !e.requiredMetadata
-    ) {
+    if (!eligibility.signatures) {
       this.toasts.error(
-        'El documento no cumple los requisitos para ingresar a conservación.',
+        'The selected document does not meet the signature requirement.',
       );
       return;
     }
 
-    if (e.duplicateChecked !== 'OK') {
+    if (!eligibility.officialCodeComplete) {
       this.toasts.error(
-        'Debe verificar duplicidad del código antes de guardar.',
+        'The selected document does not have a complete official code.',
       );
+      return;
+    }
+
+    if (!eligibility.requiredMetadata) {
+      this.toasts.error('Required archival metadata is incomplete.');
+      return;
+    }
+
+    if (eligibility.duplicateChecked !== 'OK') {
+      this.toasts.error('You must verify duplicate code before saving.');
       return;
     }
 
     const level = this.archivalForm.get('accessLevel')
       ?.value as ConfidentialityLevel;
 
-    // Extra confirm when handling sensitive levels
     if (level === 'HIGH' || level === 'RESTRICTED') {
-      const okWarn = await this.confirm.ask(
-        'Nivel sensible seleccionado. Verifique reglas de acceso antes de confirmar.',
-        'Advertencia',
+      const accepted = await this.confirm.ask(
+        'Sensitive access level selected. Do you want to continue?',
+        'Warning',
       );
-      if (!okWarn) return;
+      if (!accepted) return;
     }
 
-    const ok = await this.confirm.ask(
-      '¿Confirmar ingreso del documento a conservación? Se iniciará el seguimiento de vigencia.',
-      'Confirmar ingreso',
+    const confirmed = await this.confirm.ask(
+      'Confirm document intake into conservation?',
+      'Confirm intake',
     );
-    if (!ok) {
+    if (!confirmed) {
       this.api.audit('INTAKE_CANCELLED', { id: doc.id }).subscribe();
       return;
     }
 
-    // Normalize keywords
     const raw = this.archivalForm.getRawValue();
     const keywords = String(raw.keywords || '')
       .split(',')
-      .map((s) => s.trim())
+      .map((value) => value.trim())
       .filter(Boolean)
-      .filter((v, i, a) => a.indexOf(v) === i);
+      .filter((value, index, arr) => arr.indexOf(value) === index);
 
-    // Build payload for integration (currently mocked by the service)
     const payload = {
       candidateId: doc.id,
       officialCode: doc.officialCode.trim(),
@@ -426,8 +384,7 @@ export class ConservationIntakePageComponent {
         keywords,
         accessLevel: level,
       },
-      classification: this.classificationSelected()!,
-      accessRules: this.accessRules(),
+      classification,
       retention: {
         ruleId: Number(raw.retentionRuleId),
         startDateISO: String(raw.retentionStartDateISO),
@@ -435,22 +392,21 @@ export class ConservationIntakePageComponent {
       },
     };
 
-    this.api.audit('INTAKE_CONFIRMED', payload).subscribe();
-
     this.loading.set(true);
-    this.api.registerIntake(payload as any).subscribe({
-      next: (r) => {
-        this.loading.set(false);
-        this.toasts.success(
-          `Documento ingresado a conservación. (${r.intakeId})`,
-        );
-        this.api.audit('INTAKE_SUCCESS', r).subscribe();
 
-        // Reset UI state
+    this.api.registerIntake(payload).subscribe({
+      next: (response) => {
+        this.loading.set(false);
+
+        this.toasts.success(
+          `Document registered in conservation (${response.intakeId}).`,
+        );
+
+        this.api.audit('INTAKE_SUCCESS', response).subscribe();
+
         this.selected.set(null);
         this.duplicateState.set('NOT_CHECKED');
         this.classificationSelected.set(null);
-        this.accessRules.set([]);
 
         this.archivalForm.reset({
           accessLevel: 'INTERNAL',
@@ -458,24 +414,62 @@ export class ConservationIntakePageComponent {
           retentionRuleId: null,
           retentionStartDateISO: new Date().toISOString().slice(0, 10),
         } as any);
+
+        this.search();
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.toasts.error('Error al registrar ingreso a conservación.');
-        this.api.audit('INTAKE_ERROR').subscribe();
+
+        if (err?.status === 401) {
+          this.toasts.error('Session expired. Please sign in again.');
+          return;
+        }
+
+        if (err?.status === 403) {
+          this.toasts.error(
+            'You do not have permission to register conservation intake.',
+          );
+          return;
+        }
+
+        if (
+          err?.status === 409 &&
+          err?.error?.error === 'duplicate_official_code'
+        ) {
+          this.duplicateState.set('DUPLICATE');
+          this.toasts.error('Duplicate official code detected.');
+          return;
+        }
+
+        if (
+          err?.status === 409 &&
+          err?.error?.error === 'duplicate_conservation_document'
+        ) {
+          this.toasts.error(
+            'This document is already registered in conservation.',
+          );
+          return;
+        }
+
+        if (err?.status === 422) {
+          this.toasts.error('Validation failed. Please review the form.');
+          return;
+        }
+
+        this.toasts.error(
+          err?.error?.message || 'Could not register conservation intake.',
+        );
       },
     });
   }
 
-  // -----------------------------
-  // Form error helper
-  // -----------------------------
   fieldErr(name: string): string | null {
-    const c = this.archivalForm.get(name);
-    if (!c || !c.touched || !c.errors) return null;
-    if (c.errors['required']) return 'Obligatorio.';
-    if (c.errors['requiredTrue']) return 'Debe activar el seguimiento.';
-    if (c.errors['minlength']) return 'Muy corto.';
-    return 'Valor inválido.';
+    const control = this.archivalForm.get(name);
+    if (!control || !control.touched || !control.errors) return null;
+
+    if (control.errors['required']) return 'Required.';
+    if (control.errors['requiredTrue']) return 'Tracking must be enabled.';
+    if (control.errors['minlength']) return 'Too short.';
+    return 'Invalid value.';
   }
 }
