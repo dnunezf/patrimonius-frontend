@@ -51,8 +51,8 @@ export class ConservationIntakeService {
   }
 
   /**
-   * Fire-and-forget UI audit.
-   * Audit errors must never block the main functional flow.
+   * Fire-and-forget audit.
+   * Audit errors must never block the main conservation flow.
    */
   audit(event: string, detail?: any): Observable<{ ok: true } | null> {
     return this.http
