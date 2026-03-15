@@ -10,6 +10,7 @@ export type CandidateDoc = {
   title: string;
   producingUnit: string;
   createdAtISO: string;
+  author?: string;
   isPDFA: boolean;
   signaturesComplete: boolean;
   keywords?: string[];

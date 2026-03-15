@@ -1,7 +1,7 @@
 <header class="page-header">
-  <h1>Conservation intake</h1>
+  <h1>Ingreso a conservación</h1>
   <p class="sub">
-    Select a document candidate and complete the archival registration.
+    Seleccione un documento candidato y complete el registro archivístico.
   </p>
 </header>
 
@@ -9,14 +9,14 @@
   <aside class="left">
     <div class="card">
       <div class="card-header">
-        <h2>Search candidates</h2>
-        <span class="hint">Filter eligible documents</span>
+        <h2>Búsqueda de candidatos</h2>
+        <span class="hint">Filtre documentos elegibles</span>
       </div>
 
       <form class="filters" [formGroup]="searchForm" (ngSubmit)="search()">
         <div class="row">
           <label>
-            Official code
+            Código oficial
             <input
               type="text"
               formControlName="officialCode"
@@ -25,61 +25,56 @@
           </label>
 
           <label>
-            Title / keywords
-            <input type="text" formControlName="q" placeholder="Search..." />
+            Título / palabras clave
+            <input type="text" formControlName="q" placeholder="Buscar..." />
           </label>
         </div>
 
         <div class="row">
           <label>
-            Producing unit
+            Unidad productora
             <input
               type="text"
               formControlName="producingUnit"
-              placeholder="Unit..."
+              placeholder="Unidad..."
             />
           </label>
 
           <label>
-            Signature status
+            Estado de firmas
             <select formControlName="signatureState">
-              <option value="ALL">All</option>
-              <option value="COMPLETE">Complete</option>
-              <option value="INCOMPLETE">Incomplete</option>
+              <option value="ALL">Todos</option>
+              <option value="COMPLETE">Completas</option>
+              <option value="INCOMPLETE">Incompletas</option>
             </select>
           </label>
         </div>
 
         <div class="row">
           <label>
-            From
+            Desde
             <input type="date" formControlName="dateFrom" />
           </label>
 
           <label>
-            To
+            Hasta
             <input type="date" formControlName="dateTo" />
           </label>
         </div>
 
-        <label class="chk">
-          <input type="checkbox" formControlName="pdfaOnly" />
-          PDF/A only
-        </label>
-
         <div class="actions">
           <button class="btn" type="submit" [disabled]="loading()">
-            Search
+            Buscar
           </button>
         </div>
       </form>
 
       <div class="table" *ngIf="candidates().length; else noCandidates">
         <div class="thead">
-          <div>Code</div>
-          <div>Title</div>
+          <div>Código</div>
+          <div>Título</div>
           <div>PDF/A</div>
-          <div>Signatures</div>
+          <div>Firmas</div>
         </div>
 
         <div
@@ -92,26 +87,26 @@
           <div class="title">{{ d.title }}</div>
           <div>
             <span class="badge" [ngClass]="d.isPDFA ? 'ok' : 'bad'">
-              {{ d.isPDFA ? "Yes" : "No" }}
+              {{ d.isPDFA ? "Sí" : "No" }}
             </span>
           </div>
           <div>
             <span class="badge" [ngClass]="d.signaturesComplete ? 'ok' : 'bad'">
-              {{ d.signaturesComplete ? "Complete" : "Incomplete" }}
+              {{ d.signaturesComplete ? "Completas" : "Incompletas" }}
             </span>
           </div>
         </div>
       </div>
 
       <ng-template #noCandidates>
-        <div class="empty">No candidates found.</div>
+        <div class="empty">No se encontraron candidatos.</div>
       </ng-template>
     </div>
 
     <div class="card" *ngIf="selected()">
       <div class="card-header">
-        <h2>Eligibility</h2>
-        <span class="hint">Required checklist</span>
+        <h2>Elegibilidad</h2>
+        <span class="hint">Checklist requerido</span>
       </div>
 
       <ul class="checklist">
@@ -127,21 +122,21 @@
             class="dot"
             [ngClass]="eligibility().signatures ? 'ok' : 'bad'"
           ></span>
-          Required signatures complete
+          Firmas requeridas completas
         </li>
         <li>
           <span
             class="dot"
             [ngClass]="eligibility().officialCodeComplete ? 'ok' : 'bad'"
           ></span>
-          Complete official code
+          Código oficial completo
         </li>
         <li>
           <span
             class="dot"
             [ngClass]="eligibility().requiredMetadata ? 'ok' : 'bad'"
           ></span>
-          Required metadata complete
+          Metadatos requeridos completos
         </li>
         <li>
           <span
@@ -154,7 +149,7 @@
                 eligibility().duplicateChecked === 'NOT_CHECKED',
             }"
           ></span>
-          No duplicate official code
+          Sin código oficial duplicado
           <small class="state">({{ eligibility().duplicateChecked }})</small>
         </li>
       </ul>
@@ -169,7 +164,7 @@
             eligibility().duplicateChecked === 'PENDING'
           "
         >
-          Verify duplicate
+          Verificar duplicidad
         </button>
       </div>
     </div>
@@ -178,8 +173,8 @@
   <main class="right" *ngIf="selected() as doc; else emptyState">
     <div class="card">
       <div class="card-header">
-        <h2>Archival registration</h2>
-        <span class="hint">Required fields marked with *</span>
+        <h2>Registro archivístico</h2>
+        <span class="hint">Campos obligatorios marcados con *</span>
       </div>
 
       <div class="validation-banner" *ngIf="formErrorSummary() as msg">
@@ -188,16 +183,16 @@
 
       <form [formGroup]="archivalForm" class="form">
         <section class="section">
-          <h3 class="section-title">Archival metadata</h3>
+          <h3 class="section-title">Metadatos archivísticos</h3>
 
           <div class="grid2">
             <label>
-              Official code *
+              Código oficial *
               <input type="text" formControlName="officialCode" readonly />
             </label>
 
             <label>
-              Access level *
+              Nivel de acceso *
               <select formControlName="accessLevel">
                 <option value="PUBLIC">PUBLIC</option>
                 <option value="INTERNAL">INTERNAL</option>
@@ -208,7 +203,7 @@
           </div>
 
           <label>
-            Title *
+            Título *
             <input type="text" formControlName="title" />
             <div class="err" *ngIf="fieldErr('title')">
               {{ fieldErr("title") }}
@@ -217,7 +212,7 @@
 
           <div class="grid2">
             <label>
-              Producing unit *
+              Unidad productora *
               <input type="text" formControlName="producingUnit" />
               <div class="err" *ngIf="fieldErr('producingUnit')">
                 {{ fieldErr("producingUnit") }}
@@ -225,8 +220,8 @@
             </label>
 
             <label>
-              Author *
-              <input type="text" formControlName="author" />
+              Autor *
+              <input type="text" formControlName="author" readonly />
               <div class="err" *ngIf="fieldErr('author')">
                 {{ fieldErr("author") }}
               </div>
@@ -234,7 +229,7 @@
           </div>
 
           <label>
-            Keywords *
+            Palabras clave *
             <input
               type="text"
               formControlName="keywords"
@@ -246,33 +241,33 @@
           </label>
 
           <div class="meta-line">
-            <strong>Document:</strong> {{ doc.title }} · <strong>Unit:</strong>
-            {{ doc.producingUnit }} · <strong>Date:</strong>
-            {{ doc.createdAtISO | date: "yyyy-MM-dd" }}
+            <strong>Documento:</strong> {{ doc.title }} ·
+            <strong>Unidad:</strong> {{ doc.producingUnit }} ·
+            <strong>Fecha:</strong> {{ doc.createdAtISO | date: "yyyy-MM-dd" }}
           </div>
         </section>
 
         <section class="section">
-          <h3 class="section-title">Institutional classification *</h3>
+          <h3 class="section-title">Clasificación institucional *</h3>
 
           <div class="grid2">
             <label>
-              Search
+              Buscar
               <input
                 type="text"
                 [value]="classificationQuery()"
                 (input)="classificationQuery.set($any($event.target).value)"
-                placeholder="Code or label..."
+                placeholder="Código o etiqueta..."
               />
             </label>
 
             <div class="picked">
-              <div class="cap">Selected</div>
+              <div class="cap">Seleccionado</div>
               <div class="val mono">
                 {{ classificationSelected()?.code || "—" }}
               </div>
               <div class="val">
-                {{ classificationSelected()?.label || "No selection" }}
+                {{ classificationSelected()?.label || "Sin selección" }}
               </div>
             </div>
           </div>
@@ -292,13 +287,13 @@
         </section>
 
         <section class="section">
-          <h3 class="section-title">Retention and validity *</h3>
+          <h3 class="section-title">Retención y vigencia *</h3>
 
           <div class="grid2">
             <label>
-              Retention rule *
+              Regla de retención *
               <select formControlName="retentionRuleId">
-                <option [ngValue]="null">Select…</option>
+                <option [ngValue]="null">Seleccione…</option>
                 <option *ngFor="let r of retentionRules()" [ngValue]="r.id">
                   {{ r.label }}
                 </option>
@@ -309,7 +304,7 @@
             </label>
 
             <label>
-              Start date *
+              Fecha de inicio *
               <input
                 type="date"
                 formControlName="retentionStartDateISO"
@@ -320,7 +315,7 @@
 
           <label class="chk">
             <input type="checkbox" formControlName="trackingEnabled" />
-            Enable validity tracking on intake
+            Activar seguimiento de vigencia al ingresar
           </label>
           <div class="err" *ngIf="fieldErr('trackingEnabled')">
             {{ fieldErr("trackingEnabled") }}
@@ -330,27 +325,28 @@
         </section>
 
         <section class="section">
-          <h3 class="section-title">Summary</h3>
+          <h3 class="section-title">Resumen</h3>
 
           <div class="summary">
             <ul>
               <li>
-                <strong>Eligibility:</strong> {{ canSave() ? "OK" : "Pending" }}
+                <strong>Elegibilidad:</strong>
+                {{ canSave() ? "OK" : "Pendiente" }}
               </li>
               <li>
-                <strong>Classification:</strong>
+                <strong>Clasificación:</strong>
                 {{ classificationSelected()?.code || "—" }}
               </li>
               <li>
-                <strong>Access:</strong>
+                <strong>Acceso:</strong>
                 {{ archivalForm.get("accessLevel")?.value }}
               </li>
               <li>
-                <strong>Tracking:</strong>
+                <strong>Seguimiento:</strong>
                 {{
                   archivalForm.get("trackingEnabled")?.value
-                    ? "Enabled"
-                    : "Disabled"
+                    ? "Activo"
+                    : "Inactivo"
                 }}
               </li>
             </ul>
@@ -363,13 +359,13 @@
               (click)="save()"
               [disabled]="loading()"
             >
-              Save to conservation
+              Guardar en conservación
             </button>
           </div>
 
           <div class="blocked" *ngIf="!canSave()">
-            Complete the required checklist, classification, retention rule and
-            duplicate verification.
+            Complete el checklist requerido, la clasificación, la regla de
+            retención y la verificación de duplicidad.
           </div>
         </section>
       </form>
@@ -379,8 +375,8 @@
   <ng-template #emptyState>
     <main class="right">
       <div class="card empty">
-        <h2>Select a candidate</h2>
-        <p>Use the search panel to select a document.</p>
+        <h2>Seleccione un candidato</h2>
+        <p>Use el panel de búsqueda para seleccionar un documento.</p>
       </div>
     </main>
   </ng-template>
