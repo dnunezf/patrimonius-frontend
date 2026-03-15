@@ -32,7 +32,7 @@
 
         <div class="input with-icon">
           <span class="input__icon" aria-hidden="true"
-            ><img src="assets/icons/users.png" alt=""
+          ><img src="assets/icons/users.png" alt=""
           /></span>
           <input
             #ctl
@@ -57,7 +57,7 @@
 
         <div class="input with-icon">
           <span class="input__icon" aria-hidden="true"
-            ><img src="assets/icons/users.png" alt=""
+          ><img src="assets/icons/users.png" alt=""
           /></span>
           <input
             #ctl
@@ -82,11 +82,11 @@
       </div>
 
       <label class="form__label" for="apellido2"
-        >Segundo apellido (opcional)</label
+      >Segundo apellido (opcional)</label
       >
       <div class="input with-icon">
         <span class="input__icon" aria-hidden="true"
-          ><img src="assets/icons/users.png" alt=""
+        ><img src="assets/icons/users.png" alt=""
         /></span>
         <input
           #ctl
@@ -101,7 +101,7 @@
       <label class="form__label" for="email">Correo electrónico *</label>
       <div class="input with-icon">
         <span class="input__icon" aria-hidden="true"
-          ><img src="assets/icons/email.png" alt=""
+        ><img src="assets/icons/email.png" alt=""
         /></span>
         <input
           #ctl
@@ -196,6 +196,7 @@
         {{ errMsg("unidadId") }}
       </div>
 
+      <!-- Permisos editor (solo si EDITOR) -->
       <div *ngIf="isEditor()" class="editor-perms" aria-labelledby="permTitle">
         <div id="permTitle" class="perm-title">Permisos del Editor</div>
         <label class="switch" for="permEdit">
@@ -206,6 +207,29 @@
           <input #ctl id="permSign" type="checkbox" formControlName="sign" />
           <span>Firma</span>
         </label>
+      </div>
+
+      <!-- ✅ NUEVO: Permiso cargar documentos (HU-21) -->
+      <div
+        *ngIf="isEditorOrArchivista()"
+        class="editor-perms"
+        aria-labelledby="uploadTitle"
+      >
+        <div id="uploadTitle" class="perm-title">Permisos de Carga</div>
+
+        <label class="switch" for="permUpload">
+          <input
+            #ctl
+            id="permUpload"
+            type="checkbox"
+            formControlName="canUpload"
+          />
+          <span>Cargar documentos (HU-21)</span>
+        </label>
+
+        <div class="field-help" role="note">
+          Solo aplica para usuarios con rol Editor o Archivista.
+        </div>
       </div>
 
       <label class="form__label" for="notes">Notas adicionales</label>

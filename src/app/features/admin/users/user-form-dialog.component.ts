@@ -33,6 +33,7 @@ import { EDITOR_ID, ROLES } from '../../../shared/data/catalogs';
  * - Fetches organizational units from backend to avoid mismatched IDs.
  * - Supports multi-role selection with checkbox chips.
  * - Editor permissions (EDIT/SIGN) are enabled only when EDITOR role is selected.
+ * - Upload permission (HU-21) is enabled only when EDITOR or ARCHIVISTA role is selected.
  * - Exposes `isSubmitting` to lock the submit button while parent handles the request.
  */
 @Component({
@@ -56,6 +57,7 @@ export class UserFormDialogComponent
     data: UpsertUserDto & {
       rolIds: number[];
       editorPermissions?: ('EDIT' | 'SIGN')[];
+      canUpload?: boolean; // ✅ NUEVO
     };
   }>();
 
@@ -64,6 +66,9 @@ export class UserFormDialogComponent
 
   /** Role ID that gates editor permissions UI */
   readonly EDITOR_ID = EDITOR_ID;
+
+  /** ⚠️ Ajustá si tu ARCHIVISTA no es 3 */
+  readonly ARCHIVISTA_ID = 3;
 
   /** Units loaded from backend */
   units: OrgUnit[] = [];
@@ -82,10 +87,7 @@ export class UserFormDialogComponent
 
   constructor(private fb: FormBuilder, private unitsApi: UnidadService) {
     this.form = this.fb.group({
-      nombre: [
-        '',
-        [Validators.required, Validators.minLength(2), this.noBlank],
-      ],
+      nombre: ['', [Validators.required, Validators.minLength(2), this.noBlank]],
       apellido1: [
         '',
         [Validators.required, Validators.minLength(2), this.noBlank],
@@ -98,6 +100,9 @@ export class UserFormDialogComponent
       // Editor permissions toggles
       edit: [false],
       sign: [false],
+
+      // ✅ NUEVO: Permiso global para cargar documentos (HU-21)
+      canUpload: [false],
     });
   }
 
@@ -142,6 +147,12 @@ export class UserFormDialogComponent
     return this.getRolIds().includes(this.EDITOR_ID);
   }
 
+  /** True when EDITOR or ARCHIVISTA role is selected */
+  isEditorOrArchivista(): boolean {
+    const ids = this.getRolIds();
+    return ids.includes(this.EDITOR_ID) || ids.includes(this.ARCHIVISTA_ID);
+  }
+
   /** Normalized role IDs from form state */
   private getRolIds(): number[] {
     const raw = (this.form.get('rolIds')?.value as (string | number)[]) || [];
@@ -159,28 +170,34 @@ export class UserFormDialogComponent
     this.form.get('rolIds')?.markAsDirty();
     this.form.get('rolIds')?.markAsTouched();
 
-    // Keep editor perms consistent with role selection
-    this.ensureEditorPermsConsistency();
+    // Keep perms consistent with role selection
+    this.ensurePermsConsistency();
   }
 
   /** Select all roles quickly */
   selectAllRoles(): void {
     this.form.get('rolIds')?.setValue(this.ROLES.map((r) => r.id));
     this.form.get('rolIds')?.markAsDirty();
-    this.ensureEditorPermsConsistency();
+    this.ensurePermsConsistency();
   }
 
-  /** Clear all roles and disable editor perms */
+  /** Clear all roles and disable perms */
   clearAllRoles(): void {
     this.form.get('rolIds')?.setValue([]);
     this.form.get('rolIds')?.markAsDirty();
-    this.ensureEditorPermsConsistency();
+    this.ensurePermsConsistency();
   }
 
-  /** If EDITOR role is not present, turn off edit/sign toggles */
-  private ensureEditorPermsConsistency(): void {
+  /** Keeps editor perms and upload perm consistent with role selection */
+  private ensurePermsConsistency(): void {
+    // If EDITOR role is not present, turn off edit/sign toggles
     if (!this.isEditor()) {
       this.form.patchValue({ edit: false, sign: false }, { emitEvent: false });
+    }
+
+    // If not Editor/Archivista, disable upload
+    if (!this.isEditorOrArchivista()) {
+      this.form.patchValue({ canUpload: false }, { emitEvent: false });
     }
   }
 
@@ -237,17 +254,14 @@ export class UserFormDialogComponent
         unidadId: e.unidadId ?? null,
         edit: e.editorPermissions?.includes('EDIT') || false,
         sign: e.editorPermissions?.includes('SIGN') || false,
+
+        // ✅ NUEVO
+        canUpload: (e as any).canUpload || false,
       });
 
-      // If EDITOR is not present, force editor perms off
-      if (!ids.includes(this.EDITOR_ID)) {
-        this.form.patchValue(
-          { edit: false, sign: false },
-          { emitEvent: false }
-        );
-      }
+      this.ensurePermsConsistency();
     } else {
-      // Create mode defaults: first role as convenience, unit will be set after loadUnits()
+      // Create mode defaults
       this.form.reset({
         nombre: '',
         apellido1: '',
@@ -257,7 +271,12 @@ export class UserFormDialogComponent
         unidadId: this.units.length ? this.units[0].id : null,
         edit: false,
         sign: false,
+
+        // ✅ NUEVO
+        canUpload: false,
       });
+
+      this.ensurePermsConsistency();
     }
   }
 
@@ -288,10 +307,10 @@ export class UserFormDialogComponent
       );
       const el = firstInvalidKey
         ? this.inputs.find(
-            (r) =>
-              r.nativeElement.getAttribute('formcontrolname') ===
-              firstInvalidKey
-          )
+          (r) =>
+            r.nativeElement.getAttribute('formcontrolname') ===
+            firstInvalidKey
+        )
         : null;
       el?.nativeElement.focus();
       return;
@@ -301,9 +320,11 @@ export class UserFormDialogComponent
     const rolIds = (v.rolIds as (number | string)[])
       .map((n: number | string) => Number(n))
       .filter((n: number) => Number.isInteger(n) && n > 0);
+
     const dto: UpsertUserDto & {
       rolIds: number[];
       editorPermissions?: ('EDIT' | 'SIGN')[];
+      canUpload?: boolean;
     } = {
       nombre: String(v.nombre).trim(),
       apellido1: String(v.apellido1).trim(),
@@ -312,16 +333,21 @@ export class UserFormDialogComponent
       rolId: rolIds[0],
       rolIds,
       unidadId: Number(v.unidadId),
+
       editorPermissions: rolIds.includes(this.EDITOR_ID)
         ? ([v.edit ? 'EDIT' : null, v.sign ? 'SIGN' : null].filter(Boolean) as (
-            | 'EDIT'
-            | 'SIGN'
+          | 'EDIT'
+          | 'SIGN'
           )[])
         : [],
+
+      // ✅ NUEVO: solo permitido si Editor/Archivista
+      canUpload: this.isEditorOrArchivista() ? !!v.canUpload : false,
     };
 
     this.submit.emit({ id: this.editing?.id ?? undefined, data: dto });
   }
+
   // ---------- trackBy ----------
 
   trackByRole(index: number, r: { id: number; label: string }): number {
@@ -330,6 +356,5 @@ export class UserFormDialogComponent
 
   trackByUnidad(index: number, u: OrgUnit): number {
     return u.id;
-    // OrgUnit: { id: number; name: string; description?: string }
   }
 }
