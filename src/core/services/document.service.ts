@@ -99,6 +99,51 @@ export interface DocumentMetadata {
   };
 }
 
+export type ValidationBusinessState =
+  | 'VALIDA'
+  | 'INVALIDA'
+  | 'CADUCADA'
+  | 'REVOCADA';
+
+export interface SignatureValidationItem {
+  valido?: boolean;
+  firmante?: string | null;
+  cedula?: string | null;
+  mensaje?: string | null;
+  detalle?: {
+    fechaFirma?: string | null;
+    algoritmoHash?: string | null;
+    certificadoDesde?: string | null;
+    certificadoHasta?: string | null;
+    revocacion?: string | null;
+  } | null;
+}
+
+export interface SignatureValidationResult {
+  valido?: boolean;
+  estadoVerificacion?: ValidationBusinessState;
+  mensaje?: string;
+  firmas?: SignatureValidationItem[];
+}
+
+export interface ConfirmSignatureResponse {
+  ok?: boolean;
+  documento_id: number;
+  estado?: string;
+  firmas_obtenidas?: number;
+  firmas_requeridas?: number;
+
+  validacion?: SignatureValidationResult;
+
+  valido?: boolean;
+  estadoVerificacion?: ValidationBusinessState;
+  mensaje?: string;
+  firmas?: SignatureValidationItem[];
+
+  alertaEnviada?: boolean;
+  destinatarioAlerta?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private api = environment.api;
@@ -110,7 +155,6 @@ export class DocumentService {
   // ✅ NUEVO: usuarios para firmantes
   // =========================
   listUsers() {
-    // ⚠️ Ajusta esta ruta si tu backend usa otra.
     return this.http.get<any[]>(`${this.api}/admin/users`);
   }
 
@@ -158,7 +202,6 @@ export class DocumentService {
   }
 
   // ========== Draft / collaboration ==========
-  /** Crear documento desde plantilla */
   crearDesdePlantilla(body: {
     plantilla_id: number;
     titulo: string;
@@ -236,6 +279,9 @@ export class DocumentService {
     estado: string;
     contenido: string;
     latest_version_id: number;
+    has_signed_pdf?: boolean;
+    signed_pdf_url?: string | null;
+    prefer_signed_pdf_view?: boolean;
   }> {
     return this.http.get<{
       documento_id: number;
@@ -243,6 +289,9 @@ export class DocumentService {
       estado: string;
       contenido: string;
       latest_version_id: number;
+      has_signed_pdf?: boolean;
+      signed_pdf_url?: string | null;
+      prefer_signed_pdf_view?: boolean;
     }>(`${this.api}/documentos/${id}/contenido`);
   }
 
@@ -313,7 +362,6 @@ export class DocumentService {
   // =========================
   // HU-018: Firma (descarga + upload)
   // =========================
-
   getSignatureInfo(id: number) {
     return this.http.get<{
       documento_id: number;
@@ -325,6 +373,13 @@ export class DocumentService {
       puede_firmar: boolean;
       motivo?: string | null;
     }>(`${this.api}/documentos/${id}/firma/info`);
+  }
+
+  // ✅ NUEVO: obtener PDF firmado actual con auth
+  getCurrentSignedPdf(id: number) {
+    return this.http.get(`${this.api}/documentos/${id}/firma/pdf-actual`, {
+      responseType: 'blob',
+    });
   }
 
   downloadPdfForSignature(id: number) {
@@ -339,18 +394,45 @@ export class DocumentService {
     });
   }
 
+  // confirmSignature(id: number, file: File) {
+  //   const fd = new FormData();
+  //   fd.append('file', file);
+  //
+  //   return this.http.post<{
+  //     ok: boolean;
+  //     documento_id: number;
+  //     estado: string;
+  //     firmas_obtenidas: number;
+  //     firmas_requeridas: number;
+  //   }>(`${this.api}/documentos/${id}/firma/confirmar`, fd);
+  // }
+
+  validateSignedPdf(file: File, documentoId?: number) {
+    const fd = new FormData();
+    fd.append('file', file);
+
+    if (documentoId != null) {
+      fd.append('documentoId', String(documentoId));
+    }
+
+    return this.http.post<SignatureValidationResult>(
+      `${this.api}/api/firma/validar`,
+      fd
+    );
+  }
+
   confirmSignature(id: number, file: File) {
     const fd = new FormData();
     fd.append('file', file);
 
-    return this.http.post<{
-      ok: boolean;
-      documento_id: number;
-      estado: string;
-      firmas_obtenidas: number;
-      firmas_requeridas: number;
-    }>(`${this.api}/documentos/${id}/firma/confirmar`, fd);
+    return this.http.post<ConfirmSignatureResponse>(
+      `${this.api}/documentos/${id}/firma/confirmar`,
+     fd
+    );
   }
+
+
+
 
   // ====== Helpers viejos (si aún los usás en algún lado) ======
   wsUrl(docId: number): string {
@@ -381,5 +463,33 @@ export class DocumentService {
     return this.http.post<{ codigo_oficial: string }>(`${this.docsApi}/${id}/aprobar`, {
       snapshot,
     });
+  }
+
+  // =========================
+  // 📎 Anexos
+  // =========================
+  listAnexos(documentId: number) {
+    return this.http.get<any[]>(`${this.api}/documentos/${documentId}/anexos`);
+  }
+
+  uploadAnexo(documentId: number, file: File, descripcion?: string) {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (descripcion != null && descripcion !== '') {
+      fd.append('descripcion', descripcion);
+    }
+
+    return this.http.post<any>(`${this.api}/documentos/${documentId}/anexos`, fd);
+  }
+
+  downloadAnexo(documentId: number, anexoId: number) {
+    return this.http.get(
+      `${this.api}/documentos/${documentId}/anexos/${anexoId}/descargar`,
+      { responseType: 'blob' }
+    );
+  }
+
+  deleteAnexo(documentId: number, anexoId: number) {
+    return this.http.delete<any>(`${this.api}/documentos/${documentId}/anexos/${anexoId}`);
   }
 }

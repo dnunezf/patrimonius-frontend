@@ -28,7 +28,6 @@
     </div>
   </div>
 
-  <!-- Card filtros -->
   <div class="card">
     <h2 class="text-blue-639">Filtros</h2>
 
@@ -70,7 +69,6 @@
     </div>
   </div>
 
-  <!-- Documentos -->
   <div class="document-list">
     <h2 class="text-blue-639">Documentos en Producción</h2>
     <p>Documentos en borrador y firmados - Fase de producción activa</p>
@@ -119,7 +117,6 @@
         </td>
 
         <td>
-          <!-- ✅ Editar -->
           <button
             *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
             class="btn btn--gray"
@@ -129,7 +126,6 @@
             Editar
           </button>
 
-          <!-- ✅ Firmar (NO SE ELIMINA) -->
           <button
             class="btn btn--red"
             type="button"
@@ -138,7 +134,6 @@
             Firmar
           </button>
 
-          <!-- ✅ Ver (modo lectura usando /edit?readonly=1) -->
           <button
             class="btn btn--gray"
             type="button"
@@ -175,7 +170,7 @@
   </div>
 </div>
 
-<!-- ✅ MODAL FIRMA (POPUP REAL) -->
+<!-- ✅ MODAL FIRMA -->
 <div class="modal-backdrop" *ngIf="signModalOpen" (click)="closeSignModal()"></div>
 
 <div class="modal" *ngIf="signModalOpen" role="dialog" aria-modal="true">
@@ -211,8 +206,105 @@
 
       <div class="input-group">
         <label>Adjuntar PDF firmado</label>
-        <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" />
+        <input
+          type="file"
+          accept=".pdf,application/pdf"
+          (change)="onPdfSelected($event)"
+          [disabled]="signLoading || signInfo?.ya_firmo || !(signInfo?.puede_firmar)"
+        />
         <small class="muted">Debe ser un archivo .pdf</small>
+      </div>
+
+      <!-- ✅ ANEXOS -->
+      <hr />
+
+      <div class="anexos-section">
+        <h4 class="text-blue-639">Documentos anexos</h4>
+        <p class="muted">
+          Adjunte aquí los documentos anexos relacionados con este documento firmado.
+        </p>
+
+        <div *ngIf="anexosError" class="alert-error">
+          {{ anexosError }}
+        </div>
+
+        <div class="input-group">
+          <label>Archivo anexo</label>
+          <input
+            type="file"
+            (change)="onAnexoSelected($event)"
+            [disabled]="uploadAnexoLoading"
+          />
+        </div>
+
+        <div class="input-group">
+          <label>Descripción (opcional)</label>
+          <input
+            type="text"
+            [(ngModel)]="anexoDescripcion"
+            placeholder="Ej: Evidencia, oficio, respaldo, anexo 1..."
+            [disabled]="uploadAnexoLoading"
+          />
+        </div>
+
+        <div class="row-actions">
+          <button
+            class="button-outline"
+            type="button"
+            [disabled]="uploadAnexoLoading || !selectedAnexoFile"
+            (click)="uploadAnexo()"
+          >
+            {{ uploadAnexoLoading ? 'Subiendo...' : 'Subir anexo' }}
+          </button>
+        </div>
+
+        <div *ngIf="anexosLoading" class="muted" style="margin-top: 10px;">
+          Cargando anexos...
+        </div>
+
+        <div *ngIf="!anexosLoading && !anexos.length" class="muted" style="margin-top: 10px;">
+          No hay anexos cargados para este documento.
+        </div>
+
+        <div *ngIf="!anexosLoading && anexos.length" class="anexos-list">
+          <div class="anexo-item" *ngFor="let anexo of anexos">
+            <div class="anexo-main">
+              <div class="label">Archivo</div>
+              <div class="value">{{ anexo.nombre_original }}</div>
+
+              <div class="muted" *ngIf="anexo.descripcion">
+                {{ anexo.descripcion }}
+              </div>
+
+              <div class="muted">
+                Subido por: {{ anexo.usuario_nombre || ('Usuario ' + anexo.usuario_id) }}
+              </div>
+
+              <div class="muted">
+                {{ anexo.fecha_subida | date:'short' }}
+              </div>
+            </div>
+
+            <div class="row-actions">
+              <button
+                class="button-outline"
+                type="button"
+                (click)="downloadAnexo(anexo.id, anexo.nombre_original)"
+              >
+                Descargar
+              </button>
+
+              <button
+                class="btn btn--red"
+                type="button"
+                (click)="deleteAnexo(anexo.id)"
+                [disabled]="signInfo?.estado === 'ARCHIVADO'"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -224,11 +316,215 @@
       <button
         class="btn btn--red"
         type="button"
-        [disabled]="signLoading || !!signError || !selectedPdf"
+        [disabled]="signLoading || !!signError || !selectedPdf || signInfo?.ya_firmo || !(signInfo?.puede_firmar)"
         (click)="confirmSign()"
       >
-        Confirmar firma
+        {{ signLoading ? 'Confirmando...' : 'Confirmar firma' }}
       </button>
     </div>
   </div>
+</div>
+<!-- ✅ MODAL RESULTADO VALIDACIÓN DE FIRMA -->
+<div
+  class="modal-backdrop"
+  *ngIf="validationModalOpen"
+  (click)="closeValidationModal()"
+></div>
+
+<div
+  class="modal validation-modal"
+  *ngIf="validationModalOpen"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-card validation-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Resultado de validación de firma digital</h3>
+      <button
+        class="modal-close"
+        type="button"
+        (click)="closeValidationModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="validationResult as vr">
+      <p class="muted">
+        Se validó el documento firmado antes de completar el proceso.
+      </p>
+
+      <div
+        class="validation-nav"
+        *ngIf="validationTotalItems > 1"
+      >
+        <button
+          class="button-outline"
+          type="button"
+          (click)="prevValidationItem()"
+          [disabled]="validationCurrentIndex === 0"
+        >
+          ← Anterior
+        </button>
+
+        <span class="validation-counter">
+    Firma {{ validationCurrentIndex + 1 }} de {{ validationTotalItems }}
+  </span>
+
+        <button
+          class="button-outline"
+          type="button"
+          (click)="nextValidationItem()"
+          [disabled]="validationCurrentIndex >= validationTotalItems - 1"
+        >
+          Siguiente →
+        </button>
+      </div>
+
+      <div class="validation-summary">
+
+      <div class="validation-summary">
+        <div class="validation-row">
+          <div class="label">Nombre del archivo</div>
+          <div class="value">{{ validationFileName || 'No disponible' }}</div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Estado</div>
+          <div class="value">
+            <span [class]="validationStatusClass">
+              {{ validationStatusLabel }}
+            </span>
+          </div>
+        </div>
+        <div class="validation-row">
+          <div class="label">Firmante</div>
+          <div class="value">
+            {{ validationMainItem?.firmante || 'No disponible' }}
+          </div>
+        </div>
+        <div class="validation-row" *ngIf="validationMainItem?.cedula">
+          <div class="label">Cédula</div>
+          <div class="value">
+            {{ validationMainItem?.cedula }}
+          </div>
+        </div>
+        <div class="validation-row">
+          <div class="label">Fecha de firma</div>
+          <div class="value">
+            {{
+              formatValidationDate(validationMainItem?.detalle?.fechaFirma)
+            }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Algoritmo hash</div>
+          <div class="value">
+            {{ validationMainItem?.detalle?.algoritmoHash || 'No disponible' }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Válido desde</div>
+          <div class="value">
+            {{
+              formatValidationDate(validationMainItem?.detalle?.certificadoDesde)
+            }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Válido hasta</div>
+          <div class="value">
+            {{
+              formatValidationDate(validationMainItem?.detalle?.certificadoHasta)
+            }}
+          </div>
+        </div>
+
+        <div class="validation-row" *ngIf="isValidationValid">
+          <div class="label">Revocación</div>
+          <div class="value">
+            {{ validationMainItem?.detalle?.revocacion || 'good' }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Resumen</div>
+          <div class="value">
+            {{ vr.mensaje || validationMainItem?.mensaje || 'Sin detalle.' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ BLOQUE SI ES VÁLIDA -->
+      <div class="validation-ok-box" *ngIf="isValidationValid">
+        La firma digital es válida y el documento puede continuar en el flujo
+        normal del sistema.
+      </div>
+
+      <!-- ✅ BLOQUE SI ES INVÁLIDA -->
+      <div class="validation-bad-box" *ngIf="!isValidationValid">
+        <strong>Documento no confiable.</strong><br />
+        Este documento no debe archivarse y debe solicitarse su reenvío con una
+        firma digital válida.
+      </div>
+
+<!--      <div class="validation-alert-box" *ngIf="!isValidationValid">-->
+<!--        <div class="alert-title">Notificación automática</div>-->
+<!--        <div class="alert-text">-->
+<!--          Se notificará al responsable del archivo y al remitente del documento-->
+<!--          para solicitar el reenvío.-->
+<!--        </div>-->
+
+<!--        <div class="alert-meta" *ngIf="validationRecipient">-->
+<!--          <strong>Destinatario:</strong> {{ validationRecipient }}-->
+<!--        </div>-->
+
+<!--        <div class="alert-meta" *ngIf="validationAlertSent">-->
+<!--          Correo de alerta generado correctamente.-->
+<!--        </div>-->
+<!--      </div>-->
+        <div class="validation-alert-box" *ngIf="!isValidationValid">
+          <div class="alert-title">Notificación automática</div>
+          <div class="alert-text">
+            Este documento no debe archivarse y debe solicitarse su reenvío.
+          </div>
+
+          <div class="alert-meta" *ngIf="validationRecipient">
+            <strong>Destinatario:</strong> {{ validationRecipient }}
+          </div>
+
+          <div class="alert-meta" *ngIf="validationAlertSent">
+            Correo de alerta generado correctamente.
+          </div>
+
+          <div class="alert-meta" *ngIf="!validationAlertSent">
+            No se ha confirmado el envío del correo desde el sistema.
+          </div>
+        </div>
+    </div>
+
+      <div class="modal-footer">
+        <button
+          *ngIf="!isValidationValid"
+          class="button-outline"
+          type="button"
+          (click)="closeValidationModal()"
+        >
+          Cerrar
+        </button>
+
+        <button
+          *ngIf="isValidationValid"
+          class="button-outline"
+          type="button"
+          (click)="confirmValidatedSignature()"
+        >
+          OK
+        </button>
+      </div>
+  </div>
+</div>
 </div>

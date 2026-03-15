@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 
 import { DocumentService, VDocumentModel } from 'core/services/document.service';
 import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
+import { environment } from '../../../../environments/environment';
+
 
 @Component({
   selector: 'app-editor-dashboard',
@@ -20,7 +22,6 @@ export class EditorDashboardComponent implements OnInit {
     { title: 'Consultas', description: 'Revisar documentos', icon: 'search' },
   ];
 
-  // Filtros
   filters = {
     author: 'Todos',
     status: 'Todos',
@@ -35,9 +36,9 @@ export class EditorDashboardComponent implements OnInit {
     { value: 'EDICION', label: 'Edición' },
     { value: 'FIRMA', label: 'Firma' },
     { value: 'FIRMA_PARCIAL', label: 'Firma parcial' },
+    { value: 'ARCHIVADO', label: 'Archivado' },
   ];
 
-  // Data tabla
   allDocuments: VDocumentModel[] = [];
   pagedDocuments: VDocumentModel[] = [];
   page = 1;
@@ -50,6 +51,20 @@ export class EditorDashboardComponent implements OnInit {
   selectedPdf: File | null = null;
   signDocId: number | null = null;
 
+  // ✅ Modal de validación de firma
+  validationModalOpen = false;
+  validationResult: any = null;
+  validationMainItem: any = null;
+  validationFileName = '';
+  validationStatusLabel = '';
+  validationStatusClass = 'badge';
+  isValidationValid = false;
+  validationRecipient: string | null = null;
+  validationAlertSent = false;
+  validationCurrentIndex = 0;
+  validationItems: any[] = [];
+  pendingValidationPdf: File | null = null;
+
   signInfo: {
     documento_id: number;
     titulo: string;
@@ -61,19 +76,28 @@ export class EditorDashboardComponent implements OnInit {
     motivo?: string | null;
   } | null = null;
 
+  // ✅ Anexos
+  anexos: any[] = [];
+  anexosLoading = false;
+  anexosError = '';
+  selectedAnexoFile: File | null = null;
+  anexoDescripcion = '';
+  uploadAnexoLoading = false;
+
   constructor(private docs: DocumentService, private router: Router) {}
 
   ngOnInit(): void {
     this.loadDocuments();
   }
 
-  // ===== Helpers UI =====
   get totalItems(): number {
     return this.filteredDocuments().length;
   }
+
   get totalPages(): number {
     return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
   }
+
   get rangeEnd(): number {
     return Math.min(this.page * this.pageSize, this.totalItems);
   }
@@ -93,13 +117,27 @@ export class EditorDashboardComponent implements OnInit {
     }
   }
 
-  // ✅ Editar (modo normal)
   editarDocumento(id: number): void {
     this.router.navigate([`/editor/document/${id}/edit`]);
   }
 
-  // ✅ Ver (modo lectura) — EXACTAMENTE como Acceso por Unidad
   verDocumento(id: number): void {
+    const doc = this.allDocuments.find((d) => Number(d.id) === Number(id));
+
+    if (doc && ['FIRMA_PARCIAL', 'ARCHIVADO'].includes(doc.documento_estado)) {
+      this.docs.getCurrentSignedPdf(id).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        },
+        error: () => {
+          this.signError = 'No se pudo abrir el PDF firmado.';
+        },
+      });
+      return;
+    }
+
     this.router.navigate([`/editor/document/${id}/edit`], {
       queryParams: {
         readonly: 1,
@@ -108,7 +146,6 @@ export class EditorDashboardComponent implements OnInit {
     });
   }
 
-  // ===== Data =====
   loadDocuments(): void {
     this.docs.getDocumentsFromProduction().subscribe({
       next: (rows) => {
@@ -174,7 +211,7 @@ export class EditorDashboardComponent implements OnInit {
   }
 
   // =========================
-  // ✅ MODAL FIRMA (POPUP)
+  // MODAL FIRMA
   // =========================
   openSignModal(documentId: number): void {
     this.signModalOpen = true;
@@ -184,6 +221,14 @@ export class EditorDashboardComponent implements OnInit {
     this.signDocId = documentId;
     this.signInfo = null;
 
+    // reset anexos
+    this.anexos = [];
+    this.anexosLoading = false;
+    this.anexosError = '';
+    this.selectedAnexoFile = null;
+    this.anexoDescripcion = '';
+    this.uploadAnexoLoading = false;
+
     this.docs.getSignatureInfo(documentId).subscribe({
       next: (info) => {
         this.signLoading = false;
@@ -192,6 +237,8 @@ export class EditorDashboardComponent implements OnInit {
         if (!info?.puede_firmar) {
           this.signError = info?.motivo || 'No puedes firmar este documento.';
         }
+
+        this.loadAnexos();
       },
       error: (e) => {
         this.signLoading = false;
@@ -207,15 +254,72 @@ export class EditorDashboardComponent implements OnInit {
     this.selectedPdf = null;
     this.signDocId = null;
     this.signInfo = null;
+
+    this.anexos = [];
+    this.anexosLoading = false;
+    this.anexosError = '';
+    this.selectedAnexoFile = null;
+    this.anexoDescripcion = '';
+    this.uploadAnexoLoading = false;
   }
 
   onPdfSelected(evt: Event): void {
-    const f = (evt.target as HTMLInputElement).files?.[0] ?? null;
+    const input = evt.target as HTMLInputElement;
+    const f = input.files?.[0] ?? null;
+
+    if (!f) {
+      this.selectedPdf = null;
+      return;
+    }
+
+    const fileName = String(f.name || '').trim().toLowerCase();
+    const fileType = String(f.type || '').trim().toLowerCase();
+
+    const isPdf =
+      fileName.endsWith('.pdf') ||
+      fileType === 'application/pdf' ||
+      fileType === 'application/x-pdf';
+
+    if (!isPdf) {
+      this.signError = 'El archivo debe ser un PDF.';
+      this.selectedPdf = null;
+      input.value = '';
+      return;
+    }
+
+    this.signError = '';
     this.selectedPdf = f;
   }
 
+  // confirmSign(): void {
+  //   if (!this.signDocId) return;
+  //
+  //   if (!this.selectedPdf) {
+  //     this.signError = 'Adjunta el PDF firmado antes de confirmar.';
+  //     return;
+  //   }
+  //
+  //   this.signLoading = true;
+  //   this.signError = '';
+  //
+  //   this.docs.confirmSignature(this.signDocId, this.selectedPdf).subscribe({
+  //     next: () => {
+  //       this.signLoading = false;
+  //       this.selectedPdf = null;
+  //       this.loadDocuments();
+  //       this.reloadSignatureInfo();
+  //       this.loadAnexos();
+  //     },
+  //     error: (e) => {
+  //       this.signLoading = false;
+  //       this.signError = e?.error?.message || 'No se pudo confirmar la firma.';
+  //     },
+  //   });
+  // }
+
   confirmSign(): void {
     if (!this.signDocId) return;
+
     if (!this.selectedPdf) {
       this.signError = 'Adjunta el PDF firmado antes de confirmar.';
       return;
@@ -224,16 +328,95 @@ export class EditorDashboardComponent implements OnInit {
     this.signLoading = true;
     this.signError = '';
 
-    this.docs.confirmSignature(this.signDocId, this.selectedPdf).subscribe({
-      next: () => {
+    // const uploadedFileName = this.selectedPdf.name;
+    const pdfFile = this.selectedPdf;
+
+    this.docs.validateSignedPdf(pdfFile, this.signDocId).subscribe({
+      next: (validation) => {
         this.signLoading = false;
-        this.closeSignModal();
-        this.loadDocuments();
+
+        console.log('VALIDACION DESDE /firma/validar =>', validation);
+
+        this.validationResult = validation;
+        this.validationFileName = this.selectedPdf?.name || '';
+
+        this.validationItems = Array.isArray(validation?.firmas) ? validation.firmas : [];
+        this.validationCurrentIndex = 0;
+        this.validationMainItem = this.validationItems.length
+          ? this.validationItems[0]
+          : null;
+
+        const businessState = String(
+          validation?.estadoVerificacion || ''
+        ).toUpperCase();
+
+        this.isValidationValid = businessState === 'VALIDA';
+
+        switch (businessState) {
+          case 'VALIDA':
+            this.validationStatusLabel = 'Válida';
+            this.validationStatusClass = 'badge badge-green';
+            break;
+          case 'REVOCADA':
+            this.validationStatusLabel = 'Revocada';
+            this.validationStatusClass = 'badge badge-red';
+            break;
+          case 'CADUCADA':
+            this.validationStatusLabel = 'Caducada';
+            this.validationStatusClass = 'badge badge-orange';
+            break;
+          default:
+            this.validationStatusLabel = 'Inválida';
+            this.validationStatusClass = 'badge badge-red';
+            break;
+        }
+
+        //usar estos ??
+        // this.validationRecipient = validation?.destinatarioAlerta || null;
+        // this.validationAlertSent = !!validation?.alertaEnviada;
+        //temporales
+        this.validationRecipient = null;
+        this.validationAlertSent = false;
+
+
+        this.validationModalOpen = true;
+        this.pendingValidationPdf = this.isValidationValid ? pdfFile : null;
       },
       error: (e) => {
         this.signLoading = false;
-        this.signError = e?.error?.message || 'No se pudo confirmar la firma.';
+        this.signError = e?.error?.message || 'No se pudo validar la firma.';
       },
+    });
+  }
+
+  private executeRealSignatureConfirm(file: File): void {
+    if (!this.signDocId) return;
+
+    this.signLoading = true;
+
+    this.docs.confirmSignature(this.signDocId, file).subscribe({
+      next: () => {
+        this.signLoading = false;
+        this.loadDocuments();
+        this.reloadSignatureInfo();
+        this.loadAnexos();
+      },
+      error: (e) => {
+        this.signLoading = false;
+        this.signError =
+          e?.error?.message || 'La firma fue válida, pero no se pudo confirmar.';
+      },
+    });
+  }
+
+  private reloadSignatureInfo(): void {
+    if (!this.signDocId) return;
+
+    this.docs.getSignatureInfo(this.signDocId).subscribe({
+      next: (info) => {
+        this.signInfo = info;
+      },
+      error: () => {},
     });
   }
 
@@ -255,6 +438,83 @@ export class EditorDashboardComponent implements OnInit {
     });
   }
 
+  // =========================
+  // ANEXOS
+  // =========================
+  loadAnexos(): void {
+    if (!this.signDocId) return;
+
+    this.anexosLoading = true;
+    this.anexosError = '';
+
+    this.docs.listAnexos(this.signDocId).subscribe({
+      next: (rows) => {
+        this.anexosLoading = false;
+        this.anexos = rows ?? [];
+      },
+      error: (e) => {
+        this.anexosLoading = false;
+        this.anexosError = e?.error?.message || 'No se pudieron cargar los anexos.';
+      },
+    });
+  }
+
+  onAnexoSelected(evt: Event): void {
+    const input = evt.target as HTMLInputElement;
+    this.selectedAnexoFile = input.files?.[0] ?? null;
+  }
+
+  uploadAnexo(): void {
+    if (!this.signDocId) return;
+
+    if (!this.selectedAnexoFile) {
+      this.anexosError = 'Debes seleccionar un archivo anexo.';
+      return;
+    }
+
+    this.uploadAnexoLoading = true;
+    this.anexosError = '';
+
+    this.docs
+      .uploadAnexo(this.signDocId, this.selectedAnexoFile, this.anexoDescripcion)
+      .subscribe({
+        next: () => {
+          this.uploadAnexoLoading = false;
+          this.selectedAnexoFile = null;
+          this.anexoDescripcion = '';
+          this.loadAnexos();
+        },
+        error: (e) => {
+          this.uploadAnexoLoading = false;
+          this.anexosError = e?.error?.message || 'No se pudo subir el anexo.';
+        },
+      });
+  }
+
+  downloadAnexo(anexoId: number, nombre: string): void {
+    if (!this.signDocId) return;
+
+    this.docs.downloadAnexo(this.signDocId, anexoId).subscribe({
+      next: (blob) => this.saveBlob(blob, nombre),
+      error: () => {
+        this.anexosError = 'No se pudo descargar el anexo.';
+      },
+    });
+  }
+
+  deleteAnexo(anexoId: number): void {
+    if (!this.signDocId) return;
+
+    this.docs.deleteAnexo(this.signDocId, anexoId).subscribe({
+      next: () => {
+        this.loadAnexos();
+      },
+      error: (e) => {
+        this.anexosError = e?.error?.message || 'No se pudo eliminar el anexo.';
+      },
+    });
+  }
+
   private saveBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -262,5 +522,75 @@ export class EditorDashboardComponent implements OnInit {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  closeValidationModal(): void {
+    this.validationModalOpen = false;
+    this.validationResult = null;
+    this.validationMainItem = null;
+    this.validationFileName = '';
+    this.validationStatusLabel = '';
+    this.validationStatusClass = 'badge';
+    this.validationRecipient = null;
+    this.validationAlertSent = false;
+    this.validationItems = [];
+    this.validationCurrentIndex = 0;
+    this.pendingValidationPdf = null;
+
+    // no confirma nada
+    // si era inválida, limpia archivo
+    this.selectedPdf = null;
+  }
+
+  formatValidationDate(value?: string | null): string {
+    if (!value) return 'No disponible';
+
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return 'No disponible';
+
+    return d.toLocaleString('es-CR');
+  }
+
+  prevValidationItem(): void {
+    if (this.validationCurrentIndex <= 0) return;
+
+    this.validationCurrentIndex--;
+    this.validationMainItem = this.validationItems[this.validationCurrentIndex] || null;
+  }
+
+  nextValidationItem(): void {
+    if (this.validationCurrentIndex >= this.validationItems.length - 1) return;
+
+    this.validationCurrentIndex++;
+    this.validationMainItem = this.validationItems[this.validationCurrentIndex] || null;
+  }
+
+  get validationTotalItems(): number {
+    return this.validationItems.length;
+  }
+
+  confirmValidatedSignature(): void {
+    if (!this.isValidationValid || !this.pendingValidationPdf) {
+      this.closeValidationModal();
+      return;
+    }
+
+    const file = this.pendingValidationPdf;
+
+    // cerrar modal visualmente antes de confirmar
+    this.validationModalOpen = false;
+
+    this.validationResult = null;
+    this.validationMainItem = null;
+    this.validationFileName = '';
+    this.validationStatusLabel = '';
+    this.validationStatusClass = 'badge';
+    this.validationRecipient = null;
+    this.validationAlertSent = false;
+    this.validationItems = [];
+    this.validationCurrentIndex = 0;
+    this.pendingValidationPdf = null;
+
+    this.executeRealSignatureConfirm(file);
   }
 }

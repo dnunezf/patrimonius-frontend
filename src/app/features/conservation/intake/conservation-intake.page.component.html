@@ -1,0 +1,477 @@
+<header class="page-header">
+  <h1>Ingreso y registro en conservación</h1>
+  <p class="sub">
+    Seleccione un documento final (PDF/A con firmas completas) y complete el
+    registro archivístico.
+  </p>
+</header>
+
+<section class="layout">
+  <!-- LEFT PANEL: Search + Candidate list + Eligibility -->
+  <aside class="left">
+    <div class="card">
+      <div class="card-header">
+        <h2>Búsqueda de candidatos</h2>
+        <span class="hint">Filtre documentos finalizados</span>
+      </div>
+
+      <form class="filters" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="row">
+          <label>
+            Identificador oficial
+            <input
+              type="text"
+              formControlName="officialCode"
+              placeholder="MNCR-..."
+            />
+          </label>
+
+          <label>
+            Título / palabras clave
+            <input type="text" formControlName="q" placeholder="Buscar..." />
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            Unidad productora
+            <input
+              type="text"
+              formControlName="producingUnit"
+              placeholder="Unidad..."
+            />
+          </label>
+
+          <label>
+            Estado de firma
+            <select formControlName="signatureState">
+              <option value="ALL">Todos</option>
+              <option value="COMPLETE">Completa</option>
+              <option value="INCOMPLETE">Incompleta</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            Desde
+            <input type="date" formControlName="dateFrom" />
+          </label>
+          <label>
+            Hasta
+            <input type="date" formControlName="dateTo" />
+          </label>
+        </div>
+
+        <label class="chk">
+          <input type="checkbox" formControlName="pdfaOnly" />
+          Solo PDF/A
+        </label>
+
+        <div class="actions">
+          <button class="btn" type="submit" [disabled]="loading()">
+            Buscar
+          </button>
+        </div>
+      </form>
+
+      <div class="table" *ngIf="candidates().length; else noCandidates">
+        <div class="thead">
+          <div>ID</div>
+          <div>Título</div>
+          <div>PDF/A</div>
+          <div>Firmas</div>
+        </div>
+
+        <div
+          class="trow"
+          *ngFor="let d of candidates()"
+          [class.selected]="selected()?.id === d.id"
+          (click)="selectDoc(d)"
+          role="button"
+          tabindex="0"
+        >
+          <div class="mono">{{ d.officialCode || "—" }}</div>
+          <div class="title">{{ d.title }}</div>
+          <div>
+            <span class="badge" [ngClass]="d.isPDFA ? 'ok' : 'bad'">
+              {{ d.isPDFA ? "Sí" : "No" }}
+            </span>
+          </div>
+          <div>
+            <span class="badge" [ngClass]="d.signaturesComplete ? 'ok' : 'bad'">
+              {{ d.signaturesComplete ? "Completa" : "Incompleta" }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noCandidates>
+        <div class="empty">
+          No hay candidatos. Ajuste filtros y presione “Buscar”.
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="card" *ngIf="selected() as doc">
+      <div class="card-header">
+        <h2>Elegibilidad</h2>
+        <span class="hint">Checklist obligatorio</span>
+      </div>
+
+      <ul class="checklist">
+        <li>
+          <span
+            class="dot"
+            [ngClass]="eligibility().pdfa ? 'ok' : 'bad'"
+          ></span>
+          PDF/A
+        </li>
+
+        <li>
+          <span
+            class="dot"
+            [ngClass]="eligibility().signatures ? 'ok' : 'bad'"
+          ></span>
+          Firmas requeridas completas
+        </li>
+
+        <li>
+          <span
+            class="dot"
+            [ngClass]="eligibility().officialCodeComplete ? 'ok' : 'bad'"
+          ></span>
+          Identificador oficial completo
+        </li>
+
+        <li>
+          <span
+            class="dot"
+            [ngClass]="eligibility().requiredMetadata ? 'ok' : 'bad'"
+          ></span>
+          Metadatos mínimos completos
+        </li>
+
+        <li>
+          <span
+            class="dot"
+            [ngClass]="{
+              ok: eligibility().duplicateChecked === 'OK',
+              bad: eligibility().duplicateChecked === 'DUPLICATE',
+              warn:
+                eligibility().duplicateChecked === 'PENDING' ||
+                eligibility().duplicateChecked === 'NOT_CHECKED',
+            }"
+          ></span>
+          No duplicidad de código
+          <small class="state">({{ eligibility().duplicateChecked }})</small>
+        </li>
+      </ul>
+
+      <div class="actions">
+        <button
+          class="btn ghost"
+          type="button"
+          (click)="verifyDuplicate()"
+          [disabled]="
+            !doc.officialCode || eligibility().duplicateChecked === 'PENDING'
+          "
+        >
+          Verificar duplicidad
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- RIGHT PANEL: Archival intake form -->
+  <main class="right" *ngIf="selected() as doc; else pickDoc">
+    <div class="card">
+      <div class="card-header">
+        <h2>Registro archivístico</h2>
+        <span class="hint">Campos obligatorios marcados con *</span>
+      </div>
+
+      <!-- Optional: show a compact banner when the form has errors and user already interacted -->
+      <div class="validation-banner" *ngIf="formErrorSummary() as msg">
+        {{ msg }}
+      </div>
+
+      <form [formGroup]="archivalForm" class="form">
+        <!-- Section: Metadata -->
+        <section class="section">
+          <h3 class="section-title">Metadatos archivísticos</h3>
+
+          <div class="grid2">
+            <label>
+              Identificador oficial *
+              <input type="text" formControlName="officialCode" readonly />
+              <div class="err" *ngIf="fieldErr('officialCode')">
+                {{ fieldErr("officialCode") }}
+              </div>
+            </label>
+
+            <label>
+              Nivel de acceso *
+              <select formControlName="accessLevel">
+                <option value="PUBLIC">PUBLIC</option>
+                <option value="INTERNAL">INTERNAL</option>
+                <option value="HIGH">HIGH</option>
+                <option value="RESTRICTED">RESTRICTED</option>
+              </select>
+              <div class="err" *ngIf="fieldErr('accessLevel')">
+                {{ fieldErr("accessLevel") }}
+              </div>
+            </label>
+          </div>
+
+          <label>
+            Título *
+            <input type="text" formControlName="title" />
+            <div class="err" *ngIf="fieldErr('title')">
+              {{ fieldErr("title") }}
+            </div>
+          </label>
+
+          <div class="grid2">
+            <label>
+              Unidad productora *
+              <input type="text" formControlName="producingUnit" />
+              <div class="err" *ngIf="fieldErr('producingUnit')">
+                {{ fieldErr("producingUnit") }}
+              </div>
+            </label>
+
+            <label>
+              Autor/Productor *
+              <input type="text" formControlName="author" />
+              <div class="err" *ngIf="fieldErr('author')">
+                {{ fieldErr("author") }}
+              </div>
+            </label>
+          </div>
+
+          <label>
+            Palabras clave * (separadas por coma)
+            <input
+              type="text"
+              formControlName="keywords"
+              placeholder="acta, consejo, ..."
+            />
+            <div class="err" *ngIf="fieldErr('keywords')">
+              {{ fieldErr("keywords") }}
+            </div>
+          </label>
+
+          <div class="meta-line">
+            <strong>Documento:</strong> {{ doc.title }} ·
+            <strong>Unidad:</strong> {{ doc.producingUnit }} ·
+            <strong>Fecha:</strong> {{ doc.createdAtISO | date: "yyyy-MM-dd" }}
+          </div>
+        </section>
+
+        <!-- Section: Classification -->
+        <section class="section">
+          <h3 class="section-title">Clasificación institucional *</h3>
+
+          <div class="grid2">
+            <label>
+              Buscar
+              <input
+                type="text"
+                [value]="classificationQuery()"
+                (input)="classificationQuery.set($any($event.target).value)"
+                placeholder="Código o nombre..."
+              />
+            </label>
+
+            <div class="picked">
+              <div class="cap">Seleccionado</div>
+              <div class="val mono">
+                {{ classificationSelected()?.code || "—" }}
+              </div>
+              <div class="val">
+                {{ classificationSelected()?.label || "Sin selección" }}
+              </div>
+            </div>
+          </div>
+
+          <div class="class-list">
+            <button
+              type="button"
+              class="class-item"
+              *ngFor="let c of classificationFiltered()"
+              (click)="pickClassification(c)"
+              [class.active]="classificationSelected()?.code === c.code"
+            >
+              <span class="mono">{{ c.code }}</span>
+              <span>{{ c.label }}</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Section: Access rules -->
+        <section class="section">
+          <h3 class="section-title">Reglas de acceso (UI)</h3>
+
+          <div class="access-row">
+            <button
+              class="btn ghost"
+              type="button"
+              (click)="addAccessRule('USER')"
+            >
+              + Usuario
+            </button>
+            <button
+              class="btn ghost"
+              type="button"
+              (click)="addAccessRule('ROLE')"
+            >
+              + Rol
+            </button>
+          </div>
+
+          <div class="access-list" *ngIf="accessRules().length; else noRules">
+            <div class="rule" *ngFor="let r of accessRules()">
+              <div class="who">
+                <span class="pill">{{ r.kind }}</span>
+                <span>{{ r.subjectLabel }}</span>
+              </div>
+
+              <div class="acts">
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="r.actions.includes('VIEW')"
+                    (change)="toggleAction(r, 'VIEW')"
+                  />
+                  VIEW</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="r.actions.includes('EDIT')"
+                    (change)="toggleAction(r, 'EDIT')"
+                  />
+                  EDIT</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="r.actions.includes('SIGN')"
+                    (change)="toggleAction(r, 'SIGN')"
+                  />
+                  SIGN</label
+                >
+              </div>
+
+              <button class="btn mini" type="button" (click)="removeRule(r)">
+                Quitar
+              </button>
+            </div>
+          </div>
+
+          <ng-template #noRules>
+            <div class="muted">
+              Sin reglas explícitas (UI). Defina si aplica.
+            </div>
+          </ng-template>
+        </section>
+
+        <!-- Section: Retention -->
+        <section class="section">
+          <h3 class="section-title">Retención y vigencia *</h3>
+
+          <div class="grid2">
+            <label>
+              Plazo de retención *
+              <select formControlName="retentionRuleId">
+                <option [ngValue]="null">Seleccione…</option>
+                <option *ngFor="let r of retentionRules()" [ngValue]="r.id">
+                  {{ r.label }}
+                </option>
+              </select>
+              <div class="err" *ngIf="fieldErr('retentionRuleId')">
+                {{ fieldErr("retentionRuleId") }}
+              </div>
+            </label>
+
+            <label>
+              Inicio de vigencia *
+              <input
+                type="date"
+                formControlName="retentionStartDateISO"
+                readonly
+              />
+              <div class="err" *ngIf="fieldErr('retentionStartDateISO')">
+                {{ fieldErr("retentionStartDateISO") }}
+              </div>
+            </label>
+          </div>
+
+          <label class="chk">
+            <input type="checkbox" formControlName="trackingEnabled" />
+            Activar seguimiento de vigencia al ingresar (obligatorio)
+          </label>
+          <div class="err" *ngIf="fieldErr('trackingEnabled')">
+            {{ fieldErr("trackingEnabled") }}
+          </div>
+
+          <div class="infobox">{{ retentionPreviewText() }}</div>
+        </section>
+
+        <!-- Section: Summary + Save -->
+        <section class="section">
+          <h3 class="section-title">Resumen</h3>
+
+          <div class="summary">
+            <ul>
+              <li>
+                <strong>Elegibilidad:</strong>
+                {{ canSave() ? "OK" : "Pendiente" }}
+              </li>
+              <li>
+                <strong>Clasificación:</strong>
+                {{ classificationSelected()?.code || "—" }}
+              </li>
+              <li>
+                <strong>Acceso:</strong>
+                {{ archivalForm.get("accessLevel")?.value }}
+              </li>
+              <li>
+                <strong>Seguimiento:</strong>
+                {{
+                  archivalForm.get("trackingEnabled")?.value ? "Activo" : "No"
+                }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="actions">
+            <button
+              class="btn primary"
+              type="button"
+              (click)="save()"
+              [disabled]="!canSave() || loading()"
+            >
+              Guardar en conservación
+            </button>
+          </div>
+
+          <div class="blocked" *ngIf="!canSave()">
+            <strong>Bloqueado:</strong> complete checklist, clasificación,
+            retención y verificación de duplicidad.
+          </div>
+        </section>
+      </form>
+    </div>
+  </main>
+
+  <ng-template #pickDoc>
+    <main class="right">
+      <div class="card empty">
+        <h2>Seleccione un candidato</h2>
+        <p>Use la búsqueda para seleccionar un documento final elegible.</p>
+      </div>
+    </main>
+  </ng-template>
+</section>
