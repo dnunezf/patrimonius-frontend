@@ -84,19 +84,28 @@
     </a>
   </nav>
 
-  <!-- ✅ NUEVO: sección independiente (NO es rol) -->
-  <ng-container *ngIf="canSeeUpload()">
-    <div class="drawer__section">ACCIONES</div>
+<ng-container *ngIf="canSeeActions()">
+  <div class="drawer__section">ACCIONES</div>
 
-    <nav class="drawer__nav">
-      <a class="drawer__item"
-         [routerLink]="uploadLink()"
-         routerLinkActive="is-active"
-         (click)="closeDrawer()">
-        <img class="drawer__icon" src="assets/icons/upload.png" alt="" aria-hidden="true" />
-        <span class="drawer__label">Carga de documentos</span>
-        <span class="drawer__chev">›</span>
-      </a>
-    </nav>
-  </ng-container>
-</aside>
+  <nav class="drawer__nav">
+    <a class="drawer__item"
+       *ngIf="canSeeUpload()"
+       [routerLink]="uploadLink()"
+       routerLinkActive="is-active"
+       (click)="closeDrawer()">
+      <img class="drawer__icon" src="assets/icons/upload.png" alt="" aria-hidden="true" />
+      <span class="drawer__label">Carga de documentos</span>
+      <span class="drawer__chev">›</span>
+    </a>
+
+    <a class="drawer__item"
+       *ngIf="canSeeConservationIntake()"
+       [routerLink]="conservationIntakeLink()"
+       routerLinkActive="is-active"
+       (click)="closeDrawer()">
+      <img class="drawer__icon" src="assets/icons/archive.png" alt="" aria-hidden="true" />
+      <span class="drawer__label">Ingreso a conservación</span>
+      <span class="drawer__chev">›</span>
+    </a>
+  </nav>
+</ng-container>

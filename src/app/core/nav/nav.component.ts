@@ -18,17 +18,20 @@ export class NavComponent {
   @Input() logo = 'assets/logos/logo.png';
 
   private _items: NavItem[] = [];
+
   @Input() set items(value: NavItem[]) {
     this._items = (value || []).filter(
       it => (it.label ?? '').trim().toLowerCase() !== 'inicio' && it.path !== '/'
     );
   }
-  get items(): NavItem[] { return this._items; }
+
+  get items(): NavItem[] {
+    return this._items;
+  }
 
   @Input() loginItem?: NavItem;
   @Output() loginClick = new EventEmitter<void>();
 
-  // --- NUEVO: sesión / notificaciones ---
   private readonly auth = inject(AuthService);
   private readonly store = inject(NotificationsStore);
   private readonly router = inject(Router);
@@ -38,31 +41,29 @@ export class NavComponent {
     this.auth.currentUser?.() ??
     this.auth.currentUser?.call?.(this.auth) ??
     this.auth.currentUser?.()
-  ); // tolerante
+  );
 
   isLoggedIn = () => !!this.auth.currentUser?.();
 
   userEmail = () => this.auth.currentUser?.()?.email ?? '';
 
-  // Reemplaza TU método roles(): string[] { ... } por este getter:
   get rolesList(): string[] {
     const u = this.auth.currentUser?.();
     if (!u) return [];
 
-    // 1) Si el backend ya manda nombres de roles (string o array de strings)
     const roles = (u as any).roles;
     if (typeof roles === 'string' && roles.trim()) {
       return [this.prettyRole(roles)];
     }
+
     if (Array.isArray(roles) && roles.length) {
       return roles.map((r: any) => this.prettyRole(String(r)));
     }
 
-    // 2) Si viene rolId (1..5)
     const names = [
       'Administrador',
       'Editor',
-      'Archivista',
+      'Archivador',
       'Usuario',
       'Usuario Externo'
     ];
@@ -75,7 +76,6 @@ export class NavComponent {
     return ['Usuario'];
   }
 
-  /** Convierte "USUARIO_EXTERNO" -> "Usuario Externo" */
   private prettyRole(raw: string): string {
     return raw
       .trim()
@@ -88,8 +88,10 @@ export class NavComponent {
     const r = role?.toUpperCase().replace(/\s+/g, '_');
     const map: Record<string, string> = {
       ADMIN: 'Administrador',
+      ADMINISTRADOR: 'Administrador',
       EDITOR: 'Editor',
-      ARCHIVISTA: 'Archivista',
+      ARCHIVADOR: 'Archivador',
+      ARCHIVISTA: 'Archivador',
       USUARIO: 'Usuario',
       USUARIO_EXTERNO: 'Usuario Externo',
     };
@@ -100,51 +102,60 @@ export class NavComponent {
     const r = role?.toUpperCase().replace(/\s+/g, '_');
 
     switch (r) {
-      case 'ADMINISTRADOR':   return '/admin/dashboard';
-      case 'EDITOR':           return '/editor/dashboard';
-      case 'ARCHIVISTA':       return '/archivista/dashboard';
-      case 'USUARIO':          return '/usuario/dashboard';
-      case 'USUARIO_EXTERNO':  return '/externo/dashboard';
-      default:                 return '/';
+      case 'ADMINISTRADOR':
+        return '/admin/dashboard';
+      case 'EDITOR':
+        return '/editor/dashboard';
+      case 'ARCHIVADOR':
+      case 'ARCHIVISTA':
+        return '/archivista/dashboard';
+      case 'USUARIO':
+        return '/usuario/dashboard';
+      case 'USUARIO_EXTERNO':
+        return '/externo/dashboard';
+      default:
+        return '/';
     }
   }
 
   notificationsLink(): string {
-    // Por ahora siempre a admin/notifications como pediste:
     return '/admin/notifications';
   }
 
   noticeCount = () => {
     try {
       return this.store.count?.() ?? 0;
-    } catch { return 0; }
+    } catch {
+      return 0;
+    }
   };
 
-  // existente
   isOpen = signal(false);
   toggle() { this.isOpen.update(v => !v); }
-  close()  { this.isOpen.set(false); }
+  close() { this.isOpen.set(false); }
 
-  // Drawer
   drawerOpen = signal(false);
   openDrawer() { this.drawerOpen.set(true); }
   closeDrawer() { this.drawerOpen.set(false); }
 
   roleIcon(role: string): string {
     const r = role?.toUpperCase().replace(/\s+/g, '_');
+
     switch (r) {
       case 'ADMINISTRADOR':
       case 'ADMIN':
         return 'assets/icons/admin_2.png';
       case 'EDITOR':
         return 'assets/icons/pencil.png';
+      case 'ARCHIVADOR':
       case 'ARCHIVISTA':
         return 'assets/icons/archive.png';
       case 'USUARIO':
         return 'assets/icons/user_2.png';
       case 'USUARIO_EXTERNO':
         return 'assets/icons/users.png';
-      default: return '';
+      default:
+        return '';
     }
   }
 
@@ -153,7 +164,7 @@ export class NavComponent {
   }
 
   signOut(): void {
-    this.closeDrawer();          // ✅ cierra menú
+    this.closeDrawer();
     this.auth.logout?.();
     this.router.navigate(['/']);
   }
@@ -166,28 +177,40 @@ export class NavComponent {
     return String(n);
   }
 
-  // ==========================
-  // HU-21: Carga de documentos
-  // ==========================
-
-  /** Mostrar la opción en el drawer (temporal: cualquier logueado) */
-  canSeeUpload = (): boolean => {
-    const u: any = this.auth.currentUser?.();
-    if (!u) return false;
-
-    // ✅ Temporal mientras confirman: cualquiera logueado
-    return true;
-
-    // ✅ Cuando confirmen permiso:
-    // return u.canUpload === true;
-
-    // ✅ O si el backend manda permisos:
-    // const perms = Array.isArray(u.permissions) ? u.permissions : [];
-    // return perms.map((p:any) => String(p).toUpperCase()).includes('UPLOAD');
+  /**
+   * Returns true when at least one action item should be shown.
+   */
+  canSeeActions = (): boolean => {
+    return this.canSeeUpload() || this.canSeeConservationIntake();
   };
 
-  /** Ruta a la pantalla HU-21 (ajustá si cambia) */
+  /**
+   * HU-21 upload action.
+   * Temporary rule: any authenticated user can see it.
+   */
+  canSeeUpload = (): boolean => {
+    const user: any = this.auth.currentUser?.();
+    if (!user) return false;
+    return true;
+  };
+
   uploadLink(): string {
     return '/documentos/carga-masiva';
+  }
+
+  /**
+   * HU-019 conservation intake action.
+   * Recommended visibility: ADMINISTRADOR and ARCHIVADOR.
+   */
+  canSeeConservationIntake = (): boolean => {
+    const roles = this.rolesList.map((role) =>
+      role.trim().toUpperCase().replace(/\s+/g, '_')
+    );
+
+    return roles.includes('ADMINISTRADOR') || roles.includes('ARCHIVADOR');
+  };
+
+  conservationIntakeLink(): string {
+    return '/conservacion/ingreso';
   }
 }
