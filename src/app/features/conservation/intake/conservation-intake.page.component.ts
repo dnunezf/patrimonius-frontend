@@ -54,14 +54,13 @@ export class ConservationIntakePageComponent {
     dateFrom: [''],
     dateTo: [''],
     signatureState: ['ALL'],
-    pdfaOnly: [true],
   });
 
   readonly archivalForm = this.fb.group({
     officialCode: [{ value: '', disabled: true }, [Validators.required]],
     title: ['', [Validators.required, Validators.minLength(3)]],
     producingUnit: ['', [Validators.required]],
-    author: ['', [Validators.required]],
+    author: [{ value: '', disabled: true }, [Validators.required]],
     keywords: ['', [Validators.required]],
     accessLevel: ['INTERNAL' as ConfidentialityLevel, [Validators.required]],
     trackingEnabled: [true, [Validators.requiredTrue]],
@@ -87,15 +86,15 @@ export class ConservationIntakePageComponent {
   });
 
   readonly canSave = computed(() => {
-    const e = this.eligibility();
+    const eligibility = this.eligibility();
     return (
-      e.pdfa &&
-      e.signatures &&
-      e.officialCodeComplete &&
-      e.requiredMetadata &&
+      eligibility.pdfa &&
+      eligibility.signatures &&
+      eligibility.officialCodeComplete &&
+      eligibility.requiredMetadata &&
       this.archivalForm.valid &&
       !!this.classificationSelected() &&
-      e.duplicateChecked === 'OK'
+      eligibility.duplicateChecked === 'OK'
     );
   });
 
@@ -105,24 +104,23 @@ export class ConservationIntakePageComponent {
 
     const missing: string[] = [];
     const requiredFields: Array<[string, string]> = [
-      ['title', 'Title'],
-      ['producingUnit', 'Producing unit'],
-      ['author', 'Author'],
-      ['keywords', 'Keywords'],
-      ['retentionRuleId', 'Retention rule'],
-      ['trackingEnabled', 'Tracking'],
+      ['title', 'Título'],
+      ['producingUnit', 'Unidad productora'],
+      ['keywords', 'Palabras clave'],
+      ['retentionRuleId', 'Regla de retención'],
+      ['trackingEnabled', 'Seguimiento'],
     ];
 
     for (const [key, label] of requiredFields) {
-      const c = this.archivalForm.get(key);
-      if (c?.errors?.['required'] || c?.errors?.['requiredTrue']) {
+      const control = this.archivalForm.get(key);
+      if (control?.errors?.['required'] || control?.errors?.['requiredTrue']) {
         missing.push(label);
       }
     }
 
     return missing.length
-      ? `Required fields pending: ${missing.join(', ')}.`
-      : 'Please review the required fields.';
+      ? `Campos obligatorios pendientes: ${missing.join(', ')}.`
+      : 'Revise los campos obligatorios.';
   });
 
   constructor() {
@@ -148,19 +146,19 @@ export class ConservationIntakePageComponent {
         this.loading.set(false);
 
         if (err?.status === 401) {
-          this.toasts.error('Session expired. Please sign in again.');
+          this.toasts.error('La sesión expiró. Inicie sesión nuevamente.');
           return;
         }
 
         if (err?.status === 403) {
           this.toasts.error(
-            'You do not have permission to access conservation.',
+            'No tiene permisos para acceder al módulo de conservación.',
           );
           return;
         }
 
         this.toasts.error(
-          err?.error?.message || 'Could not load conservation candidates.',
+          err?.error?.message || 'No se pudieron cargar los candidatos.',
         );
       },
     });
@@ -175,7 +173,7 @@ export class ConservationIntakePageComponent {
       officialCode: doc.officialCode || '',
       title: doc.title || '',
       producingUnit: doc.producingUnit || '',
-      author: '',
+      author: doc.author || '',
       keywords: Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
       retentionStartDateISO: new Date().toISOString().slice(0, 10),
       accessLevel: 'INTERNAL',
@@ -195,12 +193,12 @@ export class ConservationIntakePageComponent {
   }
 
   private hasRequiredArchivalMetadata(): boolean {
-    const fg = this.archivalForm;
+    const form = this.archivalForm;
     return (
-      !!fg.get('title')?.value &&
-      !!fg.get('producingUnit')?.value &&
-      !!fg.get('author')?.value &&
-      !!fg.get('keywords')?.value
+      !!form.get('title')?.value &&
+      !!form.get('producingUnit')?.value &&
+      !!form.get('author')?.value &&
+      !!form.get('keywords')?.value
     );
   }
 
@@ -208,9 +206,7 @@ export class ConservationIntakePageComponent {
     const doc = this.selected();
 
     if (!doc?.officialCode?.trim()) {
-      this.toasts.error(
-        'The selected document does not have an official code.',
-      );
+      this.toasts.error('El documento seleccionado no tiene código oficial.');
       return;
     }
 
@@ -227,19 +223,20 @@ export class ConservationIntakePageComponent {
         if (result.status === 'DUPLICATE') {
           this.duplicateState.set('DUPLICATE');
           await this.confirm.ask(
-            `Duplicate code detected. Existing document ID: ${result.existingId}.`,
-            'Duplicate code',
+            `Se detectó un código duplicado. Documento existente ID: ${result.existingId}.`,
+            'Código duplicado',
           );
           return;
         }
 
         this.duplicateState.set('OK');
-        this.toasts.success('Official code verified successfully.');
+        this.toasts.success('El código oficial fue verificado correctamente.');
       },
       error: (err) => {
         this.duplicateState.set('NOT_CHECKED');
         this.toasts.error(
-          err?.error?.message || 'Could not verify duplicate code.',
+          err?.error?.message ||
+            'No se pudo verificar la duplicidad del código.',
         );
       },
     });
@@ -265,12 +262,13 @@ export class ConservationIntakePageComponent {
       next: (rules) => this.retentionRules.set(rules),
       error: (err) => {
         if (err?.status === 401) {
-          this.toasts.error('Session expired. Please sign in again.');
+          this.toasts.error('La sesión expiró. Inicie sesión nuevamente.');
           return;
         }
 
         this.toasts.error(
-          err?.error?.message || 'Could not load retention rules.',
+          err?.error?.message ||
+            'No se pudieron cargar las reglas de retención.',
         );
       },
     });
@@ -281,36 +279,36 @@ export class ConservationIntakePageComponent {
     const start = String(
       this.archivalForm.get('retentionStartDateISO')?.value || '',
     );
-    const rule = this.retentionRules().find((r) => r.id === ruleId);
+    const rule = this.retentionRules().find((item) => item.id === ruleId);
 
     if (!rule || !start) {
-      return 'Select a retention rule to preview the validity period.';
+      return 'Seleccione una regla de retención para visualizar la vigencia.';
     }
 
-    const dt = new Date(start);
-    dt.setFullYear(dt.getFullYear() + rule.years);
-    const endISO = dt.toISOString().slice(0, 10);
+    const date = new Date(start);
+    date.setFullYear(date.getFullYear() + rule.years);
+    const endISO = date.toISOString().slice(0, 10);
 
-    return `Start: ${start} · Duration: ${rule.years} year(s) · Estimated end: ${endISO}`;
+    return `Inicio: ${start} · Duración: ${rule.years} año(s) · Fin estimado: ${endISO}`;
   }
 
   async save(): Promise<void> {
     const doc = this.selected();
     if (!doc) {
-      this.toasts.error('Please select a document first.');
+      this.toasts.error('Seleccione primero un documento.');
       return;
     }
 
     this.archivalForm.markAllAsTouched();
 
     if (!this.archivalForm.valid) {
-      this.toasts.error('Please complete the required fields.');
+      this.toasts.error('Complete los campos obligatorios.');
       return;
     }
 
     const classification = this.classificationSelected();
     if (!classification) {
-      this.toasts.error('You must select an institutional classification.');
+      this.toasts.error('Debe seleccionar una clasificación institucional.');
       return;
     }
 
@@ -318,49 +316,53 @@ export class ConservationIntakePageComponent {
 
     if (!eligibility.pdfa) {
       this.toasts.error(
-        'The selected document is not eligible for PDF/A intake.',
+        'El documento seleccionado no es elegible para ingreso PDF/A.',
       );
       return;
     }
 
     if (!eligibility.signatures) {
       this.toasts.error(
-        'The selected document does not meet the signature requirement.',
+        'El documento seleccionado no cumple con el requisito de firmas.',
       );
       return;
     }
 
     if (!eligibility.officialCodeComplete) {
       this.toasts.error(
-        'The selected document does not have a complete official code.',
+        'El documento seleccionado no tiene un código oficial completo.',
       );
       return;
     }
 
     if (!eligibility.requiredMetadata) {
-      this.toasts.error('Required archival metadata is incomplete.');
+      this.toasts.error(
+        'Los metadatos archivísticos requeridos están incompletos.',
+      );
       return;
     }
 
     if (eligibility.duplicateChecked !== 'OK') {
-      this.toasts.error('You must verify duplicate code before saving.');
+      this.toasts.error(
+        'Debe verificar la duplicidad del código antes de guardar.',
+      );
       return;
     }
 
-    const level = this.archivalForm.get('accessLevel')
+    const accessLevel = this.archivalForm.get('accessLevel')
       ?.value as ConfidentialityLevel;
 
-    if (level === 'HIGH' || level === 'RESTRICTED') {
+    if (accessLevel === 'HIGH' || accessLevel === 'RESTRICTED') {
       const accepted = await this.confirm.ask(
-        'Sensitive access level selected. Do you want to continue?',
-        'Warning',
+        'Se seleccionó un nivel de acceso sensible. ¿Desea continuar?',
+        'Advertencia',
       );
       if (!accepted) return;
     }
 
     const confirmed = await this.confirm.ask(
-      'Confirm document intake into conservation?',
-      'Confirm intake',
+      '¿Confirma el ingreso del documento a conservación?',
+      'Confirmar ingreso',
     );
     if (!confirmed) {
       this.api.audit('INTAKE_CANCELLED', { id: doc.id }).subscribe();
@@ -380,9 +382,9 @@ export class ConservationIntakePageComponent {
       metadata: {
         title: String(raw.title).trim(),
         producingUnit: String(raw.producingUnit).trim(),
-        author: String(raw.author).trim(),
+        author: String(raw.author || doc.author || '').trim(),
         keywords,
-        accessLevel: level,
+        accessLevel,
       },
       classification,
       retention: {
@@ -399,7 +401,7 @@ export class ConservationIntakePageComponent {
         this.loading.set(false);
 
         this.toasts.success(
-          `Document registered in conservation (${response.intakeId}).`,
+          `Documento registrado en conservación (${response.intakeId}).`,
         );
 
         this.api.audit('INTAKE_SUCCESS', response).subscribe();
@@ -421,13 +423,13 @@ export class ConservationIntakePageComponent {
         this.loading.set(false);
 
         if (err?.status === 401) {
-          this.toasts.error('Session expired. Please sign in again.');
+          this.toasts.error('La sesión expiró. Inicie sesión nuevamente.');
           return;
         }
 
         if (err?.status === 403) {
           this.toasts.error(
-            'You do not have permission to register conservation intake.',
+            'No tiene permisos para registrar ingresos en conservación.',
           );
           return;
         }
@@ -437,7 +439,7 @@ export class ConservationIntakePageComponent {
           err?.error?.error === 'duplicate_official_code'
         ) {
           this.duplicateState.set('DUPLICATE');
-          this.toasts.error('Duplicate official code detected.');
+          this.toasts.error('Se detectó un código oficial duplicado.');
           return;
         }
 
@@ -446,18 +448,19 @@ export class ConservationIntakePageComponent {
           err?.error?.error === 'duplicate_conservation_document'
         ) {
           this.toasts.error(
-            'This document is already registered in conservation.',
+            'Este documento ya se encuentra registrado en conservación.',
           );
           return;
         }
 
         if (err?.status === 422) {
-          this.toasts.error('Validation failed. Please review the form.');
+          this.toasts.error('La validación falló. Revise el formulario.');
           return;
         }
 
         this.toasts.error(
-          err?.error?.message || 'Could not register conservation intake.',
+          err?.error?.message ||
+            'No se pudo registrar el ingreso a conservación.',
         );
       },
     });
@@ -467,9 +470,9 @@ export class ConservationIntakePageComponent {
     const control = this.archivalForm.get(name);
     if (!control || !control.touched || !control.errors) return null;
 
-    if (control.errors['required']) return 'Required.';
-    if (control.errors['requiredTrue']) return 'Tracking must be enabled.';
-    if (control.errors['minlength']) return 'Too short.';
-    return 'Invalid value.';
+    if (control.errors['required']) return 'Obligatorio.';
+    if (control.errors['requiredTrue']) return 'Debe activar el seguimiento.';
+    if (control.errors['minlength']) return 'Muy corto.';
+    return 'Valor inválido.';
   }
 }
