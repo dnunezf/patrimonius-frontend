@@ -1,8 +1,3 @@
-/* src/app/features/conservation/intake/conservation-intake.page.component.css */
-
-/* =========================================================
-   Base
-   ========================================================= */
 :host {
   display: block;
   background: #f8fafc;
@@ -14,7 +9,6 @@
   box-sizing: border-box;
 }
 
-/* Prevent grid children from overflowing into the other column */
 .left,
 .right,
 .card,
@@ -22,9 +16,6 @@
   min-width: 0;
 }
 
-/* =========================================================
-   Page header
-   ========================================================= */
 .page-header {
   max-width: 1180px;
   margin: 0 auto;
@@ -49,20 +40,14 @@
   line-height: 1.4;
 }
 
-/* =========================================================
-   Layout (fixed: no overlap, clean separation)
-   ========================================================= */
 .layout {
   max-width: 1180px;
   margin: 0 auto;
   padding: 14px 18px 28px;
-
   display: grid;
   grid-template-columns: 420px 1fr;
   gap: 28px;
   align-items: start;
-
-  position: relative;
 }
 
 @media (max-width: 1020px) {
@@ -72,68 +57,22 @@
   }
 }
 
-/* Vertical separator (kept, but cannot cover content) */
-@media (min-width: 1021px) {
-  .layout::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-
-    left: calc(420px + 14px); /* left col + half gap */
-    width: 1px;
-    background: #e5e7eb;
-    pointer-events: none;
-
-    z-index: 0; /* ensure it stays behind cards */
-  }
-
-  .left {
-    padding-right: 10px;
-  }
-
-  .right {
-    padding-left: 10px;
-  }
-}
-
-/* Left column behaves as a control panel */
 .left {
   display: grid;
   gap: 16px;
 }
 
-/* Sticky panel (safe: no overlay) */
-@media (min-width: 1021px) {
-  .left {
-    position: sticky;
-    top: 88px;
-    align-self: start;
-    z-index: 1;
-  }
-}
-
-/* Right column */
 .right {
   display: grid;
   gap: 16px;
-  z-index: 1; /* keep above separator */
 }
 
-/* =========================================================
-   Card
-   ========================================================= */
 .card {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 14px;
   box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
-  outline: 1px solid rgba(15, 23, 42, 0.03);
-
-  position: relative;
-  z-index: 1; /* cards always above separator */
-  overflow: hidden; /* prevents inner content from bleeding into other column */
 }
 
 .card-header {
@@ -156,13 +95,9 @@
   color: #64748b;
   font-size: 0.9rem;
   line-height: 1.35;
-  max-width: 60ch;
   text-align: right;
 }
 
-/* =========================================================
-   Form controls
-   ========================================================= */
 .filters {
   display: grid;
   gap: 10px;
@@ -209,7 +144,6 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(32, 98, 255, 0.12);
 }
 
-/* ✅ Fix: “Solo PDF/A” label broken / separated */
 label.chk {
   display: inline-flex !important;
   align-items: center;
@@ -217,11 +151,11 @@ label.chk {
   margin-top: 4px;
   user-select: none;
 }
+
 label.chk input {
   margin: 0;
 }
 
-/* Buttons row */
 .actions {
   display: flex;
   justify-content: flex-end;
@@ -230,20 +164,6 @@ label.chk input {
   flex-wrap: wrap;
 }
 
-/* Prevent primary button from overflowing on narrow widths */
-.actions .btn.primary {
-  max-width: 320px;
-  width: 100%;
-}
-@media (min-width: 560px) {
-  .actions .btn.primary {
-    width: auto;
-  }
-}
-
-/* =========================================================
-   Buttons
-   ========================================================= */
 .btn {
   padding: 10px 12px;
   border-radius: 10px;
@@ -279,28 +199,16 @@ label.chk input {
   background: #fff;
 }
 
-.btn.mini {
-  padding: 6px 10px;
-  border-radius: 9px;
-  font-weight: 800;
-}
-
-/* =========================================================
-   Candidates table (fixed: no overflow into right panel)
-   ========================================================= */
 .table {
   margin-top: 12px;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-
-  overflow: auto; /* horizontal scroll if needed */
-  max-height: 300px; /* vertical scroll */
+  overflow: auto;
+  max-height: 300px;
   background: #fff;
-
   width: 100%;
 }
 
-/* Remove the hard min-width that caused visual bleeding */
 .thead,
 .trow {
   display: grid;
@@ -344,7 +252,6 @@ label.chk input {
   box-shadow: inset 4px 0 0 var(--mncr-blue-639);
 }
 
-/* Ensure long codes never push the layout */
 .mono {
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
@@ -360,9 +267,6 @@ label.chk input {
   white-space: nowrap;
 }
 
-/* =========================================================
-   Badges
-   ========================================================= */
 .badge {
   display: inline-flex;
   justify-content: center;
@@ -387,15 +291,6 @@ label.chk input {
   color: #991b1b;
 }
 
-.badge.inf {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1e3a8a;
-}
-
-/* =========================================================
-   Eligibility checklist
-   ========================================================= */
 .checklist {
   list-style: none;
   margin: 2px 0 0;
@@ -442,9 +337,6 @@ label.chk input {
   font-size: 0.9rem;
 }
 
-/* =========================================================
-   Right column form
-   ========================================================= */
 .form {
   display: grid;
   gap: 14px;
@@ -499,15 +391,6 @@ label.chk input {
   line-height: 1.35;
 }
 
-.divider {
-  height: 1px;
-  background: #eef2f7;
-  margin: 10px 0;
-}
-
-/* =========================================================
-   Classification list
-   ========================================================= */
 .class-list {
   display: grid;
   gap: 8px;
@@ -553,64 +436,6 @@ label.chk input {
   color: #0f172a;
 }
 
-/* =========================================================
-   Access rules
-   ========================================================= */
-.access-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.access-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.rule {
-  display: grid;
-  grid-template-columns: 1.2fr 1.6fr auto;
-  gap: 10px;
-  align-items: center;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 10px;
-  background: #fff;
-}
-
-@media (max-width: 900px) {
-  .rule {
-    grid-template-columns: 1fr;
-  }
-}
-
-.pill {
-  display: inline-flex;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  font-weight: 900;
-  font-size: 0.8rem;
-  color: #0f172a;
-  background: #f8fafc;
-  margin-right: 8px;
-}
-
-.acts {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.muted {
-  color: #64748b;
-  font-weight: 700;
-}
-
-/* =========================================================
-   Retention preview
-   ========================================================= */
 .infobox {
   border: 1px solid #bfdbfe;
   background: #eff6ff;
@@ -621,19 +446,11 @@ label.chk input {
   line-height: 1.35;
 }
 
-/* =========================================================
-   Summary + Save
-   ========================================================= */
 .summary ul {
   margin: 0;
   padding-left: 18px;
   color: #0f172a;
   line-height: 1.35;
-}
-
-.form > .actions {
-  margin-top: 12px;
-  margin-bottom: 10px;
 }
 
 .blocked {
@@ -647,7 +464,6 @@ label.chk input {
   line-height: 1.35;
 }
 
-/* Empty state */
 .empty {
   text-align: center;
   padding: 22px;
