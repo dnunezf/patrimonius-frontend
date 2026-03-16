@@ -10,6 +10,8 @@
   border-radius: 12px;
   padding: 16px;
   background: var(--mncr-white);
+  max-width: 1400px;
+  margin: 0 auto 16px;
 }
 .muted { color: var(--mncr-gray); }
 .bold { font-weight: 700; }
@@ -74,6 +76,11 @@
 }
 .codes { display: flex; gap: 6px; margin-top: 6px; }
 .pager { padding: 8px; text-align: center; }
+
+.badge.badge-partial {
+  background-color: #0ea5e9;
+  color: #fff;
+}
 
 /* ===== Buttons ===== */
 .button-outline {

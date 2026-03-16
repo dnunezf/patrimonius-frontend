@@ -14,7 +14,6 @@ import { AdminUsersService } from '../../../../core/services/admin-users.service
 })
 export class SecurityLogComponent implements OnInit {
   users: string[] = ['Todos los usuarios'];
-  types: string[] = ['Todos los tipos'];
   actions: string[] = ['Todas las acciones'];
 
   results: string[] = ['Todos los resultados',  'PERMITIDO', 'DENEGADO'];
@@ -22,7 +21,6 @@ export class SecurityLogComponent implements OnInit {
   filters = {
     q: '',
     user: 'Todos los usuarios',
-    tipoEvento: 'Todos los tipos',
     accion: 'Todas las acciones',
     result: 'Todos los resultados',
   };
@@ -31,7 +29,7 @@ export class SecurityLogComponent implements OnInit {
   error: string | null = null;
 
   page = 1;
-  pageSize = 25;
+  pageSize = 10;
   sortBy = 'fecha_hora';
   sortDir: 'asc' | 'desc' = 'desc';
 
@@ -43,7 +41,6 @@ export class SecurityLogComponent implements OnInit {
 
   ngOnInit() {
     this.loadUsers();
-    this.loadTypes();
     this.loadActions();
     this.fetch();
   }
@@ -59,7 +56,6 @@ export class SecurityLogComponent implements OnInit {
     if (this.filters.q?.trim()) qp.q = this.filters.q.trim();
     if (this.filters.user !== 'Todos los usuarios') qp.usuario = this.filters.user;
 
-    if (this.filters.tipoEvento !== 'Todos los tipos') qp.tipoEvento = this.filters.tipoEvento;
     if (this.filters.accion !== 'Todas las acciones') qp.accion = this.filters.accion;
 
     if (this.filters.result !== 'Todos los resultados') qp.resultado = this.filters.result;
@@ -86,13 +82,23 @@ export class SecurityLogComponent implements OnInit {
     });
   }
 
+  readonly maxWords = 5;
+
+  limitSearchWords(value: string): void {
+    if (!value) {
+      this.filters.q = '';
+      return;
+    }
+    const words = value.trim().split(/\s+/);
+    this.filters.q = words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+  }
+
   applyFilters() { this.page = 1; this.fetch(); }
 
   clearFilters() {
     this.filters = {
       q: '',
       user: 'Todos los usuarios',
-      tipoEvento: 'Todos los tipos',
       accion: 'Todas las acciones',
       result: 'Todos los resultados',
     };
@@ -107,13 +113,6 @@ export class SecurityLogComponent implements OnInit {
     this.adminUsers.listEmails().subscribe({
       next: (emails) => this.users = ['Todos los usuarios', ...emails],
       error: () => this.users = ['Todos los usuarios']
-    });
-  }
-
-  private loadTypes() {
-    this.audit.getSecurityTypes().subscribe({
-      next: (items) => this.types = ['Todos los tipos', ...items],
-      error: () => this.types = ['Todos los tipos'],
     });
   }
 
@@ -134,7 +133,7 @@ export class SecurityLogComponent implements OnInit {
   }
   downloadCSV() {
     const rows = this.events || [];
-    const headers = ['fecha_hora','usuario','accion','tipo_evento','resultado','ip'];
+    const headers = ['fecha_hora','usuario','accion','resultado','ip'];
 
     const escape = (val: any) => {
       const s = String(val ?? '');
@@ -170,7 +169,6 @@ ${rows.map(r => `
     <fecha_hora>${escXml((r as any).fecha_hora)}</fecha_hora>
     <usuario>${escXml((r as any).usuario)}</usuario>
     <accion>${escXml((r as any).accion)}</accion>
-    <tipo_evento>${escXml((r as any).tipo_evento)}</tipo_evento>
     <resultado>${escXml((r as any).resultado)}</resultado>
     <ip>${escXml((r as any).ip)}</ip>
   </evento>`).join('')}

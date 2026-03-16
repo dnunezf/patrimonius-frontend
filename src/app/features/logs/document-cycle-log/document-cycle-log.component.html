@@ -17,7 +17,8 @@
       <div class="form__group">
         <label class="form__label" for="q">Búsqueda General</label>
         <input id="q" class="form__control" type="text" [(ngModel)]="filters.q" name="q"
-               placeholder="Usuario, documento, código, razón...">
+               (ngModelChange)="limitWords($event, 'q')"
+               placeholder="Usuario, título, nombre… (máx. 5 palabras)">
       </div>
 
       <div class="form__group">
@@ -31,14 +32,7 @@
       <div class="form__group">
         <label class="form__label" for="state">Estado del Documento</label>
         <select id="state" class="form__control" [(ngModel)]="filters.state" name="state">
-          <option *ngFor="let s of states" [ngValue]="s">{{ s }}</option>
-        </select>
-      </div>
-
-      <div class="form__group">
-        <label class="form__label" for="action">Tipo de Acción</label>
-        <select id="action" class="form__control" [(ngModel)]="filters.action" name="action">
-          <option *ngFor="let a of actions" [ngValue]="a">{{ a }}</option>
+          <option *ngFor="let s of stateOptions" [ngValue]="s.value">{{ s.label }}</option>
         </select>
       </div>
 
@@ -51,9 +45,16 @@
       </div>
 
       <div class="form__group">
-        <label class="form__label" for="document">Documento</label>
-        <input id="document" class="form__control" type="text" [(ngModel)]="filters.document" name="document"
-               placeholder="Filtrar por nombre de documento…">
+        <label class="form__label" for="document">Título</label>
+        <input
+          id="document"
+          class="form__control"
+          type="text"
+          [(ngModel)]="filters.document"
+          name="document"
+          (ngModelChange)="limitWords($event, 'document')"
+          placeholder="Filtrar por título… (máx. 5 palabras)"
+        />
       </div>
 
 
@@ -79,15 +80,14 @@
       <table class="tbl">
         <thead>
         <tr>
-          <th>Fecha y hora</th>
-          <th>Usuario</th>
-          <th>Documento</th>
-          <th>Código (serie)</th>
+        <th>Fecha y hora</th>
+        <th>Usuario</th>
+        <th>Título</th>
+        <th>Nombre</th>
 
-          <th>Acción solicitada</th>
-          <th>Estado del documento</th>
-          <th>Resultado</th>
-          <th>Razón</th>
+        <th>Acción solicitada</th>
+        <th>Estado del documento</th>
+        <th>Resultado</th>
 
         </tr>
         </thead>
@@ -131,8 +131,6 @@
             {{ e.resultado || '—' }}
           </span>
           </td>
-
-          <td>{{ e.razon || '—' }}</td>
 
         </tr>
         </tbody>
