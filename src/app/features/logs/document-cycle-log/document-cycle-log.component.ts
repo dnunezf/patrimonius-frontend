@@ -21,8 +21,6 @@ export class DocumentCycleLogComponent implements OnInit {
   // Backend-fed combos
   users: string[] = ['Todos los usuarios'];
 
-  actions: string[] = []; // Array de acciones dinámico
-
   results: Array<'Todos los resultados' | ResultType> = [
     'Todos los resultados', 'Permitido', 'Denegado'
   ];
@@ -31,18 +29,18 @@ export class DocumentCycleLogComponent implements OnInit {
   filters = {
     q: '',
     user: 'Todos los usuarios',
-    state: 'Todos los estados',
+    state: '', // valor backend (vacío = todos)
     result: 'Todos los resultados',
-    document: '',
-    action: 'Todas las acciones' // Se utilizará "Todas las acciones" por defecto
+    document: ''
   };
 
-  states: string[] = [];
+  /** Opciones de estado: valor para el backend y etiqueta para mostrar */
+  stateOptions: { value: string; label: string }[] = [];
 
   loading = false;
   error: string | null = null;
   page = 1;
-  pageSize = 25;
+  pageSize = 10;
   sortBy = 'fecha_hora';
   sortDir: 'asc' | 'desc' = 'desc';
   events: AuditItem[] = [];
@@ -57,10 +55,9 @@ export class DocumentCycleLogComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadUsers(); // Loads users
-    this.loadStates(); // Fetch the states from backend
-    this.loadActions(); // Load actions dynamically from the backend
-    this.fetch(); // Fetch data from the backend
+    this.loadUsers();
+    this.loadStates();
+    this.fetch();
   }
 
 
@@ -80,8 +77,7 @@ export class DocumentCycleLogComponent implements OnInit {
 
     if (this.filters.document?.trim()) qp.documento = this.filters.document.trim();
 
-    const dbState = this.mapUiLabelToDbState(this.filters.state);
-    if (dbState) qp.estado = dbState;
+    if (this.filters.state?.trim()) qp.estado = this.filters.state.trim();
 
     return qp;
   }
@@ -115,10 +111,9 @@ export class DocumentCycleLogComponent implements OnInit {
     this.filters = {
       q: '',
       user: 'Todos los usuarios',
-      state: 'Todos los estados',
+      state: '',
       result: 'Todos los resultados',
-      document: '',
-      action: 'Todas las acciones' // Default action value
+      document: ''
     };
     this.page = 1;
     this.fetch();
@@ -127,40 +122,67 @@ export class DocumentCycleLogComponent implements OnInit {
   goPrev() { if (this.page > 1) { this.page--; this.fetch(); } }
   goNext() { if (this.page < this.totalPages) { this.page++; this.fetch(); } }
 
-  // Export functionality
+  // Export with current filters; CSV/XML built in frontend with column names: Título, Nombre (no Razón)
   export(format: 'csv' | 'xml') {
-    const params = this.buildQuery();
+    const params = { ...this.buildQuery(), page: 1, pageSize: 10000 };
     this.error = null;
-    this.audit.exportEvents(format, params).subscribe({
+    this.audit.listEvents(params).subscribe({
       next: (res) => {
-        const blob = res.body!;
-        const cd = res.headers.get('Content-Disposition') || '';
-        const match = /filename="?([^"]+)"?/i.exec(cd);
-        const fallbackName = format === 'csv' ? 'eventos_auditoria.csv' : 'eventos_auditoria.xml';
-        const filename = (match && match[1]) ? match[1] : fallbackName;
+        const rows = res.items || [];
+        const filename = format === 'csv' ? 'eventos_auditoria.csv' : 'eventos_auditoria.xml';
+        const blob = format === 'csv' ? this.buildCsvBlob(rows) : this.buildXmlBlob(rows);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); a.remove();
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
         URL.revokeObjectURL(url);
       },
-      error: async (err) => {
-        try {
-          const blob = err?.error as Blob;
-          const text = await blob.text();
-          let msg = 'Error al exportar.';
-          try {
-            const json = JSON.parse(text);
-            if (json?.message) msg = json.message;
-          } catch {
-            if (text?.trim()) msg = text;
-          }
-          this.error = msg;
-        } catch {
-          this.error = 'Error al exportar.';
-        }
+      error: (err) => {
+        this.error = 'Error al exportar.';
+        console.error(err);
       }
     });
+  }
+
+  private buildCsvBlob(rows: AuditItem[]): Blob {
+    const escape = (val: unknown) => {
+      const s = String(val ?? '');
+      const mustQuote = /[",\n]/.test(s);
+      return mustQuote ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = ['Fecha y hora', 'Usuario', 'Título', 'Nombre', 'Acción solicitada', 'Estado del documento', 'Resultado'];
+    const line = (e: AuditItem) => [
+      e.fecha_hora,
+      e.usuario,
+      e.documento_titulo ?? '',
+      [e.documento_codigo_unico, e.documento_codigo_oficial].filter(Boolean).join(' / ') || '',
+      e.accion_solicitada ?? '',
+      e.estado_documento ?? '',
+      e.resultado ?? ''
+    ].map(escape).join(',');
+    const csv = [headers.join(','), ...rows.map(line)].join('\n');
+    return new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  }
+
+  private buildXmlBlob(rows: AuditItem[]): Blob {
+    const esc = (s: unknown) => String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<eventos_auditoria>
+${rows.map(e => `  <evento>
+    <fecha_hora>${esc(e.fecha_hora)}</fecha_hora>
+    <usuario>${esc(e.usuario)}</usuario>
+    <titulo>${esc(e.documento_titulo)}</titulo>
+    <nombre>${esc([e.documento_codigo_unico, e.documento_codigo_oficial].filter(Boolean).join(' / ') || '')}</nombre>
+    <accion_solicitada>${esc(e.accion_solicitada)}</accion_solicitada>
+    <estado_documento>${esc(e.estado_documento)}</estado_documento>
+    <resultado>${esc(e.resultado)}</resultado>
+  </evento>`).join('\n')}
+</eventos_auditoria>`;
+    return new Blob([xml], { type: 'application/xml;charset=utf-8' });
   }
 
 
@@ -176,9 +198,10 @@ export class DocumentCycleLogComponent implements OnInit {
 
 
   stateClass(state: string | null | undefined) {
-    const stateClasses = {
+    const stateClasses: Record<string, string> = {
       'firma': 'badge badge-green',
-      'firma parcial': 'badge badge-blue',
+      'firma parcial': 'badge badge-partial',
+      'firmado parcial': 'badge badge-partial',
       'archivado': 'badge badge-brown',
       'creacion': 'badge badge-yellow',
       'edicion': 'badge badge-orange',
@@ -186,8 +209,22 @@ export class DocumentCycleLogComponent implements OnInit {
       'transferencia': 'badge badge-purple'
     };
 
-    const s = (state || '').trim().toLowerCase();
-    return stateClasses[s as keyof typeof stateClasses] || 'badge';
+    const s = (state || '').trim().toLowerCase().replace(/_/g, ' ');
+    return stateClasses[s] || 'badge';
+  }
+
+  readonly maxWords = 5;
+
+  limitWords(value: string, field: 'q' | 'document'): void {
+    if (!value) {
+      if (field === 'q') this.filters.q = '';
+      else this.filters.document = '';
+      return;
+    }
+    const words = value.trim().split(/\s+/);
+    const limited = words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+    if (field === 'q') this.filters.q = limited;
+    else this.filters.document = limited;
   }
 
 
@@ -198,44 +235,19 @@ export class DocumentCycleLogComponent implements OnInit {
     });
   }
 
-  // Fetch the actions from backend
-  private loadActions() {
-    this.audit.getActionTypes().subscribe({
-      next: (actions) => {
-        this.actions = ['Todas las acciones', ...actions.map(this.formatToDisplay)];  // Adding "Todas las acciones" at the beginning
-      },
-      error: () => {
-        this.actions = ['Todas las acciones']; // Fallback in case of error
-      }
-    });
-  }
-
-  // Fetch the states from backend
+  // Fetch the states from backend; guardamos valor crudo para el filtro y etiqueta para mostrar
   private loadStates() {
     this.audit.getDocumentStates().subscribe({
       next: (dbStates) => {
-        this.states = ['Todos los estados', ...dbStates.map(this.formatToDisplay)];  // Adding "Todos los estados" at the beginning
+        this.stateOptions = [
+          { value: '', label: 'Todos los estados' },
+          ...(dbStates || []).map((raw) => ({ value: raw, label: this.formatToDisplay(raw) }))
+        ];
       },
       error: () => {
-        this.states = ['Todos los estados']; // Fallback in case of error
+        this.stateOptions = [{ value: '', label: 'Todos los estados' }];
       }
     });
-  }
-
-
-  // Map UI state labels to backend values
-  private mapUiLabelToDbState(uiValue: string): string | null {
-    const v = (uiValue || '').trim().toLowerCase();
-    if (!v || v === 'todos los estados') return null;
-    if (v === 'archivado') return 'ARCHIVADO';
-    if (v === 'firma') return 'FIRMADO';
-    if (v === 'firma parcial') return 'FIRMADO_PARCIAL';
-    if (v === 'creacion') return 'CREACION';
-    if (v === 'edicion') return 'EDICION';
-    if (v === 'eliminacion') return 'ELIMINACION';
-    if (v === 'transferencia') return 'TRANSFERENCIA';
-
-    return null;
   }
 
 
