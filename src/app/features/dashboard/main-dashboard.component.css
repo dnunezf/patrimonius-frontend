@@ -1,4 +1,3 @@
-
 .roles{
   display: grid;
   grid-template-columns: repeat(2, minmax(280px, 1fr));
@@ -11,6 +10,7 @@
   grid-template-columns: 1fr;
   justify-items: center;
 }
+
 .roles.single .role-card{
   max-width: 520px;
   width: 100%;
@@ -23,6 +23,14 @@
   border-radius: 14px;
   padding: 16px 18px;
   box-shadow: 0 1px 0 rgba(16,24,40,.04);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
 }
 
 /* Header de tarjeta (icono + textos) */
@@ -32,61 +40,33 @@
   object-fit: contain;
   padding: 8px;
   border-radius: 12px;
-  background: #f2f4f7; /* pill gris claro */
+  background: #f2f4f7;
+  margin-bottom: 8px;
 }
 
 .role-card h3{
   margin: 0;
+  margin-top: 4px;
   font-family: "Neutraface Text", Verdana, Arial, sans-serif;
   font-size: 1.05rem;
   font-weight: 900;
 }
 
 .role-card p{
-  margin: 2px 0 0 0;
+  margin: 2px 0 12px 0;
   font-size: .9rem;
   color: #667085;
 }
 
-
-/* Centrar contenido del card */
-.role-card{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-/* Icono centrado */
-.role-card img{
-  margin-bottom: 8px;
-}
-
-/* Texto centrado */
-.role-card h3{
-  margin-top: 4px;
-}
-
-.role-card p{
-  margin-bottom: 12px;
-}
-
-/* Lista alineada tipo ficha (no centrada fea) */
 .role-card ul{
   width: 100%;
   max-width: 260px;
   margin: 0 auto;
   text-align: left;
-}
-
-
-
-/* Lista (los checks) */
-.role-card ul{
   list-style: none;
-  margin: 12px 0 0 0;
   padding: 0;
 }
+
 .role-card li{
   display: flex;
   align-items: center;
@@ -95,6 +75,7 @@
   font-size: .92rem;
   color: #101828;
 }
+
 .role-card li::before{
   content: "✓";
   width: 18px;
@@ -108,57 +89,108 @@
   opacity: .85;
 }
 
-/* Colores por rol (bordes y acentos) */
+/* Colores por rol */
 .role-card.admin{
   border-color: var(--mncr-blue-3015);
 }
-.role-card.admin h3{ color: var(--mncr-blue-639); }
+.role-card.admin h3{
+  color: var(--mncr-blue-639);
+}
 
 .role-card.editor{
   border-color: var(--mncr-green-355);
 }
-.role-card.editor h3{ color: var(--mncr-green-376) }
+.role-card.editor h3{
+  color: var(--mncr-green-376);
+}
 
 .role-card.archivista{
   border-color: var(--mncr-orange-165);
 }
-.role-card.archivista h3{ color: var(--mncr-orange-165); }
+.role-card.archivista h3{
+  color: var(--mncr-orange-165);
+}
 
 .role-card.usuario{
   border-color: var(--mncr-blue-3015);
 }
-.role-card.usuario h3{ color: var(--mncr-blue-3015); }
+.role-card.usuario h3{
+  color: var(--mncr-blue-3015);
+}
 
 .role-card.externo{
   border-color: var(--mncr-red-1795);
 }
-.role-card.externo h3{ color: var(--mncr-red-1788); }
-
-/* Responsivo: 1 columna en móvil */
-@media (max-width: 900px){
-  .roles{
-    grid-template-columns: 1fr;
-  }
-
+.role-card.externo h3{
+  color: var(--mncr-red-1788);
 }
 
-.role-card{
-  cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease;
+/* NUEVO: tarjeta carga documental */
+.role-card.upload{
+  border-color: #7c3aed;
 }
+.role-card.upload h3{
+  color: #7c3aed;
+}
+
+/* Hover / focus */
 .role-card:hover{
   transform: translateY(-2px);
   box-shadow: 0 10px 18px rgba(16,24,40,.08);
 }
+
 .role-card:focus-visible{
   outline: 3px solid var(--mncr-blue-639);
   outline-offset: 3px;
 }
 
+/* NUEVO: deshabilitado */
+.role-card.disabled{
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: auto;
+  transform: none;
+  box-shadow: 0 1px 0 rgba(16,24,40,.04);
+}
+
+.role-card.disabled:hover{
+  transform: none;
+  box-shadow: 0 1px 0 rgba(16,24,40,.04);
+}
+
+.role-card.disabled:focus-visible{
+  outline: none;
+}
+
+.role-card.disabled img{
+  filter: grayscale(100%);
+}
+
+.role-card.disabled li{
+  color: #667085;
+}
+
+.role-card.disabled li::before{
+  opacity: 0.5;
+}
+
+/* Badge de deshabilitado */
+.disabled-badge{
+  margin-top: 14px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 700;
+  background: #f2f4f7;
+  color: #667085;
+  border: 1px solid #d0d5dd;
+}
+
+/* Header */
 .dashboard-header{
   width: 100%;
   max-width: 900px;
-  margin: 0 auto 28px auto; /* centrado + espacio abajo */
+  margin: 0 auto 28px auto;
   padding: 32px 18px 10px;
 
   display: flex;
@@ -179,6 +211,12 @@
   margin-top: 8px;
   font-size: 1rem;
   color: #667085;
-  max-width: 520px; /* evita líneas muy largas */
+  max-width: 520px;
 }
 
+/* Responsivo */
+@media (max-width: 900px){
+  .roles{
+    grid-template-columns: 1fr;
+  }
+}

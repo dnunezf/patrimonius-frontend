@@ -12,15 +12,16 @@
 
 <section class="roles" [class.single]="visibleCards.length === 1">
 
-  <article *ngFor="let c of visibleCards"
-           class="role-card"
-           [ngClass]="c.cssClass"
-           role="button"
-           tabindex="0"
-           (click)="goToCard(c)"
-           (keydown.enter)="goToCard(c)"
-           (keydown.space)="goToCard(c)">
-
+  <article
+    *ngFor="let c of visibleCards"
+    class="role-card"
+    [ngClass]="c.cssClass"
+    role="button"
+    tabindex="0"
+    (click)="goToCard(c)"
+    (keydown.enter)="goToCard(c)"
+    (keydown.space)="goToCard(c)"
+  >
     <img [src]="c.icon" alt="" aria-hidden="true" />
     <h3>{{ c.title }}</h3>
     <p>{{ c.subtitle }}</p>
@@ -30,7 +31,6 @@
     <ul>
       <li *ngFor="let b of c.bullets">{{ b }}</li>
     </ul>
-
   </article>
 
 </section>

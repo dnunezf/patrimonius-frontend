@@ -10,9 +10,11 @@ type RoleKey =
   | 'USUARIO'
   | 'USUARIO_EXTERNO';
 
+type FeatureKey = 'CARGA_DOCUMENTOS' | 'CONSERVACION_INGRESO';
+
 type DashboardCard = {
   roleKey?: RoleKey;
-  featureKey?: 'CARGA_DOCUMENTOS' | 'CONSERVACION_INGRESO';
+  featureKey?: FeatureKey;
 
   title: string;
   subtitle: string;
@@ -83,7 +85,6 @@ export class MainDashboardComponent {
     },
   ];
 
-  // HU-21
   private readonly UPLOAD_CARD: DashboardCard = {
     featureKey: 'CARGA_DOCUMENTOS',
     title: 'Carga de documentos',
@@ -115,10 +116,12 @@ export class MainDashboardComponent {
     if (!u) return [];
 
     const roles = u.roles;
-    if (typeof roles === 'string' && roles.trim())
+    if (typeof roles === 'string' && roles.trim()) {
       return [this.normalizeRole(roles)];
-    if (Array.isArray(roles) && roles.length)
+    }
+    if (Array.isArray(roles) && roles.length) {
       return roles.map((r: any) => this.normalizeRole(String(r)));
+    }
 
     const names: RoleKey[] = [
       'ADMINISTRADOR',
@@ -127,16 +130,30 @@ export class MainDashboardComponent {
       'USUARIO',
       'USUARIO_EXTERNO',
     ];
+
     const id = Number(u.rolId);
     if (Number.isFinite(id) && id >= 1 && id <= 5) return [names[id - 1]];
 
     return [];
   }
 
-  get canSeeUploadCard(): boolean {
+  get canAccessUpload(): boolean {
     const u: any = this.auth.currentUser?.();
     if (!u) return false;
-    return true; // temporal
+
+    const perms = Array.isArray(u.permissions) ? u.permissions : [];
+    const normalizedPerms = perms.map((p: any) =>
+      String(p).toUpperCase().replace(/\s+/g, '_'),
+    );
+
+    if (normalizedPerms.includes('UPLOAD')) return true;
+
+    const roles = new Set(this.userRoleKeys);
+    return roles.has('EDITOR') || roles.has('ARCHIVISTA');
+  }
+
+  get canSeeUploadCard(): boolean {
+    return this.canAccessUpload;
   }
 
   get canSeeConservationIntakeCard(): boolean {
@@ -146,14 +163,20 @@ export class MainDashboardComponent {
 
   get visibleCards(): DashboardCard[] {
     const allowedRoles = new Set(this.userRoleKeys);
+
     const byRole = this.ROLE_CARDS.filter(
       (c) => c.roleKey && allowedRoles.has(c.roleKey),
     );
 
     const extras: DashboardCard[] = [];
-    if (this.canSeeUploadCard) extras.push(this.UPLOAD_CARD);
-    if (this.canSeeConservationIntakeCard)
+
+    if (this.canSeeUploadCard) {
+      extras.push(this.UPLOAD_CARD);
+    }
+
+    if (this.canSeeConservationIntakeCard) {
       extras.push(this.CONSERVATION_INTAKE_CARD);
+    }
 
     return [...byRole, ...extras];
   }
@@ -163,10 +186,12 @@ export class MainDashboardComponent {
       this.router.navigate([this.roleLink(c.roleKey)]);
       return;
     }
+
     if (c.featureKey === 'CARGA_DOCUMENTOS') {
       this.router.navigate(['/documentos/carga-masiva']);
       return;
     }
+
     if (c.featureKey === 'CONSERVACION_INGRESO') {
       this.router.navigate(['/conservacion/ingreso']);
       return;
@@ -194,6 +219,8 @@ export class MainDashboardComponent {
     const r = raw.trim().toUpperCase().replace(/\s+/g, '_');
     if (r === 'ADMIN') return 'ADMINISTRADOR';
     if (r === 'USUARIOEXTERNO') return 'USUARIO_EXTERNO';
+    if (r === 'ARCHIVADOR') return 'ARCHIVISTA';
+
     if (
       r === 'ADMINISTRADOR' ||
       r === 'EDITOR' ||
@@ -203,6 +230,7 @@ export class MainDashboardComponent {
     ) {
       return r;
     }
+
     return 'USUARIO';
   }
 }
