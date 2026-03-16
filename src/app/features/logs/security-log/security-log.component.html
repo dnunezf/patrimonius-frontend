@@ -19,7 +19,8 @@
           type="text"
           [(ngModel)]="filters.q"
           name="q"
-          placeholder="Usuario, acción, tipo, IP..."
+          (ngModelChange)="limitSearchWords($event)"
+          placeholder="Usuario, acción, tipo, IP… (máx. 5 palabras)"
         />
       </div>
 
@@ -31,12 +32,6 @@
         </select>
       </div>
 
-      <div class="form__group">
-        <label class="form__label" for="type">Tipo de Evento</label>
-        <select id="type" class="form__control" [(ngModel)]="filters.tipoEvento" name="tipoEvento">
-          <option *ngFor="let t of types" [ngValue]="t">{{ t }}</option>
-        </select>
-      </div>
 
       <div class="form__group">
         <label class="form__label" for="action">Acción</label>
@@ -78,7 +73,6 @@
           <th>Fecha y hora</th>
           <th>Usuario</th>
           <th>Acción</th>
-          <th>Tipo evento</th>
           <th>Resultado</th>
           <th>IP</th>
         </tr>
@@ -89,7 +83,6 @@
           <td class="nowrap">{{ e.fecha_hora }}</td>
           <td><div class="bold">{{ e.usuario || '—' }}</div></td>
           <td>{{ e.accion || '—' }}</td>
-          <td>{{ e.tipo_evento || '—' }}</td>
           <td>
               <span [class]="resultClass(e.resultado)">
                 {{ e.resultado || '—' }}
