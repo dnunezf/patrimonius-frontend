@@ -17,9 +17,9 @@ import { environment } from '../../../../environments/environment';
 })
 export class EditorDashboardComponent implements OnInit {
   overviewCards = [
-    { title: 'Crear Documento', description: 'Crear un nuevo documento', icon: 'doc' },
-    { title: 'Firmas', description: 'Ver pendientes de firma', icon: 'sign' },
-    { title: 'Consultas', description: 'Revisar documentos', icon: 'search' },
+    { title: 'Crear Documento', description: 'Crear un nuevo documento', icon: 'document-create' },
+    { title: 'Firmas', description: 'Ver pendientes de firma', icon: 'signature' },
+    { title: 'Consultas', description: 'Revisar documentos', icon: 'catalogo' },
   ];
 
   filters = {
