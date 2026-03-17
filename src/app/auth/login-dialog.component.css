@@ -126,6 +126,17 @@ input:focus-visible {
   margin-top: 4px;
 }
 
+.warning {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fffaeb;
+  border: 1px solid #fedf89;
+  color: #b54708;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
 /* Success message (banner visible) */
 .success {
   margin-top: 8px;

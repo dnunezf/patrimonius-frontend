@@ -18,6 +18,7 @@
         type="email"
         formControlName="email"
         placeholder="example@museocostarica.go.cr"
+        autocomplete="username"
       />
 
       <label>Contraseña</label>
@@ -26,6 +27,7 @@
           [type]="showPassword ? 'text' : 'password'"
           formControlName="password"
           placeholder="••••••••"
+          autocomplete="current-password"
         />
         <button
           type="button"
@@ -82,5 +84,18 @@
     <div *ngIf="error() && !success()" class="error">
       {{ error() }}
     </div>
+
+    <div *ngIf="warning() && !success()" class="warning">
+      {{ warning() }}
+    </div>
+
+    <button
+      *ngIf="warning() && step() === 1 && !success()"
+      type="button"
+      class="btn--link"
+      (click)="goToResetPassword()"
+    >
+      Cambiar contrasena ahora
+    </button>
   </div>
 </div>
