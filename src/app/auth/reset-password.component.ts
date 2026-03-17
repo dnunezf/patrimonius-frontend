@@ -111,7 +111,10 @@ export class ResetPasswordComponent {
         this.message =
           res.message ||
           'Su contraseña ha sido restablecida correctamente. Será redirigido al inicio para iniciar sesión con su nueva contraseña.';
-        setTimeout(() => this.router.navigate(['/']), 2000);
+        setTimeout(
+          () => this.router.navigate(['/'], { queryParams: { login: 1 } }),
+          2000
+        );
       },
       error: (err) => {
         const code = err?.error?.error;

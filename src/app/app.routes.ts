@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './features/home/home.component';
 import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
 import { ActivateComponent } from './auth/activate.component';
+import { AuthGuard } from '../core/services/auth.guard';
 
 
 export const routes: Routes = [
@@ -9,16 +10,19 @@ export const routes: Routes = [
 
   {
     path: 'admin',
+    canActivate: [AuthGuard],
     loadChildren: () =>
       import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
   },
   {
     path: 'logs',
+    canActivate: [AuthGuard],
     loadChildren: () =>
       import('./features/logs/logs.routes').then((m) => m.LOGS_ROUTES),
   },
   {
     path: 'editor',
+    canActivate: [AuthGuard],
     loadChildren: () =>
       import('./features/editor/editor.routes').then((m) => m.EDITOR_ROUTES),
   },
@@ -26,6 +30,7 @@ export const routes: Routes = [
   // ✅ HU-21: Carga masiva de documentos
   {
     path: 'documentos/carga-masiva',
+    canActivate: [AuthGuard],
     loadComponent: () =>
       import('./features/documents/carga-masiva.component').then(
         (m) => m.CargaMasivaPageComponent,
@@ -34,6 +39,7 @@ export const routes: Routes = [
 
   {
     path: 'conservacion/ingreso',
+    canActivate: [AuthGuard],
     loadComponent: () =>
       import('./features/conservation/intake/conservation-intake.page.component').then(
         (m) => m.ConservationIntakePageComponent,
@@ -56,13 +62,14 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    canActivate: [AuthGuard],
     loadComponent: () =>
       import('./features/dashboard/main-dashboard.component').then(
         (m) => m.MainDashboardComponent,
       ),
   },
 
-  { path: 'access-exceptions', component: AccessExceptionsComponent },
+  { path: 'access-exceptions', component: AccessExceptionsComponent, canActivate: [AuthGuard] },
   { path: 'activate', component: ActivateComponent },
   { path: '**', redirectTo: '' },
 ];

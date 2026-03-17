@@ -113,7 +113,10 @@ export class ActivateComponent {
         this.message =
           'Su contraseña ha sido creada correctamente. Su cuenta ha sido activada. Será redirigido al inicio para iniciar sesión.';
         // 2 segundos para que la persona lea el mensaje
-        setTimeout(() => this.router.navigate(['/']), 2000);
+        setTimeout(
+          () => this.router.navigate(['/'], { queryParams: { login: 1 } }),
+          2000
+        );
       },
       error: (err) => {
         const code = err?.error?.error;
