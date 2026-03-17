@@ -60,11 +60,46 @@
 
 .topbar__left, .topbar__right,
 .toolbar-left, .toolbar-right,
-.actions, .action-group{
+.actions, .action-group,
+.toolbar .buttons{
   display:flex;
   align-items:center;
   gap:10px;
   flex-wrap:wrap;
+}
+
+/* --- Botón "Importar DOCX" (label + input file): mismo estilo que el resto --- */
+.toolbar .buttons label.btn-primary{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0;
+  padding: 9px 14px;
+  font-weight: 800;
+  font-size: .92rem;
+  line-height: 1;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(37,99,235,.28);
+  transition: transform .08s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+}
+.toolbar .buttons label.btn-primary:hover{
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 14px 26px rgba(37,99,235,.32);
+  transform: translateY(-1px);
+}
+.toolbar .buttons label.btn-primary input[type="file"]{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
 }
 
 /* =========================================================
