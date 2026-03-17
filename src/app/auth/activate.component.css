@@ -77,6 +77,12 @@ input:focus-visible {
   text-decoration: underline;
 }
 
+.limit-hint {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: #667085;
+}
+
 /* Reglas de contraseña */
 .rules {
   margin-top: 4px;
