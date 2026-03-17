@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { filter } from 'rxjs/operators';
 
 import { NavComponent } from './core/nav/nav.component';
 import { LoginDialogComponent } from './auth/login-dialog.component';
@@ -40,6 +41,23 @@ import { ToastContainerComponent } from './shared/ui/toast-container.component';
 })
 export class AppComponent {
   loginOpen = signal(false);
+
+  constructor(private router: Router) {
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => {
+        const urlTree = this.router.parseUrl(this.router.url);
+        const shouldOpenLogin = ['1', 'true'].includes(
+          String(urlTree.queryParams['login'] ?? '').toLowerCase()
+        );
+
+        if (!shouldOpenLogin) return;
+
+        this.openLogin();
+        delete urlTree.queryParams['login'];
+        this.router.navigateByUrl(urlTree, { replaceUrl: true });
+      });
+  }
 
   openLogin() {
     this.loginOpen.set(true);

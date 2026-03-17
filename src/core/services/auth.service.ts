@@ -21,12 +21,34 @@ type LoginStep1Resp = { userId: number; message: string };
 export class AuthService {
   private readonly router = inject(Router);
   private api = environment.apiUrl;
+  private readonly publicAnonymousPaths = new Set([
+    '/',
+    '/activate',
+    '/reset-password',
+    '/reset-password-request',
+  ]);
 
   token = signal<string | null>(null);
   currentUser = signal<User | null>(null);
 
   constructor(private http: HttpClient) {
     this.restoreSessionFromStorage();
+  }
+
+  private clearSession(): void {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    this.token.set(null);
+    this.currentUser.set(null);
+  }
+
+  isPublicAnonymousRoute(url?: string): boolean {
+    const candidate = (url || this.router.url || window.location.pathname || '/')
+      .split('?')[0]
+      .split('#')[0]
+      .replace(/\/+$/, '') || '/';
+
+    return this.publicAnonymousPaths.has(candidate);
   }
 
   /** Decodifica el JWT y verifica si está vencido. */
@@ -66,10 +88,16 @@ export class AuthService {
         this.token.set(storedToken);
         this.currentUser.set(user);
       } catch {
-        this.logout();
+        this.clearSession();
+        if (!this.isPublicAnonymousRoute()) {
+          this.router.navigate(['/']);
+        }
       }
     } else {
-      this.logout();
+      this.clearSession();
+      if (!this.isPublicAnonymousRoute()) {
+        this.router.navigate(['/']);
+      }
     }
   }
 
@@ -80,7 +108,7 @@ export class AuthService {
       return false;
     }
     if (this.isTokenExpired(t)) {
-      this.logout();
+      this.clearSession();
       return false;
     }
     return true;
@@ -118,10 +146,7 @@ export class AuthService {
   }
 
   logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    this.token.set(null);
-    this.currentUser.set(null);
+    this.clearSession();
     this.router.navigate(['/']);
   }
 
@@ -135,7 +160,7 @@ export class AuthService {
 
   /** Solicitar restablecimiento de contraseña */
   requestPasswordReset(email: string) {
-    return this.http.post<{ message: string }>(
+    return this.http.post<{ message?: string } | null>(
       `${this.api}/auth/request-password-reset`,
       { email }
     );
