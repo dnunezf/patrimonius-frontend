@@ -45,6 +45,7 @@ export class LoginDialogComponent {
   step = signal<1 | 2>(1);
   userId: number | null = null;
   error = signal<string | null>(null);
+  warning = signal<string | null>(null);
   success = signal<string | null>(null);
 
   formLogin: FormGroup;
@@ -82,6 +83,7 @@ export class LoginDialogComponent {
     this.step.set(1);
     this.userId = null;
     this.error.set(null);
+    this.warning.set(null);
     this.success.set(null);
     this.formLogin.reset();
     this.formCode.reset();
@@ -96,6 +98,7 @@ export class LoginDialogComponent {
     }
 
     this.error.set(null);
+    this.warning.set(null);
     this.success.set(null);
 
     const { email, password } = this.formLogin.value;
@@ -114,7 +117,17 @@ export class LoginDialogComponent {
       },
       error: (e) => {
         this.success.set(null);
-        this.error.set(e?.error?.error || 'Error al iniciar sesión');
+        const rawMessage = this.extractErrorMessage(e);
+        if (this.isPasswordViolationError(rawMessage)) {
+          this.error.set(null);
+          this.warning.set(
+            'Su contrasena actual fue reportada como comprometida. Por seguridad, restablezcala para continuar.'
+          );
+          return;
+        }
+
+        this.warning.set(null);
+        this.error.set(rawMessage || 'Error al iniciar sesion');
       },
     });
   }
@@ -127,6 +140,7 @@ export class LoginDialogComponent {
     }
 
     this.error.set(null);
+    this.warning.set(null);
     this.success.set(null);
 
     const { code } = this.formCode.value;
@@ -136,7 +150,8 @@ export class LoginDialogComponent {
       },
       error: (e) => {
         this.success.set(null);
-        this.error.set(e?.error?.error || 'Código inválido o vencido');
+        this.warning.set(null);
+        this.error.set(this.extractErrorMessage(e) || 'Codigo invalido o vencido');
       },
     });
   }
@@ -151,9 +166,29 @@ export class LoginDialogComponent {
         console.log('Nuevo código enviado al correo');
       },
       error: (e) => {
-        this.error.set(e?.error?.error || 'No se pudo reenviar el código');
+        this.warning.set(null);
+        this.error.set(this.extractErrorMessage(e) || 'No se pudo reenviar el codigo');
       },
     });
+  }
+
+  private extractErrorMessage(e: any): string {
+    return (e?.error?.error || e?.error?.message || e?.message || '').toString().trim();
+  }
+
+  private isPasswordViolationError(message: string): boolean {
+    const normalized = message
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    return (
+      normalized.includes('violacion de contrasena') ||
+      normalized.includes('contrasena comprometida') ||
+      normalized.includes('password breached') ||
+      normalized.includes('password compromised') ||
+      normalized.includes('pwned')
+    );
   }
 
   /** Navegar al flujo de "Olvidó su contraseña" */
