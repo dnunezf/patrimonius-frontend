@@ -118,6 +118,14 @@ input:focus-visible {
   text-decoration: underline;
 }
 
+/* Mensaje cuando se alcanza el máximo de caracteres */
+.limit-hint {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: #667085;
+  text-align: left;
+}
+
 /* ===== Mensajes de error y éxito ===== */
 .error {
   color: var(--mncr-red-1795, #c33737);

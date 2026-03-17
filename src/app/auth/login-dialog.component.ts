@@ -51,6 +51,10 @@ export class LoginDialogComponent {
   formLogin: FormGroup;
   formCode: FormGroup;
 
+  /** Límites de caracteres para mostrar mensaje al usuario */
+  readonly maxEmailLength = 50;
+  readonly maxPasswordLength = 25;
+
   // Visibilidad
   showPassword = false;
   showCode = false;

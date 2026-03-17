@@ -27,6 +27,9 @@ export class ActivateComponent {
   showPassword = false;
   submitted = false;
 
+  readonly minPasswordLength = 12;
+  readonly maxPasswordLength = 25;
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -38,7 +41,8 @@ export class ActivateComponent {
         '',
         [
           Validators.required,
-          Validators.minLength(8),
+          Validators.minLength(12),
+          Validators.maxLength(25),
           this.passwordPolicyValidator,
         ],
       ],
@@ -60,7 +64,11 @@ export class ActivateComponent {
 
   // Reglas individuales para pintar la lista en la UI
   get hasMinLength(): boolean {
-    return this.passwordValue.length >= 8;
+    return this.passwordValue.length >= 12;
+  }
+
+  get hasMaxLength(): boolean {
+    return this.passwordValue.length <= 25;
   }
 
   get hasLetter(): boolean {
@@ -79,7 +87,7 @@ export class ActivateComponent {
   passwordPolicyValidator(control: AbstractControl): ValidationErrors | null {
     const value = (control.value as string) || '';
 
-    const lengthOk = value.length >= 8;
+    const lengthOk = value.length >= 12 && value.length <= 25;
     const letterOk = /[A-Za-zÁÉÍÓÚáéíóúñÑ]/.test(value);
     const numberOk = /\d/.test(value);
     const symbolOk = /[^A-Za-z0-9]/.test(value);

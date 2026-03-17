@@ -23,6 +23,8 @@ export class ResetPasswordRequestComponent {
   submitted = false;
   isSubmitting = false;
 
+  readonly maxEmailLength = 50;
+
   private readonly fallbackSuccessMessage =
     'Si el correo existe en el sistema, enviaremos un enlace de restablecimiento en unos minutos.';
 
