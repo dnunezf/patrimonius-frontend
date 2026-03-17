@@ -7,25 +7,6 @@
     </p>
   </section>
 
-  <!-- Top stats -->
-  <section class="row cols-4" style="margin-bottom: 20px">
-    <div class="card" *ngFor="let s of statCards">
-      <div style="display: flex; gap: 12px; align-items: center">
-        <div class="icon-wrapper">
-          <img
-            [src]="'assets/icons/' + s.icon + '.png'"
-            alt="{{ s.label }}"
-            class="icon-img"
-          />
-        </div>
-        <div>
-          <div class="stat-title">{{ s.label }}</div>
-          <div class="stat-value">{{ s.value }}</div>
-          <div class="stat-sub">{{ s.subtitle }}</div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- Module cards -->
   <h2>Módulos Administrativos</h2>
