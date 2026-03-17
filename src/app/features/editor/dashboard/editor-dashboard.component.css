@@ -824,3 +824,41 @@ hr {
   font-weight: 700;
   color: #374151;
 }
+
+/* Lista de firmas en resultado de validación */
+.validation-firmas-list {
+  margin-top: 16px;
+}
+
+.validation-firmas-list h4 {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+}
+
+.validation-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.validation-table th,
+.validation-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.validation-table th {
+  background-color: var(--mncr-blue-639);
+  color: white;
+  font-weight: 600;
+}
+
+.validation-table td {
+  background: #fafafa;
+}
+
+.validation-table tbody tr:nth-child(even) td {
+  background: #f7f7fb;
+}
