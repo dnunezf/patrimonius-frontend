@@ -78,7 +78,7 @@ export class AdminModulePageComponent {
       link: '/admin/permisos-editor',
       bullets: ['Configurar EDIT y SIGN', 'Aplicación automática', 'Auditar cambios'],
       statsValue: '2 permisos configurados',
-      icon: 'editor',
+      icon: 'pencil',
     },
   ];
 }
