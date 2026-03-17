@@ -10,32 +10,6 @@ import { RouterLink } from '@angular/router'; // Import RouterLink
   styleUrls: ['./admin-dashboard.component.css'],
 })
 export class AdminDashboardComponent {
-  statCards = [
-    {
-      label: 'Usuarios Totales',
-      value: 47,
-      subtitle: '23 activos',
-      icon: 'users',
-    },
-    {
-      label: 'Documentos',
-      value: 1847,
-      subtitle: 'En el sistema',
-      icon: 'document-create',
-    },
-    {
-      label: 'Transferencias Pendientes',
-      value: 8,
-      subtitle: 'al Archivo Nacional',
-      icon: 'box',
-    },
-    {
-      label: 'Alertas de Retención',
-      value: 156,
-      subtitle: 'Requieren evaluación',
-      icon: 'clock-three',
-    },
-  ];
 
   moduleCards = [
     {
