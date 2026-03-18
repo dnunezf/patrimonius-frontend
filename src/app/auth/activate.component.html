@@ -15,6 +15,7 @@
         formControlName="password"
         placeholder="••••••••"
         autocomplete="new-password"
+        [attr.maxlength]="maxPasswordLength"
       />
       <button
         type="button"
@@ -24,6 +25,9 @@
         {{ showPassword ? "Ocultar" : "Ver" }}
       </button>
     </div>
+    <p *ngIf="(form.get('password')?.value?.length ?? 0) === maxPasswordLength" class="limit-hint">
+      Se ha alcanzado el máximo de {{ maxPasswordLength }} caracteres para la contraseña.
+    </p>
 
     <!-- Reglas de contraseña -->
     <div class="rules">
@@ -31,7 +35,11 @@
       <ul>
         <li [class.rule-ok]="hasMinLength" [class.rule-bad]="!hasMinLength">
           <span class="bullet">{{ hasMinLength ? "✔" : "•" }}</span>
-          Mínimo 8 caracteres.
+          Mínimo 12 caracteres.
+        </li>
+        <li [class.rule-ok]="hasMaxLength" [class.rule-bad]="!hasMaxLength">
+          <span class="bullet">{{ hasMaxLength ? "✔" : "•" }}</span>
+          Máximo 25 caracteres.
         </li>
         <li [class.rule-ok]="hasLetter" [class.rule-bad]="!hasLetter">
           <span class="bullet">{{ hasLetter ? "✔" : "•" }}</span>

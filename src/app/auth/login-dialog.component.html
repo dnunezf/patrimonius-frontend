@@ -18,7 +18,12 @@
         type="email"
         formControlName="email"
         placeholder="example@museocostarica.go.cr"
+        autocomplete="username"
+        [attr.maxlength]="maxEmailLength"
       />
+      <p *ngIf="(formLogin.get('email')?.value?.length ?? 0) === maxEmailLength" class="limit-hint">
+        Se ha alcanzado el máximo de {{ maxEmailLength }} caracteres para el correo.
+      </p>
 
       <label>Contraseña</label>
       <div class="input-wrapper">
@@ -26,6 +31,8 @@
           [type]="showPassword ? 'text' : 'password'"
           formControlName="password"
           placeholder="••••••••"
+          autocomplete="current-password"
+          [attr.maxlength]="maxPasswordLength"
         />
         <button
           type="button"
@@ -35,6 +42,9 @@
           {{ showPassword ? "Ocultar" : "Ver" }}
         </button>
       </div>
+      <p *ngIf="(formLogin.get('password')?.value?.length ?? 0) === maxPasswordLength" class="limit-hint">
+        Se ha alcanzado el máximo de {{ maxPasswordLength }} caracteres para la contraseña.
+      </p>
 
       <button type="submit" class="btn btn--primary">Entrar</button>
 
@@ -82,5 +92,18 @@
     <div *ngIf="error() && !success()" class="error">
       {{ error() }}
     </div>
+
+    <div *ngIf="warning() && !success()" class="warning">
+      {{ warning() }}
+    </div>
+
+    <button
+      *ngIf="warning() && step() === 1 && !success()"
+      type="button"
+      class="btn--link"
+      (click)="goToResetPassword()"
+    >
+      Cambiar contrasena ahora
+    </button>
   </div>
 </div>

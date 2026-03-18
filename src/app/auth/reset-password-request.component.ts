@@ -7,6 +7,7 @@ import {
 } from '@angular/forms';
 import { CommonModule, NgIf } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-reset-password-request',
@@ -20,6 +21,12 @@ export class ResetPasswordRequestComponent {
   message: string | null = null;
   error: string | null = null;
   submitted = false;
+  isSubmitting = false;
+
+  readonly maxEmailLength = 50;
+
+  private readonly fallbackSuccessMessage =
+    'Si el correo existe en el sistema, enviaremos un enlace de restablecimiento en unos minutos.';
 
   constructor(private fb: FormBuilder, private auth: AuthService) {
     this.form = this.fb.group({
@@ -28,6 +35,8 @@ export class ResetPasswordRequestComponent {
   }
 
   submit() {
+    if (this.isSubmitting) return;
+
     this.submitted = true;
     this.message = null;
     this.error = null;
@@ -40,15 +49,21 @@ export class ResetPasswordRequestComponent {
 
     const { email } = this.form.value;
 
-    this.auth.requestPasswordReset(email).subscribe({
-      next: (res) => {
-        this.message = res.message;
-        this.error = null;
-      },
-      error: () => {
-        this.error =
-          'Se produjo un error al procesar la solicitud. Por favor, intente de nuevo más tarde.';
-      },
-    });
+    this.isSubmitting = true;
+
+    this.auth
+      .requestPasswordReset(email)
+      .pipe(finalize(() => (this.isSubmitting = false)))
+      .subscribe({
+        next: (res) => {
+          this.message = res?.message?.trim() || this.fallbackSuccessMessage;
+          this.error = null;
+        },
+        error: () => {
+          this.message = null;
+          this.error =
+            'Se produjo un error al procesar la solicitud. Por favor, intente de nuevo más tarde.';
+        },
+      });
   }
 }
