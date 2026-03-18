@@ -41,6 +41,7 @@
             type="text"
             placeholder="Nombre del usuario"
             formControlName="nombre"
+            maxlength="100"
             [class.invalid]="showErr('nombre')"
             [attr.aria-invalid]="showErr('nombre')"
             [attr.aria-describedby]="'err-nombre'"
@@ -66,6 +67,7 @@
             type="text"
             placeholder="Primer apellido"
             formControlName="apellido1"
+            maxlength="100"
             [class.invalid]="showErr('apellido1')"
             [attr.aria-invalid]="showErr('apellido1')"
             [attr.aria-describedby]="'err-ap1'"
@@ -88,14 +90,15 @@
         <span class="input__icon" aria-hidden="true"
         ><img src="assets/icons/users.png" alt=""
         /></span>
-        <input
-          #ctl
-          id="apellido2"
-          class="input__control"
-          type="text"
-          placeholder="Segundo apellido"
-          formControlName="apellido2"
-        />
+          <input
+            #ctl
+            id="apellido2"
+            class="input__control"
+            type="text"
+            placeholder="Segundo apellido"
+            formControlName="apellido2"
+            maxlength="100"
+          />
       </div>
 
       <label class="form__label" for="email">Correo electrónico *</label>
@@ -111,6 +114,7 @@
           placeholder="usuario@museocr.go.cr"
           autocomplete="username"
           formControlName="email"
+          maxlength="255"
           [class.invalid]="showErr('email')"
           [attr.aria-invalid]="showErr('email')"
           [attr.aria-describedby]="'err-email'"
