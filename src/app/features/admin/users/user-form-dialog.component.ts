@@ -80,18 +80,46 @@ export class UserFormDialogComponent
   /** Reactive form */
   form: FormGroup;
 
+  private static readonly MAX_NAME = 100;
+  private static readonly MAX_EMAIL = 255;
+
   constructor(private fb: FormBuilder, private unitsApi: UnidadService) {
     this.form = this.fb.group({
       nombre: [
         '',
-        [Validators.required, Validators.minLength(2), this.noBlank],
+        [
+          Validators.required,
+          Validators.minLength(2),
+          Validators.maxLength(UserFormDialogComponent.MAX_NAME),
+          this.noBlank,
+          this.onlyLetters,
+        ],
       ],
       apellido1: [
         '',
-        [Validators.required, Validators.minLength(2), this.noBlank],
+        [
+          Validators.required,
+          Validators.minLength(2),
+          Validators.maxLength(UserFormDialogComponent.MAX_NAME),
+          this.noBlank,
+          this.onlyLetters,
+        ],
       ],
-      apellido2: [''],
-      email: ['', [Validators.required, Validators.email]],
+      apellido2: [
+        '',
+        [
+          Validators.maxLength(UserFormDialogComponent.MAX_NAME),
+          this.onlyLetters,
+        ],
+      ],
+      email: [
+        '',
+        [
+          Validators.required,
+          Validators.email,
+          Validators.maxLength(UserFormDialogComponent.MAX_EMAIL),
+        ],
+      ],
       rolIds: [[], [Validators.required, this.minOne]],
       // Unit is set after units load; keep null to avoid defaulting to wrong IDs
       unidadId: [null, [Validators.required, this.positiveNumber]],
@@ -106,6 +134,14 @@ export class UserFormDialogComponent
   /** Rejects strings that are only whitespace */
   private noBlank = (c: AbstractControl) =>
     String(c.value ?? '').trim().length ? null : { blank: true };
+
+  /** Solo letras, espacios, guiones y apóstrofes (sin números) */
+  private onlyLetters = (c: AbstractControl) => {
+    const v = String(c.value ?? '').trim();
+    if (!v) return null;
+    const onlyLettersAndSpaces = /^[\p{L}\s\-']+$/u.test(v);
+    return onlyLettersAndSpaces ? null : { onlyLetters: true };
+  };
 
   /** Requires a positive integer */
   private positiveNumber = (c: AbstractControl) => {
@@ -124,17 +160,22 @@ export class UserFormDialogComponent
     return !!c && c.invalid && (c.dirty || c.touched);
   }
 
-  /** English messages to keep codebase consistent */
+  /** Mensajes de error para el usuario */
   errMsg(ctrl: string): string {
     const c = this.form.get(ctrl);
     if (!c || !c.errors) return '';
-    if (c.errors['required']) return 'This field is required';
-    if (c.errors['minlength']) return 'Minimum length is 2 characters';
-    if (c.errors['email']) return 'Invalid email';
-    if (c.errors['blank']) return 'Cannot be blank';
-    if (c.errors['number']) return 'Select a valid option';
-    if (c.errors['minOne']) return 'Select at least one role';
-    return 'Invalid value';
+    if (c.errors['required']) return 'Este campo es obligatorio';
+    if (c.errors['minlength']) return 'Mínimo 2 caracteres';
+    if (c.errors['maxlength'])
+      return ctrl === 'email'
+        ? `Máximo ${UserFormDialogComponent.MAX_EMAIL} caracteres`
+        : `Máximo ${UserFormDialogComponent.MAX_NAME} caracteres`;
+    if (c.errors['email']) return 'Correo electrónico no válido';
+    if (c.errors['blank']) return 'No puede quedar en blanco';
+    if (c.errors['number']) return 'Seleccione una opción válida';
+    if (c.errors['minOne']) return 'Seleccione al menos un rol';
+    if (c.errors['onlyLetters']) return 'Solo se permiten letras (sin números)';
+    return 'Valor no válido';
   }
 
   /** True when EDITOR role is selected */

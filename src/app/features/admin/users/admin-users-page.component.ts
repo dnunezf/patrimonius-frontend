@@ -12,6 +12,7 @@ import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ChangeDetectorRef } from '@angular/core';
+import { finalize, timeout, catchError, throwError } from 'rxjs';
 
 /** Admin Users page: now uses ToastService (success/error) and ConfirmService (delete). */
 @Component({
@@ -158,32 +159,51 @@ export class AdminUsersPageComponent {
       ? this.api.update(inferredId, inferredData)
       : this.api.create(inferredData);
 
-    req.subscribe({
-      next: (saved) => {
-        this.showForm.set(false);
-        if (inferredId) {
-          this.users.update((list) =>
-            list.map((u) => (u.id === saved.id ? saved : u)),
-          );
-          this.toast.success('Cambios guardados');
-        } else {
-          this.users.update((list) => [saved, ...list]);
-          this.toast.success('Usuario creado');
-        }
-        this.highlight(saved.id);
-        this.cd.markForCheck();
-      },
-      error: (e) => {
-        const msg =
-          e?.status === 409
-            ? 'El correo ya existe'
-            : e?.status === 400
-              ? e?.error?.message || 'Datos inválidos'
-              : 'Operación no completada';
-        this.toast.error(msg);
-      },
-      complete: () => this.isBusy.set(false),
-    });
+    const REQUEST_TIMEOUT_MS = 15000;
+
+    req
+      .pipe(
+        timeout(REQUEST_TIMEOUT_MS),
+        catchError((err) => {
+          if (err?.name === 'TimeoutError') {
+            return throwError(() => ({ status: -1, error: { message: 'La operación tardó demasiado. Intente de nuevo.' } }));
+          }
+          return throwError(() => err);
+        }),
+        finalize(() => this.isBusy.set(false)),
+      )
+      .subscribe({
+        next: (saved) => {
+          this.showForm.set(false);
+          if (inferredId) {
+            this.users.update((list) =>
+              list.map((u) => (u.id === saved.id ? saved : u)),
+            );
+            this.toast.success('Cambios guardados');
+          } else {
+            this.users.update((list) => [saved, ...list]);
+            this.toast.success('Usuario creado');
+          }
+          this.highlight(saved.id);
+          this.cd.markForCheck();
+        },
+        error: (e) => {
+          const customMsg = e?.error?.message;
+          const msg =
+            e?.status === 409
+              ? 'Este correo ya está asociado a otra cuenta.'
+              : e?.status === 422
+                ? 'Revise los datos ingresados. Solo se permiten caracteres válidos en nombre, apellidos y correo.'
+                : e?.status === 400
+                  ? customMsg || 'Datos inválidos'
+                  : typeof customMsg === 'string' && customMsg
+                    ? customMsg
+                    : e?.status === 0 || e?.status === -1
+                      ? 'No se pudo conectar. Intente de nuevo.'
+                      : 'Operación no completada';
+          this.toast.error(msg);
+        },
+      });
   }
 
   private highlight(id: number) {
