@@ -6,6 +6,17 @@ import { HttpClient } from '@angular/common/http';
 
 type DocumentOrigin = 'ESCANEADO' | 'ELECTRONICO';
 type UploadMode = 'FILES' | 'FOLDER';
+type PerDocumentMetadata = {
+  title: string;
+  keywords: string;
+  preliminaryClass: string;
+  classificationCode: string;
+};
+type DocumentEntry = {
+  key: string;
+  file: File;
+  metadata: PerDocumentMetadata;
+};
 
 @Component({
   selector: 'app-carga-masiva',
@@ -18,6 +29,7 @@ export class CargaMasivaPageComponent {
   private http = inject(HttpClient);
 
   currentStep = 1;
+  selectedMetadataIndex = 0;
 
   documentOrigin: DocumentOrigin = 'ESCANEADO';
   mode: UploadMode = 'FILES';
@@ -30,12 +42,11 @@ export class CargaMasivaPageComponent {
   errorMessage = '';
   uploadResult: any = null;
 
-  metadata = {
-    tituloBase: '',
+  metadataLoteDefaults = {
     fechaCreacion: this.getToday(),
-    tipoDocumental: '',
     unidadResponsable: '',
   };
+  documentEntries: DocumentEntry[] = [];
 
   private readonly API_URL = 'http://localhost:3000/documentos/carga-masiva/pdf';
 
@@ -68,14 +79,17 @@ export class CargaMasivaPageComponent {
   setMode(mode: UploadMode): void {
     this.mode = mode;
     this.selectedFiles = [];
+    this.documentEntries = [];
     this.errorMessage = '';
     this.uploadResult = null;
     this.hasTriedUpload = false;
     this.currentStep = 1;
+    this.selectedMetadataIndex = 0;
   }
 
   goToStep(step: number): void {
-    if (step === 2 && !this.hasTriedUpload && !this.uploadResult) return;
+    if (step === 2 && !this.selectedFiles.length) return;
+    if (step === 3 && !this.hasTriedUpload && !this.uploadResult) return;
     this.currentStep = step;
   }
 
@@ -84,12 +98,12 @@ export class CargaMasivaPageComponent {
       this.errorMessage = 'Debes seleccionar al menos un archivo PDF.';
       return;
     }
-
-    this.uploadFiles();
+    this.errorMessage = '';
+    this.currentStep = 2;
   }
 
   prevStep(): void {
-    this.currentStep = 1;
+    this.currentStep = Math.max(1, this.currentStep - 1);
   }
 
   onFileSelected(event: Event): void {
@@ -136,6 +150,8 @@ export class CargaMasivaPageComponent {
     }
 
     this.selectedFiles = Array.from(uniqueByKey.values());
+    this.syncDocumentEntries();
+    this.ensureValidSelectedMetadataIndex();
 
     this.uploadResult = null;
     this.hasTriedUpload = false;
@@ -151,6 +167,8 @@ export class CargaMasivaPageComponent {
   removeFile(index: number): void {
     this.selectedFiles.splice(index, 1);
     this.selectedFiles = [...this.selectedFiles];
+    this.syncDocumentEntries();
+    this.ensureValidSelectedMetadataIndex();
 
     this.uploadResult = null;
     this.hasTriedUpload = false;
@@ -166,13 +184,66 @@ export class CargaMasivaPageComponent {
     return relativePath || file.name;
   }
 
-  trackByFile(index: number, file: File): string {
+  getFileKey(file: File): string {
     const relativePath = (file as any).webkitRelativePath || '';
     return `${relativePath || file.name}-${file.size}`;
   }
 
+  trackByEntry(index: number, entry: DocumentEntry): string {
+    return entry.key;
+  }
+
+  private createDefaultMetadata(file: File): PerDocumentMetadata {
+    return {
+      title: file.name.replace(/\.pdf$/i, ''),
+      keywords: '',
+      preliminaryClass: '',
+      classificationCode: '',
+    };
+  }
+
+  private syncDocumentEntries(): void {
+    const previous = new Map(this.documentEntries.map((entry) => [entry.key, entry]));
+    this.documentEntries = this.selectedFiles.map((file) => {
+      const key = this.getFileKey(file);
+      const existing = previous.get(key);
+      return {
+        key,
+        file,
+        metadata: existing?.metadata ?? this.createDefaultMetadata(file),
+      };
+    });
+  }
+
+  private ensureValidSelectedMetadataIndex(): void {
+    if (!this.documentEntries.length) {
+      this.selectedMetadataIndex = 0;
+      return;
+    }
+
+    if (this.selectedMetadataIndex >= this.documentEntries.length) {
+      this.selectedMetadataIndex = this.documentEntries.length - 1;
+    }
+  }
+
   get canContinue(): boolean {
     return this.selectedFiles.length > 0;
+  }
+
+  get hasMissingTitles(): boolean {
+    return this.documentEntries.some((entry) => !entry.metadata.title.trim());
+  }
+
+  get canUpload(): boolean {
+    return this.documentEntries.length > 0 && !this.hasMissingTitles && !this.isUploading;
+  }
+
+  get activeDocumentEntry(): DocumentEntry | null {
+    return this.documentEntries[this.selectedMetadataIndex] ?? null;
+  }
+
+  selectMetadataDocument(index: number): void {
+    this.selectedMetadataIndex = index;
   }
 
   get resultErrors(): any[] {
@@ -245,9 +316,65 @@ export class CargaMasivaPageComponent {
     return this.selectedFiles.length;
   }
 
+  private buildMetadataPorDocumento(): Array<Record<string, unknown>> {
+    return this.documentEntries.map((entry) => {
+      const perFile = entry.metadata;
+      const title = perFile.title.trim();
+      const keywords = perFile.keywords
+        .split(',')
+        .map((keyword) => keyword.trim())
+        .filter(Boolean);
+      const preliminaryClass = perFile.preliminaryClass.trim();
+      const classificationCode = perFile.classificationCode.trim();
+
+      const metadataDocumento: Record<string, unknown> = {
+        // Debe coincidir con originalname en backend.
+        archivo: entry.file.name,
+      };
+
+      if (title) {
+        metadataDocumento['title'] = title;
+      }
+
+      if (keywords.length) {
+        metadataDocumento['keywords'] = keywords;
+      }
+
+      if (preliminaryClass) {
+        metadataDocumento['preliminaryClass'] = preliminaryClass;
+      }
+
+      if (classificationCode) {
+        metadataDocumento['classificationCode'] = classificationCode;
+      }
+
+      return metadataDocumento;
+    });
+  }
+
+  private buildMetadataLote(): Record<string, unknown> | null {
+    const metadataLote: Record<string, unknown> = {};
+    const fechaCreacion = this.metadataLoteDefaults.fechaCreacion.trim();
+    const unidadResponsable = this.metadataLoteDefaults.unidadResponsable.trim();
+
+    if (fechaCreacion) {
+      metadataLote['creationDate'] = fechaCreacion;
+    }
+
+    if (unidadResponsable) {
+      metadataLote['responsibleUnit'] = unidadResponsable;
+    }
+
+    return Object.keys(metadataLote).length ? metadataLote : null;
+  }
+
   uploadFiles(): void {
     if (!this.selectedFiles.length) {
       this.errorMessage = 'Debes seleccionar al menos un archivo PDF.';
+      return;
+    }
+    if (this.hasMissingTitles) {
+      this.errorMessage = 'Todos los documentos deben tener título para poder cargar el lote.';
       return;
     }
 
@@ -259,20 +386,26 @@ export class CargaMasivaPageComponent {
     const formData = new FormData();
     formData.append('origen_documento', this.documentOrigin);
     formData.append('modo_carga', this.mode);
-    formData.append('titulo_base', this.metadata.tituloBase);
-    formData.append('fecha_creacion', this.metadata.fechaCreacion);
-    formData.append('tipo_documental', this.metadata.tipoDocumental);
-    formData.append('unidad_responsable', this.metadata.unidadResponsable);
 
     for (const file of this.selectedFiles) {
       formData.append('files', file);
+    }
+
+    formData.append(
+      'metadata_por_documento',
+      JSON.stringify(this.buildMetadataPorDocumento())
+    );
+
+    const metadataLote = this.buildMetadataLote();
+    if (metadataLote) {
+      formData.append('metadata_lote', JSON.stringify(metadataLote));
     }
 
     this.http.post(this.API_URL, formData).subscribe({
       next: (resp: any) => {
         this.uploadResult = resp;
         this.isUploading = false;
-        this.currentStep = 2;
+        this.currentStep = 3;
       },
       error: (err) => {
         this.uploadResult = err?.error || null;
@@ -282,7 +415,7 @@ export class CargaMasivaPageComponent {
           `Error ${err?.status || ''} al cargar los archivos.`;
 
         this.isUploading = false;
-        this.currentStep = 2;
+        this.currentStep = 3;
       }
     });
   }

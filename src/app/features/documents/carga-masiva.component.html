@@ -31,10 +31,23 @@
         type="button"
         class="stepper__item"
         [class.is-active]="currentStep === 2"
-        [disabled]="!hasTriedUpload && !uploadResult"
-        (click)="(hasTriedUpload || uploadResult) ? goToStep(2) : null"
+        [disabled]="!selectedFiles.length"
+        (click)="selectedFiles.length ? goToStep(2) : null"
       >
         <span class="stepper__circle">2</span>
+        <span class="stepper__label">Ingreso de metadatos</span>
+      </button>
+
+      <span class="stepper__line"></span>
+
+      <button
+        type="button"
+        class="stepper__item"
+        [class.is-active]="currentStep === 3"
+        [disabled]="!hasTriedUpload && !uploadResult"
+        (click)="(hasTriedUpload || uploadResult) ? goToStep(3) : null"
+      >
+        <span class="stepper__circle">3</span>
         <span class="stepper__label">Resultado</span>
       </button>
     </div>
@@ -146,37 +159,16 @@
 
             <div class="metadata-box">
               <div class="metadata-box__header">
-                <h3 class="section-title">Metadatos iniciales del lote</h3>
-                <span class="metadata-chip">Opcional por ahora</span>
+                <h3 class="section-title">Valores comunes opcionales</h3>
               </div>
 
               <div class="metadata-grid">
-                <div class="field">
-                  <label class="field__label">Título base</label>
-                  <input
-                    class="field__input"
-                    type="text"
-                    [(ngModel)]="metadata.tituloBase"
-                    placeholder="Ej. Facturas electrónicas 2024"
-                  />
-                </div>
-
                 <div class="field">
                   <label class="field__label">Fecha de creación</label>
                   <input
                     class="field__input"
                     type="date"
-                    [(ngModel)]="metadata.fechaCreacion"
-                  />
-                </div>
-
-                <div class="field">
-                  <label class="field__label">Tipo documental</label>
-                  <input
-                    class="field__input"
-                    type="text"
-                    [(ngModel)]="metadata.tipoDocumental"
-                    placeholder="Ej. Factura, oficio, acta..."
+                    [(ngModel)]="metadataLoteDefaults.fechaCreacion"
                   />
                 </div>
 
@@ -185,15 +177,14 @@
                   <input
                     class="field__input"
                     type="text"
-                    [(ngModel)]="metadata.unidadResponsable"
+                    [(ngModel)]="metadataLoteDefaults.unidadResponsable"
                     placeholder="Ej. Archivo Central"
                   />
                 </div>
               </div>
 
               <p class="metadata-note">
-                Estos datos preparan la carga del lote y luego pueden completarse o ajustarse
-                en la clasificación archivística.
+                Los metadatos específicos se completan por cada archivo en el panel derecho.
               </p>
             </div>
 
@@ -243,12 +234,12 @@
               <div class="files-panel__list" *ngIf="selectedFiles.length">
                 <div
                   class="file-card"
-                  *ngFor="let file of selectedFiles; let i = index; trackBy: trackByFile"
+                  *ngFor="let entry of documentEntries; let i = index; trackBy: trackByEntry"
                 >
                   <div class="file-card__content">
-                    <div class="file-card__name">{{ getFileDisplayName(file) }}</div>
+                    <div class="file-card__name">{{ getFileDisplayName(entry.file) }}</div>
                     <div class="file-card__meta">
-                      {{ (file.size / 1024 / 1024).toFixed(2) }} MB
+                      {{ (entry.file.size / 1024 / 1024).toFixed(2) }} MB
                     </div>
                   </div>
 
@@ -268,6 +259,99 @@
 
       <!-- PASO 2 -->
       <div class="step-content" *ngIf="currentStep === 2">
+        <div class="upload-layout">
+          <section class="upload-main">
+            <div class="metadata-editor" *ngIf="activeDocumentEntry as active">
+              <h3 class="section-title">Metadatos del documento</h3>
+              <p class="metadata-note">
+                Edita los metadatos del archivo seleccionado.
+              </p>
+
+              <div class="field">
+                <label class="field__label">Documento</label>
+                <div class="field__static">{{ getFileDisplayName(active.file) }}</div>
+              </div>
+
+              <div class="metadata-grid">
+                <div class="field">
+                  <label class="field__label">Título *</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="active.metadata.title"
+                    placeholder="Título del documento"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label">Palabras clave (CSV)</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="active.metadata.keywords"
+                    placeholder="contrato, servicios, ana"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label">Clase preliminar</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="active.metadata.preliminaryClass"
+                    placeholder="CONTRATO"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label">Código de clasificación</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="active.metadata.classificationCode"
+                    placeholder="LEG-2026-01"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert--error" *ngIf="hasMissingTitles">
+              Debes completar el título de todos los documentos antes de cargar el lote.
+            </div>
+          </section>
+
+          <aside class="upload-sidebar">
+            <div class="files-panel">
+              <div class="files-panel__header">
+                <h3 class="section-title">Documentos del lote</h3>
+                <span class="files-panel__count">{{ documentEntries.length }}</span>
+              </div>
+
+              <div class="files-panel__empty" *ngIf="!documentEntries.length">
+                No hay documentos para editar metadatos.
+              </div>
+
+              <div class="files-panel__list" *ngIf="documentEntries.length">
+                <button
+                  type="button"
+                  class="doc-select-item"
+                  *ngFor="let entry of documentEntries; let i = index; trackBy: trackByEntry"
+                  [class.is-active]="selectedMetadataIndex === i"
+                  (click)="selectMetadataDocument(i)"
+                >
+                  <span class="doc-select-item__name">{{ getFileDisplayName(entry.file) }}</span>
+                  <span class="doc-select-item__meta">
+                    {{ entry.metadata.title.trim() ? 'Título listo' : 'Falta título' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="step-content" *ngIf="currentStep === 3">
         <div class="result-box" *ngIf="uploadResult; else emptyResult">
           <div class="result-box__header">
             <div>
@@ -391,7 +475,7 @@
 
     <div class="modal__footer">
       <button
-        *ngIf="currentStep === 2"
+        *ngIf="currentStep > 1"
         type="button"
         class="btn btn--ghost"
         (click)="prevStep()"
@@ -407,8 +491,18 @@
         *ngIf="currentStep === 1"
         type="button"
         class="btn btn--primary"
-        [disabled]="!canContinue || isUploading"
+        [disabled]="!canContinue"
         (click)="nextStep()"
+      >
+        Continuar
+      </button>
+
+      <button
+        *ngIf="currentStep === 2"
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canUpload"
+        (click)="uploadFiles()"
       >
         {{ isUploading ? 'Cargando...' : 'Cargar lote' }}
       </button>
