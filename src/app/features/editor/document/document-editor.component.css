@@ -310,43 +310,50 @@ button:disabled, .btn:disabled{
 }
 
 /* Scope: solo el modal de firma */
-.sig-modal{
+.sig-modal {
   position: fixed;
-  top: 50%;
+  top: 6vh;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(720px, 94vw);
-  max-height: 88vh;
-  overflow: auto;
+  transform: translate(-50%, 0);
+  width: min(820px, 96vw);  /* Evitar que el modal sea demasiado grande */
+  max-height: calc(100vh - 10vh);
+  overflow: hidden; /* El scroll lo maneja el body */
+  min-height: 0;
 
   background: #fff;
   border-radius: 16px;
   border: 1px solid #eef2f7;
-  box-shadow: 0 20px 60px rgba(0,0,0,.25);
-
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
   z-index: 9999;
   padding: 0;
+
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header */
-.sig-modal .modal__header{
+.sig-modal .modal__header {
   display: flex;
+  justify-content: space-between;  /* Asegura que haya espacio entre el título y el botón de cierre */
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   padding: 14px 16px;
   border-bottom: 1px solid #eef2f7;
-  background: linear-gradient(180deg, #ffffff, #fbfbfe);
+  background: #ffffff;
+  width: 100%;  /* Asegura que ocupe todo el ancho disponible */
 }
 
-.sig-modal .modal__header h3{
+.sig-modal .modal__header h3 {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 900;
   color: #111827;
+  text-align: center;
+  flex-grow: 1;  /* Hace que el título ocupe el espacio disponible */
+  white-space: nowrap;  /* Evita que el texto se rompa en varias líneas */
+  overflow: hidden;  /* Previene desbordamiento si el texto es largo */
 }
 
-.sig-modal .modal__close{
+.sig-modal .modal__close {
   width: 34px;
   height: 34px;
   border-radius: 10px;
@@ -357,26 +364,31 @@ button:disabled, .btn:disabled{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform .08s ease, background .2s ease, border-color .2s ease;
+  transition: background .2s ease, border-color .2s ease;
+  flex-shrink: 0; /* Evita que el botón se encoja */
+  padding: 4px;  /* Añadido para hacer el botón más "apretado" */
 }
-.sig-modal .modal__close:hover{
-  background:#f3f5f7;
-  border-color:#d0d5dd;
-  transform: translateY(-1px);
+.sig-modal .modal__close:hover {
+  background: #f3f5f7;
+  border-color: #d0d5dd;
 }
 
-/* Body + footer */
-.sig-modal .modal__body{
+/* Ajustes para asegurar que el contenido no se desborde */
+.sig-modal .modal__body {
   padding: 14px 16px 16px;
+  overflow: auto;  /* Solo el contenido tiene scroll */
+  flex: 1;
+  min-height: 0;
 }
 
-.sig-modal .modal__footer{
+.sig-modal .modal__footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   padding: 12px 16px;
   border-top: 1px solid #eef2f7;
   background: #fff;
+  flex: 0 0 auto;
 }
 
 /* Campos (solo dentro del modal) */
@@ -417,6 +429,10 @@ button:disabled, .btn:disabled{
   border: 1px dashed #dbe5ff;
   border-radius: 14px;
   background: #fbfdff;
+
+  /* Que la lista no obligue a hacer scroll de TODO el modal */
+  max-height: 380px;
+  overflow: auto;
 }
 
 .sig-modal .selected ul{
