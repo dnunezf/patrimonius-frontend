@@ -366,11 +366,31 @@
   box-shadow: 0 0 0 3px rgba(11,91,211,.10);
 }
 
+.field__static{
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 11px;
+  font-size: 12px;
+  color: #111827;
+  background: #f9fafb;
+  box-sizing: border-box;
+}
+
 .metadata-note{
   margin: 10px 0 0;
   font-size: 11px;
   color: #6b7280;
   line-height: 1.4;
+}
+
+.metadata-editor{
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
 }
 
 .summary-panel{
@@ -476,6 +496,47 @@
 .file-card__meta{
   margin-top: 4px;
   font-size: 11px;
+  color: #6b7280;
+}
+
+.file-card__fields{
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.doc-select-item{
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+}
+
+.doc-select-item:hover{
+  border-color: #0b5bd3;
+  background: #f8fbff;
+}
+
+.doc-select-item.is-active{
+  border-color: #0b5bd3;
+  background: #eef6ff;
+}
+
+.doc-select-item__name{
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.doc-select-item__meta{
+  font-size: 10px;
   color: #6b7280;
 }
 
