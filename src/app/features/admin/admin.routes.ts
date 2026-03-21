@@ -7,6 +7,9 @@ import { AccessExceptionsComponent } from './access-exceptions/access-exceptions
 import { CatalogoRolesComponent } from './catalogos/catalogo-roles/catalogo-roles.component';
 import { CatalogoUnidadComponent } from './catalogos/catalogo-unidad/catalogo-unidad.component';
 import { CatalogoPlantillasComponent } from './catalogos/catalogo-plantillas/catalogo-plantillas.component';
+import { CatalogoSerieComponent } from './catalogos/catalogo-serie/catalogo-serie.component';
+import { CatalogoSubserieComponent } from './catalogos/catalogo-subserie/catalogo-subserie.component';
+import { CatalogoExpedienteComponent } from './catalogos/catalogo-expediente/catalogo-expediente.component';
 import { PermisosEditorComponent } from './permisosEditor/permisos-editor.component';
 import { CatalogosModulePageComponent } from './moduleCatalogos/catalogos-module-page.component';
 import { AccessControlComponent } from './access-control/access-control.component';
@@ -21,7 +24,6 @@ export const ADMIN_ROUTES: Routes = [
       { path: 'access-exceptions', component: AccessExceptionsComponent },
       { path: 'access-control', component: AccessControlComponent },
 
-      // HU-002 route
       {
         path: 'confidentiality',
         loadComponent: () =>
@@ -38,7 +40,6 @@ export const ADMIN_ROUTES: Routes = [
           ),
       },
 
-      // Home del admin
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 
       {
@@ -49,19 +50,19 @@ export const ADMIN_ROUTES: Routes = [
           ),
       },
 
-      // ===== Rutas para los catálogos (ajustadas) =====
-      // Página de tarjetas (grid)
       {
         path: 'module/catalogs',
         component: CatalogosModulePageComponent,
       },
-      // Páginas individuales (cada una reemplaza la vista dentro del AdminShell)
+
       { path: 'module/catalogs/roles', component: CatalogoRolesComponent },
       { path: 'module/catalogs/unidades', component: CatalogoUnidadComponent },
       { path: 'module/catalogs/plantillas', component: CatalogoPlantillasComponent },
-      // ===============================================
 
-      // Ruta para Permisos del Editor
+      { path: 'module/catalogs/series', component: CatalogoSerieComponent },
+      { path: 'module/catalogs/subseries', component: CatalogoSubserieComponent },
+      { path: 'module/catalogs/expedientes', component: CatalogoExpedienteComponent },
+
       { path: 'permisos-editor', component: PermisosEditorComponent },
     ],
   },

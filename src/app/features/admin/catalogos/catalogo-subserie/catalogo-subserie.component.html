@@ -1,0 +1,204 @@
+<main class="container">
+  <div class="back-bar">
+    <a class="link-back" routerLink="/admin/module/catalogs">← Volver a Catálogos</a>
+  </div>
+
+  <header class="page-header page-header--audit">
+    <h1>Gestión de Subseries</h1>
+    <p class="sub">Administración de subseries archivísticas asociadas a una serie principal.</p>
+  </header>
+
+  <section class="card form-panel">
+    <h2 class="section-title">Nueva Subserie</h2>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Código de subserie</label>
+        <input
+          name="codigo"
+          [(ngModel)]="form.codigo"
+          type="text"
+          placeholder="Ej: SUB-001"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Nombre de la subserie</label>
+        <input
+          name="nombre"
+          [(ngModel)]="form.nombre"
+          type="text"
+          placeholder="Ej: Readme"
+        />
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Serie padre</label>
+        <select name="serie_id" [(ngModel)]="form.serie_id">
+          <option [ngValue]="null">Seleccione una serie principal</option>
+          <option *ngFor="let s of series" [ngValue]="s.id">
+            {{ s.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Estado</label>
+        <select name="activa" [(ngModel)]="form.activa">
+          <option [ngValue]="1">Activa</option>
+          <option [ngValue]="0">Inactiva</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Descripción</label>
+      <input
+        name="descripcion"
+        [(ngModel)]="form.descripcion"
+        type="text"
+        placeholder="Breve descripción de la subserie"
+      />
+    </div>
+
+    <div class="form-actions">
+      <button
+        class="btn btn--primary"
+        type="button"
+        (click)="create()"
+        [disabled]="saving || !form.codigo || !form.nombre || !form.serie_id"
+      >
+        {{ saving ? 'Guardando…' : 'Crear Subserie' }}
+      </button>
+    </div>
+
+    <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  </section>
+
+  <section class="card">
+    <div class="table-header audit-header">
+      <div>
+        <h2 class="section-title">Listado de Subseries</h2>
+        <p class="muted">Cada subserie pertenece a una serie archivística principal.</p>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="muted">Cargando…</div>
+    <div *ngIf="!loading && errorMessage" class="error">{{ errorMessage }}</div>
+
+    <ng-container *ngIf="!loading && !errorMessage">
+      <div *ngIf="totalItems === 0" class="empty">
+        <div class="empty-title">Sin datos</div>
+        <div class="empty-sub">No se encontraron subseries registradas.</div>
+      </div>
+
+      <table class="table table--audit" *ngIf="totalItems > 0">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Subserie</th>
+          <th>Serie padre</th>
+          <th>Estado</th>
+          <th class="th-actions">Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngFor="let s of pagedSubseries">
+          <td class="cell-strong">{{ s.codigo }}</td>
+          <td>{{ s.nombre }}</td>
+          <td class="cell-muted">{{ s.serie_nombre || s.serie_id }}</td>
+          <td>{{ +s.activa! === 1 ? 'Activa' : 'Inactiva' }}</td>
+          <td class="actions">
+            <button class="btn btn--ghost btn--sm" (click)="openEditModal(s)">Editar</button>
+            <button class="btn btn--danger btn--sm" (click)="openDeleteModal(s.id)">Eliminar</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+
+      <div class="pagination" *ngIf="totalItems >= 0">
+        <div class="pagination__info">
+          Página <strong>{{ page }}</strong> de <strong>{{ totalPages }}</strong>
+          <span class="sep">•</span>
+          Mostrando
+          <strong>{{ Math.min(pageSize, totalItems - ((page - 1) * pageSize)) }}</strong>
+          de <strong>{{ totalItems }}</strong>
+        </div>
+
+        <div class="pagination__controls">
+          <button class="btn btn--ghost btn--sm" [disabled]="page <= 1" (click)="prevPage()">
+            ← Anterior
+          </button>
+
+          <button
+            class="btn btn--ghost btn--sm page-pill"
+            *ngFor="let _ of [].constructor(totalPages); let i = index"
+            [class.page-pill--active]="page === (i + 1)"
+            (click)="goToPage(i + 1)"
+          >
+            {{ i + 1 }}
+          </button>
+
+          <button class="btn btn--ghost btn--sm" [disabled]="page >= totalPages" (click)="nextPage()">
+            Siguiente →
+          </button>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+</main>
+
+<div class="sys-modal__backdrop" *ngIf="modalOpen" (click)="closeModal()"></div>
+
+<div class="sys-modal" *ngIf="modalOpen" role="dialog" aria-modal="true">
+  <div class="card sys-modal__card" (click)="$event.stopPropagation()">
+    <div class="sys-modal__header">
+      <h3 class="sys-modal__title">{{ modalTitle }}</h3>
+      <button class="sys-modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
+    </div>
+
+    <p class="sys-modal__message">{{ modalMessage }}</p>
+
+    <div *ngIf="modalMode === 'edit'" class="sys-modal__form">
+      <label class="sys-modal__label">Código de subserie</label>
+      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.codigo" />
+
+      <label class="sys-modal__label">Nombre de la subserie</label>
+      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.nombre" />
+
+      <label class="sys-modal__label">Serie padre</label>
+      <select class="sys-modal__input" [(ngModel)]="modalForm.serie_id">
+        <option [ngValue]="null">Seleccione una serie principal</option>
+        <option *ngFor="let s of series" [ngValue]="s.id">
+          {{ s.nombre }}
+        </option>
+      </select>
+
+      <label class="sys-modal__label">Estado</label>
+      <select class="sys-modal__input" [(ngModel)]="modalForm.activa">
+        <option [ngValue]="1">Activa</option>
+        <option [ngValue]="0">Inactiva</option>
+      </select>
+
+      <label class="sys-modal__label">Descripción</label>
+      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.descripcion" />
+    </div>
+
+    <div class="sys-modal__actions">
+      <button class="btn btn--ghost" (click)="closeModal()">
+        {{ modalCancelText }}
+      </button>
+
+      <button
+        class="btn"
+        [ngClass]="modalMode === 'confirmDelete' ? 'btn--danger' : 'btn--primary'"
+        (click)="confirmModal()"
+      >
+        {{ modalOkText }}
+      </button>
+    </div>
+  </div>
+</div>
