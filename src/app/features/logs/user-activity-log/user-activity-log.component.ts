@@ -9,7 +9,7 @@ import {
   PermissionBitacoraDetail,
 } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
-import { UserActivityDetailModalComponent } from '../user-activity-detail-modal/user-activity-detail-modal.component';
+import { UserActivityDetailModalComponent } from './user-activity-detail-modal/user-activity-detail-modal.component';
 
 @Component({
   selector: 'app-user-activity-log',

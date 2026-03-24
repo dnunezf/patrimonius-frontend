@@ -75,20 +75,22 @@
           <th>Acción</th>
           <th>Resultado</th>
           <th>IP</th>
+          <th></th>
         </tr>
         </thead>
 
         <tbody>
         <tr *ngFor="let e of events">
           <td class="nowrap">{{ e.fecha_hora }}</td>
-          <td><div class="bold">{{ e.usuario || '—' }}</div></td>
+          <td>{{ e.usuario || '—' }}</td>
           <td>{{ e.accion || '—' }}</td>
-          <td>
-              <span [class]="resultClass(e.resultado)">
-                {{ e.resultado || '—' }}
-              </span>
-          </td>
+          <td>{{ e.resultado || '—' }}</td>
           <td>{{ e.ip || '—' }}</td>
+          <td>
+            <button type="button" class="button-outline button-sm" (click)="openDetail(e)">
+              Detalle
+            </button>
+          </td>
         </tr>
         </tbody>
       </table>
@@ -101,3 +103,11 @@
     </div>
   </section>
 </main>
+
+<app-security-detail-modal
+  [open]="detailOpen"
+  [loading]="detailLoading"
+  [error]="detailError"
+  [detail]="detail"
+  (closed)="closeDetail()"
+/>

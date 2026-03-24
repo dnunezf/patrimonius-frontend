@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PermissionBitacoraDetail } from '../../../../core/services/audit.service';
+import { PermissionBitacoraDetail } from '../../../../../core/services/audit.service';
 
 @Component({
   selector: 'app-user-activity-detail-modal',

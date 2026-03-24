@@ -33,17 +33,23 @@ export interface AuditDetail {
   accion: string | null;
   resultado: string | null;
   usuario_email: string | null;
-  usuario_nombre: string | null;
-  usuario_apellido1: string | null;
-  usuario_apellido2: string | null;
+  usuario_nombre?: string | null;
+  usuario_apellido1?: string | null;
+  usuario_apellido2?: string | null;
+  usuario_nombre_completo?: string | null;
   rol_usuario: string | null;
-  documento_titulo: string | null;
-  documento_codigo: string | null;
-  documento_estado: string | null;
+  documento_titulo?: string | null;
+  documento_nombre?: string | null;
+  documento_codigo?: string | null;
+  documento_estado?: string | null;
+  documento_titulo_actual?: string | null;
+  documento_nombre_actual?: string | null;
+  documento_estado_actual?: string | null;
   evento_ciclo: string | null;
   accion_solicitada: string | null;
   motivo: string | null;
   descripcion: string | null;
+  detalle_json?: unknown;
 }
 
 export interface SecurityItem {
@@ -62,15 +68,18 @@ export interface SecurityDetail {
   fecha_evento: string;
   accion: string | null;
   resultado: string | null;
+  usuario_id?: number | null;
   usuario_email: string | null;
-  usuario_nombre: string | null;
-  usuario_apellido1: string | null;
-  usuario_apellido2: string | null;
+  usuario_nombre?: string | null;
+  usuario_apellido1?: string | null;
+  usuario_apellido2?: string | null;
+  usuario_nombre_completo?: string | null;
   rol_usuario: string | null;
   tipo_evento: string | null;
   ip: string | null;
   user_agent: string | null;
-  detalle: any; // JSON
+  detalle?: unknown; // JSON
+  detalle_json?: unknown;
 }
 
 export interface SecurityPage {

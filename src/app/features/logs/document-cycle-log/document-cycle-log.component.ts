@@ -4,13 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuditService, AuditItem, AuditDetail } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
+import { DocumentCycleDetailModalComponent } from './document-cycle-detail-modal/document-cycle-detail-modal.component';
+import { catchError, forkJoin, of } from 'rxjs';
 
 type ResultType = 'Permitido' | 'Denegado';
 
 @Component({
   selector: 'app-document-cycle-log',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, DocumentCycleDetailModalComponent],
   templateUrl: './document-cycle-log.component.html',
   styleUrls: ['./document-cycle-log.component.css'],
 })
@@ -46,6 +48,11 @@ export class DocumentCycleLogComponent implements OnInit {
   events: AuditItem[] = [];
   totalItems = 0;
   totalPages = 1;
+
+  detailOpen = false;
+  detailLoading = false;
+  detailError: string | null = null;
+  detail: AuditDetail | null = null;
 
 
 
@@ -122,23 +129,35 @@ export class DocumentCycleLogComponent implements OnInit {
   goPrev() { if (this.page > 1) { this.page--; this.fetch(); } }
   goNext() { if (this.page < this.totalPages) { this.page++; this.fetch(); } }
 
-  // Export with current filters; CSV/XML built in frontend with column names: Título, Nombre (no Razón)
+  // Export with current filters using detail payload per event.
   export(format: 'csv' | 'xml') {
     const params = { ...this.buildQuery(), page: 1, pageSize: 10000 };
     this.error = null;
     this.audit.listEvents(params).subscribe({
       next: (res) => {
         const rows = res.items || [];
-        const filename = format === 'csv' ? 'eventos_auditoria.csv' : 'eventos_auditoria.xml';
-        const blob = format === 'csv' ? this.buildCsvBlob(rows) : this.buildXmlBlob(rows);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        const detailRequests = rows.map((r) =>
+          this.audit.getEventDetail(r.id_evento).pipe(catchError(() => of(null)))
+        );
+        forkJoin(detailRequests).subscribe({
+          next: (details) => {
+            const validDetails = details.filter((d): d is AuditDetail => !!d);
+            const filename = format === 'csv' ? 'eventos_auditoria.csv' : 'eventos_auditoria.xml';
+            const blob = format === 'csv' ? this.buildCsvBlob(validDetails) : this.buildXmlBlob(validDetails);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          },
+          error: (err) => {
+            this.error = 'Error al exportar.';
+            console.error(err);
+          }
+        });
       },
       error: (err) => {
         this.error = 'Error al exportar.';
@@ -147,39 +166,71 @@ export class DocumentCycleLogComponent implements OnInit {
     });
   }
 
-  private buildCsvBlob(rows: AuditItem[]): Blob {
+  private buildCsvBlob(rows: AuditDetail[]): Blob {
     const escape = (val: unknown) => {
       const s = String(val ?? '');
       const mustQuote = /[",\n]/.test(s);
       return mustQuote ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const headers = ['Fecha y hora', 'Usuario', 'Título', 'Nombre', 'Acción solicitada', 'Estado del documento', 'Resultado'];
-    const line = (e: AuditItem) => [
-      e.fecha_hora,
-      e.usuario,
+    const headers = [
+      'ID evento',
+      'Fecha del evento',
+      'Título actual',
+      'Título (snapshot)',
+      'Nombre actual',
+      'Nombre (snapshot)',
+      'Estado actual',
+      'Estado (snapshot)',
+      'Correo usuario',
+      'Nombre completo',
+      'Acción',
+      'Evento ciclo',
+      'Acción solicitada',
+      'Resultado',
+      'Motivo'
+    ];
+    const line = (e: AuditDetail) => [
+      e.id_evento,
+      e.fecha_evento ?? '',
+      e.documento_titulo_actual ?? '',
       e.documento_titulo ?? '',
-      [e.documento_codigo_unico, e.documento_codigo_oficial].filter(Boolean).join(' / ') || '',
+      e.documento_nombre_actual ?? '',
+      e.documento_nombre ?? e.documento_codigo ?? '',
+      e.documento_estado_actual ?? '',
+      e.documento_estado ?? '',
+      e.usuario_email ?? '',
+      this.fullNameFromDetail(e),
+      e.accion ?? '',
+      e.evento_ciclo ?? '',
       e.accion_solicitada ?? '',
-      e.estado_documento ?? '',
-      e.resultado ?? ''
+      e.resultado ?? '',
+      e.motivo ?? ''
     ].map(escape).join(',');
     const csv = [headers.join(','), ...rows.map(line)].join('\n');
     return new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
   }
 
-  private buildXmlBlob(rows: AuditItem[]): Blob {
+  private buildXmlBlob(rows: AuditDetail[]): Blob {
     const esc = (s: unknown) => String(s ?? '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <eventos_auditoria>
 ${rows.map(e => `  <evento>
-    <fecha_hora>${esc(e.fecha_hora)}</fecha_hora>
-    <usuario>${esc(e.usuario)}</usuario>
-    <titulo>${esc(e.documento_titulo)}</titulo>
-    <nombre>${esc([e.documento_codigo_unico, e.documento_codigo_oficial].filter(Boolean).join(' / ') || '')}</nombre>
+    <id_evento>${esc(e.id_evento)}</id_evento>
+    <fecha_hora>${esc(e.fecha_evento)}</fecha_hora>
+    <titulo_actual>${esc(e.documento_titulo_actual)}</titulo_actual>
+    <titulo_snapshot>${esc(e.documento_titulo)}</titulo_snapshot>
+    <nombre_actual>${esc(e.documento_nombre_actual)}</nombre_actual>
+    <nombre_snapshot>${esc(e.documento_nombre ?? e.documento_codigo)}</nombre_snapshot>
+    <estado_documento_actual>${esc(e.documento_estado_actual)}</estado_documento_actual>
+    <estado_documento_snapshot>${esc(e.documento_estado)}</estado_documento_snapshot>
+    <usuario>${esc(e.usuario_email)}</usuario>
+    <usuario_nombre_completo>${esc(this.fullNameFromDetail(e))}</usuario_nombre_completo>
+    <accion>${esc(e.accion)}</accion>
+    <evento_ciclo>${esc(e.evento_ciclo)}</evento_ciclo>
     <accion_solicitada>${esc(e.accion_solicitada)}</accion_solicitada>
-    <estado_documento>${esc(e.estado_documento)}</estado_documento>
     <resultado>${esc(e.resultado)}</resultado>
+    <motivo>${esc(e.motivo)}</motivo>
   </evento>`).join('\n')}
 </eventos_auditoria>`;
     return new Blob([xml], { type: 'application/xml;charset=utf-8' });
@@ -266,5 +317,52 @@ ${rows.map(e => `  <evento>
     return null;
   }
 
+  openDetail(row: AuditItem) {
+    this.detailOpen = true;
+    this.detail = null;
+    this.detailError = null;
+    this.detailLoading = true;
+    this.audit.getEventDetail(row.id_evento).subscribe({
+      next: (item) => {
+        this.detail = item;
+        this.detailLoading = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.detailError =
+          err?.error?.message || 'No se pudo cargar el detalle del evento.';
+        this.detailLoading = false;
+      }
+    });
+  }
+
+  closeDetail() {
+    this.detailOpen = false;
+    this.detail = null;
+    this.detailError = null;
+  }
+
+  documentName(e: AuditItem): string {
+    const parts = [e.documento_codigo_unico, e.documento_codigo_oficial]
+      .filter((v): v is string => !!v && v.trim().length > 0);
+    return parts.join(' / ') || '—';
+  }
+
+  formatDateTime(value: string | null | undefined): string {
+    if (!value) return '—';
+    const raw = String(value).trim();
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::\d{2})?$/);
+    if (!match) return raw;
+    const [, yyyy, mm, dd, hh, min] = match;
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+  }
+
+  private fullNameFromDetail(detail: AuditDetail): string {
+    if (detail.usuario_nombre_completo?.trim()) return detail.usuario_nombre_completo.trim();
+    return [detail.usuario_nombre, detail.usuario_apellido1, detail.usuario_apellido2]
+      .filter((p) => !!p && String(p).trim().length > 0)
+      .join(' ')
+      .trim();
+  }
 
 }
