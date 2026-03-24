@@ -16,6 +16,7 @@
 .muted { color: var(--mncr-gray); }
 .bold { font-weight: 700; }
 .nowrap { white-space: nowrap; }
+.mx-8 { margin: 0 8px; }
 
 /* ===== Header (centered title with left-aligned back button) ===== */
 
@@ -47,6 +48,7 @@
 .filters-grid .actions {
   grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -58,7 +60,10 @@
 }
 
 /* ===== Table ===== */
-.table-wrapper { overflow-x: auto; }
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .tbl {
   width: 100%;
   border-collapse: collapse;
@@ -159,6 +164,43 @@
   .section.header h1 {
     justify-self: center;
     text-align: center;
+    font-size: clamp(1.1rem, 4vw, 1.35rem);
+    padding: 0 8px;
+    line-height: 1.3;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .tbl {
+    font-size: 0.88rem;
+  }
+
+  .tbl th,
+  .tbl td {
+    padding: 8px 6px;
+  }
+
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pager .mx-8 {
+    width: 100%;
+    margin: 4px 0;
+    order: -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .container.page {
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 
