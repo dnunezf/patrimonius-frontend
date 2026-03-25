@@ -27,9 +27,10 @@ export class AdminDashboardComponent {
     {
       title: 'Carga de Documentos',
       description: 'Carga individual y masiva con validación.',
-      status: 'wip',
+      status: 'available',
       features: ['Carga individual', 'Carga masiva', 'Validar formatos'],
       icon: 'upload',
+      link: '/documentos/carga-masiva',
     },
     {
       title: 'Gestión de Paquetes SIP',
