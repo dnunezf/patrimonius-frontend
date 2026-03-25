@@ -144,6 +144,29 @@ export interface ConfirmSignatureResponse {
   destinatarioAlerta?: string | null;
 }
 
+export type MetadataAccessLevel = 'PUBLIC' | 'INTERNAL' | 'HIGH' | 'RESTRICTED';
+
+export interface DocumentMetadata {
+  automatic: {
+    identifier: string | null;
+    creationResponsible: string | null;
+    createdAt: string | null;
+    modificationResponsible: string | null;
+    modifiedAt: string | null;
+    approvalResponsible: string | null;
+    approvedAt: string | null;
+    softwareApplication: string | null;
+  };
+  manual: {
+    documentType: string | null;
+    producerUnitId: number | null;
+    producerUnitName: string | null;
+    title: string | null;
+    keywords: string[];
+    accessLevel: MetadataAccessLevel | null;
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private api = environment.api;
@@ -172,7 +195,10 @@ export class DocumentService {
   }
 
   update(id: string, document: DocumentModel): Observable<DocumentModel> {
-    return this.http.put<DocumentModel>(`${this.api}/documents/${id}`, document);
+    return this.http.put<DocumentModel>(
+      `${this.api}/documents/${id}`,
+      document,
+    );
   }
 
   delete(id: string): Observable<void> {
@@ -181,24 +207,26 @@ export class DocumentService {
 
   // Documentos accesibles (lo que alimenta el dashboard)
   getDocumentsFromProduction(): Observable<VDocumentModel[]> {
-    return this.http.get<AccessibleDocRow[]>(`${this.api}/view/production`).pipe(
-      map((rows) =>
-        rows.map(
-          (r) =>
-            ({
-              id: r.documento_id,
-              documento_nombre: r.titulo,
-              documento_estado: r.estado,
-              primer_usuario: r.creador_nombre,
-              fecha_creacion: r.fecha_creacion,
-              unidad_nombre: r.unidad_nombre,
-              categoria_nombre: r.categoria_nombre || 'Sin categoría',
-              firmas_obtenidas: r.firmas_obtenidas,
-              firmas_requeridas: r.firmas_requeridas,
-            } satisfies VDocumentModel)
-        )
-      )
-    );
+    return this.http
+      .get<AccessibleDocRow[]>(`${this.api}/view/production`)
+      .pipe(
+        map((rows) =>
+          rows.map(
+            (r) =>
+              ({
+                id: r.documento_id,
+                documento_nombre: r.titulo,
+                documento_estado: r.estado,
+                primer_usuario: r.creador_nombre,
+                fecha_creacion: r.fecha_creacion,
+                unidad_nombre: r.unidad_nombre,
+                categoria_nombre: r.categoria_nombre || 'Sin categoría',
+                firmas_obtenidas: r.firmas_obtenidas,
+                firmas_requeridas: r.firmas_requeridas,
+              }) satisfies VDocumentModel,
+          ),
+        ),
+      );
   }
 
   // ========== Draft / collaboration ==========
@@ -210,20 +238,20 @@ export class DocumentService {
   }): Observable<{ documento_id: number; numero_serie: string }> {
     return this.http.post<{ documento_id: number; numero_serie: string }>(
       `${this.api}/documentos/crear-desde-plantilla`,
-      body
+      body,
     );
   }
 
   ultimaVersion(id: number): Observable<{ id: number; fecha: string } | null> {
     return this.http.get<{ id: number; fecha: string } | null>(
-      `${this.api}/documentos/${id}/version/latest`
+      `${this.api}/documentos/${id}/version/latest`,
     );
   }
 
   guardarColab(
     id: number,
     contenido: string,
-    base_version_id: number
+    base_version_id: number,
   ): Observable<{
     version_id: number;
     next_version: number;
@@ -305,9 +333,9 @@ export class DocumentService {
       map((raw) => {
         const arr: any[] = Array.isArray(raw)
           ? raw
-          : raw?.items ?? raw?.rows ?? [];
+          : (raw?.items ?? raw?.rows ?? []);
         return (arr || []) as DocVersionRow[];
-      })
+      }),
     );
   }
 
@@ -318,27 +346,30 @@ export class DocumentService {
         newVersionId: res?.newVersionId ?? res?.version_restaurada_id ?? 0,
         html: res?.html ?? res?.contenido ?? '',
         nombre_versionado: res?.nombre_versionado ?? null,
-      }))
+      })),
     );
   }
 
   // ========== HU-011/012 metadata ==========
   getMetadata(id: number) {
-    return this.http.get<DocumentMetadata>(`${this.api}/documentos/${id}/metadata`);
+    return this.http.get<DocumentMetadata>(
+      `${this.api}/documentos/${id}/metadata`,
+    );
   }
 
   saveDescriptiveMetadata(
     id: number,
     body: {
+      documentType: string;
+      producerUnitId: number;
       title: string;
       keywords: string[] | string;
-      preliminaryClass: string;
-      classificationCode: string;
-    }
+      accessLevel: MetadataAccessLevel;
+    },
   ) {
     return this.http.put<{ ok: true }>(
       `${this.api}/documentos/${id}/metadata/descriptive`,
-      body
+      body,
     );
   }
 
@@ -347,7 +378,7 @@ export class DocumentService {
   // =========================
   prepareForSignature(
     id: number,
-    body?: { firmantesIds?: number[]; fecha_limite?: string | null }
+    body?: { firmantesIds?: number[]; fecha_limite?: string | null },
   ) {
     return this.http.put<{
       ok?: boolean;
@@ -417,7 +448,7 @@ export class DocumentService {
 
     return this.http.post<SignatureValidationResult>(
       `${this.api}/api/firma/validar`,
-      fd
+      fd,
     );
   }
 
@@ -427,12 +458,9 @@ export class DocumentService {
 
     return this.http.post<ConfirmSignatureResponse>(
       `${this.api}/documentos/${id}/firma/confirmar`,
-     fd
+      fd,
     );
   }
-
-
-
 
   // ====== Helpers viejos (si aún los usás en algún lado) ======
   wsUrl(docId: number): string {
@@ -442,11 +470,14 @@ export class DocumentService {
 
   createDraft(
     titulo: string,
-    plantillaId?: number
+    plantillaId?: number,
   ): Observable<{ id: number; numero_borrador: number }> {
     const body: any = { titulo };
     if (plantillaId != null) body.plantillaId = plantillaId;
-    return this.http.post<{ id: number; numero_borrador: number }>(this.docsApi, body);
+    return this.http.post<{ id: number; numero_borrador: number }>(
+      this.docsApi,
+      body,
+    );
   }
 
   importDocx(file: File): Observable<{ html: string }> {
@@ -456,13 +487,18 @@ export class DocumentService {
   }
 
   checkpoint(id: number, snapshot: any): Observable<void> {
-    return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, { snapshot });
+    return this.http.post<void>(`${this.docsApi}/${id}/checkpoint`, {
+      snapshot,
+    });
   }
 
   approve(id: number, snapshot: any): Observable<{ codigo_oficial: string }> {
-    return this.http.post<{ codigo_oficial: string }>(`${this.docsApi}/${id}/aprobar`, {
-      snapshot,
-    });
+    return this.http.post<{ codigo_oficial: string }>(
+      `${this.docsApi}/${id}/aprobar`,
+      {
+        snapshot,
+      },
+    );
   }
 
   // =========================
@@ -479,17 +515,22 @@ export class DocumentService {
       fd.append('descripcion', descripcion);
     }
 
-    return this.http.post<any>(`${this.api}/documentos/${documentId}/anexos`, fd);
+    return this.http.post<any>(
+      `${this.api}/documentos/${documentId}/anexos`,
+      fd,
+    );
   }
 
   downloadAnexo(documentId: number, anexoId: number) {
     return this.http.get(
       `${this.api}/documentos/${documentId}/anexos/${anexoId}/descargar`,
-      { responseType: 'blob' }
+      { responseType: 'blob' },
     );
   }
 
   deleteAnexo(documentId: number, anexoId: number) {
-    return this.http.delete<any>(`${this.api}/documentos/${documentId}/anexos/${anexoId}`);
+    return this.http.delete<any>(
+      `${this.api}/documentos/${documentId}/anexos/${anexoId}`,
+    );
   }
 }

@@ -1,4 +1,3 @@
-// src/app/core/features/editor/document/metadata/document-metadata-dialog.component.ts
 import {
   Component,
   EventEmitter,
@@ -13,39 +12,15 @@ import {
   FormGroup,
   ReactiveFormsModule,
   Validators,
-  AbstractControl,
-  ValidationErrors,
 } from '@angular/forms';
 import {
   DocumentService,
   DocumentMetadata,
+  MetadataAccessLevel,
 } from '../../../../../core/services/document.service';
 
 function toCsv(arr: string[] | null | undefined) {
   return Array.isArray(arr) ? arr.join(', ') : '';
-}
-
-function humanSize(bytes: number | null): string {
-  if (bytes == null || bytes < 0) return '—';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let i = 0;
-  let v = bytes;
-  while (v >= 1024 && i < units.length - 1) {
-    v /= 1024;
-    i++;
-  }
-  return `${v >= 10 ? v.toFixed(0) : v.toFixed(1)} ${units[i]}`;
-}
-
-/** Custom validator: at least one keyword after splitting CSV. */
-function requireKeywords(ctrl: AbstractControl): ValidationErrors | null {
-  const raw = String(ctrl.value || '').trim();
-  if (!raw) return { required: true };
-  const list = raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return list.length ? null : { required: true };
 }
 
 @Component({
@@ -58,6 +33,8 @@ function requireKeywords(ctrl: AbstractControl): ValidationErrors | null {
 export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
   @Input() documentId!: number;
   @Input() open = false;
+  @Input() producerUnitOptions: Array<{ id: number; nombre: string }> = [];
+
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
@@ -68,19 +45,30 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
   meta: DocumentMetadata | null = null;
   form!: FormGroup;
 
-  constructor(private fb: FormBuilder, private docs: DocumentService) {}
+  readonly accessOptions: Array<{
+    value: MetadataAccessLevel;
+    label: string;
+  }> = [
+    { value: 'PUBLIC', label: 'Público' },
+    { value: 'INTERNAL', label: 'Interno' },
+    { value: 'HIGH', label: 'Alto' },
+    { value: 'RESTRICTED', label: 'Restringido' },
+  ];
+
+  constructor(
+    private fb: FormBuilder,
+    private docs: DocumentService,
+  ) {}
 
   ngOnInit(): void {
-    /**
-     * Form only contains editable fields for HU-12.
-     * Administrative/automatic fields are read-only and not part of the form.
-     */
     this.form = this.fb.group({
+      documentType: ['', [Validators.required, Validators.maxLength(150)]],
+      producerUnitId: [null, [Validators.required]],
       title: ['', [Validators.required, Validators.maxLength(255)]],
-      keywords: ['', [requireKeywords, Validators.maxLength(2000)]],
-      preliminaryClass: ['', [Validators.required, Validators.maxLength(150)]],
-      classificationCode: ['', [Validators.required, Validators.maxLength(60)]],
+      keywords: ['', [Validators.maxLength(2000)]],
+      accessLevel: ['INTERNAL', [Validators.required]],
     });
+
     if (this.open) this.load();
   }
 
@@ -90,16 +78,19 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
 
   load(): void {
     if (!this.documentId) return;
+
     this.loading = true;
     this.error = null;
+
     this.docs.getMetadata(this.documentId).subscribe({
       next: (m) => {
         this.meta = m;
         this.form.reset({
-          title: m.descriptive.title || '',
-          keywords: toCsv(m.descriptive.keywords),
-          preliminaryClass: m.descriptive.preliminaryClass || '',
-          classificationCode: m.descriptive.classificationCode || '',
+          documentType: m.manual.documentType || '',
+          producerUnitId: m.manual.producerUnitId ?? null,
+          title: m.manual.title || '',
+          keywords: toCsv(m.manual.keywords),
+          accessLevel: m.manual.accessLevel || 'INTERNAL',
         });
         this.loading = false;
       },
@@ -115,47 +106,43 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
       this.form.markAllAsTouched();
       return;
     }
+
     this.saving = true;
     this.error = null;
 
     const v = this.form.value;
-    const title = String(v.title || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const preliminaryClass = String(v.preliminaryClass || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const classificationCode = String(v.classificationCode || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const keywords = String(v.keywords || '')
-      .split(',')
-      .map((s: string) => s.trim())
-      .filter(Boolean)
-      .slice(0, 20);
 
-    this.docs
-      .saveDescriptiveMetadata(this.documentId, {
-        title,
-        keywords,
-        preliminaryClass,
-        classificationCode,
-      })
-      .subscribe({
-        next: () => {
-          this.saving = false;
-          this.saved.emit();
-          this.close();
-        },
-        error: (e) => {
-          const msg =
-            e?.status === 422
-              ? 'Revise los campos obligatorios.'
-              : e?.error?.message || 'No se pudieron guardar los metadatos';
-          this.error = msg;
-          this.saving = false;
-        },
-      });
+    const payload = {
+      documentType: String(v.documentType || '')
+        .replace(/\s+/g, ' ')
+        .trim(),
+      producerUnitId: Number(v.producerUnitId),
+      title: String(v.title || '')
+        .replace(/\s+/g, ' ')
+        .trim(),
+      keywords: String(v.keywords || '')
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+        .slice(0, 20),
+      accessLevel: v.accessLevel as MetadataAccessLevel,
+    };
+
+    this.docs.saveDescriptiveMetadata(this.documentId, payload).subscribe({
+      next: () => {
+        this.saving = false;
+        this.saved.emit();
+        this.close();
+      },
+      error: (e) => {
+        const msg =
+          e?.status === 422
+            ? 'Revise los campos obligatorios.'
+            : e?.error?.message || 'No se pudieron guardar los metadatos';
+        this.error = msg;
+        this.saving = false;
+      },
+    });
   }
 
   close(): void {
@@ -163,23 +150,21 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     this.closed.emit();
   }
 
-  // Expose for template
   get f() {
     return this.form.controls;
   }
 
-  sizeHuman(): string {
-    return humanSize(this.meta?.technical?.sizeBytes ?? null);
-  }
-
-  /** Localized, human-readable date for ES */
   formatDate(value: string | null | undefined): string {
-    if (!value) return '—';
+    if (!value) return 'Pendiente';
     const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return '—';
-    return new Intl.DateTimeFormat('es', {
+    if (Number.isNaN(d.getTime())) return 'Pendiente';
+    return new Intl.DateTimeFormat('es-CR', {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(d);
+  }
+
+  approvalText(value: string | null | undefined): string {
+    return value || 'Pendiente de aprobación';
   }
 }
