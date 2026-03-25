@@ -23,6 +23,18 @@ function toCsv(arr: string[] | null | undefined) {
   return Array.isArray(arr) ? arr.join(', ') : '';
 }
 
+function humanSize(bytes: number | null): string {
+  if (bytes == null || bytes < 0) return '—';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+  let v = bytes;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  return `${v >= 10 ? v.toFixed(0) : v.toFixed(1)} ${units[i]}`;
+}
+
 @Component({
   selector: 'app-document-metadata-dialog',
   standalone: true,
@@ -33,7 +45,6 @@ function toCsv(arr: string[] | null | undefined) {
 export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
   @Input() documentId!: number;
   @Input() open = false;
-  @Input() producerUnitOptions: Array<{ id: number; nombre: string }> = [];
 
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
@@ -63,7 +74,6 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.form = this.fb.group({
       documentType: ['', [Validators.required, Validators.maxLength(150)]],
-      producerUnitId: [null, [Validators.required]],
       title: ['', [Validators.required, Validators.maxLength(255)]],
       keywords: ['', [Validators.maxLength(2000)]],
       accessLevel: ['INTERNAL', [Validators.required]],
@@ -87,7 +97,6 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
         this.meta = m;
         this.form.reset({
           documentType: m.manual.documentType || '',
-          producerUnitId: m.manual.producerUnitId ?? null,
           title: m.manual.title || '',
           keywords: toCsv(m.manual.keywords),
           accessLevel: m.manual.accessLevel || 'INTERNAL',
@@ -116,7 +125,6 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
       documentType: String(v.documentType || '')
         .replace(/\s+/g, ' ')
         .trim(),
-      producerUnitId: Number(v.producerUnitId),
       title: String(v.title || '')
         .replace(/\s+/g, ' ')
         .trim(),
@@ -152,6 +160,10 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
 
   get f() {
     return this.form.controls;
+  }
+
+  sizeHuman(): string {
+    return humanSize(this.meta?.automatic?.sizeBytes ?? null);
   }
 
   formatDate(value: string | null | undefined): string {

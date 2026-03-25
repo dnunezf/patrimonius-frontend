@@ -10,9 +10,7 @@
   <header class="md-header">
     <div>
       <h3 id="mdTitle">Metadatos del documento</h3>
-      <p class="md-header__text">
-        Rediseño de metadatos para la etapa de edición.
-      </p>
+      <p class="md-header__text">Metadatos de la etapa de edición.</p>
     </div>
 
     <button
@@ -42,6 +40,20 @@
             <input
               class="ro"
               [value]="meta?.automatic?.identifier ?? '—'"
+              readonly
+            />
+          </div>
+
+          <div class="md-card-field">
+            <label>Tamaño</label>
+            <input class="ro" [value]="sizeHuman()" readonly />
+          </div>
+
+          <div class="md-card-field">
+            <label>Unidad productora</label>
+            <input
+              class="ro"
+              [value]="meta?.automatic?.producerUnitName ?? '—'"
               readonly
             />
           </div>
@@ -134,38 +146,15 @@
             </div>
 
             <div class="form-field">
-              <label>Unidad productora <span class="req">*</span></label>
-
-              <ng-container
-                *ngIf="producerUnitOptions.length; else unitFallback"
-              >
-                <select formControlName="producerUnitId">
-                  <option [ngValue]="null">Seleccione una unidad</option>
-                  <option
-                    *ngFor="let unit of producerUnitOptions"
-                    [ngValue]="unit.id"
-                  >
-                    {{ unit.nombre }}
-                  </option>
-                </select>
-              </ng-container>
-
-              <ng-template #unitFallback>
-                <input
-                  type="number"
-                  formControlName="producerUnitId"
-                  placeholder="ID de la unidad productora"
-                />
-                <small class="hint" *ngIf="meta?.manual?.producerUnitName">
-                  Unidad actual: {{ meta?.manual?.producerUnitName }}
-                </small>
-              </ng-template>
-
+              <label>Nivel de acceso <span class="req">*</span></label>
+              <select formControlName="accessLevel">
+                <option *ngFor="let item of accessOptions" [value]="item.value">
+                  {{ item.label }}
+                </option>
+              </select>
               <small
                 class="err"
-                *ngIf="
-                  f['producerUnitId'].touched && f['producerUnitId'].invalid
-                "
+                *ngIf="f['accessLevel'].touched && f['accessLevel'].invalid"
               >
                 Obligatorio.
               </small>
@@ -199,21 +188,6 @@
                 *ngIf="f['keywords'].touched && f['keywords'].invalid"
               >
                 Máx. 2000 caracteres.
-              </small>
-            </div>
-
-            <div class="form-field">
-              <label>Nivel de acceso <span class="req">*</span></label>
-              <select formControlName="accessLevel">
-                <option *ngFor="let item of accessOptions" [value]="item.value">
-                  {{ item.label }}
-                </option>
-              </select>
-              <small
-                class="err"
-                *ngIf="f['accessLevel'].touched && f['accessLevel'].invalid"
-              >
-                Obligatorio.
               </small>
             </div>
           </div>
