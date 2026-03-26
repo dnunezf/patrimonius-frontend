@@ -1,0 +1,43 @@
+<div class="container">
+  <header class="section-header">
+    <h1>Clasificación Archivística</h1>
+    <p>Asigne series, subseries y plazos de retención a documentos recibidos</p>
+  </header>
+
+  <!-- Botones para crear serie y subserie -->
+  <div class="button-container">
+    <button class="btn btn--primary" (click)="crearSerie()">Crear Serie</button>
+    <button class="btn btn--primary" (click)="crearSubserie()">Crear Subserie</button>
+  </div>
+
+  <!-- Cuadro de Series -->
+  <div class="document-list">
+    <h2>Lista de Series</h2>
+
+    <!-- Tabla para mostrar las series, encabezados siempre visibles -->
+    <table>
+      <thead>
+      <tr>
+        <th>Código</th>
+        <th>Serie</th>
+        <th>Unidad</th>
+        <th>Acciones</th>
+      </tr>
+      </thead>
+      <tbody>
+      <!-- Esta parte solo muestra las filas si hay datos -->
+      <tr *ngFor="let serie of series">
+        <td>{{ serie.codigo }}</td>
+        <td>{{ serie.nombre }}</td>
+        <td>{{ serie.unidad_nombre }}</td>
+        <td>
+          <button class="btn btn--primary" (click)="verSerie(serie.id)">Ver</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+
+    <!-- Mensaje cuando no hay series -->
+    <div *ngIf="series.length === 0" class="no-docs-message">No hay series</div>
+  </div>
+</div>

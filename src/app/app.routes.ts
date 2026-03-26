@@ -3,6 +3,8 @@ import { HomeComponent } from './features/home/home.component';
 import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
 import { ActivateComponent } from './auth/activate.component';
 import { AuthGuard } from '../core/services/auth.guard';
+import {ArchivistaDashboardComponent} from './features/archivista/dashboard/archivista-dashboard.component';
+import {ArchivistaClasificacionComponent} from './features/archivista/clasificacion/archivista-clasificacion.component';
 
 
 export const routes: Routes = [
@@ -25,6 +27,16 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     loadChildren: () =>
       import('./features/editor/editor.routes').then((m) => m.EDITOR_ROUTES),
+  },
+  {
+    path: 'archivista/dashboard',
+    canActivate: [AuthGuard],
+    component: ArchivistaDashboardComponent,
+  },
+  {
+    path: 'archivista/clasificacion',
+    component: ArchivistaClasificacionComponent,
+    canActivate: [AuthGuard],
   },
 
   // ✅ HU-21: Carga masiva de documentos
