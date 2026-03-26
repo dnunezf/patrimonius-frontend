@@ -1,0 +1,265 @@
+:host {
+  display: block;
+}
+
+.md-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  z-index: 1100;
+}
+
+.md-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(920px, 96vw);
+  max-height: 90vh;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.22);
+  z-index: 1101;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.md-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.md-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.md-header__text {
+  margin: 6px 0 0;
+  font-size: 0.92rem;
+  color: #6b7280;
+}
+
+.md-close {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  color: #374151;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.md-close:hover {
+  background: #f9fafb;
+}
+
+.md-body {
+  padding: 24px;
+  overflow: auto;
+  background: #f8fafc;
+}
+
+.md-info,
+.md-error {
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+.md-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.md-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.md-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.md-section + .md-section {
+  margin-top: 18px;
+}
+
+.md-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.md-section__head h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.badge--edit {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.md-grid,
+.md-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.md-card-field,
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field--full {
+  grid-column: 1 / -1;
+}
+
+.md-card-field label,
+.form-field label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.ro,
+.form-field input,
+.form-field select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.95rem;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ro {
+  background: #f8fafc;
+  color: #374151;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.req {
+  color: #dc2626;
+}
+
+.hint {
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+.err {
+  color: #b91c1c;
+  font-size: 0.82rem;
+}
+
+.md-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-weight: 700;
+  font-size: 0.94rem;
+  cursor: pointer;
+}
+
+.btn--ghost {
+  background: #fff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.btn--ghost:hover {
+  background: #f9fafb;
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.btn--primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .md-modal {
+    width: 96vw;
+    max-height: 94vh;
+  }
+
+  .md-body {
+    padding: 16px;
+  }
+
+  .md-grid,
+  .md-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .md-footer {
+    flex-direction: column-reverse;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}

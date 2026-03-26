@@ -1,14 +1,17 @@
+
 import { Injectable, signal } from '@angular/core';
 
-/** UI-only store for header badge. Replace with real API later. */
 @Injectable({ providedIn: 'root' })
 export class NotificationsStore {
-  private readonly _count = signal(4);
+  private _count = signal(0);
   count = this._count.asReadonly();
+
   setCount(n: number) {
-    this._count.set(Math.max(0, n));
+    const safe = Number.isFinite(n) ? n : 0;
+    this._count.set(Math.max(0, safe));
   }
+
   decrement() {
-    this._count.update((c) => Math.max(0, c - 1));
+    this._count.update(v => Math.max(0, v - 1));
   }
 }

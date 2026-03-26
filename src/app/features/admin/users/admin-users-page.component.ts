@@ -11,6 +11,8 @@ import { UserFormDialogComponent } from './user-form-dialog.component';
 import { EDITOR_ID, ROLES, UNIDADES } from '../../../shared/data/catalogs';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
+import { ChangeDetectorRef } from '@angular/core';
+import { finalize, timeout, catchError, throwError } from 'rxjs';
 
 /** Admin Users page: now uses ToastService (success/error) and ConfirmService (delete). */
 @Component({
@@ -28,6 +30,8 @@ import { ConfirmService } from '../../../shared/ui/confirm.service';
   styleUrls: ['./admin-users-page.component.css'],
 })
 export class AdminUsersPageComponent {
+  readonly highlightId = signal<number | null>(null);
+
   readonly users = signal<AdminUser[]>([]);
   readonly loading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
@@ -36,6 +40,7 @@ export class AdminUsersPageComponent {
   readonly roleFilter = signal<number | 'all'>('all');
   readonly showForm = signal<boolean>(false);
   readonly editing = signal<AdminUser | null>(null);
+  readonly isBusy = signal(false);
 
   readonly filtered = computed(() => {
     const q = this.query().toLowerCase().trim();
@@ -46,14 +51,20 @@ export class AdminUsersPageComponent {
         `${u.nombre} ${u.apellido1} ${u.apellido2 ?? ''} ${u.email} ${u.unidad}`
           .toLowerCase()
           .includes(q);
-      const roleOk = role === 'all' || u.rolId === role;
-      return hit && roleOk;
+
+      if (role === 'all') return hit;
+
+      const hasPrimary = u.rolId === role;
+      const hasMulti =
+        Array.isArray(u.rolIds) && u.rolIds.some((id: number) => id === role);
+
+      return hit && (hasPrimary || hasMulti);
     });
   });
 
   readonly totalCount = computed(() => this.users().length);
   readonly editorsCount = computed(
-    () => this.users().filter((u) => u.rolId === EDITOR_ID).length
+    () => this.users().filter((u) => u.rolId === EDITOR_ID).length,
   );
 
   readonly ROLES = ROLES;
@@ -63,7 +74,8 @@ export class AdminUsersPageComponent {
   constructor(
     private api: AdminUsersService,
     private toast: ToastService,
-    private confirm: ConfirmService
+    private confirm: ConfirmService,
+    private cd: ChangeDetectorRef,
   ) {
     effect(() => void this.load());
   }
@@ -92,11 +104,21 @@ export class AdminUsersPageComponent {
     this.showForm.set(true);
   }
 
+  roleClass(name?: string): string {
+    const n = (name || '').toUpperCase();
+    if (n.startsWith('ADMIN')) return 'admin';
+    if (n.startsWith('EDITOR')) return 'editor';
+    if (n.startsWith('ARCH')) return 'arch';
+    if (n.includes('EXTERNO')) return 'ext';
+    if (n.startsWith('USU')) return 'user';
+    return '';
+  }
+
   /** Delete flow now asks confirmation and toasts the result (no window.confirm/alert). */
   async delete(u: AdminUser): Promise<void> {
     const ok = await this.confirm.ask(
       `Eliminar al usuario ${u.nombre} ${u.apellido1}?`,
-      'Confirmar eliminación'
+      'Confirmar eliminación',
     );
     if (!ok) return;
     this.api.remove(u.id).subscribe({
@@ -111,26 +133,81 @@ export class AdminUsersPageComponent {
   }
 
   /** Create/Update flow with success + error toasts and dialog auto-close. */
-  onSubmit(data: UpsertUserDto, editedId?: number): void {
-    const req = editedId
-      ? this.api.update(editedId, data)
-      : this.api.create(data);
-    req.subscribe({
-      next: () => {
-        this.showForm.set(false);
-        this.toast.success(editedId ? 'Cambios guardados' : 'Usuario creado');
-        this.load();
-      },
-      error: (e) => {
-        // Map common backend errors to friendly text
-        const msg =
-          e?.status === 409
-            ? 'El correo ya existe'
-            : e?.status === 400
-            ? e?.error?.message || 'Datos inválidos'
-            : 'Operación no completada';
-        this.toast.error(msg);
-      },
-    });
+  /** Create/Update without reload. Cierra el modal y parchea la lista. */
+  onSubmit(evtOrData: any, editedId?: number): void {
+    // Accept either:
+    // 1) (submit)="onSubmit($event)"  where $event = { data, id }
+    // 2) (submit)="onSubmit($event.data, $event.id)"
+    // 3) dialog emits the DTO directly (data-only)
+
+    const inferredId =
+      (evtOrData && typeof evtOrData === 'object' && 'id' in evtOrData
+        ? Number(evtOrData.id)
+        : undefined) ?? editedId;
+
+    const inferredData = (
+      evtOrData && typeof evtOrData === 'object' && 'data' in evtOrData
+        ? evtOrData.data
+        : evtOrData
+    ) as UpsertUserDto;
+
+     if (!inferredData) return;
+
+    this.isBusy.set(true);
+
+    const req = inferredId
+      ? this.api.update(inferredId, inferredData)
+      : this.api.create(inferredData);
+
+    const REQUEST_TIMEOUT_MS = 15000;
+
+    req
+      .pipe(
+        timeout(REQUEST_TIMEOUT_MS),
+        catchError((err) => {
+          if (err?.name === 'TimeoutError') {
+            return throwError(() => ({ status: -1, error: { message: 'La operación tardó demasiado. Intente de nuevo.' } }));
+          }
+          return throwError(() => err);
+        }),
+        finalize(() => this.isBusy.set(false)),
+      )
+      .subscribe({
+        next: (saved) => {
+          this.showForm.set(false);
+          if (inferredId) {
+            this.users.update((list) =>
+              list.map((u) => (u.id === saved.id ? saved : u)),
+            );
+            this.toast.success('Cambios guardados');
+          } else {
+            this.users.update((list) => [saved, ...list]);
+            this.toast.success('Usuario creado');
+          }
+          this.highlight(saved.id);
+          this.cd.markForCheck();
+        },
+        error: (e) => {
+          const customMsg = e?.error?.message;
+          const msg =
+            e?.status === 409
+              ? 'Este correo ya está asociado a otra cuenta.'
+              : e?.status === 422
+                ? 'Revise los datos ingresados. Solo se permiten caracteres válidos en nombre, apellidos y correo.'
+                : e?.status === 400
+                  ? customMsg || 'Datos inválidos'
+                  : typeof customMsg === 'string' && customMsg
+                    ? customMsg
+                    : e?.status === 0 || e?.status === -1
+                      ? 'No se pudo conectar. Intente de nuevo.'
+                      : 'Operación no completada';
+          this.toast.error(msg);
+        },
+      });
+  }
+
+  private highlight(id: number) {
+    this.highlightId.set(id);
+    setTimeout(() => this.highlightId.set(null), 1200);
   }
 }

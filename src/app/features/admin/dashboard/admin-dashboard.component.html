@@ -7,30 +7,6 @@
     </p>
   </section>
 
-  <!-- Top stats -->
-  <section class="row cols-4" style="margin-bottom: 20px">
-    <div class="card" *ngFor="let s of statCards">
-      <div style="display: flex; gap: 12px; align-items: center">
-        <div class="icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <rect
-              x="4"
-              y="4"
-              width="16"
-              height="16"
-              rx="4"
-              fill="var(--mncr-blue-3015)"
-            ></rect>
-          </svg>
-        </div>
-        <div>
-          <div class="stat-title">{{ s.label }}</div>
-          <div class="stat-value">{{ s.value }}</div>
-          <div class="stat-sub">{{ s.subtitle }}</div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- Module cards -->
   <h2>Módulos Administrativos</h2>
@@ -43,10 +19,12 @@
     >
       <div class="module__head">
         <div class="module__title">
-          <div class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" fill="#f1f5f9" />
-            </svg>
+          <div class="icon-wrapper">
+            <img
+              [src]="'assets/icons/' + m.icon + '.png'"
+              alt="{{ m.title }}"
+              class="icon-img"
+            />
           </div>
           <strong>{{ m.title }}</strong>
         </div>
@@ -56,11 +34,6 @@
       </div>
 
       <p class="module__desc">{{ m.description }}</p>
-
-      <div class="module__stats">
-        <span class="module__stats-label">{{ m.statsLabel }}</span>
-        <strong class="module__stats-value">{{ m.statsValue }}</strong>
-      </div>
 
       <ul
         style="margin: 0; padding-left: 18px; color: #374151; font-size: 14px"

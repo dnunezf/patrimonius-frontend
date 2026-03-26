@@ -1,0 +1,511 @@
+<div class="overlay">
+  <div class="modal">
+    <div class="modal__header">
+      <div class="header__left">
+        <div class="header__icon">📄</div>
+        <div class="header__text">
+          <h2 class="header__title">Carga masiva de documentos</h2>
+          <p class="header__subtitle">
+            Carga lotes de documentos digitales escaneados o electrónicos.
+          </p>
+        </div>
+      </div>
+
+      <button class="header__close" type="button" (click)="onClose()">✕</button>
+    </div>
+
+    <div class="stepper">
+      <button
+        type="button"
+        class="stepper__item"
+        [class.is-active]="currentStep === 1"
+        (click)="goToStep(1)"
+      >
+        <span class="stepper__circle">1</span>
+        <span class="stepper__label">Carga del lote</span>
+      </button>
+
+      <span class="stepper__line"></span>
+
+      <button
+        type="button"
+        class="stepper__item"
+        [class.is-active]="currentStep === 2"
+        [disabled]="!selectedFiles.length"
+        (click)="selectedFiles.length ? goToStep(2) : null"
+      >
+        <span class="stepper__circle">2</span>
+        <span class="stepper__label">Ingreso de metadatos</span>
+      </button>
+
+      <span class="stepper__line"></span>
+
+      <button
+        type="button"
+        class="stepper__item"
+        [class.is-active]="currentStep === 3"
+        [disabled]="!hasTriedUpload && !uploadResult"
+        (click)="(hasTriedUpload || uploadResult) ? goToStep(3) : null"
+      >
+        <span class="stepper__circle">3</span>
+        <span class="stepper__label">Resultado</span>
+      </button>
+    </div>
+
+    <div class="modal__body">
+      <!-- PASO 1 -->
+      <div class="step-content" *ngIf="currentStep === 1">
+        <div class="upload-layout">
+          <section class="upload-main">
+            <div class="origin-box">
+              <h3 class="section-title">Tipo de documentos del lote</h3>
+              <div class="origin-options">
+                <button
+                  type="button"
+                  class="origin-card"
+                  [class.is-active]="documentOrigin === 'ESCANEADO'"
+                  (click)="setOrigin('ESCANEADO')"
+                >
+                  <div class="origin-card__title">PDF escaneado</div>
+                  <div class="origin-card__text">
+                    Se carga directamente. No se valida firma digital.
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  class="origin-card"
+                  [class.is-active]="documentOrigin === 'ELECTRONICO'"
+                  (click)="setOrigin('ELECTRONICO')"
+                >
+                  <div class="origin-card__title">PDF electrónico</div>
+                  <div class="origin-card__text">
+                    Se valida que el PDF contenga marcas típicas de firma digital.
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div class="mode-box">
+              <h3 class="section-title">Método de carga</h3>
+              <div class="mode-options">
+                <button
+                  type="button"
+                  class="mode-card"
+                  [class.is-active]="mode === 'FILES'"
+                  (click)="setMode('FILES')"
+                >
+                  <div class="mode-card__title">Subir archivos</div>
+                  <div class="mode-card__text">
+                    Selecciona uno o varios PDFs manualmente.
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  class="mode-card"
+                  [class.is-active]="mode === 'FOLDER'"
+                  (click)="setMode('FOLDER')"
+                >
+                  <div class="mode-card__title">Cargar carpeta</div>
+                  <div class="mode-card__text">
+                    Selecciona una carpeta y se tomarán todos los PDFs que contenga.
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="dropzone"
+              [class.is-dragging]="isDragging"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)"
+            >
+              <div class="dropzone__inner">
+                <div class="dropzone__bigicon">📄</div>
+                <p class="dropzone__title">
+                  Arrastra y suelta archivos PDF aquí
+                </p>
+
+                <label class="dropzone__btn">
+                  {{ mode === 'FILES' ? 'Seleccionar archivos' : 'Seleccionar carpeta' }}
+
+                  <input
+                    *ngIf="mode === 'FILES'"
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    multiple
+                    hidden
+                    (change)="onFileSelected($event)"
+                  />
+
+                  <input
+                    *ngIf="mode === 'FOLDER'"
+                    type="file"
+                    hidden
+                    multiple
+                    webkitdirectory
+                    directory
+                    (change)="onFolderSelected($event)"
+                  />
+                </label>
+
+                <p class="dropzone__hint">
+                  Formato permitido: PDF (máx. 50MB por archivo)
+                </p>
+              </div>
+            </div>
+
+            <div class="metadata-box">
+              <div class="metadata-box__header">
+                <h3 class="section-title">Valores comunes opcionales</h3>
+              </div>
+
+              <div class="metadata-grid">
+                <div class="field">
+                  <label class="field__label">Fecha de creación</label>
+                  <input
+                    class="field__input"
+                    type="date"
+                    [(ngModel)]="metadataLoteDefaults.fechaCreacion"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label">Unidad responsable</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="metadataLoteDefaults.unidadResponsable"
+                    placeholder="Ej. Archivo Central"
+                  />
+                </div>
+              </div>
+
+              <p class="metadata-note">
+                Los metadatos específicos se completan por cada archivo en el panel derecho.
+              </p>
+            </div>
+
+            <div class="alert alert--error" *ngIf="currentStep === 1 && errorMessage">
+              {{ errorMessage }}
+            </div>
+          </section>
+
+          <aside class="upload-sidebar">
+            <div class="summary-panel">
+              <h3 class="section-title">Resumen del lote</h3>
+
+              <div class="summary-stats">
+                <div class="summary-stat">
+                  <span class="summary-stat__label">Origen</span>
+                  <strong class="summary-stat__value">
+                    {{ documentOrigin === 'ESCANEADO' ? 'PDF escaneado' : 'PDF electrónico' }}
+                  </strong>
+                </div>
+
+                <div class="summary-stat">
+                  <span class="summary-stat__label">Método</span>
+                  <strong class="summary-stat__value">
+                    {{ mode === 'FILES' ? 'Archivos' : 'Carpeta' }}
+                  </strong>
+                </div>
+
+                <div class="summary-stat">
+                  <span class="summary-stat__label">Cantidad</span>
+                  <strong class="summary-stat__value">
+                    {{ selectedFiles.length }} archivo(s)
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="files-panel">
+              <div class="files-panel__header">
+                <h3 class="section-title">Archivos seleccionados</h3>
+                <span class="files-panel__count">{{ selectedFiles.length }}</span>
+              </div>
+
+              <div class="files-panel__empty" *ngIf="!selectedFiles.length">
+                Aún no has agregado archivos al lote.
+              </div>
+
+              <div class="files-panel__list" *ngIf="selectedFiles.length">
+                <div
+                  class="file-card"
+                  *ngFor="let entry of documentEntries; let i = index; trackBy: trackByEntry"
+                >
+                  <div class="file-card__content">
+                    <div class="file-card__name">{{ getFileDisplayName(entry.file) }}</div>
+                    <div class="file-card__meta">
+                      {{ (entry.file.size / 1024 / 1024).toFixed(2) }} MB
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="file-card__remove"
+                    (click)="removeFile(i)"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- PASO 2 -->
+      <div class="step-content" *ngIf="currentStep === 2">
+        <div class="upload-layout">
+          <section class="upload-main">
+            <div class="metadata-editor" *ngIf="activeDocumentEntry as active">
+              <h3 class="section-title">Metadatos del documento</h3>
+              <p class="metadata-note">
+                Edita los metadatos del archivo seleccionado.
+              </p>
+
+              <div class="field">
+                <label class="field__label">Documento</label>
+                <div class="field__static">{{ getFileDisplayName(active.file) }}</div>
+              </div>
+
+              <div class="metadata-grid">
+                <div class="field">
+                  <label class="field__label">Título *</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="active.metadata.title"
+                    placeholder="Título del documento"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label">Palabras clave (CSV)</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="active.metadata.keywords"
+                    placeholder="contrato, servicios, ana"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label">Clase preliminar</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="active.metadata.preliminaryClass"
+                    placeholder="CONTRATO"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field__label">Código de clasificación</label>
+                  <input
+                    class="field__input"
+                    type="text"
+                    [(ngModel)]="active.metadata.classificationCode"
+                    placeholder="LEG-2026-01"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert--error" *ngIf="hasMissingTitles">
+              Debes completar el título de todos los documentos antes de cargar el lote.
+            </div>
+          </section>
+
+          <aside class="upload-sidebar">
+            <div class="files-panel">
+              <div class="files-panel__header">
+                <h3 class="section-title">Documentos del lote</h3>
+                <span class="files-panel__count">{{ documentEntries.length }}</span>
+              </div>
+
+              <div class="files-panel__empty" *ngIf="!documentEntries.length">
+                No hay documentos para editar metadatos.
+              </div>
+
+              <div class="files-panel__list" *ngIf="documentEntries.length">
+                <button
+                  type="button"
+                  class="doc-select-item"
+                  *ngFor="let entry of documentEntries; let i = index; trackBy: trackByEntry"
+                  [class.is-active]="selectedMetadataIndex === i"
+                  (click)="selectMetadataDocument(i)"
+                >
+                  <span class="doc-select-item__name">{{ getFileDisplayName(entry.file) }}</span>
+                  <span class="doc-select-item__meta">
+                    {{ entry.metadata.title.trim() ? 'Título listo' : 'Falta título' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="step-content" *ngIf="currentStep === 3">
+        <div class="result-box" *ngIf="uploadResult; else emptyResult">
+          <div class="result-box__header">
+            <div>
+              <h3 class="section-title section-title--result">Resultado de la carga</h3>
+              <p class="result-box__subtitle">
+                Resumen del procesamiento del lote cargado.
+              </p>
+            </div>
+          </div>
+
+          <div class="alert alert--error" *ngIf="errorMessage">
+            {{ errorMessage }}
+          </div>
+
+          <div class="result-summary-cards">
+            <div class="summary-card">
+              <span class="summary-card__label">Total</span>
+              <span class="summary-card__value">{{ totalCount }}</span>
+            </div>
+
+            <div class="summary-card summary-card--success">
+              <span class="summary-card__label">Procesados</span>
+              <span class="summary-card__value">{{ successCount }}</span>
+            </div>
+
+            <div class="summary-card summary-card--danger">
+              <span class="summary-card__label">Con error</span>
+              <span class="summary-card__value">{{ errorCount }}</span>
+            </div>
+          </div>
+
+          <div
+            class="result-columns"
+            [class.result-columns--single]="!(resultSuccess.length && resultErrors.length)"
+            *ngIf="resultSuccess.length || resultErrors.length"
+          >
+            <div class="result-panel" *ngIf="resultSuccess.length">
+              <div class="result-panel__header">
+                <h4>Documentos procesados</h4>
+                <span class="result-panel__count">{{ resultSuccess.length }}</span>
+              </div>
+
+              <div class="result-panel__list">
+                <div class="result-card result-card--ok" *ngFor="let item of resultSuccess">
+                  <div class="result-card__top">
+                    <div class="result-card__file">
+                      {{
+                        item?.archivo ||
+                        item?.nombre ||
+                        item?.fileName ||
+                        item?.titulo ||
+                        'Documento procesado'
+                      }}
+                    </div>
+                    <span class="result-badge result-badge--ok">OK</span>
+                  </div>
+
+                  <div
+                    class="result-card__meta"
+                    *ngIf="item?.mensaje || item?.message || item?.estado || item?.verificacion_firma_estado"
+                  >
+                    {{
+                      item?.mensaje ||
+                      item?.message ||
+                      ('Estado: ' + (item?.estado || 'Procesado')) +
+                      (item?.verificacion_firma_estado ? ' · Firma: ' + item.verificacion_firma_estado : '')
+                    }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="result-panel" *ngIf="resultErrors.length">
+              <div class="result-panel__header">
+                <h4>Documentos con error</h4>
+                <span class="result-panel__count">{{ resultErrors.length }}</span>
+              </div>
+
+              <div class="result-panel__list">
+                <div class="result-card result-card--error" *ngFor="let item of resultErrors">
+                  <div class="result-card__top">
+                    <div class="result-card__file">
+                      {{ item?.archivo || item?.nombre || item?.fileName || 'Documento con error' }}
+                    </div>
+                    <span class="result-badge result-badge--error">Error</span>
+                  </div>
+
+                  <div class="result-card__reason">
+                    {{
+                      item?.motivo ||
+                      item?.mensaje ||
+                      item?.message ||
+                      item?.error ||
+                      'No se pudo procesar el documento.'
+                    }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <pre
+            class="result-json"
+            *ngIf="!resultSuccess.length && !resultErrors.length"
+          >{{ uploadResult | json }}</pre>
+        </div>
+
+        <ng-template #emptyResult>
+          <div class="empty-result-box">
+            <p *ngIf="!hasTriedUpload">
+              Aún no se ha ejecutado la carga del lote.
+            </p>
+
+            <p *ngIf="hasTriedUpload && !uploadResult">
+              No se recibió un resultado del servidor.
+            </p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button
+        *ngIf="currentStep > 1"
+        type="button"
+        class="btn btn--ghost"
+        (click)="prevStep()"
+      >
+        Volver
+      </button>
+
+      <button type="button" class="btn btn--ghost" (click)="onCancel()">
+        Cancelar
+      </button>
+
+      <button
+        *ngIf="currentStep === 1"
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canContinue"
+        (click)="nextStep()"
+      >
+        Continuar
+      </button>
+
+      <button
+        *ngIf="currentStep === 2"
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canUpload"
+        (click)="uploadFiles()"
+      >
+        {{ isUploading ? 'Cargando...' : 'Cargar lote' }}
+      </button>
+    </div>
+  </div>
+</div>

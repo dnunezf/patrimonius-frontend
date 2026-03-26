@@ -9,7 +9,7 @@
 
   <section class="section card">
     <div class="card__title">
-      <h2 class="h3">Filtros y Búsqueda Avanzada</h2>
+      <h2 class="h3">Filtros</h2>
     </div>
 
     <form class="form filters-grid" (ngSubmit)="applyFilters()">
@@ -17,7 +17,8 @@
       <div class="form__group">
         <label class="form__label" for="q">Búsqueda General</label>
         <input id="q" class="form__control" type="text" [(ngModel)]="filters.q" name="q"
-               placeholder="Usuario, documento, código, razón...">
+               (ngModelChange)="limitWords($event, 'q')"
+               placeholder="Usuario, título, nombre… (máx. 5 palabras)">
       </div>
 
       <div class="form__group">
@@ -31,14 +32,7 @@
       <div class="form__group">
         <label class="form__label" for="state">Estado del Documento</label>
         <select id="state" class="form__control" [(ngModel)]="filters.state" name="state">
-          <option *ngFor="let s of states" [ngValue]="s">{{ s }}</option>
-        </select>
-      </div>
-
-      <div class="form__group">
-        <label class="form__label" for="action">Tipo de Acción</label>
-        <select id="action" class="form__control" [(ngModel)]="filters.action" name="action">
-          <option *ngFor="let a of actions" [ngValue]="a">{{ a }}</option>
+          <option *ngFor="let s of stateOptions" [ngValue]="s.value">{{ s.label }}</option>
         </select>
       </div>
 
@@ -51,9 +45,16 @@
       </div>
 
       <div class="form__group">
-        <label class="form__label" for="document">Documento</label>
-        <input id="document" class="form__control" type="text" [(ngModel)]="filters.document" name="document"
-               placeholder="Filtrar por nombre de documento…">
+        <label class="form__label" for="document">Título</label>
+        <input
+          id="document"
+          class="form__control"
+          type="text"
+          [(ngModel)]="filters.document"
+          name="document"
+          (ngModelChange)="limitWords($event, 'document')"
+          placeholder="Filtrar por título… (máx. 5 palabras)"
+        />
       </div>
 
 
@@ -79,38 +80,51 @@
       <table class="tbl">
         <thead>
         <tr>
-          <th>Fecha y hora</th>
-          <th>Usuario</th>
-          <th>Documento </th>
-          <th>Acción solicitada</th>
-          <th>Estado del documento</th>
-          <th>Resultado</th>
-          <th>Razón</th>
-          <th>Detalles</th>
+        <th>Fecha y hora</th>
+        <th>Usuario</th>
+        <th>Título</th>
+        <th>Nombre</th>
+
+        <th>Acción solicitada</th>
+        <th>Estado del documento</th>
+        <th>Resultado</th>
+        <th></th>
+
         </tr>
         </thead>
+
         <tbody>
         <tr *ngFor="let e of events">
-          <td class="nowrap">{{ e.fecha_hora }}</td>
-          <td><div class="bold">{{ e.usuario }}</div></td>
+          <td class="nowrap">{{ formatDateTime(e.fecha_hora) }}</td>
+
           <td>
-            <div class="bold">{{ e.documento_titulo || '—' }}</div>
-            <div class="codes">
-              <span *ngIf="e.documento_codigo_unico" class="badge badge-blue">{{ e.documento_codigo_unico }}</span>
-              <span *ngIf="e.documento_codigo_oficial" class="badge badge-green">{{ e.documento_codigo_oficial }}</span>
-            </div>
+            <div>{{ e.usuario || '—' }}</div>
           </td>
+
+          <td>
+            <div>{{ e.documento_titulo || '—' }}</div>
+          </td>
+
+          <td>
+            {{ documentName(e) }}
+          </td>
+
           <td>{{ e.accion_solicitada || '—' }}</td>
-          <td><span class="{{ stateClass(e.estado_documento) }}">{{ e.estado_documento || '—' }}</span></td>
-          <td><span class="{{ resultClass(e.resultado) }}">{{ e.resultado || '—' }}</span></td>
-          <td>{{ e.razon || '—' }}</td>
+
+          <td>{{ e.estado_documento || '—' }}</td>
+
+          <td>{{ e.resultado || '—' }}</td>
           <td>
-            <button type="button" class="button-outline" (click)="openDetail(e)">Ver detalles</button>
+            <button type="button" class="button-outline button-sm" (click)="openDetail(e)">
+              Detalle
+            </button>
           </td>
+
         </tr>
         </tbody>
       </table>
     </div>
+
 
     <div class="pager muted">
       <button class="button-outline" [disabled]="page<=1" (click)="goPrev()">« Anterior</button>
@@ -122,3 +136,11 @@
   </section>
 
 </main>
+
+<app-document-cycle-detail-modal
+  [open]="detailOpen"
+  [loading]="detailLoading"
+  [error]="detailError"
+  [detail]="detail"
+  (closed)="closeDetail()"
+/>

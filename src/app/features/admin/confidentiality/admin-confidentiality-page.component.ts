@@ -1,28 +1,70 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, effect, signal } from '@angular/core';
 import { CommonModule, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+
 import {
   ConfidentialityService,
   ConfLevel,
   Action,
   ConfDto,
+  ConfConfig,
+  ConfDocumentOption,
 } from '../../../../core/services/confidentiality.service';
-import {
-  AuditService,
-  AuditItem,
-} from '../../../../core/services/audit.service';
 
-/** Local row models only for UI rendering */
-type UserRow = {
+import {
+  AccessControlService,
+  DocumentRow,
+} from '../../../../core/services/access-control.service';
+
+import {
+  AdminUsersService,
+  AdminUser,
+  Perm,
+} from '../../../../core/services/admin-users.service';
+
+import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../shared/ui/toast.service';
+import { ConfirmService } from '../../../shared/ui/confirm.service';
+
+/** Minimal role row returned by /admin/roles */
+type RoleRowApi = { id: number; nombre: string };
+
+/** Document selector option (combines multiple sources depending on availability). */
+type DocumentOption = {
+  id: number;
+  code: string;
+  title: string;
+  type?: string | null;
+  unit?: string | null;
+  unitId?: number | null;
+  level?: ConfLevel | null;
+};
+
+/**
+ * UI row for the "Configured Access Rules" table.
+ * NOTE: Restrictions/authorizedAt/actions buttons were removed in the redesigned UI.
+ */
+type UserRuleRow = {
   userId: number;
+  actions: Action[];
+  displayName: string;
   email: string;
-  name: string;
+  unit?: string | null;
+  editorAccessLabel: string;
+};
+
+/**
+ * UI row for the "Authorized Roles" table.
+ * NOTE: Role ID column was removed in the redesigned UI.
+ */
+type RoleRuleRow = {
+  roleId: number;
+  roleName?: string | null;
   actions: Action[];
 };
-type RoleRow = { roleId: number; label: string; actions: Action[] };
 
-/** Map engine levels -> Spanish label shown to the user */
 const LEVEL_LABEL: Record<ConfLevel, string> = {
   PUBLIC: 'Público',
   INTERNAL: 'Interno',
@@ -30,182 +72,625 @@ const LEVEL_LABEL: Record<ConfLevel, string> = {
   RESTRICTED: 'Restringido',
 };
 
-/** Spanish labels for action chips */
-const ACTION_LABEL: Record<Action, string> = {
-  VIEW: 'Ver',
-  EDIT: 'Editar',
-  SIGN: 'Firmar',
-};
-
 @Component({
   selector: 'app-admin-confidentiality-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NgIf, NgFor],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './admin-confidentiality-page.component.html',
   styleUrls: ['./admin-confidentiality-page.component.css'],
 })
 export class AdminConfidentialityPageComponent {
-  // ---------- UI state ----------
-  activeTab = signal<'control' | 'log'>('control');
-  loading = signal(false);
+  // ----------------------------
+  // UI state
+  // ----------------------------
   saving = signal(false);
+  loading = signal(false);
 
-  // ---------- Document selection ----------
-  search = signal('');
-  selectedDocId = signal<number | null>(null);
+  // ----------------------------
+  // Documents
+  // ----------------------------
+  searchQuery = signal<string>('');
+  selectedDocumentId = signal<number | null>(null);
+  selectedDocument = signal<DocumentOption | null>(null);
+  documentOptions = signal<DocumentOption[]>([]);
 
-  // NOTE: Replace with real search results when documents API is ready
-  docOptions = signal<{ id: number; title: string }[]>([
-    { id: 1, title: 'Acta de Junta Directiva - Enero 2025' },
-    { id: 2, title: 'Presupuesto Institucional 2025' },
-    { id: 3, title: 'Informe de Conservación - Dic 2024' },
-  ]);
+  // ----------------------------
+  // Config state (allow-lists)
+  // ----------------------------
+  currentLevel = signal<ConfLevel>('PUBLIC');
+  editLevel = signal<ConfLevel>('PUBLIC');
+  allowedUsers = signal<{ userId: number; actions: Action[] }[]>([]);
+  allowedRoles = signal<{ roleId: number; actions: Action[] }[]>([]);
 
-  // ---------- Confidentiality config model ----------
-  level = signal<ConfLevel>('PUBLIC');
-  userRows = signal<UserRow[]>([]);
-  roleRows = signal<RoleRow[]>([]);
+  // ----------------------------
+  // Reference data
+  // ----------------------------
+  allUsers = signal<AdminUser[]>([]);
+  allRoles = signal<RoleRowApi[]>([]);
 
-  // ---------- Log tab state ----------
-  logLoading = signal(false);
-  logItems = signal<AuditItem[]>([]);
-  logPeriod = signal<'24h' | '7d' | '30d'>('24h');
-  logResult = signal<'ALL' | 'PERMITTED' | 'DENIED'>('ALL'); // Spanish labels are in template
-  logAction = signal<'ALL' | Action>('ALL');
+  /** Metric: number of users explicitly allowed for the selected document. */
+  allowedUsersCount = computed(() => this.allowedUsers().length);
 
-  // ---------- Derived counters for the top metrics ----------
-  /** Count 1 if the current document level is sensitive (HIGH/RESTRICTED). */
-  highCount = computed(() =>
-    this.level() === 'HIGH' || this.level() === 'RESTRICTED' ? 1 : 0
-  );
+  // ----------------------------
+  // Add user modal
+  // ----------------------------
+  isAddUserOpen = signal(false);
+  userSearchQuery = signal('');
+  selectedUserId = signal<number | null>(null);
+  tempUserActions = signal<Action[]>(['VIEW']);
 
-  /** Number of user rows configured (for metric card). */
-  usersWithPerms = computed(() => this.userRows().length);
+  // ----------------------------
+  // Add role modal
+  // ----------------------------
+  isAddRoleOpen = signal(false);
+  selectedRoleId = signal<number | null>(null);
+  tempRoleActions = signal<Action[]>(['VIEW']);
+
+  /**
+   * Redesign change:
+   * The "Editor Permissions" modal and its actions were removed from the UI.
+   * Keep no state/methods for that modal to avoid dead code and accidental triggers.
+   */
 
   constructor(
     private confSvc: ConfidentialityService,
-    private audit: AuditService
-  ) {}
+    private accessCtrl: AccessControlService,
+    private adminUsers: AdminUsersService,
+    private http: HttpClient,
+    private toasts: ToastService,
+    private confirm: ConfirmService,
+  ) {
+    this.bootstrap();
 
-  // ---------- Control tab actions ----------
-  /** Pull current config for selected document. */
-  loadConfig(): void {
-    const id = this.selectedDocId();
-    if (!id) return;
-    this.loading.set(true);
-    this.confSvc.getConfig(id).subscribe({
-      next: (cfg) => {
-        this.level.set(cfg.level);
-        this.userRows.set(
-          (cfg.users || []).map((u) => ({
-            userId: u.userId,
-            email: '',
-            name: '',
-            actions: u.actions,
-          }))
-        );
-        this.roleRows.set(
-          (cfg.roles || []).map((r) => ({
-            roleId: r.roleId,
-            label: '',
-            actions: r.actions,
-          }))
-        );
+    // Keep a derived "selectedDocument" for summary rendering.
+    effect(() => {
+      const id = this.selectedDocumentId();
+      const doc = this.documentOptions().find((d) => d.id === id) || null;
+      this.selectedDocument.set(doc);
+    });
+
+    // Debounced server-side document search.
+    effect((onCleanup) => {
+      const q = this.searchQuery();
+      const handle = window.setTimeout(
+        () => this.fetchDocumentsFromServer(q),
+        200,
+      );
+      onCleanup(() => window.clearTimeout(handle));
+    });
+  }
+
+  // ----------------------------
+  // Bootstrap
+  // ----------------------------
+  private bootstrap(): void {
+    this.loadUsers();
+    this.loadRoles();
+    this.fetchDocumentsFromServer('');
+  }
+
+  private loadUsers(): void {
+    this.adminUsers.list().subscribe({
+      next: (u) => this.allUsers.set(u || []),
+      error: (e) => {
+        this.allUsers.set([]);
+        this.toasts.error(this.humanHttpError(e, 'Failed to load users.'));
       },
-      error: () => {},
-      complete: () => this.loading.set(false),
     });
   }
 
-  /** Add/remove row helpers */
-  addUser(): void {
-    this.userRows.update((a) => [
-      ...a,
-      { userId: 0, email: '', name: '', actions: ['VIEW'] },
-    ]);
-  }
-  removeUser(i: number): void {
-    this.userRows.update((a) => a.filter((_, idx) => idx !== i));
-  }
-  addRole(): void {
-    this.roleRows.update((a) => [
-      ...a,
-      { roleId: 0, label: '', actions: ['VIEW'] },
-    ]);
-  }
-  removeRole(i: number): void {
-    this.roleRows.update((a) => a.filter((_, idx) => idx !== i));
-  }
-
-  /** Toggle a single action within a list (immutably). */
-  toggleAction(list: Action[], a: Action): Action[] {
-    return list.includes(a) ? list.filter((x) => x !== a) : [...list, a];
-  }
-
-  /** Persist configuration to backend. */
-  save(): void {
-    const id = this.selectedDocId();
-    if (!id) return;
-    this.saving.set(true);
-
-    const dto: ConfDto = {
-      level: this.level(),
-      users: this.userRows()
-        .filter((u) => u.userId > 0)
-        .map((u) => ({ userId: u.userId, actions: u.actions })),
-      roles: this.roleRows()
-        .filter((r) => r.roleId > 0)
-        .map((r) => ({ roleId: r.roleId, actions: r.actions })),
-    };
-
-    this.confSvc.setConfig(id, dto).subscribe({
-      next: () => {},
-      error: () => {},
-      complete: () => this.saving.set(false),
+  private loadRoles(): void {
+    this.http.get<RoleRowApi[]>(`${environment.apiUrl}/admin/roles`).subscribe({
+      next: (r) => this.allRoles.set(r || []),
+      error: (e) => {
+        this.allRoles.set([]);
+        this.toasts.error(this.humanHttpError(e, 'Failed to load roles.'));
+      },
     });
   }
 
-  // ---------- Log tab ----------
-  /** Fetches audit page using Spanish-select values mapped to API filters. */
-  loadLog(): void {
-    this.logLoading.set(true);
+  /**
+   * Preferred source: confidentiality service which can provide per-document level.
+   * Falls back to the access control listing when confidentiality listing is unavailable.
+   */
+  private fetchDocumentsFromServer(search: string): void {
+    this.confSvc.listDocuments(search || '').subscribe({
+      next: (rows: ConfDocumentOption[]) => {
+        const options: DocumentOption[] = (rows || []).map((d) => ({
+          id: Number(d.id),
+          code: d.code || String(d.id),
+          title: d.title || `Documento ${d.id}`,
+          type: null,
+          unit: d.unit ?? null,
+          unitId: d.unitId ?? null,
+          level: (d.level as ConfLevel) || null,
+        }));
+        this.documentOptions.set(options);
 
-    // Build filters expected by the backend API
-    const filters: Record<string, string> = {};
-    if (this.logResult() === 'PERMITTED') filters['resultado'] = 'OK';
-    if (this.logResult() === 'DENIED') filters['resultado'] = 'DENIED';
-    if (this.logAction() !== 'ALL')
-      filters['accion_solicitada'] = this.logAction();
-
-    this.audit
-      .listEvents({
-        page: 1,
-        pageSize: 25,
-        ...filters,
-        sortBy: 'fecha_hora',
-        sortDir: 'desc', // our AuditService allows 'asc' | 'desc'
-      })
-      .subscribe({
-        next: (page) => this.logItems.set(page.items || []),
-        error: () => {},
-        complete: () => this.logLoading.set(false),
-      });
+        // If the previously selected document disappears from the filtered list, reset state.
+        const selectedId = this.selectedDocumentId();
+        if (selectedId && !options.some((x) => x.id === selectedId)) {
+          this.resetSelectionState();
+        }
+      },
+      error: () => this.loadDocumentsFallback(),
+    });
   }
 
-  // ---------- Helpers ----------
-  /** Spanish label for a given level code. */
+  private loadDocumentsFallback(): void {
+    this.accessCtrl.getAccessControl({ page: 1, pageSize: 500 }).subscribe({
+      next: (page) => {
+        const items: DocumentRow[] = page?.items || [];
+        const options: DocumentOption[] = items.map((d) => ({
+          id: d.id,
+          code: d.code || String(d.id),
+          title: d.title || `Documento ${d.id}`,
+          type: (d as any).categoria ?? null,
+          unit: d.unit ?? null,
+          unitId: d.unitId ?? null,
+          level: null,
+        }));
+        this.documentOptions.set(options);
+      },
+      error: (e) => {
+        this.documentOptions.set([]);
+        this.toasts.error(this.humanHttpError(e, 'Failed to load documents.'));
+      },
+    });
+  }
+
+  // ----------------------------
+  // Labels / helpers
+  // ----------------------------
   levelLabel(lv: ConfLevel): string {
     return LEVEL_LABEL[lv];
   }
 
-  /** Spanish label for a given action code. */
-  actionLabel(a: Action): string {
-    return ACTION_LABEL[a];
+  currentLevelLabel(): string {
+    return LEVEL_LABEL[this.currentLevel()];
   }
 
-  /** Simple client-side filter for the document combo. */
-  filteredDocs() {
-    const q = this.search().toLowerCase();
-    return this.docOptions().filter((d) => d.title.toLowerCase().includes(q));
+  filteredDocuments(): DocumentOption[] {
+    const q = (this.searchQuery() || '').trim().toLowerCase();
+    if (!q) return this.documentOptions();
+    return this.documentOptions().filter(
+      (d) =>
+        (d.title || '').toLowerCase().includes(q) ||
+        (d.code || '').toLowerCase().includes(q) ||
+        String(d.id).includes(q) ||
+        (d.type || '').toLowerCase().includes(q),
+    );
+  }
+
+  filteredDocumentsCount(): number {
+    return this.filteredDocuments().length;
+  }
+
+  filteredUsers(): AdminUser[] {
+    const q = (this.userSearchQuery() || '').trim().toLowerCase();
+    const base = this.allUsers();
+    if (!q) return base;
+
+    return base.filter((u) => {
+      const full =
+        `${u.nombre} ${u.apellido1} ${u.apellido2 || ''}`.toLowerCase();
+      const unit = ((u as any).unidad || '').toLowerCase();
+      return (
+        full.includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        unit.includes(q)
+      );
+    });
+  }
+
+  filteredUsersCount(): number {
+    return this.filteredUsers().length;
+  }
+
+  // ----------------------------
+  // Document selection & config load
+  // ----------------------------
+  onSelectDocument(raw: any): void {
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      this.toasts.error('Invalid document selection.');
+      return;
+    }
+    this.selectedDocumentId.set(parsed);
+    this.loadConfig(parsed);
+  }
+
+  private loadConfig(docId: number): void {
+    this.loading.set(true);
+
+    this.confSvc.getConfig(docId).subscribe({
+      next: (cfg: ConfConfig) => {
+        const level = (cfg?.level || 'PUBLIC') as ConfLevel;
+
+        this.currentLevel.set(level);
+        this.editLevel.set(level);
+
+        this.allowedUsers.set(
+          (cfg.users || []).map((u) => ({
+            userId: Number(u.userId),
+            actions: this.normalizeActions(u.actions),
+          })),
+        );
+
+        this.allowedRoles.set(
+          (cfg.roles || []).map((r) => ({
+            roleId: Number(r.roleId),
+            actions: this.normalizeActions(r.actions),
+          })),
+        );
+
+        // Optional toast; keep if you want explicit feedback.
+        this.toasts.info('Configuration loaded.');
+      },
+      error: (e) => {
+        this.allowedUsers.set([]);
+        this.allowedRoles.set([]);
+        this.currentLevel.set('PUBLIC');
+        this.editLevel.set('PUBLIC');
+        this.toasts.error(this.humanHttpError(e, 'Failed to load configuration.'));
+      },
+      complete: () => this.loading.set(false),
+    });
+  }
+
+  private resetSelectionState(): void {
+    this.selectedDocumentId.set(null);
+    this.selectedDocument.set(null);
+    this.allowedUsers.set([]);
+    this.allowedRoles.set([]);
+    this.currentLevel.set('PUBLIC');
+    this.editLevel.set('PUBLIC');
+  }
+
+  // ----------------------------
+  // UI rows (Redesign)
+  // ----------------------------
+  /**
+   * Redesign: table columns kept:
+   * - User
+   * - Unit
+   * - Permission Level (VIEW/EDIT/SIGN)
+   * - Editor Access Type (derived from user's editorPermissions/permisosEditor)
+   *
+   * Removed:
+   * - restrictions
+   * - authorizedAt
+   * - actions buttons (per-user "Permisos" + delete icon)
+   *
+   * Delete action still exists via removeUserRule(index).
+   * The template should call removeUserRule(i) from a single delete button/icon if desired.
+   */
+  userRuleRows = computed<UserRuleRow[]>(() => {
+    const users = this.allUsers();
+    const mapById = new Map<number, AdminUser>(users.map((u) => [u.id, u]));
+
+    return this.allowedUsers().map((u) => {
+      const found = mapById.get(u.userId);
+
+      const displayName = found
+        ? `${found.nombre} ${found.apellido1}${found.apellido2 ? ' ' + found.apellido2 : ''}`
+        : `Usuario #${u.userId}`;
+
+      const email = found?.email || '';
+      const unit = ((found as any)?.unidad as string) || '';
+
+      // Derive editor access from user global editor permissions (EDIT/SIGN).
+      const rawEditorPerms =
+        ((found as any)?.editorPermissions as Perm[]) ??
+        ((found as any)?.permisosEditor as Perm[]) ??
+        [];
+
+      const editorPerms = Array.from(
+        new Set((rawEditorPerms || []).filter((p) => p === 'EDIT' || p === 'SIGN')),
+      ) as Perm[];
+
+      const editorAccessLabel =
+        editorPerms.includes('EDIT') && editorPerms.includes('SIGN')
+          ? 'Edición y Firma'
+          : editorPerms.includes('EDIT')
+            ? 'Edición'
+            : editorPerms.includes('SIGN')
+              ? 'Firma'
+              : '—';
+
+      return {
+        userId: u.userId,
+        actions: u.actions,
+        displayName,
+        email,
+        unit,
+        editorAccessLabel,
+      };
+    });
+  });
+
+  /**
+   * Redesign: role table columns kept:
+   * - Name
+   * - Actions (VIEW/EDIT/SIGN)
+   * - Remove button
+   *
+   * Removed:
+   * - Role ID column (still kept internally for saving).
+   */
+  roleRules = computed<RoleRuleRow[]>(() => {
+    const roles = this.allRoles();
+    const mapById = new Map<number, RoleRowApi>(roles.map((r) => [r.id, r]));
+
+    return this.allowedRoles().map((r) => ({
+      roleId: r.roleId,
+      roleName: mapById.get(r.roleId)?.nombre || null,
+      actions: r.actions,
+    }));
+  });
+
+  // ----------------------------
+  // Save config
+  // ----------------------------
+  saveConfig(): void {
+    const docId = this.selectedDocumentId();
+    if (!docId) {
+      this.toasts.error('Please select a document first.');
+      return;
+    }
+
+    const level = this.editLevel();
+    const users = this.allowedUsers();
+    const roles = this.allowedRoles();
+
+    // For non-public levels, require at least one explicit authorization.
+    const sensitive = level !== 'PUBLIC';
+    if (sensitive && users.length === 0 && roles.length === 0) {
+      this.toasts.error(
+        'Sensitive levels require at least one authorized user or role.',
+      );
+      return;
+    }
+
+    if (!this.validateAllowLists(users, roles)) return;
+
+    const dto: ConfDto = {
+      level,
+      users: users.map((u) => ({
+        userId: u.userId,
+        actions: this.normalizeActions(u.actions),
+      })),
+      roles: roles.map((r) => ({
+        roleId: r.roleId,
+        actions: this.normalizeActions(r.actions),
+      })),
+    };
+
+    this.saving.set(true);
+
+    this.confSvc.setConfig(docId, dto).subscribe({
+      next: (saved) => {
+        const lv = (saved?.level || level) as ConfLevel;
+        this.currentLevel.set(lv);
+        this.editLevel.set(lv);
+
+        this.allowedUsers.set(
+          (saved?.users || dto.users).map((u) => ({
+            userId: Number(u.userId),
+            actions: this.normalizeActions(u.actions),
+          })),
+        );
+        this.allowedRoles.set(
+          (saved?.roles || dto.roles).map((r) => ({
+            roleId: Number(r.roleId),
+            actions: this.normalizeActions(r.actions),
+          })),
+        );
+
+        this.toasts.success('Changes saved.');
+      },
+      error: (err: unknown) => {
+        this.toasts.error(this.humanHttpError(err, 'Failed to save changes.'));
+      },
+      complete: () => this.saving.set(false),
+    });
+  }
+
+  private validateAllowLists(
+    users: { userId: number; actions: Action[] }[],
+    roles: { roleId: number; actions: Action[] }[],
+  ): boolean {
+    const userIds = new Set<number>();
+    for (const u of users) {
+      if (!Number.isFinite(u.userId) || u.userId <= 0) {
+        this.toasts.error('Validation: userId must be a positive number.');
+        return false;
+      }
+      if (userIds.has(u.userId)) {
+        this.toasts.error('Validation: duplicate user in allow-list.');
+        return false;
+      }
+      userIds.add(u.userId);
+
+      const a = this.normalizeActions(u.actions);
+      if (a.length === 0) {
+        this.toasts.error(
+          'Validation: each authorized user must have at least one action.',
+        );
+        return false;
+      }
+    }
+
+    const roleIds = new Set<number>();
+    for (const r of roles) {
+      if (!Number.isFinite(r.roleId) || r.roleId <= 0) {
+        this.toasts.error('Validation: roleId must be a positive number.');
+        return false;
+      }
+      if (roleIds.has(r.roleId)) {
+        this.toasts.error('Validation: duplicate role in allow-list.');
+        return false;
+      }
+      roleIds.add(r.roleId);
+
+      const a = this.normalizeActions(r.actions);
+      if (a.length === 0) {
+        this.toasts.error(
+          'Validation: each authorized role must have at least one action.',
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Normalizes actions coming from:
+   * - UI arrays: ['VIEW','EDIT']
+   * - Backend SET string: "VIEW,EDIT,SIGN"
+   */
+  private normalizeActions(actions: Action[] | string | any): Action[] {
+    let arr: any[] = [];
+
+    if (Array.isArray(actions)) arr = actions;
+    else if (typeof actions === 'string')
+      arr = actions.split(',').map((s) => s.trim());
+    else arr = [];
+
+    const set = new Set<Action>();
+    for (const x of arr) {
+      if (x === 'VIEW' || x === 'EDIT' || x === 'SIGN') set.add(x);
+    }
+    return Array.from(set);
+  }
+
+  // ----------------------------
+  // Add user modal
+  // ----------------------------
+  openAddUserModal(): void {
+    this.isAddUserOpen.set(true);
+    this.userSearchQuery.set('');
+    this.selectedUserId.set(null);
+    this.tempUserActions.set(['VIEW']);
+  }
+
+  closeAddUserModal(): void {
+    this.isAddUserOpen.set(false);
+  }
+
+  toggleTempUserAction(a: Action): void {
+    const cur = this.tempUserActions();
+    this.tempUserActions.set(
+      cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a],
+    );
+  }
+
+  isSelectedUserAlreadyAuthorized(): boolean {
+    const id = this.selectedUserId();
+    return !!id && this.allowedUsers().some((u) => u.userId === id);
+  }
+
+  isAddUserDisabled(): boolean {
+    const id = this.selectedUserId();
+    const actions = this.normalizeActions(this.tempUserActions());
+    return !id || actions.length === 0 || this.isSelectedUserAlreadyAuthorized();
+  }
+
+  confirmAddUser(): void {
+    const id = this.selectedUserId();
+    if (!id) return this.toasts.error('Please select a user.');
+    if (this.isSelectedUserAlreadyAuthorized())
+      return this.toasts.error('This user is already authorized.');
+
+    const actions = this.normalizeActions(this.tempUserActions());
+    if (actions.length === 0)
+      return this.toasts.error('Select at least one permission.');
+
+    this.allowedUsers.update((arr) => [...arr, { userId: id, actions }]);
+    this.closeAddUserModal();
+    this.toasts.success('User added to allow-list.');
+  }
+
+  async removeUserRule(index: number): Promise<void> {
+    const ok = await this.confirm.ask(
+      '¿Eliminar este usuario autorizado?',
+      'Confirmar eliminación',
+    );
+    if (!ok) return;
+    this.allowedUsers.update((arr) => arr.filter((_, i) => i !== index));
+    this.toasts.info('User removed (pending save).');
+  }
+
+  // ----------------------------
+  // Add role modal
+  // ----------------------------
+  openAddRoleModal(): void {
+    this.isAddRoleOpen.set(true);
+    this.selectedRoleId.set(null);
+    this.tempRoleActions.set(['VIEW']);
+  }
+
+  closeAddRoleModal(): void {
+    this.isAddRoleOpen.set(false);
+  }
+
+  toggleTempRoleAction(a: Action): void {
+    const cur = this.tempRoleActions();
+    this.tempRoleActions.set(
+      cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a],
+    );
+  }
+
+  isSelectedRoleAlreadyAuthorized(): boolean {
+    const id = this.selectedRoleId();
+    return !!id && this.allowedRoles().some((r) => r.roleId === id);
+  }
+
+  isAddRoleDisabled(): boolean {
+    const id = this.selectedRoleId();
+    const actions = this.normalizeActions(this.tempRoleActions());
+    return !id || actions.length === 0 || this.isSelectedRoleAlreadyAuthorized();
+  }
+
+  confirmAddRole(): void {
+    const id = this.selectedRoleId();
+    if (!id) return this.toasts.error('Please select a role.');
+    if (this.isSelectedRoleAlreadyAuthorized())
+      return this.toasts.error('This role is already authorized.');
+
+    const actions = this.normalizeActions(this.tempRoleActions());
+    if (actions.length === 0)
+      return this.toasts.error('Select at least one action.');
+
+    this.allowedRoles.update((arr) => [...arr, { roleId: id, actions }]);
+    this.closeAddRoleModal();
+    this.toasts.success('Role added to allow-list.');
+  }
+
+  async removeRoleRule(index: number): Promise<void> {
+    const ok = await this.confirm.ask(
+      '¿Eliminar este rol autorizado?',
+      'Confirmar eliminación',
+    );
+    if (!ok) return;
+    this.allowedRoles.update((arr) => arr.filter((_, i) => i !== index));
+    this.toasts.info('Role removed (pending save).');
+  }
+
+  // ----------------------------
+  // Error formatting
+  // ----------------------------
+  private humanHttpError(err: any, fallback: string): string {
+    const e = err as HttpErrorResponse;
+    if (!e) return fallback;
+
+    const msg =
+      (typeof e.error === 'string' && e.error) ||
+      e.error?.message ||
+      e.message ||
+      fallback;
+
+    return msg.length > 120 ? msg.slice(0, 117) + '...' : msg;
   }
 }

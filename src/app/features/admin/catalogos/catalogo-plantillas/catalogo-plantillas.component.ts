@@ -1,58 +1,192 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { CatalogosService, Plantilla } from '../../../../../core/services/catalogos.service';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-catalogo-plantillas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './catalogo-plantillas.component.html',
   styleUrls: ['./catalogo-plantillas.component.css'],
 })
 export class CatalogoPlantillasComponent implements OnInit {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('f') formRef!: NgForm;
+
   plantillas: Plantilla[] = [];
-  form = { nombre: '', version: '', descripcion: '' };
+  form = { nombre: '', version: '1.0', descripcion: '' };
   file?: File;
   loading = false;
-  errorMessage: string = '';  // Mensaje de error
+  uploading = false;
+  errorMessage = '';
+  // ===== Modal del sistema (reemplaza prompt/confirm) =====
+  modalOpen = false;
+  modalMode: 'rename' | 'confirmDelete' = 'rename';
+  modalTitle = '';
+  modalMessage = '';
+  modalOkText = 'Aceptar';
+  modalCancelText = 'Cancelar';
+
+  modalInputLabel = 'Nuevo nombre';
+  modalInputValue = '';
+
+  pendingPlantilla?: Plantilla;
+  pendingDeleteId?: number;
+
+  openRenameModal(p: Plantilla) {
+    this.pendingPlantilla = p;
+    this.pendingDeleteId = undefined;
+
+    this.modalMode = 'rename';
+    this.modalTitle = 'Renombrar plantilla';
+    this.modalMessage = 'Escribe el nuevo nombre para la plantilla:';
+    this.modalOkText = 'Guardar';
+    this.modalCancelText = 'Cancelar';
+
+    this.modalInputValue = p.nombre ?? '';
+    this.modalOpen = true;
+  }
+
+  openDeleteModal(id: number) {
+    this.pendingDeleteId = id;
+    this.pendingPlantilla = undefined;
+
+    this.modalMode = 'confirmDelete';
+    this.modalTitle = 'Eliminar plantilla';
+    this.modalMessage = 'Esta acción no se puede deshacer. ¿Deseas continuar?';
+    this.modalOkText = 'Eliminar';
+    this.modalCancelText = 'Cancelar';
+
+    this.modalOpen = true;
+  }
+
+  closeModal() {
+    this.modalOpen = false;
+    this.pendingPlantilla = undefined;
+    this.pendingDeleteId = undefined;
+  }
+
+  confirmModal() {
+    // RENOMBRAR
+    if (this.modalMode === 'rename' && this.pendingPlantilla) {
+      const nuevo = (this.modalInputValue || '').trim();
+      if (!nuevo || nuevo === this.pendingPlantilla.nombre) {
+        this.closeModal();
+        return;
+      }
+
+      this.api.updatePlantilla(this.pendingPlantilla.id, { nombre: nuevo }).subscribe({
+        next: () => {
+          this.closeModal();
+          this.load();
+        },
+        error: () => {
+          this.closeModal();
+          alert('Error renombrando plantilla'); // si quieres, luego también lo cambias a modal toast
+        },
+      });
+
+      return;
+    }
+
+    // ELIMINAR
+    if (this.modalMode === 'confirmDelete' && this.pendingDeleteId != null) {
+      const id = this.pendingDeleteId;
+
+      this.api.deletePlantilla(id).subscribe({
+        next: () => {
+          this.closeModal();
+          this.load();
+        },
+        error: () => {
+          this.closeModal();
+          alert('No se pudo eliminar plantilla');
+        },
+      });
+
+      return;
+    }
+
+    this.closeModal();
+  }
+
+  // ✅ Paginación frontend (page size = 10)
+  page = 1;
+  readonly pageSize = 10;
+
+  // ✅ Para usar Math en el HTML
+  Math = Math;
 
   constructor(private api: CatalogosService) {}
 
   ngOnInit() {
-    this.load();  // Cargar las plantillas al inicio
+    this.load();
+  }
+
+  /** Total de items */
+  get totalItems(): number {
+    return Array.isArray(this.plantillas) ? this.plantillas.length : 0;
+  }
+
+  /** Total de páginas (mínimo 1) */
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+  }
+
+  /** Lista paginada */
+  get pagedPlantillas(): Plantilla[] {
+    const start = (this.page - 1) * this.pageSize;
+    return (this.plantillas ?? []).slice(start, start + this.pageSize);
+  }
+
+  /** Ajusta page para que nunca quede fuera del rango */
+  private clampPage() {
+    if (!Number.isFinite(this.page) || this.page < 1) this.page = 1;
+    const tp = this.totalPages; // ya incluye mínimo 1
+    if (this.page > tp) this.page = tp;
+  }
+
+  /** Reglas extra: si estás en página vacía (por borrar), retrocede */
+  private ensureNonEmptyPageAfterChange() {
+    this.clampPage();
+
+    // si estás en una página que quedó sin items y hay items en total, retrocede una
+    const start = (this.page - 1) * this.pageSize;
+    if (this.totalItems > 0 && start >= this.totalItems && this.page > 1) {
+      this.page--;
+    }
+
+    this.clampPage();
   }
 
   load() {
     this.loading = true;
-    this.errorMessage = '';  // Limpiar mensaje de error al cargar
+    this.errorMessage = '';
 
     this.api.getPlantillas().subscribe({
-      next: (plantillas) => {
-        if (Array.isArray(plantillas)) {
-          // Aquí nos aseguramos que la respuesta sea un arreglo
-          this.plantillas = plantillas;
-        } else {
-          // Si no es un arreglo, mostramos el error
-          this.errorMessage = 'No se encontraron plantillas.';
-        }
+      next: (rows) => {
+        this.plantillas = Array.isArray(rows) ? rows : [];
         this.loading = false;
+
+        // ✅ si cambió el tamaño, ajustamos page
+        this.ensureNonEmptyPageAfterChange();
       },
       error: (err) => {
-        this.loading = false;
+        console.error(err);
         this.errorMessage = 'Error cargando plantillas';
-        console.error(err);  // Para que puedas ver el error en consola
+        this.loading = false;
+
+        // si falla, igual mantenemos paginación coherente
+        this.ensureNonEmptyPageAfterChange();
       },
     });
   }
 
-
-
-
-
   onFile(e: Event) {
     const input = e.target as HTMLInputElement;
-    this.file = input.files?.[0];  // Capturar el archivo seleccionado
+    this.file = input.files?.[0] ?? undefined;
   }
 
   upload() {
@@ -60,32 +194,65 @@ export class CatalogoPlantillasComponent implements OnInit {
       alert('Nombre, versión y archivo son obligatorios');
       return;
     }
-    this.api.uploadPlantilla({ ...this.form, file: this.file }).subscribe({
-      next: (p) => {
-        this.plantillas.push(p);  // Agregar la nueva plantilla a la lista
-        this.form = { nombre: '', version: '', descripcion: '' };  // Limpiar el formulario
-        this.file = undefined;  // Limpiar el archivo
-      },
-      error: () => alert('Error subiendo plantilla'),
-    });
+
+    this.uploading = true;
+
+    this.api
+      .uploadPlantilla({
+        nombre: this.form.nombre,
+        version: this.form.version,
+        descripcion: this.form.descripcion || undefined,
+        file: this.file,
+      })
+      .subscribe({
+        next: () => {
+          this.uploading = false;
+
+          // limpiar formulario + input file
+          this.form = { nombre: '', version: '1.0', descripcion: '' };
+          this.file = undefined;
+
+          if (this.fileInput) this.fileInput.nativeElement.value = '';
+          if (this.formRef) this.formRef.resetForm({ nombre: '', version: '1.0', descripcion: '' });
+
+          // ✅ después de crear, volvemos a cargar y nos aseguramos de quedar en una página válida
+          // Si preferís ir a la última página automáticamente:
+          // this.page = this.totalPages;  <-- eso funcionaría solo si ya tuvieras la lista actualizada localmente
+          this.load();
+        },
+        error: (err) => {
+          console.error(err);
+          this.uploading = false;
+          alert('Error subiendo plantilla');
+        },
+      });
   }
 
   rename(p: Plantilla) {
-    const nuevo = prompt('Nuevo nombre', p.nombre);
-    if (!nuevo || nuevo === p.nombre) return;
-    this.api.updatePlantilla(p.id, { nombre: nuevo }).subscribe({
-      next: (up) => Object.assign(p, up),
-      error: () => alert('Error renombrando plantilla'),
-    });
+    this.openRenameModal(p);
   }
 
   remove(id: number) {
-    if (!confirm('¿Eliminar plantilla?')) return;
-    this.api.deletePlantilla(id).subscribe({
-      next: () => {
-        this.plantillas = this.plantillas.filter((x) => x.id !== id);  // Eliminar la plantilla de la lista
-      },
-      error: () => alert('No se pudo eliminar plantilla'),
-    });
+    this.openDeleteModal(id);
+  }
+
+
+  /** Para abrir el archivo */
+  href(p: Plantilla) {
+    return encodeURI(p.ruta_archivo);
+  }
+
+  // ✅ helpers para botones de paginación (si los querés usar en HTML)
+  prevPage() {
+    this.page = Math.max(1, this.page - 1);
+  }
+
+  nextPage() {
+    this.page = Math.min(this.totalPages, this.page + 1);
+  }
+
+  goToPage(n: number) {
+    this.page = n;
+    this.clampPage();
   }
 }

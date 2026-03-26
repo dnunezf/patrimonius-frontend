@@ -110,3 +110,42 @@
 .btn {
   display: none;
 }
+
+/* ==== Íconos dinámicos ==== */
+.icon-wrapper {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #f8fafc;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.icon-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(38%) sepia(68%) saturate(2861%)
+  hue-rotate(187deg) brightness(95%) contrast(89%);
+}
+
+/* 🔙 Enlace volver al panel */
+.back-container {
+  margin-bottom: 18px;
+}
+
+.back-link {
+  display: inline-block;
+  text-decoration: none;
+  color: var(--mncr-blue-3015);
+  font-weight: 700;
+  font-size: 15px;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--mncr-blue-639);
+  text-decoration: underline;
+}

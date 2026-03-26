@@ -1,80 +1,190 @@
+<!-- src/app/features/admin/access-control/access-control.component.html -->
 <main class="container">
-  <section class="section-header">
-    <a routerLink="/admin" class="back">← Volver al Módulo</a>
-    <h1>Acceso por Unidad Organizacional</h1>
-  </section>
-
-  <!-- Estado de carga -->
-  <div *ngIf="loading">Cargando...</div>
-  <div *ngIf="error" class="denied">
-    {{ error || '❌ Error cargando permisos de acceso' }}
+  <div class="back-bar">
+    <a routerLink="/admin/module" class="link-back">← Volver al Módulo de Administración</a>
   </div>
 
-  <!-- Solo mostramos si hay datos -->
+  <header class="page-header">
+    <h1>Acceso por Unidad Organizacional</h1>
+    <p class="sub">
+      Control de permisos basado en la unidad organizacional, el rol del usuario y las excepciones otorgadas.
+    </p>
+  </header>
+
+  <!-- filtros -->
+  <section class="card">
+    <h2>Filtros</h2>
+
+    <div class="filters-grid">
+      <div class="input-group">
+        <label>Categoría</label>
+        <select [(ngModel)]="filters.category" name="filterCategory">
+          <option value="Todas">Todas</option>
+          <option *ngFor="let c of categorias" [value]="c.id">{{ c.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Estado</label>
+        <select [(ngModel)]="filters.status" name="filterStatus">
+          <option value="Todos">Todos</option>
+          <option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="filters.dateFrom" name="dateFrom">
+      </div>
+
+      <div class="input-group">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="filters.dateTo" name="dateTo">
+      </div>
+
+      <div class="input-group">
+        <label>Búsqueda</label>
+        <input
+          type="text"
+          [(ngModel)]="filters.search"
+          name="search"
+          placeholder="Título o código (número de serie)">
+      </div>
+    </div>
+
+    <div class="row-actions">
+      <button class="button-outline" type="button" (click)="clearFilters()">Limpiar</button>
+      <button class="button-outline" type="button" (click)="applyFilters()">Aplicar</button>
+    </div>
+
+    <p class="filter-hint">💡 Se recomienda aplicar uno o más filtros para optimizar el listado.</p>
+  </section>
+
+  <!-- estados -->
+  <div *ngIf="loading" class="muted">Cargando información...</div>
+  <div *ngIf="error" class="error-box">{{ error }}</div>
+
   <ng-container *ngIf="!loading && !error">
-    <!-- Tabla de Documentos -->
-    <section>
+    <section class="card">
       <h2>Listado de Documentos</h2>
-      <p>
-        Matriz de permisos granular por documento:
-        <span class="allowed">✔ Permitido</span> /
-        <span class="denied">✘ Restringido</span>
+
+      <p class="muted">
+        Documentos con acceso: <strong>{{ accessibleCount }}</strong> de <strong>{{ totalItems }}</strong>
       </p>
 
-      <table class="docs-table">
-        <thead>
-        <tr>
-          <th>Código</th>
-          <th>Título</th>
-          <th>Unidad Responsable</th>
-          <th>Estado</th>
-          <th>Ver</th>
-          <th>Editar</th>
-          <th>Firmar</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let doc of documents">
-          <td>{{ doc.code }}</td>
-          <td>{{ doc.title }}</td>
-          <td>
-            {{ doc.unit }}
-            <span *ngIf="doc.unit === user.unit" class="badge">Su Unidad</span>
-          </td>
-          <td>{{ doc.status }}</td>
-          <td>{{ doc.canView ? "✔" : "✘" }}</td>
-          <td>{{ doc.canEdit ? "✔" : "✘" }}</td>
-          <td>{{ doc.canSign ? "✔" : "✘" }}</td>
-        </tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Categoría</th>
+            <th>Unidad Responsable</th>
+            <th>Estado</th>
+            <th>Ver</th>
+            <th>Editar</th>
+            <th>Firmar</th>
+            <th>Abrir</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr
+            *ngFor="let doc of items"
+            class="row-clickable"
+            [class.row-disabled]="!canOpen(doc)"
+            tabindex="0"
+            role="button"
+            [attr.aria-label]="'Abrir documento ' + doc.code + ': ' + doc.title"
+            (click)="openDoc(doc)"
+            (keydown)="onRowKeydown($event, doc)"
+            title="Click para abrir (Enter o Espacio)"
+          >
+            <td class="nowrap">{{ doc.created_at ? (doc.created_at | date:'dd/MM/yyyy') : '-' }}</td>
+            <td>{{ doc.code }}</td>
+
+            <td class="td-title">
+              {{ doc.title }}
+              <div class="muted small">Click en la fila para abrir</div>
+            </td>
+
+            <td>{{ doc.categoria || 'Sin categoría' }}</td>
+
+            <td>
+              {{ doc.unit }}
+              <span *ngIf="user && doc.unitId === user.unidadId" class="badge">Su Unidad</span>
+            </td>
+
+            <td>{{ doc.status }}</td>
+
+            <td>
+              <img
+                [src]="getIconPath(doc.canView)"
+                class="icon-status"
+                alt="Ver"
+                loading="lazy"
+              />
+            </td>
+
+            <td>
+              <img
+                [src]="getIconPath(doc.canEdit)"
+                class="icon-status"
+                alt="Editar"
+                loading="lazy"
+              />
+            </td>
+
+            <!-- ✅ MOSTRAR PERMISO ASIGNADO (hasSign) -->
+            <td>
+              <img
+                [src]="getIconPath(doc.hasSign ?? doc.canSign)"
+                class="icon-status"
+                alt="Firmar"
+                loading="lazy"
+              />
+            </td>
+
+            <!-- ✅ NUEVO: botón grande “Abrir” -->
+            <td>
+              <button
+                type="button"
+                class="btn-open"
+                [disabled]="!canOpen(doc)"
+                (click)="$event.stopPropagation(); openDoc(doc)"
+                [title]="getOpenHint(doc)"
+              >
+                Abrir
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="items.length === 0">
+            <td colspan="10" class="muted">No hay resultados con los filtros actuales.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- paginación -->
+      <div class="pager muted">
+        <button class="button-outline" [disabled]="page <= 1" (click)="goPrev()">« Anterior</button>
+
+        <span>
+          Página {{ page }} de {{ totalPages }} ·
+          Mostrando {{ totalItems === 0 ? 0 : (page - 1) * pageSize + 1 }} – {{ rangeEnd }} de {{ totalItems }}
+        </span>
+
+        <button class="button-outline" [disabled]="page >= totalPages" (click)="goNext()">Siguiente »</button>
+      </div>
     </section>
 
-    <!-- Información de Control de Acceso -->
-    <section class="info-section">
-      <h2>Información del Control de Acceso</h2>
-      <div class="grid-info">
-        <div>
-          <h3>Matriz de Permisos Granular</h3>
-          <ul>
-            <li>✔ Permitido por unidad: Su unidad coincide</li>
-            <li>✔ Permitido por excepción: Acceso especial otorgado</li>
-            <li>✘ Restringido por unidad: Documento de otra unidad</li>
-            <li>✘ Restringido por documento: Tipo no permite acción</li>
-          </ul>
-        </div>
+    <section class="card info-section" *ngIf="user">
+      <h2>Su Información</h2>
+      <p><strong>Correo:</strong> {{ user.email }}</p>
+      <p><strong>Unidad Asignada:</strong> {{ user.unidad }}</p>
 
-        <div *ngIf="user">
-          <h3>Su Información</h3>
-          <p>Usuario: {{ user.email }}</p>
-          <p>Rol: {{ user.role }}</p>
-          <p>Unidad asignada: {{ user.unit }}</p>
-          <p>
-            Documentos con acceso:
-            {{ accessibleCount }} de {{ documents.length }}
-          </p>
-        </div>
-      </div>
     </section>
   </ng-container>
 </main>

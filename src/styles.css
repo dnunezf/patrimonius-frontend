@@ -1,6 +1,7 @@
 @import url("./styles/colors.css"); /* brand variables & color utils */
 @import url("./styles/fonts.css");  /* Neutraface + Verdana */
 @import url("./styles/global.css"); /* minimal kit (this file) */
+@import 'quill/dist/quill.snow.css';
 
 
 

@@ -1,6 +1,6 @@
 <main class="container users">
   <header class="page-head">
-    <a routerLink="/admin/dashboard" class="link-back">← Volver al Dashboard</a>
+    <a routerLink="/admin/module" class="link-back">← Volver al Módulo de Administración</a>
     <h1>Gestión de Usuarios</h1>
     <p class="sub">Administración de usuarios y roles personalizados</p>
   </header>
@@ -10,10 +10,6 @@
     <div class="kpi">
       <div class="kpi__title">Total Usuarios</div>
       <div class="kpi__value">{{ totalCount() }}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi__title">Editores</div>
-      <div class="kpi__value">{{ editorsCount() }}</div>
     </div>
   </section>
 
@@ -28,14 +24,16 @@
       />
     </div>
 
-    <select
-      class="select"
-      [ngModel]="roleFilter()"
-      (ngModelChange)="roleFilter.set($event)"
-    >
-      <option [ngValue]="'all'">Todos los roles</option>
-      <option *ngFor="let r of ROLES" [ngValue]="r.id">{{ r.label }}</option>
-    </select>
+    <div class="select">
+      <select
+        class="select__control"
+        [ngModel]="roleFilter()"
+        (ngModelChange)="roleFilter.set($event)"
+      >
+        <option [ngValue]="'all'">Todos los roles</option>
+        <option *ngFor="let r of ROLES" [ngValue]="r.id">{{ r.label }}</option>
+      </select>
+    </div>
 
     <button class="btn btn--primary cta" (click)="openCreate()">
       + Crear Usuario
@@ -57,43 +55,44 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let u of filtered()">
+        <tr
+          *ngFor="let u of filtered()"
+          [class.row--flash]="u.id === highlightId()"
+        >
           <td>
             <div class="usr">
               <strong
                 >{{ u.nombre }} {{ u.apellido1 }} {{ u.apellido2 }}</strong
               >
               <div class="email">{{ u.email }}</div>
-              <div
-                *ngIf="u.rolId === EDITOR_ID && u.editorPermissions?.length"
-                class="chips"
-              >
-                <span class="chip" *ngFor="let p of u.editorPermissions">
-                  {{ p === "SIGN" ? "Firma" : "Edición" }}
-                </span>
-              </div>
             </div>
           </td>
           <td>
-            <span
-              class="role-badge"
-              [class.admin]="u.rolId === 1"
-              [class.editor]="u.rolId === 2"
-              [class.arch]="u.rolId === 3"
-              [class.user]="u.rolId === 4"
-              [class.ext]="u.rolId === 5"
-            >
-              {{ u.rol }}
-            </span>
+            <ng-container *ngIf="u.roles?.length; else singleRole">
+              <span
+                class="role-badge"
+                *ngFor="let name of u.roles"
+                [ngClass]="roleClass(name)"
+              >
+                {{ name | uppercase }}
+              </span>
+            </ng-container>
+            <ng-template #singleRole>
+              <span class="role-badge" [ngClass]="roleClass(u.rol)">
+                {{ u.rol | uppercase }}
+              </span>
+            </ng-template>
           </td>
           <td>{{ u.unidad }}</td>
-          <td class="actions">
-            <button class="btn btn--secondary" (click)="openEdit(u)">
-              Editar
-            </button>
-            <button class="btn btn--danger" (click)="delete(u)">
-              Eliminar
-            </button>
+          <td>
+            <div class="actions">
+              <button class="btn btn--primary" (click)="openEdit(u)">
+                Editar
+              </button>
+              <button class="btn btn--danger" (click)="delete(u)">
+                Eliminar
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -104,6 +103,7 @@
   <app-user-form-dialog
     [open]="showForm()"
     [editing]="editing()"
+    [submitting]="isBusy()"
     (close)="showForm.set(false)"
     (submit)="onSubmit($event.data, $event.id)"
   ></app-user-form-dialog>

@@ -1,0 +1,238 @@
+<main class="container">
+  <div class="back-bar">
+    <a class="link-back" routerLink="/admin/module/catalogs">← Volver a Catálogos</a>
+  </div>
+
+  <header class="page-header page-header--audit">
+    <h1>Gestión de Expedientes</h1>
+    <p class="sub">Administración de expedientes archivísticos del sistema.</p>
+  </header>
+
+  <section class="card form-panel">
+    <h2 class="section-title">Nuevo Expediente</h2>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Código</label>
+        <input [(ngModel)]="form.codigo" type="text" placeholder="Ej: EXP-001" />
+      </div>
+
+      <div class="form-group">
+        <label>Nombre</label>
+        <input [(ngModel)]="form.nombre" type="text" placeholder="Ej: Expediente de Contratación 2026" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Descripción</label>
+      <input [(ngModel)]="form.descripcion" type="text" placeholder="Descripción del expediente" />
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Unidad organizacional</label>
+        <select [(ngModel)]="form.unidad_id" (change)="onUnidadChange()">
+          <option [ngValue]="null">Seleccione una unidad</option>
+          <option *ngFor="let u of unidades" [ngValue]="u.id">
+            {{ u.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Serie</label>
+        <select [(ngModel)]="form.serie_id" (change)="onSerieChange()" [disabled]="!form.unidad_id">
+          <option [ngValue]="null">Seleccione una serie</option>
+          <option *ngFor="let s of series" [ngValue]="s.id">
+            {{ s.nombre }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Subserie (opcional)</label>
+        <select [(ngModel)]="form.subserie_id" [disabled]="!form.serie_id">
+          <option [ngValue]="null">Sin subserie</option>
+          <option *ngFor="let s of subseries" [ngValue]="s.id">
+            {{ s.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Estado</label>
+        <select [(ngModel)]="form.estado">
+          <option value="ACTIVO">ACTIVO</option>
+          <option value="CERRADO">CERRADO</option>
+          <option value="TRANSFERIDO">TRANSFERIDO</option>
+          <option value="ELIMINADO">ELIMINADO</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button
+        class="btn btn--primary"
+        type="button"
+        (click)="create()"
+        [disabled]="saving || !form.codigo || !form.nombre || !form.unidad_id || !form.serie_id"
+      >
+        {{ saving ? 'Guardando…' : 'Crear Expediente' }}
+      </button>
+    </div>
+
+    <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  </section>
+
+  <section class="card">
+    <div class="table-header audit-header">
+      <div>
+        <h2 class="section-title">Listado de Expedientes</h2>
+        <p class="muted">Expedientes archivísticos registrados en el sistema.</p>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="muted">Cargando…</div>
+    <div *ngIf="!loading && errorMessage" class="error">{{ errorMessage }}</div>
+
+    <ng-container *ngIf="!loading && !errorMessage">
+      <div *ngIf="totalItems === 0" class="empty">
+        <div class="empty-title">Sin datos</div>
+        <div class="empty-sub">No se encontraron expedientes.</div>
+      </div>
+
+      <table class="table table--audit" *ngIf="totalItems > 0">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Unidad</th>
+          <th>Serie</th>
+          <th>Subserie</th>
+          <th>Estado</th>
+          <th class="th-actions">Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngFor="let e of pagedExpedientes">
+          <td class="cell-strong">{{ e.codigo }}</td>
+          <td>{{ e.nombre }}</td>
+          <td class="cell-muted">{{ e.unidad_nombre || e.unidad_id }}</td>
+          <td class="cell-muted">{{ e.serie_nombre || e.serie_id }}</td>
+          <td class="cell-muted">{{ e.subserie_nombre || '—' }}</td>
+          <td>{{ e.estado }}</td>
+          <td class="actions">
+            <button class="btn btn--ghost btn--sm" (click)="openEditModal(e)">Editar</button>
+            <button class="btn btn--danger btn--sm" (click)="openDeleteModal(e.id)">Eliminar</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+
+      <div class="pagination" *ngIf="totalItems >= 0">
+        <div class="pagination__info">
+          Página <strong>{{ page }}</strong> de <strong>{{ totalPages }}</strong>
+          <span class="sep">•</span>
+          Mostrando
+          <strong>{{ Math.min(pageSize, totalItems - ((page - 1) * pageSize)) }}</strong>
+          de <strong>{{ totalItems }}</strong>
+        </div>
+
+        <div class="pagination__controls">
+          <button class="btn btn--ghost btn--sm" [disabled]="page <= 1" (click)="prevPage()">
+            ← Anterior
+          </button>
+
+          <button
+            class="btn btn--ghost btn--sm page-pill"
+            *ngFor="let _ of [].constructor(totalPages); let i = index"
+            [class.page-pill--active]="page === (i + 1)"
+            (click)="goToPage(i + 1)"
+          >
+            {{ i + 1 }}
+          </button>
+
+          <button class="btn btn--ghost btn--sm" [disabled]="page >= totalPages" (click)="nextPage()">
+            Siguiente →
+          </button>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+</main>
+
+<div class="sys-modal__backdrop" *ngIf="modalOpen" (click)="closeModal()"></div>
+
+<div class="sys-modal" *ngIf="modalOpen" role="dialog" aria-modal="true">
+  <div class="card sys-modal__card" (click)="$event.stopPropagation()">
+    <div class="sys-modal__header">
+      <h3 class="sys-modal__title">{{ modalTitle }}</h3>
+      <button class="sys-modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
+    </div>
+
+    <p class="sys-modal__message">{{ modalMessage }}</p>
+
+    <div *ngIf="modalMode === 'edit'" class="sys-modal__form">
+      <label class="sys-modal__label">Código</label>
+      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.codigo" />
+
+      <label class="sys-modal__label">Nombre</label>
+      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.nombre" />
+
+      <label class="sys-modal__label">Descripción</label>
+      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.descripcion" />
+
+      <label class="sys-modal__label">Unidad organizacional</label>
+      <select class="sys-modal__input" [(ngModel)]="modalForm.unidad_id" (change)="onModalUnidadChange()">
+        <option [ngValue]="null">Seleccione una unidad</option>
+        <option *ngFor="let u of unidades" [ngValue]="u.id">
+          {{ u.nombre }}
+        </option>
+      </select>
+
+      <label class="sys-modal__label">Serie</label>
+      <select class="sys-modal__input" [(ngModel)]="modalForm.serie_id" (change)="onModalSerieChange()">
+        <option [ngValue]="null">Seleccione una serie</option>
+        <option *ngFor="let s of modalSeries" [ngValue]="s.id">
+          {{ s.nombre }}
+        </option>
+      </select>
+
+      <label class="sys-modal__label">Subserie (opcional)</label>
+      <select class="sys-modal__input" [(ngModel)]="modalForm.subserie_id">
+        <option [ngValue]="null">Sin subserie</option>
+        <option *ngFor="let s of modalSubseries" [ngValue]="s.id">
+          {{ s.nombre }}
+        </option>
+      </select>
+
+      <label class="sys-modal__label">Estado</label>
+      <select class="sys-modal__input" [(ngModel)]="modalForm.estado">
+        <option value="ACTIVO">ACTIVO</option>
+        <option value="CERRADO">CERRADO</option>
+        <option value="TRANSFERIDO">TRANSFERIDO</option>
+        <option value="ELIMINADO">ELIMINADO</option>
+      </select>
+
+      <label class="sys-modal__label">Fecha de cierre</label>
+      <input class="sys-modal__input" type="datetime-local" [(ngModel)]="modalForm.fecha_cierre" />
+    </div>
+
+    <div class="sys-modal__actions">
+      <button class="btn btn--ghost" (click)="closeModal()">
+        {{ modalCancelText }}
+      </button>
+
+      <button
+        class="btn"
+        [ngClass]="modalMode === 'confirmDelete' ? 'btn--danger' : 'btn--primary'"
+        (click)="confirmModal()"
+      >
+        {{ modalOkText }}
+      </button>
+    </div>
+  </div>
+</div>

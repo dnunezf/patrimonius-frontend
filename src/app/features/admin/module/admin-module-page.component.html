@@ -1,13 +1,28 @@
 <main class="container">
+  <!-- 🔙 Enlace de regreso al panel -->
+  <div class="back-container">
+    <a routerLink="/admin/dashboard" class="back-link">
+      ← Volver al Panel de Administración
+    </a>
+  </div>
+
   <section class="grid">
-    <!-- Hacemos cada tarjeta clickeable para cada submódulo -->
+    <!-- Tarjeta por cada submódulo -->
     <article
       *ngFor="let m of submodules"
       class="card clickable-card"
       [routerLink]="m.link || '/admin/module/catalogs'"
     >
       <div class="row1">
-        <div class="icon" aria-hidden="true"></div>
+        <!-- Icono dinámico -->
+        <div class="icon-wrapper">
+          <img
+            [src]="'assets/icons/' + m.icon + '.png'"
+            alt="{{ m.title }}"
+            class="icon-img"
+          />
+        </div>
+
         <span class="badge" [class.ok]="m.status === 'available'">
           {{ m.status === 'available' ? 'Disponible' : 'En desarrollo' }}
         </span>

@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import {map, Observable} from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 export type EditorPermission = 'EDIT' | 'SIGN';
+export type Perm = EditorPermission;
 
 export interface AdminUser {
   id: number;
@@ -16,6 +17,9 @@ export interface AdminUser {
   unidad: string;
   unidadId: number;
   editorPermissions?: EditorPermission[];
+  rolIds?: number[];
+  roles?: string[];
+  canUpload?: boolean; // ✅ NUEVO
 }
 
 export interface UpsertUserDto {
@@ -24,36 +28,84 @@ export interface UpsertUserDto {
   apellido2?: string;
   email: string;
   rolId: number;
+  rolIds: number[];
   unidadId: number;
   editorPermissions?: EditorPermission[];
+  canUpload?: boolean; // ✅ NUEVO
 }
 
 @Injectable({ providedIn: 'root' })
 export class AdminUsersService {
+  private http = inject(HttpClient);
   private api = `${environment.apiUrl}/admin`;
-
-  constructor(private http: HttpClient) {}
 
   list(): Observable<AdminUser[]> {
     return this.http.get<AdminUser[]>(`${this.api}/users`);
   }
 
   create(body: UpsertUserDto): Observable<AdminUser> {
-    return this.http.post<AdminUser>(`${this.api}/users`, body);
+    if (!body) throw new Error('AdminUsersService.create: body is required');
+
+    const payload: any = {
+      nombre: body.nombre?.trim(),
+      apellido1: body.apellido1?.trim(),
+      apellido2: body.apellido2?.trim() || null,
+      email: body.email?.trim(),
+      unidadId: Number(body.unidadId),
+      rolIds: (Array.isArray(body.rolIds) && body.rolIds.length ? body.rolIds : [body.rolId])
+        .map((n) => Number(n))
+        .filter((n) => !Number.isNaN(n)),
+      rolId: body.rolId ?? Number((body.rolIds || [])[0]),
+    };
+
+    if (body.canUpload !== undefined) payload.canUpload = !!body.canUpload;
+
+    const perms = Array.isArray(body.editorPermissions)
+      ? Array.from(new Set(body.editorPermissions.filter((p) => p === 'EDIT' || p === 'SIGN')))
+      : [];
+    if (perms.length) payload.editorPermissions = perms;
+
+    return this.http
+      .post<AdminUser | { user: AdminUser }>(`${this.api}/users`, payload)
+      .pipe(map((r: any) => (r?.user ?? r) as AdminUser));
   }
 
-  // ✅ acepta tanto editorPermissions (tipo TS) como permisosEditor (lo que consume el backend)
-  update(
-    id: number,
-    body: Partial<UpsertUserDto> | { permisosEditor: EditorPermission[] }
-  ): Observable<AdminUser> {
-    let payload: any = body;
+  update(id: number, body: Partial<UpsertUserDto> | { permisosEditor: Perm[] }): Observable<AdminUser> {
+    if (!body) throw new Error('AdminUsersService.update: body is required');
 
-    // Si viene con editorPermissions, lo mapeamos a permisosEditor para el backend
-    if ((body as Partial<UpsertUserDto>).editorPermissions) {
-      const perms = (body as Partial<UpsertUserDto>).editorPermissions!;
-      payload = { permisosEditor: perms };
+    if ('permisosEditor' in body) {
+      const perms = Array.isArray(body.permisosEditor)
+        ? Array.from(new Set(body.permisosEditor.filter((p) => p === 'EDIT' || p === 'SIGN')))
+        : [];
+      return this.http.patch<AdminUser>(`${this.api}/users/${id}`, { permisosEditor: perms });
     }
+
+    const b = body as Partial<UpsertUserDto>;
+    let payload: any = {
+      ...(b.nombre != null ? { nombre: b.nombre.trim() } : {}),
+      ...(b.apellido1 != null ? { apellido1: b.apellido1.trim() } : {}),
+      ...(b.apellido2 != null ? { apellido2: (b.apellido2 || '').trim() || null } : {}),
+      ...(b.email != null ? { email: b.email.trim() } : {}),
+      ...(b.unidadId != null ? { unidadId: Number(b.unidadId) } : {}),
+    };
+
+    const hasRolIds = Array.isArray(b.rolIds) && b.rolIds.length > 0;
+    const hasRolId = b.rolId != null;
+    if (hasRolIds || hasRolId) {
+      const ids = hasRolIds ? b.rolIds! : [b.rolId!];
+      payload = {
+        ...payload,
+        rolIds: ids.map((n) => Number(n)).filter((n) => !Number.isNaN(n)),
+        rolId: Number(ids[0]),
+      };
+    }
+
+    if (Array.isArray(b.editorPermissions)) {
+      const perms = Array.from(new Set(b.editorPermissions.filter((p) => p === 'EDIT' || p === 'SIGN')));
+      payload.editorPermissions = perms;
+    }
+
+    if (b.canUpload !== undefined) payload.canUpload = !!b.canUpload;
 
     return this.http.patch<AdminUser>(`${this.api}/users/${id}`, payload);
   }
@@ -64,9 +116,7 @@ export class AdminUsersService {
 
   listEmails(): Observable<string[]> {
     return this.list().pipe(
-      map(users => Array.from(new Set(users.map(u => u.email))).sort())
+      map((users) => Array.from(new Set(users.map((u) => u.email))).sort())
     );
   }
 }
-
-

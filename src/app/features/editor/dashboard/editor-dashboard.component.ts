@@ -1,114 +1,596 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DocumentService } from '../../../../core/services/document.service';
-import { VDocumentModel } from '../../../../core/services/document.service';
-import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+
+import { DocumentService, VDocumentModel } from 'core/services/document.service';
 import { FormatStatePipe } from '../../../pipes/capitalize.pipe';
+import { environment } from '../../../../environments/environment';
+
 
 @Component({
   selector: 'app-editor-dashboard',
   standalone: true,
-  imports: [CommonModule , FormatStatePipe],
+  imports: [CommonModule, FormsModule, FormatStatePipe],
   templateUrl: './editor-dashboard.component.html',
   styleUrls: ['./editor-dashboard.component.css'],
-  providers: [DatePipe]
 })
 export class EditorDashboardComponent implements OnInit {
-
-
-  documents: VDocumentModel[] = [];
-
-  // Status counters array
-  statusCounters = [
-    {
-      title: 'Documentos en Borrador',
-      count: 1,
-      icon: 'edit.png',
-    },
-    {
-      title: 'Pendientes de Firma',
-      count: 4,
-      icon: 'document-signed.png',
-    },
-    {
-      title: 'Documentos Firmados Parcialmente',
-      count: 2,
-      icon: 'signature.png',
-    },
-    {
-      title: 'Enviados a Conservación',
-      count: 3,
-      icon: 'box.png',
-    }
-  ];
-
-  // Overview cards array
   overviewCards = [
-    {
-      title: 'Crear Documento',
-      description: 'Sin plantilla',
-      icon: 'plus.png',
-    },
-    {
-      title: 'Con Plantilla',
-      description: 'Tipos predefinidos',
-      icon: 'document-signed.png',
-      showTemplates: false, // This controls the visibility of the templates
-      templates: [
-        { name: 'Plantilla 1', description: 'Documento administrativo básico' },
-        { name: 'Plantilla 2', description: 'Informe técnico especializado' },
-        { name: 'Plantilla 3', description: 'Acta de reunión institucional' }
-      ]
-    },
-    {
-      title: 'Firmar',
-      description: 'Documentos pendientes',
-      icon: 'signature.png',
-    },
-    {
-      title: 'Ingresar',
-      description: 'Documentos externos',
-      icon: 'upload.png',
-    }
+    { title: 'Crear Documento', description: 'Crear un nuevo documento', icon: 'document-create' },
+    { title: 'Firmas', description: 'Ver pendientes de firma', icon: 'signature' },
+    { title: 'Consultas', description: 'Revisar documentos', icon: 'catalogo' },
   ];
 
-  selectedTemplate: string = '';
+  filters = {
+    author: 'Todos',
+    status: 'Todos',
+    dateFrom: '',
+    dateTo: '',
+  };
 
-  constructor(private documentService: DocumentService) {
+  authors: string[] = ['Todos'];
+  states = [
+    { value: 'Todos', label: 'Todos' },
+    { value: 'CREACION', label: 'Creación' },
+    { value: 'EDICION', label: 'Edición' },
+    { value: 'FIRMA', label: 'Firma' },
+    { value: 'FIRMA_PARCIAL', label: 'Firma parcial' },
+    { value: 'ARCHIVADO', label: 'Archivado' },
+  ];
 
-  }
+  allDocuments: VDocumentModel[] = [];
+  pagedDocuments: VDocumentModel[] = [];
+  page = 1;
+  pageSize = 7;
+
+  // Modal firma
+  signModalOpen = false;
+  signLoading = false;
+  signError = '';
+  selectedPdf: File | null = null;
+  signDocId: number | null = null;
+
+  // ✅ Modal de validación de firma
+  validationModalOpen = false;
+  validationResult: any = null;
+  validationMainItem: any = null;
+  validationFileName = '';
+  validationStatusLabel = '';
+  validationStatusClass = 'badge';
+  isValidationValid = false;
+  validationRecipient: string | null = null;
+  validationAlertSent = false;
+  validationCurrentIndex = 0;
+  validationItems: any[] = [];
+  pendingValidationPdf: File | null = null;
+
+  signInfo: {
+    documento_id: number;
+    titulo: string;
+    estado: string;
+    firmas_requeridas: number;
+    firmas_obtenidas: number;
+    ya_firmo: boolean;
+    puede_firmar: boolean;
+    motivo?: string | null;
+  } | null = null;
+
+  // ✅ Anexos
+  anexos: any[] = [];
+  anexosLoading = false;
+  anexosError = '';
+  selectedAnexoFile: File | null = null;
+  anexoDescripcion = '';
+  uploadAnexoLoading = false;
+
+  constructor(private docs: DocumentService, private router: Router) {}
 
   ngOnInit(): void {
-    // Initialization if necessary
     this.loadDocuments();
   }
 
-  loadDocuments(): void {
-    this.documentService.getDocumentsFromProduction().subscribe({
+  get totalItems(): number {
+    return this.filteredDocuments().length;
+  }
 
-      next: (data) => {
-        console.log('Datos obtenidos del backend:', data);
-        this.documents = data;
-        console.log('Documents array:', this.documents);
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+  }
+
+  get rangeEnd(): number {
+    return Math.min(this.page * this.pageSize, this.totalItems);
+  }
+
+  getIconPath(icon: string): string {
+    return `assets/icons/${icon}.png`;
+  }
+
+  goToCreate(): void {
+    this.router.navigate(['/editor/document/create']);
+  }
+
+  onCardClick(card: any, ev: MouseEvent) {
+    ev.stopPropagation();
+    if (card?.title === 'Crear Documento') {
+      this.goToCreate();
+    }
+  }
+
+  editarDocumento(id: number): void {
+    this.router.navigate([`/editor/document/${id}/edit`]);
+  }
+
+  verDocumento(id: number): void {
+    const doc = this.allDocuments.find((d) => Number(d.id) === Number(id));
+
+    if (doc && ['FIRMA_PARCIAL', 'ARCHIVADO'].includes(doc.documento_estado)) {
+      this.docs.getCurrentSignedPdf(id).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        },
+        error: () => {
+          this.signError = 'No se pudo abrir el PDF firmado.';
+        },
+      });
+      return;
+    }
+
+    this.router.navigate([`/editor/document/${id}/edit`], {
+      queryParams: {
+        readonly: 1,
+        returnTo: '/editor/dashboard',
       },
-      error: (err) => {
-        console.error('Error al cargar los documentos', err);
-      }
     });
   }
 
-  getIconPath(iconName: string): string {
-    return `assets/icons/${iconName}`;
+  loadDocuments(): void {
+    this.docs.getDocumentsFromProduction().subscribe({
+      next: (rows) => {
+        this.allDocuments = rows ?? [];
+
+        const set = new Set<string>();
+        for (const d of this.allDocuments) set.add(d.primer_usuario || 'No disponible');
+        this.authors = ['Todos', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+
+        this.page = 1;
+        this.repage();
+      },
+      error: () => {
+        this.allDocuments = [];
+        this.repage();
+      },
+    });
   }
 
-  // Toggle visibility of templates for the selected card
-  toggleTemplate(card: any): void {
-    card.showTemplates = !card.showTemplates; // Toggle the display of the templates
+  clearFilters(): void {
+    this.filters = { author: 'Todos', status: 'Todos', dateFrom: '', dateTo: '' };
+    this.page = 1;
+    this.repage();
   }
 
-  // Handle the selection of a template
-  selectTemplate(templateName: string, card: any): void {
-    this.selectedTemplate = templateName;
-    card.showTemplates = false; // Close the dropdown after selection
+  applyFilters(): void {
+    this.page = 1;
+    this.repage();
+  }
+
+  goPrev(): void {
+    if (this.page <= 1) return;
+    this.page--;
+    this.repage();
+  }
+
+  goNext(): void {
+    if (this.page >= this.totalPages) return;
+    this.page++;
+    this.repage();
+  }
+
+  private filteredDocuments(): VDocumentModel[] {
+    const { author, status, dateFrom, dateTo } = this.filters;
+
+    return (this.allDocuments ?? []).filter((d) => {
+      const okAuthor = author === 'Todos' ? true : d.primer_usuario === author;
+      const okStatus = status === 'Todos' ? true : d.documento_estado === status;
+
+      const fecha = d.fecha_creacion ? new Date(d.fecha_creacion) : null;
+
+      const okFrom = !dateFrom || !fecha ? true : fecha >= new Date(`${dateFrom}T00:00:00`);
+      const okTo = !dateTo || !fecha ? true : fecha <= new Date(`${dateTo}T23:59:59`);
+
+      return okAuthor && okStatus && okFrom && okTo;
+    });
+  }
+
+  private repage(): void {
+    const list = this.filteredDocuments();
+    const start = (this.page - 1) * this.pageSize;
+    this.pagedDocuments = list.slice(start, start + this.pageSize);
+  }
+
+  // =========================
+  // MODAL FIRMA
+  // =========================
+  openSignModal(documentId: number): void {
+    this.signModalOpen = true;
+    this.signLoading = true;
+    this.signError = '';
+    this.selectedPdf = null;
+    this.signDocId = documentId;
+    this.signInfo = null;
+
+    // reset anexos
+    this.anexos = [];
+    this.anexosLoading = false;
+    this.anexosError = '';
+    this.selectedAnexoFile = null;
+    this.anexoDescripcion = '';
+    this.uploadAnexoLoading = false;
+
+    this.docs.getSignatureInfo(documentId).subscribe({
+      next: (info) => {
+        this.signLoading = false;
+        this.signInfo = info;
+
+        if (!info?.puede_firmar) {
+          this.signError = info?.motivo || 'No puedes firmar este documento.';
+        }
+
+        this.loadAnexos();
+      },
+      error: (e) => {
+        this.signLoading = false;
+        this.signError = e?.error?.message || 'No se pudo cargar la información de firma.';
+      },
+    });
+  }
+
+  closeSignModal(): void {
+    this.signModalOpen = false;
+    this.signLoading = false;
+    this.signError = '';
+    this.selectedPdf = null;
+    this.signDocId = null;
+    this.signInfo = null;
+
+    this.anexos = [];
+    this.anexosLoading = false;
+    this.anexosError = '';
+    this.selectedAnexoFile = null;
+    this.anexoDescripcion = '';
+    this.uploadAnexoLoading = false;
+  }
+
+  onPdfSelected(evt: Event): void {
+    const input = evt.target as HTMLInputElement;
+    const f = input.files?.[0] ?? null;
+
+    if (!f) {
+      this.selectedPdf = null;
+      return;
+    }
+
+    const fileName = String(f.name || '').trim().toLowerCase();
+    const fileType = String(f.type || '').trim().toLowerCase();
+
+    const isPdf =
+      fileName.endsWith('.pdf') ||
+      fileType === 'application/pdf' ||
+      fileType === 'application/x-pdf';
+
+    if (!isPdf) {
+      this.signError = 'El archivo debe ser un PDF.';
+      this.selectedPdf = null;
+      input.value = '';
+      return;
+    }
+
+    this.signError = '';
+    this.selectedPdf = f;
+  }
+
+  // confirmSign(): void {
+  //   if (!this.signDocId) return;
+  //
+  //   if (!this.selectedPdf) {
+  //     this.signError = 'Adjunta el PDF firmado antes de confirmar.';
+  //     return;
+  //   }
+  //
+  //   this.signLoading = true;
+  //   this.signError = '';
+  //
+  //   this.docs.confirmSignature(this.signDocId, this.selectedPdf).subscribe({
+  //     next: () => {
+  //       this.signLoading = false;
+  //       this.selectedPdf = null;
+  //       this.loadDocuments();
+  //       this.reloadSignatureInfo();
+  //       this.loadAnexos();
+  //     },
+  //     error: (e) => {
+  //       this.signLoading = false;
+  //       this.signError = e?.error?.message || 'No se pudo confirmar la firma.';
+  //     },
+  //   });
+  // }
+
+  confirmSign(): void {
+    if (!this.signDocId) return;
+
+    if (!this.selectedPdf) {
+      this.signError = 'Adjunta el PDF firmado antes de confirmar.';
+      return;
+    }
+
+    this.signLoading = true;
+    this.signError = '';
+
+    // const uploadedFileName = this.selectedPdf.name;
+    const pdfFile = this.selectedPdf;
+
+    this.docs.validateSignedPdf(pdfFile, this.signDocId).subscribe({
+      next: (validation) => {
+        this.signLoading = false;
+
+        console.log('VALIDACION DESDE /firma/validar =>', validation);
+
+        this.validationResult = validation;
+        this.validationFileName = this.selectedPdf?.name || '';
+
+        this.validationItems = Array.isArray(validation?.firmas) ? validation.firmas : [];
+        this.validationCurrentIndex = 0;
+        this.validationMainItem = this.validationItems.length
+          ? this.validationItems[0]
+          : null;
+
+        const businessState = String(
+          validation?.estadoVerificacion || ''
+        ).toUpperCase();
+
+        this.isValidationValid = businessState === 'VALIDA';
+
+        switch (businessState) {
+          case 'VALIDA':
+            this.validationStatusLabel = 'Válida';
+            this.validationStatusClass = 'badge badge-green';
+            break;
+          case 'REVOCADA':
+            this.validationStatusLabel = 'Revocada';
+            this.validationStatusClass = 'badge badge-red';
+            break;
+          case 'CADUCADA':
+            this.validationStatusLabel = 'Caducada';
+            this.validationStatusClass = 'badge badge-orange';
+            break;
+          default:
+            this.validationStatusLabel = 'Inválida';
+            this.validationStatusClass = 'badge badge-red';
+            break;
+        }
+
+        //usar estos ??
+        // this.validationRecipient = validation?.destinatarioAlerta || null;
+        // this.validationAlertSent = !!validation?.alertaEnviada;
+        //temporales
+        this.validationRecipient = null;
+        this.validationAlertSent = false;
+
+
+        this.validationModalOpen = true;
+        this.pendingValidationPdf = this.isValidationValid ? pdfFile : null;
+      },
+      error: (e) => {
+        this.signLoading = false;
+        this.signError = e?.error?.message || 'No se pudo validar la firma.';
+      },
+    });
+  }
+
+  private executeRealSignatureConfirm(file: File): void {
+    if (!this.signDocId) return;
+
+    this.signLoading = true;
+
+    this.docs.confirmSignature(this.signDocId, file).subscribe({
+      next: () => {
+        this.signLoading = false;
+        this.loadDocuments();
+        this.reloadSignatureInfo();
+        this.loadAnexos();
+      },
+      error: (e) => {
+        this.signLoading = false;
+        this.signError =
+          e?.error?.message || 'La firma fue válida, pero no se pudo confirmar.';
+      },
+    });
+  }
+
+  private reloadSignatureInfo(): void {
+    if (!this.signDocId) return;
+
+    this.docs.getSignatureInfo(this.signDocId).subscribe({
+      next: (info) => {
+        this.signInfo = info;
+      },
+      error: () => {},
+    });
+  }
+
+  downloadPdf(): void {
+    if (!this.signDocId) return;
+
+    this.docs.downloadPdfForSignature(this.signDocId).subscribe({
+      next: (blob) => this.saveBlob(blob, `documento_${this.signDocId}.pdf`),
+      error: () => (this.signError = 'No se pudo descargar el PDF.'),
+    });
+  }
+
+  downloadDocx(): void {
+    if (!this.signDocId) return;
+
+    this.docs.downloadDocxForSignature(this.signDocId).subscribe({
+      next: (blob) => this.saveBlob(blob, `documento_${this.signDocId}.docx`),
+      error: () => (this.signError = 'No se pudo descargar el DOCX.'),
+    });
+  }
+
+  // =========================
+  // ANEXOS
+  // =========================
+  loadAnexos(): void {
+    if (!this.signDocId) return;
+
+    this.anexosLoading = true;
+    this.anexosError = '';
+
+    this.docs.listAnexos(this.signDocId).subscribe({
+      next: (rows) => {
+        this.anexosLoading = false;
+        this.anexos = rows ?? [];
+      },
+      error: (e) => {
+        this.anexosLoading = false;
+        this.anexosError = e?.error?.message || 'No se pudieron cargar los anexos.';
+      },
+    });
+  }
+
+  onAnexoSelected(evt: Event): void {
+    const input = evt.target as HTMLInputElement;
+    this.selectedAnexoFile = input.files?.[0] ?? null;
+  }
+
+  uploadAnexo(): void {
+    if (!this.signDocId) return;
+
+    if (!this.selectedAnexoFile) {
+      this.anexosError = 'Debes seleccionar un archivo anexo.';
+      return;
+    }
+
+    this.uploadAnexoLoading = true;
+    this.anexosError = '';
+
+    this.docs
+      .uploadAnexo(this.signDocId, this.selectedAnexoFile, this.anexoDescripcion)
+      .subscribe({
+        next: () => {
+          this.uploadAnexoLoading = false;
+          this.selectedAnexoFile = null;
+          this.anexoDescripcion = '';
+          this.loadAnexos();
+        },
+        error: (e) => {
+          this.uploadAnexoLoading = false;
+          this.anexosError = e?.error?.message || 'No se pudo subir el anexo.';
+        },
+      });
+  }
+
+  downloadAnexo(anexoId: number, nombre: string): void {
+    if (!this.signDocId) return;
+
+    this.docs.downloadAnexo(this.signDocId, anexoId).subscribe({
+      next: (blob) => this.saveBlob(blob, nombre),
+      error: () => {
+        this.anexosError = 'No se pudo descargar el anexo.';
+      },
+    });
+  }
+
+  deleteAnexo(anexoId: number): void {
+    if (!this.signDocId) return;
+
+    this.docs.deleteAnexo(this.signDocId, anexoId).subscribe({
+      next: () => {
+        this.loadAnexos();
+      },
+      error: (e) => {
+        this.anexosError = e?.error?.message || 'No se pudo eliminar el anexo.';
+      },
+    });
+  }
+
+  private saveBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  closeValidationModal(): void {
+    this.validationModalOpen = false;
+    this.validationResult = null;
+    this.validationMainItem = null;
+    this.validationFileName = '';
+    this.validationStatusLabel = '';
+    this.validationStatusClass = 'badge';
+    this.validationRecipient = null;
+    this.validationAlertSent = false;
+    this.validationItems = [];
+    this.validationCurrentIndex = 0;
+    this.pendingValidationPdf = null;
+
+    // no confirma nada
+    // si era inválida, limpia archivo
+    this.selectedPdf = null;
+  }
+
+  formatValidationDate(value?: string | null): string {
+    if (!value) return 'No disponible';
+
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return 'No disponible';
+
+    return d.toLocaleString('es-CR');
+  }
+
+  prevValidationItem(): void {
+    if (this.validationCurrentIndex <= 0) return;
+
+    this.validationCurrentIndex--;
+    this.validationMainItem = this.validationItems[this.validationCurrentIndex] || null;
+  }
+
+  nextValidationItem(): void {
+    if (this.validationCurrentIndex >= this.validationItems.length - 1) return;
+
+    this.validationCurrentIndex++;
+    this.validationMainItem = this.validationItems[this.validationCurrentIndex] || null;
+  }
+
+  get validationTotalItems(): number {
+    return this.validationItems.length;
+  }
+
+  confirmValidatedSignature(): void {
+    if (!this.isValidationValid || !this.pendingValidationPdf) {
+      this.closeValidationModal();
+      return;
+    }
+
+    const file = this.pendingValidationPdf;
+
+    // cerrar modal visualmente antes de confirmar
+    this.validationModalOpen = false;
+
+    this.validationResult = null;
+    this.validationMainItem = null;
+    this.validationFileName = '';
+    this.validationStatusLabel = '';
+    this.validationStatusClass = 'badge';
+    this.validationRecipient = null;
+    this.validationAlertSent = false;
+    this.validationItems = [];
+    this.validationCurrentIndex = 0;
+    this.pendingValidationPdf = null;
+
+    this.executeRealSignatureConfirm(file);
   }
 }

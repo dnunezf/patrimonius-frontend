@@ -1,0 +1,218 @@
+<!-- document-editor.component.html -->
+
+<div class="editor-grid">
+  <div class="editor-main">
+    <div class="top-bar">
+      <button class="btn-back" type="button" (click)="goBack()">
+        ← Volver al Dashboard
+      </button>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar__title">
+        <h2>{{ isReadOnly ? 'Visualizador de Documento' : 'Editor Colaborativo' }}</h2>
+        <p class="toolbar__hint">
+          {{
+            isReadOnly
+              ? 'Modo lectura • Sin edición'
+              : 'Cambios en tiempo real • Guardado por versiones • Comentarios'
+          }}
+        </p>
+      </div>
+
+      <div class="buttons" *ngIf="!isReadOnly">
+        <label class="btn-primary" title="Importar un archivo .docx">
+          Importar DOCX
+          <input type="file" accept=".docx" (change)="importDocx($event)" />
+        </label>
+
+        <button class="btn-save" type="button" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Guardando…' : 'Guardar' }}
+        </button>
+
+        <button
+          class="btn-save"
+          type="button"
+          (click)="openHistory()"
+          [disabled]="restoring"
+          title="Restaurar una versión anterior"
+        >
+          Restaurar versión
+        </button>
+
+        <button type="button" class="btn-secondary" (click)="openMetadata()">
+          Metadatos
+        </button>
+
+        <button type="button" class="btn-accent" (click)="openRequestSignatureModal()">
+          Solicitar Firma
+        </button>
+      </div>
+
+      <div class="status">
+        <span *ngIf="info" class="muted">{{ info }}</span>
+        <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
+        <span *ngIf="error" class="err">{{ error }}</span>
+        <span *ngIf="isReadOnly" class="muted">🔒 Solo lectura</span>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div #editor class="quill-host"></div>
+    </div>
+  </div>
+
+  <aside class="editor-sidebar">
+    <div class="card">
+      <h4 class="card-title">
+        <img src="assets/icons/activeUser.png" width="18" alt="" />
+        Editores Activos
+      </h4>
+
+      <div *ngIf="presence?.length; else noUsers" class="user-list">
+        <div *ngFor="let u of presence" class="user-card">
+          <div class="avatar" aria-hidden="true">
+            {{ (u.nombre?.[0] ?? '?') | uppercase }}
+          </div>
+          <div class="user-meta">
+            <b>{{ u.nombre }} {{ u.apellido1 }} {{ u.apellido2 }}</b>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noUsers>
+        <small class="muted">No hay editores activos</small>
+      </ng-template>
+    </div>
+
+    <div class="card notif-card">
+      <h4 class="card-title">
+        <img src="assets/icons/comentario.png" width="18" alt="" />
+        Comentarios
+        <span *ngIf="unreadCount > 0" class="notif-badge">+{{ unreadCount }}</span>
+      </h4>
+
+      <button class="btn-outline" type="button" (click)="toggleComentarios()">
+        Ver Anotaciones
+      </button>
+    </div>
+  </aside>
+
+  <!-- Panel lateral de comentarios -->
+  <app-comment-panel
+    [open]="showComentarios"
+    [comentarios]="comentarios"
+    [presence]="presence"
+    (add)="addComentario($event)"
+    (resolve)="markResolved($event)"
+    (close)="toggleComentarios()"
+  ></app-comment-panel>
+</div>
+
+<!-- Dialog historial versiones -->
+<app-version-history-dialog
+  [open]="showHistory"
+  [documentoId]="documentoId"
+  (close)="showHistory = false"
+  (restored)="onRestored($event)"
+>
+</app-version-history-dialog>
+
+<!-- Dialog metadatos -->
+<app-document-metadata-dialog
+  [documentId]="documentoId"
+  [open]="metadataOpen"
+  (closed)="metadataOpen = false"
+  (saved)="onMetadataSaved()"
+>
+</app-document-metadata-dialog>
+
+<!-- ✅ MODAL: Solicitar firma (inline, usa tu lógica existente) -->
+<div
+  class="modal-backdrop sig-backdrop"
+  *ngIf="requestSigModalOpen"
+  (click)="closeRequestSignatureModal()"
+></div>
+
+<div class="modal sig-modal" *ngIf="requestSigModalOpen" role="dialog" aria-modal="true">
+  <div class="modal__header">
+    <h3>Solicitar firma</h3>
+    <button type="button" class="modal__close" (click)="closeRequestSignatureModal()">
+      ✕
+    </button>
+  </div>
+
+  <div class="modal__body">
+    <p class="muted">
+      Seleccioná los firmantes que deben firmar este documento. Luego confirmá la solicitud.
+    </p>
+
+    <div *ngIf="requestSigLoading" class="muted">Cargando usuarios…</div>
+
+    <div *ngIf="requestSigError" class="err" style="margin-top: 8px;">
+      {{ requestSigError }}
+    </div>
+
+    <ng-container *ngIf="!requestSigLoading">
+      <label class="field">
+        Buscar firmante
+        <input
+          type="text"
+          [(ngModel)]="firmantesQuery"
+          (input)="onFirmanteQueryChange()"
+          placeholder="Ej: Juan Pérez"
+        />
+      </label>
+
+      <label class="field">
+        Lista de usuarios
+        <select [(ngModel)]="selectedCandidateId">
+          <option [ngValue]="null">-- Seleccione --</option>
+          <option *ngFor="let u of filteredFirmantes" [ngValue]="u.id">
+            {{ u.label }}
+          </option>
+        </select>
+      </label>
+
+      <button type="button" class="btn-secondary" (click)="addSelectedFirmante()">
+        Agregar firmante
+      </button>
+
+      <div class="selected" style="margin-top: 12px;">
+        <p><b>Firmantes seleccionados:</b></p>
+
+        <div *ngIf="!selectedFirmantesList.length" class="muted">
+          Aún no hay firmantes.
+        </div>
+
+        <ul *ngIf="selectedFirmantesList.length">
+          <li *ngFor="let u of selectedFirmantesList">
+            {{ u.label }}
+            <button type="button" class="btn-link" (click)="removeFirmante(u.id)">
+              Quitar
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="requestSigError" class="err" style="margin-top: 8px;">
+        {{ requestSigError }}
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="modal__footer">
+    <button type="button" class="btn-outline" (click)="closeRequestSignatureModal()">
+      Cancelar
+    </button>
+
+    <button
+      type="button"
+      class="btn-accent"
+      (click)="confirmRequestSignature()"
+      [disabled]="requestSigLoading"
+    >
+      {{ requestSigLoading ? 'Solicitando…' : 'Confirmar solicitud' }}
+    </button>
+  </div>
+</div>

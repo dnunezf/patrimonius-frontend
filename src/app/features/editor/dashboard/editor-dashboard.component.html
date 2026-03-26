@@ -1,105 +1,546 @@
 <div class="container">
   <header class="section-header">
-    <h1 class="text-blue-639">Dashboard del Editor</h1>
-    <p class="text-gray">Gestione documentos, firmas y consultas desde su panel de control principal</p>
+    <h1 class="text-blue-639">Panel de Edición</h1>
+    <p class="text-gray">
+      Gestione documentos, firmas y consultas desde su panel de control principal
+    </p>
   </header>
-
-  <div class="status-counters">
-    <div *ngFor="let counter of statusCounters" class="status-card">
-      <div class="status-card-content">
-        <img [src]="getIconPath(counter.icon)" alt="icon" class="status-icon"/>
-        <div class="text-container">
-          <h4>{{ counter.title }}</h4>
-          <p class="count">{{ counter.count }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <div class="overview-cards">
     <div *ngFor="let card of overviewCards" class="card-wrapper">
-      <div class="card-button" (click)="toggleTemplate(card)">
+      <div
+        class="card-button"
+        (click)="onCardClick(card, $event)"
+        role="button"
+        [attr.tabindex]="0"
+        [attr.aria-label]="card.title"
+      >
         <div class="card-content">
           <div class="card-icon-container">
-            <img [src]="getIconPath(card.icon)" alt="icon" class="card-icon"/>
+            <img [src]="getIconPath(card.icon)" alt="icon" class="card-icon" />
           </div>
-
           <div class="card-text-content">
             <h3 class="text-black">{{ card.title }}</h3>
             <p>{{ card.description }}</p>
           </div>
         </div>
       </div>
-
-      <div *ngIf="card.showTemplates" class="template-list">
-        <ul>
-          <li *ngFor="let template of card.templates" (click)="selectTemplate(template.name, card)">
-            <div class="template-item">
-              <div class="template-text">
-                <h4>{{ template.name }}</h4>
-                <p>{{ template.description }}</p>
-              </div>
-            </div>
-          </li>
-        </ul>
-      </div>
     </div>
   </div>
 
+  <div class="card">
+    <h2 class="text-blue-639">Filtros</h2>
 
+    <div class="filters-grid-4">
+      <div class="input-group">
+        <label>Autor</label>
+        <select [(ngModel)]="filters.author" name="filterAuthor">
+          <option value="Todos">Todos</option>
+          <option *ngFor="let a of authors" [value]="a">{{ a }}</option>
+        </select>
+      </div>
 
-  <!-- Listo  :)  -->
+      <div class="input-group">
+        <label>Estado</label>
+        <select [(ngModel)]="filters.status" name="filterStatus">
+          <option value="Todos">Todos</option>
+          <option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="filters.dateFrom" name="dateFrom" />
+      </div>
+
+      <div class="input-group">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="filters.dateTo" name="dateTo" />
+      </div>
+    </div>
+
+    <div class="row-actions">
+      <button class="button-outline" type="button" (click)="clearFilters()">
+        Limpiar
+      </button>
+      <button class="button-outline" type="button" (click)="applyFilters()">
+        Aplicar
+      </button>
+    </div>
+  </div>
 
   <div class="document-list">
     <h2 class="text-blue-639">Documentos en Producción</h2>
     <p>Documentos en borrador y firmados - Fase de producción activa</p>
+
     <table class="document-table">
       <thead>
       <tr>
         <th>Documento</th>
         <th>Estado</th>
         <th>Autor</th>
-        <th>Última Modificación</th>
+        <th>Fecha de Creación</th>
         <th>Acciones</th>
       </tr>
       </thead>
+
       <tbody>
-
-      <tr *ngFor="let document of documents">
+      <tr *ngFor="let document of pagedDocuments">
         <td>{{ document.documento_nombre }}</td>
-        <td>
-    <span class="badge"
-          [ngClass]="{
-        'badge-yellow': document.documento_estado === 'EDICION',
-        'badge-blue': document.documento_estado === 'FIRMA_PARCIAL',
-        'badge-gray': document.documento_estado === 'CREACION'
-      }">
-      {{ document.documento_estado | formatState }}
-    </span>
 
-          <!-- Mostrar el número de firmas si el estado es 'FIRMA_PARCIAL' -->
+        <td>
+            <span
+              class="badge"
+              [ngClass]="{
+                'badge-yellow': document.documento_estado === 'EDICION',
+                'badge-blue': document.documento_estado === 'FIRMA_PARCIAL',
+                'badge-gray': document.documento_estado === 'CREACION',
+                'badge-red': document.documento_estado === 'FIRMA'
+              }"
+            >
+              {{ document.documento_estado | formatState }}
+            </span>
+
           <span *ngIf="document.documento_estado === 'FIRMA_PARCIAL'">
-      ({{ document.firmas_obtenidas }} / {{ document.firmas_requeridas }})
-    </span>
+              ({{ document.firmas_obtenidas }} / {{ document.firmas_requeridas }})
+            </span>
         </td>
+
         <td>{{ document.primer_usuario }}</td>
-        <td>{{ document.fecha_creacion ? (document.fecha_creacion | date: 'dd-mm-yyyy') : 'No disponible' }}</td>
 
         <td>
-          <!-- Mostrar botón de editar solo si el estado no es 'FIRMA_PARCIAL' -->
-          <button *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'" class="btn btn--gray">Editar</button>
+          {{
+            document.fecha_creacion
+              ? (document.fecha_creacion | date: 'dd-MM-yyyy')
+              : 'No disponible'
+          }}
+        </td>
 
-          <button class="btn btn--red">Firmar</button>
+        <td>
+          <button
+            *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
+            class="btn btn--gray"
+            type="button"
+            (click)="editarDocumento(document.id); $event.stopPropagation()"
+          >
+            Editar
+          </button>
 
-          <!-- Botón "Ver" siempre visible -->
-          <button class="btn btn--gray">Ver</button>
+          <button
+            class="btn btn--red"
+            type="button"
+            (click)="openSignModal(document.id); $event.stopPropagation()"
+          >
+            Firmar
+          </button>
+
+          <button
+            class="btn btn--gray"
+            type="button"
+            (click)="verDocumento(document.id); $event.stopPropagation()"
+          >
+            Ver
+          </button>
         </td>
       </tr>
 
-
-
-
+      <tr *ngIf="pagedDocuments.length === 0">
+        <td colspan="5" class="muted">
+          No hay resultados con los filtros actuales.
+        </td>
+      </tr>
       </tbody>
     </table>
+
+    <div class="pager muted">
+      <button class="button-outline" [disabled]="page <= 1" (click)="goPrev()">
+        « Anterior
+      </button>
+
+      <span>
+        Página {{ page }} de {{ totalPages }} · Mostrando
+        {{ totalItems === 0 ? 0 : (page - 1) * pageSize + 1 }}
+        – {{ rangeEnd }} de {{ totalItems }}
+      </span>
+
+      <button class="button-outline" [disabled]="page >= totalPages" (click)="goNext()">
+        Siguiente »
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ MODAL FIRMA -->
+<div class="modal-backdrop" *ngIf="signModalOpen" (click)="closeSignModal()"></div>
+
+<div class="modal" *ngIf="signModalOpen" role="dialog" aria-modal="true">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Confirmar firma</h3>
+      <button class="modal-close" type="button" (click)="closeSignModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p class="muted" *ngIf="signInfo">
+        <strong>Documento:</strong> {{ signInfo.titulo }} <br />
+        <strong>Estado:</strong> {{ signInfo.estado | formatState }} <br />
+        <strong>Firmas:</strong> {{ signInfo.firmas_obtenidas }} / {{ signInfo.firmas_requeridas }}
+      </p>
+
+      <div *ngIf="signLoading" class="muted">
+        Cargando información de firma...
+      </div>
+
+      <div *ngIf="signError" class="alert-error">
+        {{ signError }}
+      </div>
+
+      <div class="row-download" *ngIf="!signLoading">
+        <button class="button-outline" type="button" (click)="downloadPdf()">
+          Descargar PDF
+        </button>
+        <button class="button-outline" type="button" (click)="downloadDocx()">
+          Descargar DOCX
+        </button>
+      </div>
+
+      <div class="input-group">
+        <label>Adjuntar PDF firmado</label>
+        <input
+          type="file"
+          accept=".pdf,application/pdf"
+          (change)="onPdfSelected($event)"
+          [disabled]="signLoading || signInfo?.ya_firmo || !(signInfo?.puede_firmar)"
+        />
+        <small class="muted">Debe ser un archivo .pdf</small>
+      </div>
+
+      <!-- ✅ ANEXOS -->
+      <hr />
+
+      <div class="anexos-section">
+        <h4 class="text-blue-639">Documentos anexos</h4>
+        <p class="muted">
+          Adjunte aquí los documentos anexos relacionados con este documento firmado.
+        </p>
+
+        <div *ngIf="anexosError" class="alert-error">
+          {{ anexosError }}
+        </div>
+
+        <div class="input-group">
+          <label>Archivo anexo</label>
+          <input
+            type="file"
+            (change)="onAnexoSelected($event)"
+            [disabled]="uploadAnexoLoading"
+          />
+        </div>
+
+        <div class="input-group">
+          <label>Descripción (opcional)</label>
+          <input
+            type="text"
+            [(ngModel)]="anexoDescripcion"
+            placeholder="Ej: Evidencia, oficio, respaldo, anexo 1..."
+            [disabled]="uploadAnexoLoading"
+          />
+        </div>
+
+        <div class="row-actions">
+          <button
+            class="button-outline"
+            type="button"
+            [disabled]="uploadAnexoLoading || !selectedAnexoFile"
+            (click)="uploadAnexo()"
+          >
+            {{ uploadAnexoLoading ? 'Subiendo...' : 'Subir anexo' }}
+          </button>
+        </div>
+
+        <div *ngIf="anexosLoading" class="muted" style="margin-top: 10px;">
+          Cargando anexos...
+        </div>
+
+        <div *ngIf="!anexosLoading && !anexos.length" class="muted" style="margin-top: 10px;">
+          No hay anexos cargados para este documento.
+        </div>
+
+        <div *ngIf="!anexosLoading && anexos.length" class="anexos-list">
+          <div class="anexo-item" *ngFor="let anexo of anexos">
+            <div class="anexo-main">
+              <div class="label">Archivo</div>
+              <div class="value">{{ anexo.nombre_original }}</div>
+
+              <div class="muted" *ngIf="anexo.descripcion">
+                {{ anexo.descripcion }}
+              </div>
+
+              <div class="muted">
+                Subido por: {{ anexo.usuario_nombre || ('Usuario ' + anexo.usuario_id) }}
+              </div>
+
+              <div class="muted">
+                {{ anexo.fecha_subida | date:'short' }}
+              </div>
+            </div>
+
+            <div class="row-actions">
+              <button
+                class="button-outline"
+                type="button"
+                (click)="downloadAnexo(anexo.id, anexo.nombre_original)"
+              >
+                Descargar
+              </button>
+
+              <button
+                class="btn btn--red"
+                type="button"
+                (click)="deleteAnexo(anexo.id)"
+                [disabled]="signInfo?.estado === 'ARCHIVADO'"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="button-outline" type="button" (click)="closeSignModal()">
+        Cancelar
+      </button>
+
+      <button
+        class="btn btn--red"
+        type="button"
+        [disabled]="signLoading || !!signError || !selectedPdf || signInfo?.ya_firmo || !(signInfo?.puede_firmar)"
+        (click)="confirmSign()"
+      >
+        {{ signLoading ? 'Confirmando...' : 'Confirmar firma' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ MODAL RESULTADO VALIDACIÓN DE FIRMA -->
+<div
+  class="modal-backdrop"
+  *ngIf="validationModalOpen"
+  (click)="closeValidationModal()"
+></div>
+
+<div
+  class="modal validation-modal"
+  *ngIf="validationModalOpen"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-card validation-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Resultado de validación de firma digital</h3>
+      <button
+        class="modal-close"
+        type="button"
+        (click)="closeValidationModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="validationResult as vr">
+      <p class="muted">
+        Se validó el documento firmado antes de completar el proceso.
+      </p>
+
+      <div class="validation-summary">
+        <div class="validation-row">
+          <div class="label">Nombre del archivo</div>
+          <div class="value">{{ validationFileName || 'No disponible' }}</div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Estado del documento</div>
+          <div class="value">
+            <span [class]="validationStatusClass">
+              {{ validationStatusLabel }}
+            </span>
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Resumen</div>
+          <div class="value">{{ vr.mensaje || 'Sin detalle.' }}</div>
+        </div>
+      </div>
+
+      <p class="muted" *ngIf="validationItems.length > 0" style="margin-top: 0.5rem;">
+        Si al menos una firma es inválida, el documento completo se considera inválido.
+      </p>
+
+      <div class="validation-firmas-list" *ngIf="validationItems.length > 0">
+        <h4 class="text-blue-639">Firmas en el documento</h4>
+        <table class="validation-table">
+          <thead>
+          <tr>
+            <th>Firmante</th>
+            <th>Cédula</th>
+            <th>Estado</th>
+            <th>Mensaje</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let item of validationItems">
+            <td>{{ item.firmante || '—' }}</td>
+            <td>{{ item.cedula || '—' }}</td>
+            <td>
+                <span
+                  class="badge"
+                  [ngClass]="{
+                    'badge-green': item.valido === true,
+                    'badge-red': item.valido === false
+                  }"
+                >
+                  {{ item.valido === true ? 'Válida' : 'Inválida' }}
+                </span>
+            </td>
+            <td>{{ item.mensaje || '—' }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        class="validation-nav"
+        *ngIf="validationTotalItems > 1"
+        style="margin-top: 1rem;"
+      >
+        <button
+          class="button-outline"
+          type="button"
+          (click)="prevValidationItem()"
+          [disabled]="validationCurrentIndex === 0"
+        >
+          ← Anterior
+        </button>
+
+        <span class="validation-counter">
+          Firma {{ validationCurrentIndex + 1 }} de {{ validationTotalItems }}
+        </span>
+
+        <button
+          class="button-outline"
+          type="button"
+          (click)="nextValidationItem()"
+          [disabled]="validationCurrentIndex >= validationTotalItems - 1"
+        >
+          Siguiente →
+        </button>
+      </div>
+
+      <div class="validation-summary" *ngIf="validationMainItem" style="margin-top: 1rem;">
+        <div class="validation-row">
+          <div class="label">Firmante (detalle)</div>
+          <div class="value">{{ validationMainItem?.firmante || 'No disponible' }}</div>
+        </div>
+        <div class="validation-row" *ngIf="validationMainItem?.cedula">
+          <div class="label">Cédula</div>
+          <div class="value">{{ validationMainItem?.cedula }}</div>
+        </div>
+        <div class="validation-row">
+          <div class="label">Fecha de firma</div>
+          <div class="value">
+            {{ formatValidationDate(validationMainItem?.detalle?.fechaFirma) }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Algoritmo hash</div>
+          <div class="value">
+            {{ validationMainItem?.detalle?.algoritmoHash || 'No disponible' }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Válido desde</div>
+          <div class="value">
+            {{ formatValidationDate(validationMainItem?.detalle?.certificadoDesde) }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Válido hasta</div>
+          <div class="value">
+            {{ formatValidationDate(validationMainItem?.detalle?.certificadoHasta) }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Revocación</div>
+          <div class="value">
+            {{ validationMainItem?.detalle?.revocacion || '—' }}
+          </div>
+        </div>
+
+        <div class="validation-row">
+          <div class="label">Mensaje de esta firma</div>
+          <div class="value">{{ validationMainItem?.mensaje || '—' }}</div>
+        </div>
+      </div>
+
+      <!-- ✅ BLOQUE SI ES VÁLIDA -->
+      <div class="validation-ok-box" *ngIf="isValidationValid">
+        La firma digital es válida y el documento puede continuar en el flujo
+        normal del sistema.
+      </div>
+
+      <!-- ✅ BLOQUE SI ES INVÁLIDA -->
+      <div class="validation-bad-box" *ngIf="!isValidationValid">
+        <strong>Documento no confiable.</strong><br />
+        Este documento no debe archivarse y debe solicitarse su reenvío con una
+        firma digital válida.
+      </div>
+
+      <div class="validation-alert-box" *ngIf="!isValidationValid">
+        <div class="alert-title">Notificación automática</div>
+        <div class="alert-text">
+          Este documento no debe archivarse y debe solicitarse su reenvío.
+        </div>
+
+        <div class="alert-meta" *ngIf="validationRecipient">
+          <strong>Destinatario:</strong> {{ validationRecipient }}
+        </div>
+
+        <div class="alert-meta" *ngIf="validationAlertSent">
+          Correo de alerta generado correctamente.
+        </div>
+
+        <div class="alert-meta" *ngIf="!validationAlertSent">
+          No se ha confirmado el envío del correo desde el sistema.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        *ngIf="!isValidationValid"
+        class="button-outline"
+        type="button"
+        (click)="closeValidationModal()"
+      >
+        Cerrar
+      </button>
+
+      <button
+        *ngIf="isValidationValid"
+        class="button-outline"
+        type="button"
+        (click)="confirmValidatedSignature()"
+      >
+        Continuar
+      </button>
+    </div>
   </div>
 </div>

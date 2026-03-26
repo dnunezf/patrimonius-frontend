@@ -1,14 +1,16 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { RouterModule } from '@angular/router'; // Import RouterModule for routing
+import {NavComponent} from './core/nav/nav.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterModule],
+  imports: [RouterOutlet, NavComponent],
   templateUrl: './app.html',
-  styleUrls: ['./app.css'],
+  styleUrls: ['./app.css']
 })
 export class App {
-  protected readonly title = signal('patrimonius-frontend');
+  openLogin() {
+
+  }
 }

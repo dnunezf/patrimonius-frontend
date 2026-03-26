@@ -1,6 +1,5 @@
 <!-- Modal/backdrop -->
 <div *ngIf="open" class="modal" (click)="backdrop($event)">
-  <!-- Dialog -->
   <div
     class="dialog"
     role="dialog"
@@ -25,7 +24,6 @@
     </p>
 
     <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
-      <!-- ===== Personal information ===== -->
       <h3 class="section__title">Información Personal</h3>
 
       <div class="grid grid-2">
@@ -33,9 +31,9 @@
         <label class="form__label" for="apellido1">Primer apellido *</label>
 
         <div class="input with-icon">
-          <span class="input__icon" aria-hidden="true">
-            <img src="assets/icons/user.png" alt="" />
-          </span>
+          <span class="input__icon" aria-hidden="true"
+          ><img src="assets/icons/users.png" alt=""
+          /></span>
           <input
             #ctl
             id="nombre"
@@ -43,6 +41,7 @@
             type="text"
             placeholder="Nombre del usuario"
             formControlName="nombre"
+            maxlength="100"
             [class.invalid]="showErr('nombre')"
             [attr.aria-invalid]="showErr('nombre')"
             [attr.aria-describedby]="'err-nombre'"
@@ -58,9 +57,9 @@
         </div>
 
         <div class="input with-icon">
-          <span class="input__icon" aria-hidden="true">
-            <img src="assets/icons/user.png" alt="" />
-          </span>
+          <span class="input__icon" aria-hidden="true"
+          ><img src="assets/icons/users.png" alt=""
+          /></span>
           <input
             #ctl
             id="apellido1"
@@ -68,6 +67,7 @@
             type="text"
             placeholder="Primer apellido"
             formControlName="apellido1"
+            maxlength="100"
             [class.invalid]="showErr('apellido1')"
             [attr.aria-invalid]="showErr('apellido1')"
             [attr.aria-describedby]="'err-ap1'"
@@ -84,27 +84,28 @@
       </div>
 
       <label class="form__label" for="apellido2"
-        >Segundo apellido (opcional)</label
+      >Segundo apellido (opcional)</label
       >
       <div class="input with-icon">
-        <span class="input__icon" aria-hidden="true">
-          <img src="assets/icons/user.png" alt="" />
-        </span>
-        <input
-          #ctl
-          id="apellido2"
-          class="input__control"
-          type="text"
-          placeholder="Segundo apellido"
-          formControlName="apellido2"
-        />
+        <span class="input__icon" aria-hidden="true"
+        ><img src="assets/icons/users.png" alt=""
+        /></span>
+          <input
+            #ctl
+            id="apellido2"
+            class="input__control"
+            type="text"
+            placeholder="Segundo apellido"
+            formControlName="apellido2"
+            maxlength="100"
+          />
       </div>
 
       <label class="form__label" for="email">Correo electrónico *</label>
       <div class="input with-icon">
-        <span class="input__icon" aria-hidden="true">
-          <img src="assets/icons/email.png" alt="" />
-        </span>
+        <span class="input__icon" aria-hidden="true"
+        ><img src="assets/icons/email.png" alt=""
+        /></span>
         <input
           #ctl
           id="email"
@@ -113,6 +114,7 @@
           placeholder="usuario@museocr.go.cr"
           autocomplete="username"
           formControlName="email"
+          maxlength="255"
           [class.invalid]="showErr('email')"
           [attr.aria-invalid]="showErr('email')"
           [attr.aria-describedby]="'err-email'"
@@ -127,30 +129,45 @@
         {{ errMsg("email") }}
       </div>
 
-      <!-- ===== Organization information ===== -->
       <h3 class="section__title">Información Organizacional</h3>
 
-      <label class="form__label" for="rolId">Rol en el sistema *</label>
-      <div class="select">
-        <select
-          #ctl
-          id="rolId"
-          class="select__control"
-          formControlName="rolId"
-          [class.invalid]="showErr('rolId')"
-          [attr.aria-invalid]="showErr('rolId')"
-          [attr.aria-describedby]="'err-rol'"
-        >
-          <option *ngFor="let r of ROLES" [value]="r.id">{{ r.label }}</option>
-        </select>
+      <!-- Roles as checkbox chips -->
+      <div class="role-head">
+        <label class="form__label">Roles en el sistema *</label>
+        <div class="role-ops">
+          <button type="button" class="btn-mini" (click)="selectAllRoles()">
+            Seleccionar todos
+          </button>
+          <button type="button" class="btn-mini" (click)="clearAllRoles()">
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="chips"
+        [class.invalid]="showErr('rolIds')"
+        aria-describedby="err-roles"
+        role="group"
+      >
+        <label class="chip" *ngFor="let r of ROLES; trackBy: trackByRole">
+          <input
+            type="checkbox"
+            [checked]="hasRole(r.id)"
+            (change)="onRoleToggle(r.id, $event)"
+            [attr.aria-label]="r.label"
+          />
+
+          <span>{{ r.label }}</span>
+        </label>
       </div>
       <div
         class="field-help"
-        *ngIf="showErr('rolId')"
-        id="err-rol"
+        *ngIf="showErr('rolIds')"
+        id="err-roles"
         role="alert"
       >
-        {{ errMsg("rolId") }}
+        {{ errMsg("rolIds") }}
       </div>
 
       <label class="form__label" for="unidadId">Unidad organizacional *</label>
@@ -160,12 +177,17 @@
           id="unidadId"
           class="select__control"
           formControlName="unidadId"
+          [disabled]="unitsLoading || !units.length"
           [class.invalid]="showErr('unidadId')"
           [attr.aria-invalid]="showErr('unidadId')"
           [attr.aria-describedby]="'err-u'"
         >
-          <option *ngFor="let u of UNIDADES" [value]="u.id">
-            {{ u.label }}
+          <option *ngIf="unitsLoading" [ngValue]="null">Loading units…</option>
+          <option
+            *ngFor="let u of units; trackBy: trackByUnidad"
+            [ngValue]="u.id"
+          >
+            {{ u.name }}
           </option>
         </select>
       </div>
@@ -178,7 +200,7 @@
         {{ errMsg("unidadId") }}
       </div>
 
-      <!-- Editor permissions -->
+      <!-- Permisos editor (solo si EDITOR) -->
       <div *ngIf="isEditor()" class="editor-perms" aria-labelledby="permTitle">
         <div id="permTitle" class="perm-title">Permisos del Editor</div>
         <label class="switch" for="permEdit">
@@ -191,7 +213,29 @@
         </label>
       </div>
 
-      <!-- Notes (UI only, optional) -->
+      <!-- ✅ NUEVO: Permiso cargar documentos (HU-21) -->
+      <div
+        *ngIf="isEditorOrArchivista()"
+        class="editor-perms"
+        aria-labelledby="uploadTitle"
+      >
+        <div id="uploadTitle" class="perm-title">Permisos de Carga</div>
+
+        <label class="switch" for="permUpload">
+          <input
+            #ctl
+            id="permUpload"
+            type="checkbox"
+            formControlName="canUpload"
+          />
+          <span>Cargar documentos</span>
+        </label>
+
+        <div class="field-help" role="note">
+          Cargar documentos solo aplica para usuarios con rol Editor o Archivista.
+        </div>
+      </div>
+
       <label class="form__label" for="notes">Notas adicionales</label>
       <textarea
         id="notes"
@@ -200,16 +244,22 @@
         placeholder="Información adicional sobre el usuario (opcional)"
       ></textarea>
 
-      <!-- Footer actions -->
       <div class="footer">
         <button
-          class="btn btn--success"
           type="submit"
-          [disabled]="form.invalid"
+          class="btn btn--success"
+          [disabled]="disableSubmit"
         >
-          {{ editing ? "Guardar Cambios" : "Crear Usuario" }}
+          <span *ngIf="loading" class="spinner"></span>
+          {{ editing ? "Guardar" : "Crear usuario" }}
         </button>
-        <button class="btn btn--ghost" type="button" (click)="close.emit()">
+
+        <button
+          type="button"
+          class="btn btn--ghost"
+          (click)="onCancel()"
+          [disabled]="loading"
+        >
           Cancelar
         </button>
       </div>

@@ -1,25 +1,50 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
 
-export interface Document {
+export interface DocumentRow {
+  id: number;
   code: string;
   title: string;
+
   unit: string;
+  unitId: number;
+
   status: string;
+  categoria?: string | null;
+  created_at?: string | null;
+
   canView: boolean;
   canEdit: boolean;
+
+  // canSign = acción habilitada ahora (depende de estado)
   canSign: boolean;
+
+  // hasSign = permiso asignado (lo que marcás al crear usuario)
+  hasSign?: boolean;
+
+  source?: string;
 }
 
-export interface AccessControlResponse {
+export interface AccessControlResponsePaged {
   user: {
+    id: number;
     email: string;
-    role: string;
-    unit: string;
+    roles: string[];
+    unidad: string;
+    unidadId: number;
+
+    // útil si querés ver qué columnas detectó el backend
+    caps?: { canEdit: boolean; canSign: boolean; source?: string };
   };
-  documents: Document[];
+
+  items: DocumentRow[];
+  totalItems: number;
+  totalPages: number;
+  page: number;
+  pageSize: number;
+
   accessibleCount: number;
 }
 
@@ -29,8 +54,18 @@ export class AccessControlService {
 
   constructor(private http: HttpClient) {}
 
-  // 🚀 ya no recibe token
-  getAccessControl(): Observable<AccessControlResponse> {
-    return this.http.get<AccessControlResponse>(`${this.api}/documents/control-acceso`);
+  getAccessControl(query: any = {}): Observable<AccessControlResponsePaged> {
+    let params = new HttpParams();
+    Object.keys(query || {}).forEach((k) => {
+      const v = query[k];
+      if (v !== null && v !== undefined && v !== '') {
+        params = params.set(k, String(v));
+      }
+    });
+
+    return this.http.get<AccessControlResponsePaged>(
+      `${this.api}/documents/control-acceso`,
+      { params }
+    );
   }
 }

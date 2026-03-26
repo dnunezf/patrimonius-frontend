@@ -1,0 +1,90 @@
+<div class="container">
+  <header class="section-header">
+    <h1 class="text-blue-639">Firmar Documento</h1>
+    <p class="text-gray">
+      Descargue el documento, firme fuera del sistema y suba el PDF firmado.
+    </p>
+  </header>
+
+  <div class="card">
+    <div class="row-between">
+      <h2 class="text-blue-639">Detalle</h2>
+      <button class="button-outline" type="button" (click)="back()">
+        Volver al dashboard
+      </button>
+    </div>
+
+    <div *ngIf="loading" class="muted">Cargando...</div>
+
+    <div *ngIf="error" class="alert-error">
+      {{ error }}
+    </div>
+
+    <div *ngIf="info && !loading" class="info-grid">
+      <div>
+        <div class="label">Documento</div>
+        <div class="value">{{ info.titulo }}</div>
+      </div>
+
+      <div>
+        <div class="label">Estado</div>
+        <div class="value">
+          {{ info.estado | formatState }}
+        </div>
+      </div>
+
+      <div>
+        <div class="label">Firmas</div>
+        <div class="value">
+          {{ info.firmas_obtenidas }} / {{ info.firmas_requeridas }}
+        </div>
+      </div>
+
+      <div>
+        <div class="label">Ya firmó</div>
+        <div class="value">
+          {{ info.ya_firmo ? 'Sí' : 'No' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="text-blue-639">Descargar</h2>
+    <p class="muted">
+      (Esto lo activamos cuando conectemos el backend para exportar PDF/DOCX.)
+    </p>
+
+    <div class="row-actions">
+      <button class="button-outline" type="button" [disabled]="!exportsEnabled" (click)="downloadPdf()">
+        Descargar PDF
+      </button>
+
+      <button class="button-outline" type="button" [disabled]="!exportsEnabled" (click)="downloadDocx()">
+        Descargar DOCX
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="text-blue-639">Subir PDF firmado</h2>
+
+    <div class="input-group">
+      <label>Archivo</label>
+      <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" />
+      <small class="muted">Debe ser un archivo .pdf</small>
+    </div>
+
+    <div class="row-actions">
+      <button class="btn btn--red" type="button"
+              [disabled]="confirmLoading || !selectedPdf || !!error"
+              (click)="confirmSign()">
+        {{ confirmLoading ? 'Confirmando...' : 'Confirmar firma' }}
+      </button>
+    </div>
+
+    <div *ngIf="confirmMsg" class="alert-ok">
+      {{ confirmMsg }}
+    </div>
+  </div>
+</div>

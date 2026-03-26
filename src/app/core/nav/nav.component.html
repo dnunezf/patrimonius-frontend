@@ -1,77 +1,111 @@
 <header class="topbar" role="banner">
-  <!-- Brand -->
-  <a class="brand" [routerLink]="'/'" aria-label="Ir a inicio">
-    <img class="brand__logo" [src]="logo" alt="Museo Nacional - Logotipo" />
-    <span class="brand__text">
-      <strong>{{ brandTitle }}</strong>
-      <small>{{ brandSubtitle }}</small>
-    </span>
-  </a>
-
-  <!-- Desktop nav (right) -->
-  <nav class="nav" role="navigation" aria-label="Principal">
-    <ul class="nav__list">
-      <li class="nav__item" *ngFor="let it of items">
-        <!-- interno -->
-        <a *ngIf="!it.external"
-           class="nav__link"
-           [routerLink]="it.path"
-           [routerLinkActive]="'is-active'"
-           [routerLinkActiveOptions]="{ exact: !!it.exact }">
-          <img *ngIf="it.iconSrc" [src]="it.iconSrc" alt="" class="nav__icon" aria-hidden="true">
-          {{ it.label }}
-        </a>
-        <!-- externo -->
-        <a *ngIf="it.external"
-           class="nav__link"
-           [href]="it.path" target="_blank" rel="noopener">
-          <img *ngIf="it.iconSrc" [src]="it.iconSrc" alt="" class="nav__icon" aria-hidden="true">
-          {{ it.label }}
-        </a>
-      </li>
-    </ul>
-  </nav>
-
-  <!-- Right actions -->
-  <div class="actions">
-    <!-- botón login DESKTOP (no navega; abre modal) -->
-    <button *ngIf="loginItem"
+  <!-- Left -->
+  <div class="topbar__left">
+    <!-- ☰ SOLO si está logueado -->
+    <button *ngIf="isLoggedIn()"
+            class="iconbtn iconbtn--primary"
             type="button"
-            class="btn btn--ghost actions__login"
-            (click)="loginClick.emit()">
-      {{ loginItem.label }}
+            (click)="openDrawer()"
+            aria-label="Abrir Roles y Permisos">
+      ☰
     </button>
 
-    <!-- Hamburger -->
-    <button class="hamburger" type="button"
-            (click)="toggle()"
-            aria-controls="mobile-menu"
-            [attr.aria-expanded]="isOpen()"
-            aria-label="Abrir menú">☰</button>
+    <a class="brand" [routerLink]="'/'" aria-label="Ir a inicio">
+      <img class="brand__logo" [src]="logo" alt="Museo Nacional - Logotipo" />
+      <span class="brand__text">
+        <strong>{{ brandTitle }}</strong>
+        <small>{{ brandSubtitle }}</small>
+      </span>
+    </a>
   </div>
 
-  <!-- Mobile menu -->
-  <nav class="mobile" [class.is-open]="isOpen()" id="mobile-menu" aria-label="Menú móvil">
-    <ul class="mobile__list">
-      <li class="mobile__item" *ngFor="let it of items" (click)="close()">
-        <a *ngIf="!it.external" class="mobile__link"
-           [routerLink]="it.path"
-           [routerLinkActive]="'is-active'"
-           [routerLinkActiveOptions]="{ exact: !!it.exact }">
-          {{ it.label }}
-        </a>
-        <a *ngIf="it.external" class="mobile__link" [href]="it.path" target="_blank" rel="noopener">
-          {{ it.label }}
-        </a>
-      </li>
+  <!-- Right -->
+  <div class="topbar__right">
+    <!-- Si NO está logueado: botón iniciar sesión -->
+    <button *ngIf="!isLoggedIn() && loginItem"
+            class="btn-logout"
+            type="button"
+            (click)="loginClick.emit()">
+      Iniciar sesión
+    </button>
 
+    <!-- Si SÍ está logueado -->
+    <ng-container *ngIf="isLoggedIn()">
+      <button class="iconbtn"
+              type="button"
+              [routerLink]="notificationsLink()"
+              aria-label="Notificaciones">
+        🔔
+        <span *ngIf="noticeCount() > 0" class="badge">{{ badgeText() }}</span>
+      </button>
 
-      <li class="mobile__item" *ngIf="loginItem">
-        <button class="btn btn--primary mobile__btn" type="button"
-                (click)="loginClick.emit(); close()">
-          {{ loginItem.label }}
-        </button>
-      </li>
-    </ul>
-  </nav>
+      <span class="email">{{ userEmail() }}</span>
+
+      <button class="btn-logout" type="button" (click)="signOut()">
+        Salir
+      </button>
+    </ng-container>
+  </div>
 </header>
+
+<!-- Overlay y Drawer SOLO si está logueado -->
+<div *ngIf="isLoggedIn()"
+     class="overlay"
+     [class.is-open]="drawerOpen()"
+     (click)="closeDrawer()"></div>
+
+<aside *ngIf="isLoggedIn()"
+       class="drawer"
+       [class.is-open]="drawerOpen()"
+       role="dialog"
+       aria-label="Menú">
+  <div class="drawer__top">
+    <button class="closebtn" type="button" (click)="closeDrawer()" aria-label="Cerrar">
+      ✕
+    </button>
+
+    <div class="drawer__brand">
+      <div class="drawer__title">Patrimonius</div>
+      <div class="drawer__subtitle">Museo Nacional</div>
+    </div>
+  </div>
+
+  <div class="drawer__section">ROLES</div>
+
+  <nav class="drawer__nav">
+    <a *ngFor="let r of rolesList"
+       class="drawer__item"
+       [routerLink]="roleLink(r)"
+       routerLinkActive="is-active"
+       (click)="closeDrawer()">
+      <img class="drawer__icon" [src]="roleIcon(r)" alt="" aria-hidden="true" />
+      <span class="drawer__label">{{ r }}</span>
+      <span class="drawer__chev">›</span>
+    </a>
+  </nav>
+
+<ng-container *ngIf="canSeeActions()">
+  <div class="drawer__section">ACCIONES</div>
+
+  <nav class="drawer__nav">
+    <a class="drawer__item"
+       *ngIf="canSeeUpload()"
+       [routerLink]="uploadLink()"
+       routerLinkActive="is-active"
+       (click)="closeDrawer()">
+      <img class="drawer__icon" src="assets/icons/upload.png" alt="" aria-hidden="true" />
+      <span class="drawer__label">Carga de documentos</span>
+      <span class="drawer__chev">›</span>
+    </a>
+
+    <a class="drawer__item"
+       *ngIf="canSeeConservationIntake()"
+       [routerLink]="conservationIntakeLink()"
+       routerLinkActive="is-active"
+       (click)="closeDrawer()">
+      <img class="drawer__icon" src="assets/icons/archive.png" alt="" aria-hidden="true" />
+      <span class="drawer__label">Ingreso a conservación</span>
+      <span class="drawer__chev">›</span>
+    </a>
+  </nav>
+</ng-container>

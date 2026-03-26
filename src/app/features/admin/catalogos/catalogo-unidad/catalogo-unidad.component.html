@@ -1,57 +1,146 @@
-<div class="container">
-  <h2>Gestión de Unidades Organizacionales</h2>
+<main class="container">
+  <!-- 🔙 Volver -->
+  <div class="back-bar">
+    <a class="link-back" routerLink="/admin/module/catalogs">
+      ← Volver a Catálogos
+    </a>
+  </div>
 
-  <div class="grid">
-    <!-- Formulario de creación/edición -->
-    <form (ngSubmit)="submit()" #f="ngForm" class="panel">
-      <h3>{{ editing ? 'Editar Unidad' : 'Nueva Unidad' }}</h3>
+  <!-- 🔹 Encabezado (centrado) -->
+  <header class="page-header center">
+    <h1>Gestión de Unidades Organizacionales</h1>
+    <p class="sub">
+      Administración de unidades del sistema — creación, edición y eliminación de unidades organizacionales.
+    </p>
+  </header>
 
-      <label>Nombre</label>
-      <input name="nombre" [(ngModel)]="form.nombre" required />
+  <!-- 🔹 Formulario -->
+  <section class="card form-panel">
+    <h2>{{ editing ? 'Editar Unidad' : 'Crear Nueva Unidad' }}</h2>
 
-      <label>Descripción</label>
-      <textarea name="descripcion" [(ngModel)]="form.descripcion"></textarea>
-
-      <!-- Mostrar el mensaje de error -->
-      <div *ngIf="errorMessage" class="error-message">
-        {{ errorMessage }}
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nombre de la Unidad</label>
+        <input
+          [(ngModel)]="form.nombre"
+          type="text"
+          placeholder="Ej: Departamento de Conservación"
+        />
       </div>
 
-      <div class="row">
-        <button type="submit" class="primary">
-          {{ editing ? 'Guardar cambios' : 'Crear Unidad' }}
-        </button>
-        <button type="button" (click)="cancel()" *ngIf="editing">
-          Cancelar
-        </button>
+      <div class="form-group">
+        <label>Descripción</label>
+        <input
+          [(ngModel)]="form.descripcion"
+          type="text"
+          placeholder="Breve descripción de la unidad"
+        />
       </div>
-    </form>
+    </div>
 
-    <!-- Listado -->
-    <div class="panel">
-      <h3>Listado</h3>
-      <div *ngIf="loading">Cargando…</div>
-      <table *ngIf="!loading">
+    <div class="form-actions">
+      <button
+        class="btn btn--primary"
+        (click)="submit()"
+        [disabled]="saving || !form.nombre"
+      >
+        {{ editing ? 'Guardar Cambios' : 'Crear Unidad' }}
+      </button>
+
+      <button
+        *ngIf="editing"
+        type="button"
+        class="btn btn--ghost"
+        (click)="cancel()"
+      >
+        Cancelar
+      </button>
+    </div>
+
+    <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  </section>
+
+  <!-- 🔹 Listado estilo “auditoría” + paginación -->
+  <section class="card list-card">
+    <div class="list-title">
+      <h2>Listado de Unidades</h2>
+    </div>
+    <p class="muted center-muted">Unidades actualmente registradas en el sistema.</p>
+
+    <div class="table-wrap" *ngIf="(unidades$ | async) as unidades">
+      <!-- Ajusta la página si borraste y quedaste fuera del rango -->
+      <ng-container *ngIf="ensureValidPage(unidades.length)"></ng-container>
+
+      <table class="table table--audit">
         <thead>
         <tr>
-          <th>ID</th>
           <th>Nombre</th>
           <th>Descripción</th>
-          <th>Acciones</th>
+          <th class="th-actions">Acciones</th>
         </tr>
         </thead>
+
         <tbody>
-        <tr *ngFor="let u of unidades">
-          <td>{{ u.id }}</td>
-          <td>{{ u.nombre }}</td>
+        <tr *ngFor="let u of paged(unidades); trackBy: trackById">
+          <td class="td-strong">{{ u.nombre }}</td>
           <td>{{ u.descripcion || '—' }}</td>
-          <td class="actions">
-            <button class="edit" (click)="edit(u)">Editar</button>
-            <button class="delete" (click)="remove(u.id)">Eliminar</button>
+          <td class="td-actions">
+            <button class="btn btn--ghost" (click)="edit(u)">Editar</button>
+            <button class="btn btn--danger" (click)="remove(u)">Eliminar</button>
           </td>
+        </tr>
+
+        <tr *ngIf="unidades.length === 0">
+          <td colspan="3" class="empty">No hay unidades registradas.</td>
         </tr>
         </tbody>
       </table>
+
+      <!-- Footer paginación -->
+      <div class="pagination">
+        <button
+          class="pager-btn"
+          (click)="goPrev(unidades.length)"
+          [disabled]="page === 1"
+        >
+          « Anterior
+        </button>
+
+        <span class="page-indicator">
+          Página {{ page }} de {{ totalPages(unidades.length) }}
+        </span>
+
+        <button
+          class="pager-btn"
+          (click)="goNext(unidades.length)"
+          [disabled]="page >= totalPages(unidades.length)"
+        >
+          Siguiente »
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
+<!-- Modal del sistema: Confirmar eliminación -->
+<div class="sys-modal__backdrop" *ngIf="modalOpen" (click)="closeModal()"></div>
+
+<div class="sys-modal" *ngIf="modalOpen" role="dialog" aria-modal="true">
+  <div class="card sys-modal__card" (click)="$event.stopPropagation()">
+    <div class="sys-modal__header">
+      <h3 class="sys-modal__title">{{ modalTitle }}</h3>
+      <button class="sys-modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
+    </div>
+
+    <p class="sys-modal__message">{{ modalMessage }}</p>
+
+    <div class="sys-modal__actions">
+      <button class="btn btn--ghost" (click)="closeModal()">
+        {{ modalCancelText }}
+      </button>
+
+      <button class="btn btn--danger" (click)="confirmDelete()">
+        {{ modalOkText }}
+      </button>
     </div>
   </div>
 </div>

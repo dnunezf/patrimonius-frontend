@@ -1,0 +1,519 @@
+/* =========================================================
+   Editor UI – fijo a viewport + scroll interno + botones bonitos
+   SOLO CSS (no toca TS/HTML)
+   ========================================================= */
+
+:host{
+  display:block;
+  background:#f6f7fb;
+  color:#111827;
+}
+
+/* --- Layout general: ocupa pantalla y evita scroll “raro” del body --- */
+.container, main.container, main{
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 14px 16px 18px;
+}
+
+/* Si tu editor tiene una grilla tipo “contenido + sidebar” */
+.editor-layout,
+.editor-grid,
+.layout{
+  display:grid;
+  grid-template-columns: 1fr 320px;
+  gap: 14px;
+  align-items:start;
+}
+
+/* Responsive */
+@media (max-width: 980px){
+  .editor-layout,
+  .editor-grid,
+  .layout{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Cards / paneles --- */
+.card, section.card, .panel, .box{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:14px;
+  padding:14px 16px;
+  box-shadow: 0 8px 24px rgba(17,24,39,.06);
+}
+
+/* --- Barra superior (donde están Importar/Guardar/etc) --- */
+.topbar, .editor-topbar, .toolbar, .header-actions, .actions-bar{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 12px;
+  border-radius:14px;
+  background: linear-gradient(180deg, #ffffff, #fbfbfe);
+  border:1px solid #eef2f7;
+  box-shadow: 0 8px 18px rgba(17,24,39,.05);
+  margin-bottom: 12px;
+}
+
+.topbar__left, .topbar__right,
+.toolbar-left, .toolbar-right,
+.actions, .action-group,
+.toolbar .buttons{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* --- Botón "Importar DOCX" (label + input file): mismo estilo que el resto --- */
+.toolbar .buttons label.btn-primary{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0;
+  padding: 9px 14px;
+  font-weight: 800;
+  font-size: .92rem;
+  line-height: 1;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(37,99,235,.28);
+  transition: transform .08s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+}
+.toolbar .buttons label.btn-primary:hover{
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 14px 26px rgba(37,99,235,.32);
+  transform: translateY(-1px);
+}
+.toolbar .buttons label.btn-primary input[type="file"]{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+
+/* =========================================================
+   ✅ 1) HOJA “NO SE EXPANDE”: alto fijo + scroll interno
+   ========================================================= */
+
+/* Panel que envuelve la hoja del editor */
+.editor-sheet,
+.document-sheet,
+.paper,
+.sheet,
+.editor-canvas{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:16px;
+  box-shadow: 0 12px 30px rgba(17,24,39,.06);
+  padding: 12px;
+  overflow: hidden; /* <- clave: no deja que crezca por contenido */
+}
+
+/*
+  Ajuste de altura: la hoja ocupará la pantalla.
+  Si te queda muy alto/bajo, cambia el 230px.
+*/
+.editor-sheet,
+.document-sheet,
+.paper,
+.sheet,
+.editor-canvas{
+  height: calc(100vh - 230px);
+  min-height: 520px;
+}
+
+/* Sidebar (editores/comentarios) también con altura “bonita” */
+.sidebar, .right-panel, .aside, .panel-right{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:16px;
+  box-shadow: 0 12px 30px rgba(17,24,39,.06);
+  padding: 14px;
+  height: fit-content;
+}
+
+/* --- Quill: forzar scroll dentro del editor --- */
+:host ::ng-deep .ql-container{
+  height: calc(100% - 44px); /* toolbar quill */
+  overflow: hidden;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+:host ::ng-deep .ql-editor{
+  height: 100%;
+  overflow-y: auto;           /* ✅ scroll interno */
+  padding: 18px 22px;
+}
+
+/* Toolbar de quill: que se vea más “Notion” */
+:host ::ng-deep .ql-toolbar{
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  background: #f8fafc;
+  border-color: #eef2f7;
+}
+
+/* =========================================================
+   ✅ 2) BOTONES CON COLOR (sin tocar HTML)
+   ========================================================= */
+
+button, .btn{
+  appearance:none;
+  border:1px solid transparent;
+  border-radius:10px;
+  padding: 9px 14px;
+  font-weight: 800;
+  font-size: .92rem;
+  cursor:pointer;
+  transition: transform .08s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  line-height:1;
+}
+
+/* Default: “pill” elegante */
+button, .btn{
+  background:#f3f6ff;
+  color:#1f2a44;
+  border-color:#dbe5ff;
+}
+button:hover, .btn:hover{
+  background:#eaf1ff;
+  border-color:#c9d9ff;
+  transform: translateY(-1px);
+}
+
+/* Guardar (primary) */
+button.btn--primary, .btn--primary{
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color:#fff;
+  border-color: transparent;
+  box-shadow: 0 10px 18px rgba(37,99,235,.28);
+}
+button.btn--primary:hover, .btn--primary:hover{
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 14px 26px rgba(37,99,235,.32);
+}
+
+/* Danger */
+button.btn--danger, .btn--danger{
+  background: linear-gradient(135deg, #ffe8e8, #ffd4d4);
+  color:#8b1d1d;
+  border-color:#ffc0c0;
+}
+button.btn--danger:hover, .btn--danger:hover{
+  background: linear-gradient(135deg, #ffdcdc, #ffbfbf);
+  color:#7a1010;
+}
+
+/* Botón “Ver anotaciones” y similares (ghost) */
+button.btn--ghost, .btn--ghost{
+  background:#ffffff;
+  color:#1d2939;
+  border-color:#d0d5dd;
+}
+button.btn--ghost:hover, .btn--ghost:hover{
+  background:#f3f5f7;
+}
+
+/* Disabled */
+button:disabled, .btn:disabled{
+  background:#e5e7eb !important;
+  color:#9ca3af !important;
+  border-color:#e5e7eb !important;
+  box-shadow:none !important;
+  transform:none !important;
+  cursor:not-allowed;
+}
+
+/* =========================================================
+   ✅ Avatar del editor (sin tocar HTML)
+   ========================================================= */
+.avatar, .user-avatar, .profile-avatar, .editor-avatar{
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  box-shadow: 0 10px 18px rgba(37,99,235,.18);
+  border: 2px solid rgba(255,255,255,.9);
+}
+
+/* Si la “F” está en un span */
+.avatar span, .user-avatar span, .profile-avatar span, .editor-avatar span{
+  font-size: .95rem;
+}
+
+/* =========================================================
+   ✅ FIX: Modal siempre visible (encima de todo)
+   (no toca tu layout, solo fuerza z-index y fixed)
+   ========================================================= */
+
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9998;
+}
+
+.modal{
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 9999;
+}
+
+/* Tu HTML usa .modal-card, esto asegura tamaño y scroll interno */
+.modal-card{
+  width: min(620px, 95vw);
+  max-height: 90vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  border: 1px solid #eef2f7;
+}
+
+/* Opcional: que los botones del modal respeten tu estilo */
+.modal__header, .modal__footer{
+  padding: 12px 16px;
+}
+
+.modal__body{
+  padding: 0 16px 14px;
+}
+/* =========================================================
+   ✅ SOLO modal Solicitar Firma (no toca nada global)
+   ========================================================= */
+
+.sig-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9998;
+}
+
+/* Scope: solo el modal de firma */
+.sig-modal {
+  position: fixed;
+  top: 6vh;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: min(820px, 96vw);  /* Evitar que el modal sea demasiado grande */
+  max-height: calc(100vh - 10vh);
+  overflow: hidden; /* El scroll lo maneja el body */
+  min-height: 0;
+
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #eef2f7;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+  z-index: 9999;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.sig-modal .modal__header {
+  display: flex;
+  justify-content: space-between;  /* Asegura que haya espacio entre el título y el botón de cierre */
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #eef2f7;
+  background: #ffffff;
+  width: 100%;  /* Asegura que ocupe todo el ancho disponible */
+}
+
+.sig-modal .modal__header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #111827;
+  text-align: center;
+  flex-grow: 1;  /* Hace que el título ocupe el espacio disponible */
+  white-space: nowrap;  /* Evita que el texto se rompa en varias líneas */
+  overflow: hidden;  /* Previene desbordamiento si el texto es largo */
+}
+
+.sig-modal .modal__close {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #eef2f7;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s ease, border-color .2s ease;
+  flex-shrink: 0; /* Evita que el botón se encoja */
+  padding: 4px;  /* Añadido para hacer el botón más "apretado" */
+}
+.sig-modal .modal__close:hover {
+  background: #f3f5f7;
+  border-color: #d0d5dd;
+}
+
+/* Ajustes para asegurar que el contenido no se desborde */
+.sig-modal .modal__body {
+  padding: 14px 16px 16px;
+  overflow: auto;  /* Solo el contenido tiene scroll */
+  flex: 1;
+  min-height: 0;
+}
+
+.sig-modal .modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #eef2f7;
+  background: #fff;
+  flex: 0 0 auto;
+}
+
+/* Campos (solo dentro del modal) */
+.sig-modal .field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  font-size: .92rem;
+  font-weight: 800;
+  color: #1f2a44;
+}
+
+.sig-modal .field input,
+.sig-modal .field select{
+  width: 100%;
+  border: 1px solid #dbe5ff;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: .95rem;
+  color: #111827;
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.sig-modal .field input:focus,
+.sig-modal .field select:focus{
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(37,99,235,.15);
+}
+
+/* Lista seleccionados */
+.sig-modal .selected{
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px dashed #dbe5ff;
+  border-radius: 14px;
+  background: #fbfdff;
+
+  /* Que la lista no obligue a hacer scroll de TODO el modal */
+  max-height: 380px;
+  overflow: auto;
+}
+
+.sig-modal .selected ul{
+  margin: 0;
+  padding-left: 18px;
+}
+
+.sig-modal .selected li{
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Quitar */
+.sig-modal .btn-link{
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 10px;
+  transition: background .2s ease, transform .08s ease;
+}
+.sig-modal .btn-link:hover{
+  background: rgba(37,99,235,.12);
+  transform: translateY(-1px);
+}
+
+/* Reusar tus botones existentes, pero solo dentro del modal */
+.sig-modal .btn-outline{
+  background:#ffffff;
+  color:#1d2939;
+  border:1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 900;
+}
+.sig-modal .btn-outline:hover{ background:#f3f5f7; }
+
+.sig-modal .btn-accent{
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color:#fff;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 900;
+  box-shadow: 0 10px 18px rgba(37,99,235,.28);
+}
+.sig-modal .btn-accent:hover{
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 14px 26px rgba(37,99,235,.32);
+}
+
+.sig-modal .btn-secondary{
+  background:#f3f6ff;
+  color:#1f2a44;
+  border:1px solid #dbe5ff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 900;
+}
+.sig-modal .btn-secondary:hover{
+  background:#eaf1ff;
+  border-color:#c9d9ff;
+}
+
+/* Mensajes dentro del modal */
+.sig-modal .err{ color:#b91c1c; font-weight: 800; }
+.sig-modal .muted{ color:#6b7280; }
+
+/* Responsive */
+@media (max-width: 480px){
+  .sig-modal{
+    width: 96vw;
+    max-height: 92vh;
+  }
+  .sig-modal .modal__footer{
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

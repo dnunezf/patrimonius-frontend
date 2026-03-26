@@ -8,12 +8,15 @@
 .card {
   border: 1px solid #eee;
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
   background: var(--mncr-white);
+  max-width: 1700px;
+  margin: 0 auto 16px;
 }
 .muted { color: var(--mncr-gray); }
 .bold { font-weight: 700; }
 .nowrap { white-space: nowrap; }
+.mx-8 { margin: 0 8px; }
 
 /* ===== Header (centered title with left-aligned back button) ===== */
 
@@ -45,6 +48,7 @@
 .filters-grid .actions {
   grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -56,14 +60,17 @@
 }
 
 /* ===== Table ===== */
-.table-wrapper { overflow-x: auto; }
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .tbl {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 .tbl th, .tbl td {
-  padding: 12px 10px;
+  padding: 14px 12px;
   border-bottom: 1px solid #eee;
   vertical-align: top;
   text-align: left;
@@ -72,7 +79,6 @@
   background: #fafafa;
   font-weight: 700;
 }
-.codes { display: flex; gap: 6px; margin-top: 6px; }
 .pager { padding: 8px; text-align: center; }
 
 /* ===== Buttons ===== */
@@ -152,79 +158,43 @@
   .section.header h1 {
     justify-self: center;
     text-align: center;
+    font-size: clamp(1.1rem, 4vw, 1.35rem);
+    padding: 0 8px;
+    line-height: 1.3;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .tbl {
+    font-size: 0.88rem;
+  }
+
+  .tbl th,
+  .tbl td {
+    padding: 8px 6px;
+  }
+
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pager .mx-8 {
+    width: 100%;
+    margin: 4px 0;
+    order: -1;
   }
 }
 
-/* --- Modal styles --- */
-/* Backdrop that darkens the page behind the dialog */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.35); /* subtle dark */
-  z-index: 1000;
-}
-
-/* Centered dialog container */
-.modal {
-  position: fixed;
-  z-index: 1001;
-  inset: 0;
-  margin: auto;
-  width: min(720px, 92vw);
-  max-height: 85vh;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.25);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Header with title and close button */
-.modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal__close {
-  border: none;
-  background: transparent;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-/* Body content scrollable if needed */
-.modal__body {
-  padding: 16px;
-  overflow: auto;
-}
-
-/* Footer with actions */
-.modal__footer {
-  padding: 12px 16px;
-  border-top: 1px solid #eee;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* Grid for pairs of fields in detail */
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(160px, 1fr));
-  gap: 12px 16px;
-}
-
-@media (max-width: 700px) {
-  .detail-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 900px) {
+  .container.page {
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 
-/* Multi-line description block */
-.detail-block { margin-top: 12px; }
-.prewrap { white-space: pre-wrap; }
