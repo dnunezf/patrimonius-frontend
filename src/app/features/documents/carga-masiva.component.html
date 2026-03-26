@@ -68,7 +68,7 @@
                 >
                   <div class="origin-card__title">PDF escaneado</div>
                   <div class="origin-card__text">
-                    Se carga directamente. No se valida firma digital.
+                    Se carga directamente al lote documental.
                   </div>
                 </button>
 
@@ -80,7 +80,7 @@
                 >
                   <div class="origin-card__title">PDF electrónico</div>
                   <div class="origin-card__text">
-                    Se valida que el PDF contenga marcas típicas de firma digital.
+                    Se carga como documento electrónico final.
                   </div>
                 </button>
               </div>
@@ -411,13 +411,12 @@
 
                   <div
                     class="result-card__meta"
-                    *ngIf="item?.mensaje || item?.message || item?.estado || item?.verificacion_firma_estado"
+                    *ngIf="item?.mensaje || item?.message || item?.estado"
                   >
                     {{
                       item?.mensaje ||
                       item?.message ||
-                      ('Estado: ' + (item?.estado || 'Procesado')) +
-                      (item?.verificacion_firma_estado ? ' · Firma: ' + item.verificacion_firma_estado : '')
+                      ('Estado: ' + (item?.estado || 'Procesado'))
                     }}
                   </div>
                 </div>

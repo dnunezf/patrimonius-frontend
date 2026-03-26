@@ -131,42 +131,6 @@ export interface DocumentMetadata {
 }
 
 /**
- * Business states returned by digital-signature validation.
- */
-export type ValidationBusinessState =
-  | 'VALIDA'
-  | 'INVALIDA'
-  | 'CADUCADA'
-  | 'REVOCADA';
-
-/**
- * A single signature-validation result item.
- */
-export interface SignatureValidationItem {
-  valido?: boolean;
-  firmante?: string | null;
-  cedula?: string | null;
-  mensaje?: string | null;
-  detalle?: {
-    fechaFirma?: string | null;
-    algoritmoHash?: string | null;
-    certificadoDesde?: string | null;
-    certificadoHasta?: string | null;
-    revocacion?: string | null;
-  } | null;
-}
-
-/**
- * Full response returned by the validation endpoint.
- */
-export interface SignatureValidationResult {
-  valido?: boolean;
-  estadoVerificacion?: ValidationBusinessState;
-  mensaje?: string;
-  firmas?: SignatureValidationItem[];
-}
-
-/**
  * Response returned when a signed PDF is confirmed/uploaded.
  */
 export interface ConfirmSignatureResponse {
@@ -175,16 +139,6 @@ export interface ConfirmSignatureResponse {
   estado?: string;
   firmas_obtenidas?: number;
   firmas_requeridas?: number;
-
-  validacion?: SignatureValidationResult;
-
-  valido?: boolean;
-  estadoVerificacion?: ValidationBusinessState;
-  mensaje?: string;
-  firmas?: SignatureValidationItem[];
-
-  alertaEnviada?: boolean;
-  destinatarioAlerta?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -580,26 +534,6 @@ export class DocumentService {
     return this.http.get(`${this.api}/documentos/${id}/firma/descargar/docx`, {
       responseType: 'blob',
     });
-  }
-
-  /**
-   * Validates a signed PDF before confirmation.
-   */
-  validateSignedPdf(
-    file: File,
-    documentoId?: number,
-  ): Observable<SignatureValidationResult> {
-    const fd = new FormData();
-    fd.append('file', file);
-
-    if (documentoId != null) {
-      fd.append('documentoId', String(documentoId));
-    }
-
-    return this.http.post<SignatureValidationResult>(
-      `${this.api}/api/firma/validar`,
-      fd,
-    );
   }
 
   /**
