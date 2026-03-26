@@ -113,6 +113,13 @@
   font-size: .9rem;
 }
 
+/* Título largo (despacho / trazabilidad) */
+.card__title--multiline {
+  font-size: 0.92rem;
+  line-height: 1.35;
+  max-width: 100%;
+}
+
 .compliance {
   max-width: var(--mxw);
   margin: 1rem auto 0;
