@@ -96,3 +96,15 @@ button {
   background-color: #ffc107;
   color: #fff;
 }
+.document-list + .document-list {
+  margin-top: 30px;
+}
+.btn--danger {
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+}
+
+.btn--danger:hover {
+  background-color: #b02a37;
+}

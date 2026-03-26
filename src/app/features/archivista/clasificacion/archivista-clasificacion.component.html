@@ -4,7 +4,6 @@
     <p>Asigne series, subseries y plazos de retención a documentos recibidos</p>
   </header>
 
-  <!-- Botones para crear serie y subserie -->
   <div class="button-container">
     <button class="btn btn--primary" (click)="crearSerie()">Crear Serie</button>
     <button class="btn btn--primary" (click)="crearSubserie()">Crear Subserie</button>
@@ -14,7 +13,6 @@
   <div class="document-list">
     <h2>Lista de Series</h2>
 
-    <!-- Tabla para mostrar las series, encabezados siempre visibles -->
     <table>
       <thead>
       <tr>
@@ -22,10 +20,11 @@
         <th>Serie</th>
         <th>Unidad</th>
         <th>Acciones</th>
+        <th>Eliminar</th>
+
       </tr>
       </thead>
       <tbody>
-      <!-- Esta parte solo muestra las filas si hay datos -->
       <tr *ngFor="let serie of series">
         <td>{{ serie.codigo }}</td>
         <td>{{ serie.nombre }}</td>
@@ -33,11 +32,45 @@
         <td>
           <button class="btn btn--primary" (click)="verSerie(serie.id)">Ver</button>
         </td>
+        <td>
+          <button class="btn btn--danger" (click)="eliminarSerie(serie.id, serie.nombre)">Eliminar</button>
+        </td>
       </tr>
       </tbody>
     </table>
 
-    <!-- Mensaje cuando no hay series -->
     <div *ngIf="series.length === 0" class="no-docs-message">No hay series</div>
+  </div>
+
+  <!-- Cuadro de Subseries -->
+  <div class="document-list">
+    <h2>Lista de Subseries</h2>
+
+    <table>
+      <thead>
+      <tr>
+        <th>Código</th>
+        <th>Subserie</th>
+        <th>Serie</th>
+        <th>Acciones</th>
+        <th>Eliminar</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let subserie of subseries">
+        <td>{{ subserie.codigo }}</td>
+        <td>{{ subserie.nombre }}</td>
+        <td>{{ subserie.serie_nombre }}</td>
+        <td>
+          <button class="btn btn--primary" (click)="verSubserie(subserie.id)">Ver</button>
+        </td>
+        <td>
+          <button class="btn btn--danger" (click)="eliminarSubserie(subserie.id, subserie.nombre)">Eliminar</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="subseries.length === 0" class="no-docs-message">No hay subseries</div>
   </div>
 </div>
