@@ -1,0 +1,145 @@
+.container {
+  font-family: Verdana, Arial, sans-serif;
+  background-color: var(--mncr-white);
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.section-header {
+  margin-bottom: 6px;
+}
+
+h1 {
+  font-family: "Neutraface Text", Verdana, "Segoe UI", Arial, sans-serif;
+  font-size: 2rem;
+  color: var(--mncr-black);
+  font-weight: 700;
+}
+
+h2 {
+  font-family: "Neutraface Text", Verdana, "Segoe UI", Arial, sans-serif;
+  font-size: 1.75rem;
+  color: var(--mncr-black);
+}
+
+.text-gray {
+  color: var(--mncr-gray);
+}
+
+.document-list {
+  margin-top: 5px;
+}
+
+.document-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.document-table th,
+.document-table td {
+  padding: 8px;
+  text-align: left;
+}
+
+.document-table th {
+  background-color: var(--mncr-blue-639);
+  color: white;
+}
+
+.document-table td {
+  border-bottom: 1px solid var(--mncr-gray);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: white;
+  color: black;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  margin-right: 10px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.btn--gray {
+  border-color: var(--mncr-gray);
+  color: var(--mncr-gray);
+  background-color: #fff;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-weight: 700;
+  background-color: white;
+  color: black;
+  border: 2px solid transparent;
+  font-size: 0.8rem;
+}
+
+.badge-green {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: #ecfdf5;
+}
+
+.button-outline {
+  background-color: transparent;
+  color: var(--mncr-blue-639);
+  font-weight: 700;
+  padding: 6px 12px;
+  border: 2px solid var(--mncr-blue-639);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease, filter .2s ease;
+}
+
+.button-outline:hover {
+  background-color: var(--mncr-blue-639);
+  color: var(--mncr-white);
+}
+
+.button-outline[disabled] {
+  opacity: 1;
+  border-color: var(--mncr-gray);
+  color: var(--mncr-gray);
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.button-outline[disabled]:hover {
+  background: transparent;
+  color: var(--mncr-gray);
+}
+
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.muted {
+  color: var(--mncr-gray);
+}
+
+@media (max-width: 768px) {
+  .document-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

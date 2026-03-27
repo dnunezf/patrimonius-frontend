@@ -112,7 +112,7 @@ export class NavComponent {
       case 'USUARIO':
         return '/usuario/dashboard';
       case 'USUARIO_EXTERNO':
-        return '/externo/dashboard';
+        return '/usuarioexterno/dashboard';
       default:
         return '/';
     }
