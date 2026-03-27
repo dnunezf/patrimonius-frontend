@@ -112,7 +112,7 @@ export class NavComponent {
       case 'USUARIO':
         return '/usuario/dashboard';
       case 'USUARIO_EXTERNO':
-        return '/usuarioexterno/dashboard';
+        return '/consulta/aprobados-externo';
       default:
         return '/';
     }
@@ -181,8 +181,30 @@ export class NavComponent {
    * Returns true when at least one action item should be shown.
    */
   canSeeActions = (): boolean => {
-    return this.canSeeUpload() || this.canSeeConservationIntake();
+    return (
+      this.canSeeUpload() ||
+      this.canSeeConservationIntake() ||
+      this.canSeeConsultaDocumentos()
+    );
   };
+
+  /** HU-025: acceso rápido al hub o listado externo (mismas rutas que en ROLES). */
+  canSeeConsultaDocumentos = (): boolean => {
+    const normalized = this.rolesList.map((role) =>
+      role.trim().toUpperCase().replace(/\s+/g, '_'),
+    );
+    return normalized.some((r) => r === 'USUARIO' || r === 'USUARIO_EXTERNO');
+  };
+
+  consultaDocumentosLink(): string {
+    const normalized = this.rolesList.map((role) =>
+      role.trim().toUpperCase().replace(/\s+/g, '_'),
+    );
+    if (normalized.includes('USUARIO_EXTERNO')) {
+      return '/consulta/aprobados-externo';
+    }
+    return '/usuario/dashboard';
+  }
 
   /**
    * HU-21 upload action.

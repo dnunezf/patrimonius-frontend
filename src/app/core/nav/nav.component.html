@@ -107,5 +107,15 @@
       <span class="drawer__label">Ingreso a conservación</span>
       <span class="drawer__chev">›</span>
     </a>
+
+    <a class="drawer__item"
+       *ngIf="canSeeConsultaDocumentos()"
+       [routerLink]="consultaDocumentosLink()"
+       routerLinkActive="is-active"
+       (click)="closeDrawer()">
+      <img class="drawer__icon" src="assets/icons/user_2.png" alt="" aria-hidden="true" />
+      <span class="drawer__label">Consulta de documentos</span>
+      <span class="drawer__chev">›</span>
+    </a>
   </nav>
 </ng-container>
