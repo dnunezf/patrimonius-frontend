@@ -21,33 +21,37 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
 
-  filtros: ConsultaFiltrosOpciones | null = null;
-  rows: ConsultaDocumentoRow[] = [];
-  totalItems = 0;
-  totalPages = 1;
-  page = 1;
-  pageSize = 10;
-  loading = false;
-  errorMsg = '';
+  /** Visibles en plantilla (strictTemplates / strictInputAccessModifiers). */
+  public filtros: ConsultaFiltrosOpciones | null = null;
+  public rows: ConsultaDocumentoRow[] = [];
+  public totalItems = 0;
+  public totalPages = 1;
+  public page = 1;
+  public pageSize = 10;
+  public loading = false;
+  public errorMsg = '';
 
-  q = '';
-  categoriaId: string = '';
-  unidadId: string = '';
-  serieId: string = '';
-  subserieId: string = '';
-  expedienteId: string = '';
-  dateFrom = '';
-  dateTo = '';
+  public q = '';
+  public categoriaId: string = '';
+  public serieId: string = '';
+  public subserieId: string = '';
+  public expedienteId: string = '';
+  public dateFrom = '';
+  public dateTo = '';
 
-  sortBy = 'fecha_aprobacion';
-  sortDir: 'asc' | 'desc' = 'desc';
+  public sortBy = 'fecha_aprobacion';
+  public sortDir: 'asc' | 'desc' = 'desc';
 
-  previewOpen = false;
-  previewTitle = '';
-  previewHtml: SafeHtml | null = null;
-  previewLoading = false;
+  public previewOpen = false;
+  public previewTitle = '';
+  public previewHtml: SafeHtml | null = null;
+  public previewLoading = false;
 
-  ngOnInit(): void {
+  /** Unidad con la que filtra el API (solo aplica a internos que no son administrador). */
+  public filtroUnidadUsuario: number | null = null;
+  public aplicaFiltroUnidad = false;
+
+  public ngOnInit(): void {
     this.api.getFilterOptions().subscribe({
       next: (f) => (this.filtros = f),
       error: () => (this.errorMsg = 'No se pudieron cargar los filtros.'),
@@ -55,14 +59,14 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.load();
   }
 
-  get subseriesFiltradas() {
+  public get subseriesFiltradas() {
     const list = this.filtros?.subseries ?? [];
     const sid = Number(this.serieId);
     if (!Number.isFinite(sid) || sid <= 0) return list;
     return list.filter((s) => Number(s.serie_id) === sid);
   }
 
-  load(): void {
+  public load(): void {
     this.loading = true;
     this.errorMsg = '';
     this.api
@@ -73,7 +77,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         sortBy: this.sortBy,
         sortDir: this.sortDir,
         categoriaId: this.categoriaId || undefined,
-        unidadId: this.unidadId || undefined,
         serieId: this.serieId || undefined,
         subserieId: this.subserieId || undefined,
         expedienteId: this.expedienteId || undefined,
@@ -86,6 +89,9 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
           this.totalItems = res.totalItems;
           this.totalPages = res.totalPages;
           this.page = res.page;
+          this.filtroUnidadUsuario =
+            res.filtroUnidadUsuario != null ? Number(res.filtroUnidadUsuario) : null;
+          this.aplicaFiltroUnidad = !!res.aplicaFiltroUnidad;
           this.loading = false;
         },
         error: (e) => {
@@ -96,7 +102,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       });
   }
 
-  onSort(col: string): void {
+  public onSort(col: string): void {
     if (this.sortBy === col) {
       this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
     } else {
@@ -107,21 +113,21 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.load();
   }
 
-  prevPage(): void {
+  public prevPage(): void {
     if (this.page > 1) {
       this.page--;
       this.load();
     }
   }
 
-  nextPage(): void {
+  public nextPage(): void {
     if (this.page < this.totalPages) {
       this.page++;
       this.load();
     }
   }
 
-  formatDate(iso: string | null | undefined): string {
+  public formatDate(iso: string | null | undefined): string {
     if (!iso) return '—';
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return String(iso);
@@ -132,7 +138,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     });
   }
 
-  ver(row: ConsultaDocumentoRow): void {
+  public ver(row: ConsultaDocumentoRow): void {
     this.previewOpen = true;
     this.previewLoading = true;
     this.previewTitle = row.titulo;
@@ -153,12 +159,12 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     });
   }
 
-  cerrarPreview(): void {
+  public cerrarPreview(): void {
     this.previewOpen = false;
     this.previewHtml = null;
   }
 
-  descargar(row: ConsultaDocumentoRow): void {
+  public descargar(row: ConsultaDocumentoRow): void {
     if (!row.canDownload) return;
     this.api.download(row.id).subscribe({
       next: (blob) => {
@@ -173,7 +179,19 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     });
   }
 
-  volver(): void {
-    this.router.navigate(['/dashboard']);
+  public volver(): void {
+    this.router.navigate(['/usuario/dashboard']);
+  }
+
+  /** Primer índice mostrado en la página actual (1-based). */
+  public get rangeStart(): number {
+    if (this.totalItems === 0) return 0;
+    return (this.page - 1) * this.pageSize + 1;
+  }
+
+  /** Último índice mostrado en la página actual. */
+  public get rangeEnd(): number {
+    if (this.totalItems === 0) return 0;
+    return Math.min(this.page * this.pageSize, this.totalItems);
   }
 }

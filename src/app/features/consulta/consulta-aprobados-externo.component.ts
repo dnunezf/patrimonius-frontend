@@ -170,4 +170,14 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   irSolicitud(): void {
     this.router.navigate(['/consulta/solicitud-externa']);
   }
+
+  get rangeStart(): number {
+    if (this.totalItems === 0) return 0;
+    return (this.page - 1) * this.pageSize + 1;
+  }
+
+  get rangeEnd(): number {
+    if (this.totalItems === 0) return 0;
+    return Math.min(this.page * this.pageSize, this.totalItems);
+  }
 }

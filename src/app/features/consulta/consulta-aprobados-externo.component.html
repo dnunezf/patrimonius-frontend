@@ -83,6 +83,9 @@
         <h3>Listado de documentos</h3>
         <p class="muted">Todos los documentos están disponibles en modo de solo lectura.</p>
       </div>
+      <div class="tabla-meta muted" *ngIf="totalItems > 0">
+        Registros {{ rangeStart }}–{{ rangeEnd }} de {{ totalItems }} · {{ pageSize }} por página
+      </div>
     </div>
     <div class="table-scroll">
       <table class="data-table">

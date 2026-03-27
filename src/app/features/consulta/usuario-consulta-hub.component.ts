@@ -6,7 +6,7 @@ type HubCard = {
   title: string;
   badge: string;
   description: string;
-  icon: 'search' | 'eye' | 'doc' | 'folder' | 'clock' | 'box';
+  icon: 'search' | 'eye' | 'doc' | 'clock' | 'box';
   route?: string;
   disabled?: boolean;
 };
@@ -42,13 +42,6 @@ export class UsuarioConsultaHubComponent {
       description: 'Últimos documentos consultados',
       icon: 'doc',
       disabled: true,
-    },
-    {
-      title: 'Por categoría',
-      badge: '—',
-      description: 'Navegar por clasificación',
-      icon: 'folder',
-      route: '/consulta/aprobados',
     },
     {
       title: 'Novedades',

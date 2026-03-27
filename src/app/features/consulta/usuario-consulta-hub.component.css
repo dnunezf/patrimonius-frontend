@@ -95,14 +95,6 @@
   align-items: center;
   justify-content: center;
 }
-.card__icon[data-icon='folder']::after {
-  content: '📁';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .card__icon[data-icon='clock']::after {
   content: '🕐';
   position: absolute;
@@ -179,16 +171,3 @@
   color: #0f172a;
 }
 
-.hub__footer {
-  margin-top: 2.5rem;
-  padding: 1.25rem 1rem;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  font-size: 0.88rem;
-  color: #475569;
-}
-
-.hub__footer p {
-  margin: 0.25rem 0;
-}

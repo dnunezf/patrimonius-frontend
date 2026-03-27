@@ -35,6 +35,9 @@ export type ConsultaSearchResponse = {
   page: number;
   pageSize: number;
   viewer: 'interno' | 'externo';
+  /** Unidad con la que filtra el backend (interno no administrador). */
+  filtroUnidadUsuario?: number | null;
+  aplicaFiltroUnidad?: boolean;
 };
 
 export type ConsultaSearchQuery = {
