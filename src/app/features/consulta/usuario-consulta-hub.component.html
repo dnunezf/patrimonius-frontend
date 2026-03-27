@@ -1,0 +1,38 @@
+<div class="hub">
+  <header class="hub__header">
+    <div>
+      <h1>Consulta de documentos</h1>
+      <p class="hub__sub">
+        Acceda y consulte documentos aprobados según sus permisos
+      </p>
+    </div>
+    <button type="button" class="btn ghost" (click)="volver()">Panel principal</button>
+  </header>
+
+  <section class="hub__grid" aria-label="Accesos a consulta">
+    <button
+      type="button"
+      class="card"
+      *ngFor="let c of cards"
+      [class.card--disabled]="c.disabled && !c.route"
+      [class.card--link]="c.route && !c.disabled"
+      (click)="go(c)"
+      [attr.aria-disabled]="c.disabled && !c.route ? true : null"
+    >
+      <span class="card__icon" [attr.data-icon]="c.icon" aria-hidden="true"></span>
+      <div class="card__body">
+        <div class="card__title-row">
+          <h2 class="card__title">{{ c.title }}</h2>
+          <span class="card__badge">{{ c.badge }}</span>
+        </div>
+        <p class="card__desc">{{ c.description }}</p>
+        <span class="card__hint" *ngIf="c.disabled && !c.route">Próximamente</span>
+      </div>
+    </button>
+  </section>
+
+  <footer class="hub__footer">
+    <p><strong>Versión del sistema:</strong> Patrimonius v2.1.0</p>
+    <p><strong>Soporte técnico:</strong> soporte&#64;museocr.go.cr</p>
+  </footer>
+</div>

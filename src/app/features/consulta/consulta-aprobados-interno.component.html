@@ -1,0 +1,151 @@
+<div class="consulta-page">
+  <header class="consulta-header">
+    <div>
+      <h1>Consulta general de documentos aprobados</h1>
+      <p class="sub">
+        Busque y filtre documentos en estado <strong>aprobado</strong> o <strong>archivado</strong> de su
+        unidad según confidencialidad y permisos.
+      </p>
+    </div>
+    <button type="button" class="btn ghost" (click)="volver()">Volver al panel</button>
+  </header>
+
+  <section class="panel filtros">
+    <div class="field grow">
+      <label>Palabra clave</label>
+      <input
+        type="search"
+        [(ngModel)]="q"
+        placeholder="Título, código, categoría, unidad, metadatos…"
+        (keyup.enter)="page = 1; load()"
+      />
+    </div>
+    <div class="field">
+      <label>Categoría</label>
+      <select [(ngModel)]="categoriaId">
+        <option value="">Todas</option>
+        <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Unidad</label>
+      <select [(ngModel)]="unidadId">
+        <option value="">Todas</option>
+        <option *ngFor="let u of filtros?.unidades" [value]="u.id">{{ u.nombre }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Serie</label>
+      <select [(ngModel)]="serieId" (ngModelChange)="subserieId = ''">
+        <option value="">Todas</option>
+        <option *ngFor="let s of filtros?.series" [value]="s.id">{{ s.nombre }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Subserie</label>
+      <select [(ngModel)]="subserieId">
+        <option value="">Todas</option>
+        <option *ngFor="let ss of subseriesFiltradas" [value]="ss.id">{{ ss.nombre }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Expediente (id)</label>
+      <input type="number" [(ngModel)]="expedienteId" placeholder="Opcional" />
+    </div>
+    <div class="field">
+      <label>Desde</label>
+      <input type="date" [(ngModel)]="dateFrom" />
+    </div>
+    <div class="field">
+      <label>Hasta</label>
+      <input type="date" [(ngModel)]="dateTo" />
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary" (click)="page = 1; load()">Buscar</button>
+    </div>
+  </section>
+
+  <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+  <section class="panel tabla-wrap" *ngIf="!loading">
+    <div class="tabla-head">
+      <h2>Resultados</h2>
+      <span class="muted">{{ totalItems }} documento(s)</span>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th (click)="onSort('codigo')" class="sortable">Código</th>
+            <th (click)="onSort('titulo')" class="sortable">Título</th>
+            <th (click)="onSort('categoria')" class="sortable">Categoría</th>
+            <th (click)="onSort('unidad')" class="sortable">Unidad</th>
+            <th>Serie / Subserie</th>
+            <th (click)="onSort('fecha_aprobacion')" class="sortable">Fecha</th>
+            <th (click)="onSort('estado')" class="sortable">Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of rows">
+            <td class="mono">{{ row.codigo }}</td>
+            <td>
+              <div class="title">{{ row.titulo }}</div>
+              <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
+            </td>
+            <td>{{ row.categoria_nombre || '—' }}</td>
+            <td>{{ row.unidad_nombre || '—' }}</td>
+            <td>
+              <span class="small">{{ row.serie_nombre || '—' }}</span>
+              <span class="small muted" *ngIf="row.subserie_nombre"> / {{ row.subserie_nombre }}</span>
+            </td>
+            <td>{{ formatDate(row.fecha_aprobacion) }}</td>
+            <td>
+              <span class="badge ok">{{ row.estadoEtiqueta || row.estado }}</span>
+            </td>
+            <td class="actions-cell">
+              <button type="button" class="btn sm" (click)="ver(row)" title="Vista previa">Ver</button>
+              <button
+                type="button"
+                class="btn sm primary"
+                (click)="descargar(row)"
+                [disabled]="!row.canDownload"
+              >
+                Descargar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pager" *ngIf="totalPages > 1">
+      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="page <= 1">
+        Anterior
+      </button>
+      <span>Página {{ page }} / {{ totalPages }}</span>
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextPage()"
+        [disabled]="page >= totalPages"
+      >
+        Siguiente
+      </button>
+    </div>
+  </section>
+
+  <div class="loading" *ngIf="loading">Cargando…</div>
+
+  <div class="overlay" *ngIf="previewOpen" (click)="cerrarPreview()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <header>
+        <h3>{{ previewTitle }}</h3>
+        <button type="button" class="btn ghost" (click)="cerrarPreview()">Cerrar</button>
+      </header>
+      <div class="modal-body">
+        <p *ngIf="previewLoading">Cargando vista previa…</p>
+        <div *ngIf="previewHtml" class="html-preview" [innerHTML]="previewHtml"></div>
+      </div>
+    </div>
+  </div>
+</div>

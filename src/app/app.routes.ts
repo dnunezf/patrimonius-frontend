@@ -69,6 +69,45 @@ export const routes: Routes = [
       ),
   },
 
+  {
+    path: 'usuario/dashboard',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/usuario-consulta-hub.component').then(
+        (m) => m.UsuarioConsultaHubComponent,
+      ),
+  },
+  {
+    path: 'externo/dashboard',
+    redirectTo: '/consulta/aprobados-externo',
+    pathMatch: 'full',
+  },
+
+  {
+    path: 'consulta/aprobados',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-aprobados-interno.component').then(
+        (m) => m.ConsultaAprobadosInternoComponent,
+      ),
+  },
+  {
+    path: 'consulta/aprobados-externo',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-aprobados-externo.component').then(
+        (m) => m.ConsultaAprobadosExternoComponent,
+      ),
+  },
+  {
+    path: 'consulta/solicitud-externa',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/solicitud-consulta-externa.component').then(
+        (m) => m.SolicitudConsultaExternaComponent,
+      ),
+  },
+
   { path: 'access-exceptions', component: AccessExceptionsComponent, canActivate: [AuthGuard] },
   { path: 'activate', component: ActivateComponent },
   { path: '**', redirectTo: '' },
