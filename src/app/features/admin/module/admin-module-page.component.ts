@@ -71,14 +71,5 @@ export class AdminModulePageComponent {
       bullets: ['Permisos por unidad', 'Estructura organizacional', 'Acceso granular'],
       icon: 'unidades',
     },
-    {
-      title: 'Permisos del Editor',
-      desc: 'Configurar y aplicar permisos EDIT y SIGN para el rol de Editor.',
-      status: 'available',
-      link: '/admin/permisos-editor',
-      bullets: ['Configurar EDIT y SIGN', 'Aplicación automática', 'Auditar cambios'],
-      statsValue: '2 permisos configurados',
-      icon: 'pencil',
-    },
   ];
 }

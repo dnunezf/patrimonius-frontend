@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AuditService, SecurityItem } from '../../../../core/services/audit.service';
+import { AuditService, SecurityDetail, SecurityItem } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
+import { SecurityDetailModalComponent } from './security-detail-modal.component';
 
 @Component({
   selector: 'app-security-log',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, SecurityDetailModalComponent],
   templateUrl: './security-log.component.html',
   styleUrls: ['./security-log.component.css'],
 })
@@ -36,6 +37,10 @@ export class SecurityLogComponent implements OnInit {
   events: SecurityItem[] = [];
   totalPages = 1;
   totalItems = 0;
+  detailOpen = false;
+  detailLoading = false;
+  detailError: string | null = null;
+  detail: SecurityDetail | null = null;
 
   constructor(private audit: AuditService, private adminUsers: AdminUsersService) {}
 
@@ -123,14 +128,6 @@ export class SecurityLogComponent implements OnInit {
     });
   }
 
-  resultClass(res: string | null | undefined) {
-    const v = (res || '').trim().toUpperCase();
-
-    if (v.startsWith('PERMITIDO')) return 'badge badge-green';
-    if (v.startsWith('DENEGADO')) return 'badge badge-red';
-
-    return 'badge';
-  }
   downloadCSV() {
     const rows = this.events || [];
     const headers = ['fecha_hora','usuario','accion','resultado','ip'];
@@ -186,6 +183,30 @@ ${rows.map(r => `
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  openDetail(row: SecurityItem) {
+    this.detailOpen = true;
+    this.detail = null;
+    this.detailError = null;
+    this.detailLoading = true;
+    this.audit.getSecurityEventDetail(row.id_evento).subscribe({
+      next: (item) => {
+        this.detail = item;
+        this.detailLoading = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.detailError = err?.error?.message || 'No se pudo cargar el detalle del evento.';
+        this.detailLoading = false;
+      }
+    });
+  }
+
+  closeDetail() {
+    this.detailOpen = false;
+    this.detail = null;
+    this.detailError = null;
   }
 
 }

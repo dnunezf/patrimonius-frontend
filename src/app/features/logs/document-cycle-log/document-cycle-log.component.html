@@ -9,7 +9,7 @@
 
   <section class="section card">
     <div class="card__title">
-      <h2 class="h3">Filtros y Búsqueda Avanzada</h2>
+      <h2 class="h3">Filtros</h2>
     </div>
 
     <form class="form filters-grid" (ngSubmit)="applyFilters()">
@@ -88,48 +88,36 @@
         <th>Acción solicitada</th>
         <th>Estado del documento</th>
         <th>Resultado</th>
+        <th></th>
 
         </tr>
         </thead>
 
         <tbody>
         <tr *ngFor="let e of events">
-          <td class="nowrap">{{ e.fecha_hora }}</td>
+          <td class="nowrap">{{ formatDateTime(e.fecha_hora) }}</td>
 
           <td>
-            <div class="bold">{{ e.usuario }}</div>
+            <div>{{ e.usuario || '—' }}</div>
           </td>
 
           <td>
-            <div class="bold">{{ e.documento_titulo || '—' }}</div>
+            <div>{{ e.documento_titulo || '—' }}</div>
           </td>
 
           <td>
-            <div class="codes">
-            <span *ngIf="e.documento_codigo_unico" class="badge badge-blue">
-              {{ e.documento_codigo_unico }}
-            </span>
-
-              <span *ngIf="e.documento_codigo_oficial" class="badge badge-green">
-              {{ e.documento_codigo_oficial }}
-            </span>
-
-              <span *ngIf="!e.documento_codigo_unico && !e.documento_codigo_oficial">—</span>
-            </div>
+            {{ documentName(e) }}
           </td>
 
           <td>{{ e.accion_solicitada || '—' }}</td>
 
-          <td>
-          <span class="{{ stateClass(e.estado_documento) }}">
-            {{ e.estado_documento || '—' }}
-          </span>
-          </td>
+          <td>{{ e.estado_documento || '—' }}</td>
 
+          <td>{{ e.resultado || '—' }}</td>
           <td>
-          <span class="{{ resultClass(e.resultado) }}">
-            {{ e.resultado || '—' }}
-          </span>
+            <button type="button" class="button-outline button-sm" (click)="openDetail(e)">
+              Detalle
+            </button>
           </td>
 
         </tr>
@@ -148,3 +136,11 @@
   </section>
 
 </main>
+
+<app-document-cycle-detail-modal
+  [open]="detailOpen"
+  [loading]="detailLoading"
+  [error]="detailError"
+  [detail]="detail"
+  (closed)="closeDetail()"
+/>

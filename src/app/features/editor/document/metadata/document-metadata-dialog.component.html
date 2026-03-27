@@ -1,4 +1,3 @@
-<!-- src/app/core/features/editor/document/metadata/document-metadata-dialog.component.html -->
 <div class="md-backdrop" *ngIf="open" (click)="close()"></div>
 
 <div
@@ -9,7 +8,11 @@
   aria-labelledby="mdTitle"
 >
   <header class="md-header">
-    <h3 id="mdTitle">Metadatos del Documento</h3>
+    <div>
+      <h3 id="mdTitle">Metadatos del documento</h3>
+      <p class="md-header__text">Metadatos de la etapa de edición.</p>
+    </div>
+
     <button
       type="button"
       class="md-close"
@@ -21,161 +24,189 @@
   </header>
 
   <section class="md-body">
-    <div *ngIf="loading" class="md-info">Cargando…</div>
+    <div *ngIf="loading" class="md-info">Cargando metadatos…</div>
     <div *ngIf="!loading && error" class="md-error">{{ error }}</div>
 
     <ng-container *ngIf="!loading && !error">
-      <!-- Automatic (read-only) -->
-      <h4 class="md-subtitle">Información Automática (solo lectura)</h4>
-      <div class="grid-2">
-        <div class="ro-field">
-          <label>Tipo (MIME)</label>
-          <input
-            class="ro"
-            [value]="meta?.technical?.mimeType ?? '—'"
-            readonly
-          />
-        </div>
-        <div class="ro-field">
-          <label>Tamaño</label>
-          <input class="ro" [value]="sizeHuman()" readonly />
-        </div>
-        <div class="ro-field">
-          <label>Fecha de creación</label>
-          <input
-            class="ro"
-            [value]="formatDate(meta?.technical?.createdAt)"
-            readonly
-          />
-        </div>
-        <div class="ro-field">
-          <label>Actualizado el</label>
-          <input
-            class="ro"
-            [value]="formatDate(meta?.technical?.updatedAt)"
-            readonly
-          />
-        </div>
-        <div class="ro-field">
-          <label>Nivel de acceso</label>
-          <input
-            class="ro"
-            [value]="meta?.technical?.accessLevel ?? '—'"
-            readonly
-          />
-        </div>
-        <div class="ro-field">
-          <label>Software</label>
-          <input
-            class="ro"
-            [value]="meta?.technical?.software ?? '—'"
-            readonly
-          />
+      <section class="md-section">
+        <div class="md-section__head">
+          <h4>Metadatos automáticos</h4>
+          <span class="badge">Solo lectura</span>
         </div>
 
-        <!-- automatic author -->
-        <div class="ro-field">
-          <label>Autor</label>
-          <input
-            class="ro"
-            [value]="meta?.descriptive?.author ?? '—'"
-            readonly
-          />
-        </div>
-
-        <!-- automatic responsible unit (ID) -->
-        <div class="ro-field">
-          <label>Unidad responsable</label>
-          <input
-            class="ro"
-            [value]="meta?.technical?.responsibleUnitName ?? '—'"
-            readonly
-          />
-        </div>
-
-        <!-- NEW: document code, full width -->
-        <div class="ro-field ro-field--full">
-          <label>Código de documento</label>
-          <input
-            class="ro"
-            [value]="meta?.technical?.documentCode ?? '—'"
-            readonly
-          />
-        </div>
-      </div>
-
-      <!-- Manual (editable) -->
-      <h4 class="md-subtitle mt-24">Información Manual (editable)</h4>
-
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-        <div class="form-field">
-          <label>Título del documento <span class="req">*</span></label>
-          <input formControlName="title" placeholder="Título…" />
-          <small class="err" *ngIf="f['title'].touched && f['title'].invalid"
-            >Obligatorio. Máx. 255.</small
-          >
-        </div>
-
-        <div class="form-field">
-          <label
-            >Palabras clave (separadas por coma)
-            <span class="req">*</span></label
-          >
-          <input
-            formControlName="keywords"
-            placeholder="p. ej., conservación, arqueología, cerámica"
-          />
-          <small class="hint">Al menos una, hasta 20.</small>
-          <small
-            class="err"
-            *ngIf="f['keywords'].touched && f['keywords'].invalid"
-            >Ingrese al menos una palabra clave.</small
-          >
-        </div>
-
-        <div class="grid-2">
-          <div class="form-field">
-            <label>Código de clasificación <span class="req">*</span></label>
+        <div class="md-grid">
+          <div class="md-card-field">
+            <label>Identificador automático</label>
             <input
-              formControlName="classificationCode"
-              placeholder="p. ej., DAF-AC-2025-XXX"
+              class="ro"
+              [value]="meta?.automatic?.identifier ?? '—'"
+              readonly
             />
-            <small
-              class="err"
-              *ngIf="
-                f['classificationCode'].touched &&
-                f['classificationCode'].invalid
-              "
-            >
-              Obligatorio. Máx. 60.
-            </small>
+          </div>
+
+          <div class="md-card-field">
+            <label>Tamaño</label>
+            <input class="ro" [value]="sizeHuman()" readonly />
+          </div>
+
+          <div class="md-card-field">
+            <label>Unidad productora</label>
+            <input
+              class="ro"
+              [value]="meta?.automatic?.producerUnitName ?? '—'"
+              readonly
+            />
+          </div>
+
+          <div class="md-card-field">
+            <label>Aplicación de software y versión</label>
+            <input
+              class="ro"
+              [value]="meta?.automatic?.softwareApplication ?? '—'"
+              readonly
+            />
+          </div>
+
+          <div class="md-card-field">
+            <label>Responsable de creación</label>
+            <input
+              class="ro"
+              [value]="meta?.automatic?.creationResponsible ?? '—'"
+              readonly
+            />
+          </div>
+
+          <div class="md-card-field">
+            <label>Fecha y hora de creación</label>
+            <input
+              class="ro"
+              [value]="formatDate(meta?.automatic?.createdAt)"
+              readonly
+            />
+          </div>
+
+          <div class="md-card-field">
+            <label>Responsable de modificación</label>
+            <input
+              class="ro"
+              [value]="meta?.automatic?.modificationResponsible ?? '—'"
+              readonly
+            />
+          </div>
+
+          <div class="md-card-field">
+            <label>Fecha y hora de modificación</label>
+            <input
+              class="ro"
+              [value]="formatDate(meta?.automatic?.modifiedAt)"
+              readonly
+            />
+          </div>
+
+          <div class="md-card-field">
+            <label>Responsable de aprobación</label>
+            <input
+              class="ro"
+              [value]="approvalText(meta?.automatic?.approvalResponsible)"
+              readonly
+            />
+          </div>
+
+          <div class="md-card-field">
+            <label>Fecha y hora de aprobación</label>
+            <input
+              class="ro"
+              [value]="formatDate(meta?.automatic?.approvedAt)"
+              readonly
+            />
           </div>
         </div>
+      </section>
 
-        <div class="form-field">
-          <label>Clasificación preliminar <span class="req">*</span></label>
-          <input
-            formControlName="preliminaryClass"
-            placeholder="p. ej., Técnica - Conservación"
-          />
-          <small
-            class="err"
-            *ngIf="
-              f['preliminaryClass'].touched && f['preliminaryClass'].invalid
-            "
-            >Obligatorio.</small
-          >
+      <section class="md-section">
+        <div class="md-section__head">
+          <h4>Metadatos manuales</h4>
+          <span class="badge badge--edit">Editable</span>
         </div>
 
-        <div class="md-footer">
-          <button type="button" class="btn btn--ghost" (click)="close()">
-            Cancelar
-          </button>
-          <button type="submit" class="btn" [disabled]="saving || form.invalid">
-            {{ saving ? "Guardando…" : "Guardar Metadatos" }}
-          </button>
-        </div>
-      </form>
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <div class="md-form-grid">
+            <div class="form-field">
+              <label>Tipo documental <span class="req">*</span></label>
+              <input
+                formControlName="documentType"
+                placeholder="Ej. Oficio, acta, informe, memorando"
+              />
+              <small
+                class="err"
+                *ngIf="f['documentType'].touched && f['documentType'].invalid"
+              >
+                Obligatorio. Máx. 150.
+              </small>
+            </div>
+
+            <div class="form-field">
+              <label>Nivel de acceso <span class="req">*</span></label>
+              <select formControlName="accessLevel">
+                <option *ngFor="let item of accessOptions" [value]="item.value">
+                  {{ item.label }}
+                </option>
+              </select>
+              <small
+                class="err"
+                *ngIf="f['accessLevel'].touched && f['accessLevel'].invalid"
+              >
+                Obligatorio.
+              </small>
+            </div>
+
+            <div class="form-field form-field--full">
+              <label>Título del documento <span class="req">*</span></label>
+              <input
+                formControlName="title"
+                placeholder="Ingrese el título del documento"
+              />
+              <small
+                class="err"
+                *ngIf="f['title'].touched && f['title'].invalid"
+              >
+                Obligatorio. Máx. 255.
+              </small>
+            </div>
+
+            <div class="form-field form-field--full">
+              <label>Palabras clave</label>
+              <input
+                formControlName="keywords"
+                placeholder="Ej. patrimonio, conservación, arqueología"
+              />
+              <small class="hint"
+                >Opcional. Separar por comas. Máximo 20.</small
+              >
+              <small
+                class="err"
+                *ngIf="f['keywords'].touched && f['keywords'].invalid"
+              >
+                Máx. 2000 caracteres.
+              </small>
+            </div>
+          </div>
+
+          <div class="md-footer">
+            <button type="button" class="btn btn--ghost" (click)="close()">
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              class="btn btn--primary"
+              [disabled]="saving || form.invalid"
+            >
+              {{ saving ? "Guardando…" : "Guardar metadatos" }}
+            </button>
+          </div>
+        </form>
+      </section>
     </ng-container>
   </section>
 </div>

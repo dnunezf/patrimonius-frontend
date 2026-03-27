@@ -38,15 +38,16 @@ export class LogQueriesComponent {
     },
     {
       title: 'Bitácora de Actividad de Usuario',
-      description: 'Registra vistas, búsquedas, descargas, navegación general y comportamiento de usuarios en el sistema.',
+      description:
+        'Registra solicitudes de permisos, excepciones de acceso, responsables, usuarios objetivo y ventanas de acceso a documentos.',
       icon: 'users.png',
       funciones: [
-        'Analizar comportamiento',
-        'Estadísticas de uso',
-        'Patrones de navegación'
+        'Filtrar por flujo, fechas y documento',
+        'Ver detalle completo del evento',
+        'Auditar acciones sobre permisos',
       ],
-      link: 'document-cycle', // Example link, adjust as needed
-    }
+      link: '/logs/user-activity',
+    },
   ];
 
   // Function to dynamically generate the image path for each icon

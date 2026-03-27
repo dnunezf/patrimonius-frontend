@@ -1,0 +1,149 @@
+<div *ngIf="open" class="modal-backdrop" (click)="close()" aria-hidden="true"></div>
+
+<div *ngIf="open" class="modal" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+  <div class="modal__header">
+    <h2 id="detail-title" class="h3 modal__title">Detalle del registro</h2>
+    <button type="button" class="modal__close" (click)="close()" aria-label="Cerrar">×</button>
+  </div>
+  <div class="modal__body">
+    <div *ngIf="loading" class="muted">Cargando…</div>
+    <div *ngIf="error" class="form__error">{{ error }}</div>
+
+    <ng-container *ngIf="detail && !loading">
+      <div class="detail-layout">
+        <section class="detail-section">
+          <h3 class="detail-section__title">Identificación</h3>
+          <div class="detail-compare-grid detail-compare-grid--ident">
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">ID registro</div>
+              <div class="detail-compare-card__body">{{ detail.id_registro }}</div>
+            </div>
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Solicitud</div>
+              <div class="detail-compare-card__body prewrap">{{ detail.solicitud_id || '—' }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-section">
+          <h3 class="detail-section__title">Documento</h3>
+          <div class="detail-section__rows">
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">ID documento</div>
+              <div class="detail-field__value">{{ detail.documento_id ?? '—' }}</div>
+            </div>
+          </div>
+          <div class="detail-compare-grid">
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Título actual</div>
+              <div class="detail-compare-card__body">{{ detail.documento_titulo_actual || '—' }}</div>
+            </div>
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Título (snapshot)</div>
+              <div class="detail-compare-card__body">{{ detail.documento_titulo_snapshot || '—' }}</div>
+            </div>
+          </div>
+          <div class="detail-compare-grid">
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Nombre</div>
+              <div class="detail-compare-card__body">{{ detail.documento_numero_serie_actual || '—' }}</div>
+            </div>
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Nombre — snapshot</div>
+              <div class="detail-compare-card__body">{{ detail.documento_codigo_snapshot || '—' }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-section">
+          <h3 class="detail-section__title">Personas</h3>
+          <h4 class="detail-subsection__title">Responsable</h4>
+          <div class="detail-compare-grid">
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Correo</div>
+              <div class="detail-compare-card__body prewrap">{{ detail.responsable_email || '—' }}</div>
+            </div>
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Nombre</div>
+              <div class="detail-compare-card__body">{{ detail.responsable_nombre_completo || '—' }}</div>
+            </div>
+          </div>
+          <h4 class="detail-subsection__title">Usuario</h4>
+          <div class="detail-compare-grid">
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Correo</div>
+              <div class="detail-compare-card__body prewrap">{{ detail.usuario_objetivo_email || '—' }}</div>
+            </div>
+            <div class="detail-compare-card">
+              <div class="detail-compare-card__head">Nombre</div>
+              <div class="detail-compare-card__body">{{ detail.usuario_objetivo_nombre_completo || '—' }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-section">
+          <h3 class="detail-section__title">Flujo y permisos</h3>
+          <div class="detail-section__rows">
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">Acción</div>
+              <div class="detail-field__value">{{ detail.accion || '—' }}</div>
+            </div>
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">Tipo de flujo</div>
+              <div class="detail-field__value">{{ detail.tipo_flujo || '—' }}</div>
+            </div>
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">Estado de flujo</div>
+              <div class="detail-field__value">{{ detail.estado_flujo || '—' }}</div>
+            </div>
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">Permisos</div>
+              <div class="detail-field__value">{{ detail.permisos || '—' }}</div>
+            </div>
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">Resultado</div>
+              <div class="detail-field__value prewrap">{{ detail.resultado || '—' }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-section">
+          <h3 class="detail-section__title">Ventana de acceso</h3>
+          <div class="detail-section__rows">
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">Inicio acceso</div>
+              <div class="detail-field__value">{{ detail.fecha_inicio_acceso || '—' }}</div>
+            </div>
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">Fin acceso</div>
+              <div class="detail-field__value">{{ detail.fecha_fin_acceso || '—' }}</div>
+            </div>
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">Justificación</div>
+              <div class="detail-field__value prewrap">{{ detail.justificacion || '—' }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-section">
+          <h3 class="detail-section__title">Técnico</h3>
+          <div class="detail-section__rows">
+            <div class="detail-field detail-field--row">
+              <div class="detail-field__label">User agent</div>
+              <div class="detail-field__value prewrap small-text">{{ detail.user_agent || '—' }}</div>
+            </div>
+            <div class="detail-field detail-field--row detail-field--row-json">
+              <div class="detail-field__label">Detalle (JSON)</div>
+              <div class="detail-field__value detail-field__value--flush">
+                <pre class="detail-json prewrap">{{ formatDetalleJson(detail.detalle) }}</pre>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </ng-container>
+  </div>
+  <div class="modal__footer">
+    <button type="button" class="button-outline" (click)="close()">Cerrar</button>
+  </div>
+</div>
