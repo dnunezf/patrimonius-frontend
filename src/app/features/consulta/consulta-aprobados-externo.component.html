@@ -68,7 +68,6 @@
         </div>
       </div>
       <div class="toolbar-side">
-        <button type="button" class="btn outline btn-solicitud" (click)="irSolicitud()">Solicitud</button>
         <button type="button" class="btn ghost btn-panel" (click)="volver()">Panel principal</button>
       </div>
     </div>
@@ -113,14 +112,31 @@
               <span class="pill ok sm">{{ row.estadoEtiqueta || row.estado || '—' }}</span>
             </td>
             <td class="actions-cell">
-              <button type="button" class="btn sm ghost" (click)="ver(row)" title="Ver">👁</button>
+              <button
+                type="button"
+                class="btn sm ghost"
+                (click)="ver(row)"
+                [disabled]="!row.canView"
+                [title]="row.canView ? 'Ver documento' : 'Debe tener una solicitud aprobada para visualizar'"
+              >
+                👁
+              </button>
               <button
                 type="button"
                 class="btn sm primary"
                 (click)="descargar(row)"
                 [disabled]="!row.canDownload"
+                [title]="row.canDownload ? 'Descargar documento' : 'Debe tener una solicitud aprobada para descargar'"
               >
-                Descargar
+                {{ row.canDownload ? 'Descargar' : 'Solicitud requerida' }}
+              </button>
+              <button
+                type="button"
+                class="btn sm outline"
+                (click)="abrirSolicitud(row)"
+                title="Solicitar acceso"
+              >
+                Solicitar acceso
               </button>
             </td>
           </tr>
@@ -157,4 +173,12 @@
       </div>
     </div>
   </div>
+  <app-solicitud-acceso-dialog
+    [open]="solicitudOpen"
+    [documento]="selectedDocumento"
+    [usuarioSolicitanteId]="usuarioSolicitanteId"
+    [usuarioNombre]="usuarioSolicitanteNombre"
+    (closed)="cerrarSolicitud()"
+    (created)="solicitudCreada()"
+  ></app-solicitud-acceso-dialog>
 </div>

@@ -1,0 +1,191 @@
+<main class="container">
+  <div class="back-container">
+    <a routerLink="/admin/module" class="back-link">
+      ← Volver al módulo de administración
+    </a>
+  </div>
+
+  <header class="head">
+    <h1>Solicitudes a documentos</h1>
+    <p class="sub">
+      Revise, apruebe o rechace las solicitudes de acceso a documentos realizadas por usuarios externos.
+    </p>
+  </header>
+
+  <section class="toolbar">
+    <div class="field">
+      <label for="textoFiltro">Buscar</label>
+      <input
+        id="textoFiltro"
+        type="text"
+        [(ngModel)]="textoFiltro"
+        (ngModelChange)="applyFilters()"
+        placeholder="Título, código, solicitante, justificación..."
+      />
+    </div>
+
+    <div class="field">
+      <label for="estadoFiltro">Estado</label>
+      <select
+        id="estadoFiltro"
+        [(ngModel)]="estadoFiltro"
+        (ngModelChange)="applyFilters()"
+      >
+        <option value="">Todos</option>
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="APROBADA">Aprobada</option>
+        <option value="RECHAZADA">Rechazada</option>
+      </select>
+    </div>
+  </section>
+
+  <div class="loading" *ngIf="loading">Cargando solicitudes…</div>
+  <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+  <section class="table-card" *ngIf="!loading && !errorMsg">
+    <div class="table-meta">
+      <span>{{ filteredRows.length }} solicitudes</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Documento</th>
+          <th>Solicitante</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Fecha solicitud</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngIf="filteredRows.length === 0">
+          <td colspan="7" class="empty">
+            No hay solicitudes registradas con los filtros actuales.
+          </td>
+        </tr>
+
+        <tr *ngFor="let row of filteredRows">
+          <td>#{{ row.id }}</td>
+          <td>
+            <div class="doc-cell">
+              <strong>{{ row.documento_titulo || 'Documento sin título' }}</strong>
+              <small>{{ row.numero_serie || 'Sin código' }}</small>
+            </div>
+          </td>
+          <td>{{ nombreSolicitante(row) }}</td>
+          <td>{{ row.solicitante_rol || '—' }}</td>
+          <td>
+              <span [class]="estadoClass(row.estado_solicitud)">
+                {{ row.estado_solicitud }}
+              </span>
+          </td>
+          <td>{{ formatDate(row.created_at) }}</td>
+          <td>
+            <button type="button" class="btn-detail" (click)="openDetalle(row)">
+              Ver detalle
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="overlay" *ngIf="detalleOpen" (click)="closeDetalle()">
+    <div class="modal" (click)="$event.stopPropagation()" *ngIf="selected as s">
+      <header class="modal-header">
+        <div>
+          <h3>Solicitud #{{ s.id }}</h3>
+          <p>Revisión administrativa de acceso a documento</p>
+        </div>
+
+        <button type="button" class="btn-close" (click)="closeDetalle()">×</button>
+      </header>
+
+      <div class="modal-body">
+        <section class="detail-grid">
+          <article class="detail-card">
+            <h4>Documento</h4>
+            <p><strong>Título:</strong> {{ s.documento_titulo || '—' }}</p>
+            <p><strong>Código:</strong> {{ s.numero_serie || '—' }}</p>
+            <p><strong>ID documento:</strong> {{ s.documento_id }}</p>
+            <p><strong>Estado documento:</strong> {{ s.documento_estado || '—' }}</p>
+          </article>
+
+          <article class="detail-card">
+            <h4>Solicitante</h4>
+            <p><strong>Nombre:</strong> {{ nombreSolicitante(s) }}</p>
+            <p><strong>Rol:</strong> {{ s.solicitante_rol || '—' }}</p>
+            <p><strong>ID usuario:</strong> {{ s.usuario_solicitante_id }}</p>
+          </article>
+
+          <article class="detail-card">
+            <h4>Solicitud</h4>
+            <p><strong>Estado:</strong> {{ s.estado_solicitud }}</p>
+            <p><strong>Creada:</strong> {{ formatDate(s.created_at) }}</p>
+            <p><strong>Actualizada:</strong> {{ formatDate(s.updated_at) }}</p>
+            <p><strong>Administrador:</strong> {{ nombreAdmin(s) }}</p>
+          </article>
+
+          <article class="detail-card detail-card--full">
+            <h4>Justificación</h4>
+            <div class="text-box">{{ s.justificacion }}</div>
+          </article>
+
+          <article
+            class="detail-card detail-card--full"
+            *ngIf="s.estado_solicitud !== 'PENDIENTE'"
+          >
+            <h4>Motivo de resolución</h4>
+            <div class="text-box">
+              {{ s.motivo_resolucion || 'Sin detalle registrado.' }}
+            </div>
+          </article>
+
+          <article
+            class="detail-card detail-card--full"
+            *ngIf="s.estado_solicitud === 'PENDIENTE'"
+          >
+            <h4>Resolver solicitud</h4>
+
+            <label class="label" for="motivoResolucion">
+              Motivo de resolución
+            </label>
+            <textarea
+              id="motivoResolucion"
+              [(ngModel)]="motivoResolucion"
+              rows="5"
+              placeholder="Indique por qué se aprueba o rechaza la solicitud."
+            ></textarea>
+
+            <div class="error small" *ngIf="accionError">{{ accionError }}</div>
+
+            <div class="actions">
+              <button
+                type="button"
+                class="btn reject"
+                [disabled]="resolving"
+                (click)="resolver('RECHAZADA')"
+              >
+                {{ resolving ? 'Procesando…' : 'Rechazar' }}
+              </button>
+
+              <button
+                type="button"
+                class="btn approve"
+                [disabled]="resolving"
+                (click)="resolver('APROBADA')"
+              >
+                {{ resolving ? 'Procesando…' : 'Aprobar' }}
+              </button>
+            </div>
+          </article>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>

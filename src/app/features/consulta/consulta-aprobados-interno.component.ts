@@ -66,7 +66,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.loading = true;
     this.errorMsg = '';
     this.api
-      .search({
+      .searchInterno({
         q: this.q.trim() || undefined,
         page: this.page,
         pageSize: this.pageSize,

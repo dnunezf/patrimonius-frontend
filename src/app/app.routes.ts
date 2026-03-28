@@ -7,7 +7,6 @@ import {ArchivistaDashboardComponent} from './features/archivista/dashboard/arch
 import {ArchivistaClasificacionComponent} from './features/archivista/clasificacion/archivista-clasificacion.component';
 import { ArchivistaSerieDialogComponent } from './features/archivista/seriecrear/archivista-serie-dialog.component';
 import { ArchivistaSubserieDialogComponent } from './features/archivista/subseriecrear/archivista-subserie-dialog.component';
-import { UsuarioExternoDashboardComponent } from './features/usuarioexterno/dashboard/usuarioexterno-dashboard.component';
 
 
 
@@ -49,11 +48,6 @@ export const routes: Routes = [
   {
     path: 'archivista/crear-subserie',
     component: ArchivistaSubserieDialogComponent,
-    canActivate: [AuthGuard],
-  },
-  {
-    path: 'usuarioexterno/dashboard',
-    component: UsuarioExternoDashboardComponent,
     canActivate: [AuthGuard],
   },
 
@@ -129,14 +123,14 @@ export const routes: Routes = [
         (m) => m.ConsultaAprobadosExternoComponent,
       ),
   },
-  {
+  /*{
     path: 'consulta/solicitud-externa',
     canActivate: [AuthGuard],
     loadComponent: () =>
       import('./features/consulta/solicitud-consulta-externa.component').then(
         (m) => m.SolicitudConsultaExternaComponent,
       ),
-  },
+  },*/
 
   { path: 'access-exceptions', component: AccessExceptionsComponent, canActivate: [AuthGuard] },
   { path: 'activate', component: ActivateComponent },

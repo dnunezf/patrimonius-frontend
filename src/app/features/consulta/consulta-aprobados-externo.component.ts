@@ -3,16 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { SolicitudAccesoDialogComponent } from './solicitud-acceso-dialog-component';
 import {
   ConsultaAprobadosApiService,
   ConsultaDocumentoRow,
   ConsultaFiltrosOpciones,
 } from '../../../core/services/consulta-aprobados-api.service';
 
+
 @Component({
   selector: 'app-consulta-aprobados-externo',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SolicitudAccesoDialogComponent],
   templateUrl: './consulta-aprobados-externo.component.html',
   styleUrls: ['./consulta-aprobados-externo.component.css'],
 })
@@ -29,6 +31,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   pageSize = 10;
   loading = false;
   errorMsg = '';
+
   /** Fallo al cargar opciones de categoría (la búsqueda puede seguir funcionando). */
   filtersError = '';
 
@@ -42,6 +45,13 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   previewHtml: SafeHtml | null = null;
   previewLoading = false;
 
+  solicitudOpen = false;
+  selectedDocumento: ConsultaDocumentoRow | null = null;
+
+  // Por ahora quedan así; luego puedes llenarlos desde tu auth/user service
+  usuarioSolicitanteId: number | null = null;
+  usuarioSolicitanteNombre = 'Usuario autenticado';
+
   ngOnInit(): void {
     this.api.getFilterOptions().subscribe({
       next: (f) => {
@@ -53,14 +63,16 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
           'No se pudieron cargar las categorías. Puede seguir buscando por texto y fechas.';
       },
     });
+
     this.load();
   }
 
   load(): void {
     this.loading = true;
     this.errorMsg = '';
+
     this.api
-      .search({
+      .searchExterno({
         q: this.q.trim() || undefined,
         page: this.page,
         pageSize: this.pageSize,
@@ -104,6 +116,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     if (!iso) return '—';
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return String(iso);
+
     return d.toLocaleDateString('es-CR', {
       day: 'numeric',
       month: 'long',
@@ -126,9 +139,11 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.previewLoading = true;
     this.previewTitle = row.titulo;
     this.previewHtml = null;
+
     this.api.getPreview(row.id).subscribe({
       next: (p) => {
         this.previewTitle = p.titulo || this.previewTitle;
+
         const html = String(p.contenido || '').trim();
         this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(html);
         this.previewLoading = false;
@@ -149,6 +164,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
 
   descargar(row: ConsultaDocumentoRow): void {
     if (!row.canDownload) return;
+
     this.api.download(row.id).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
@@ -162,12 +178,21 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     });
   }
 
-  volver(): void {
-    this.router.navigate(['/dashboard']);
+  abrirSolicitud(row: ConsultaDocumentoRow): void {
+    this.selectedDocumento = row;
+    this.solicitudOpen = true;
   }
 
-  /** Pantalla reservada para el flujo de solicitudes (mini dashboard en construcción). */
-  irSolicitud(): void {
-    this.router.navigate(['/consulta/solicitud-externa']);
+  cerrarSolicitud(): void {
+    this.solicitudOpen = false;
+    this.selectedDocumento = null;
+  }
+
+  solicitudCreada(): void {
+    this.cerrarSolicitud();
+  }
+
+  volver(): void {
+    this.router.navigate(['/dashboard']);
   }
 }

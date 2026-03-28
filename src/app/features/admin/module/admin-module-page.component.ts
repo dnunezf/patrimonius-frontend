@@ -71,5 +71,13 @@ export class AdminModulePageComponent {
       bullets: ['Permisos por unidad', 'Estructura organizacional', 'Acceso granular'],
       icon: 'unidades',
     },
+    {
+      title: 'Solicitudes a documentos',
+      desc: 'Revisar y resolver solicitudes de acceso a documentos realizadas por usuarios externos.',
+      status: 'available',
+      link: '/admin/solicitudes-documentos',
+      bullets: ['Ver solicitudes', 'Aprobar o rechazar', 'Registrar motivo de resolución'],
+      icon: 'documentos'
+    },
   ];
 }
