@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { map, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 export type ConsultaFiltrosOpciones = {
   categorias: { id: number; nombre: string }[];
@@ -56,6 +56,8 @@ export type ConsultaSearchQuery = {
   expedienteId?: number | string;
   dateFrom?: string;
   dateTo?: string;
+  /** Solo panel externo: fuerza catálogo + permisos por solicitud (multi-rol con USUARIO_EXTERNO). */
+  panelExterno?: string | boolean;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -63,9 +65,17 @@ export class ConsultaAprobadosApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/documents`;
 
-  getFilterOptions(): Observable<ConsultaFiltrosOpciones> {
+  /**
+   * @param panelExterno Si true, filtros del catálogo completo (panel consulta externa / HU-024).
+   */
+  getFilterOptions(panelExterno = false): Observable<ConsultaFiltrosOpciones> {
+    let params = new HttpParams();
+    if (panelExterno) {
+      params = params.set('panelExterno', '1');
+    }
     return this.http.get<ConsultaFiltrosOpciones>(
       `${this.base}/search-approved/filters`,
+      { params },
     );
   }
 
@@ -85,85 +95,28 @@ export class ConsultaAprobadosApiService {
     );
   }
 
+  /**
+   * Misma API que interno (`/documents/search-approved`): el backend aplica HU-025/HU-024
+   * (catálogo completo aprobado/archivado firmado para usuario externo; permisos VIEW por solicitud).
+   */
   searchExterno(q: ConsultaSearchQuery): Observable<ConsultaSearchResponse> {
-    return this.http
-      .get<any[]>(`${environment.apiUrl}/documentos/externos`)
-      .pipe(
-        map((rows) => {
-          let mapped: ConsultaDocumentoRow[] = (rows ?? []).map((r) => ({
-            id: Number(r.id),
-            codigo: r.numero_serie ?? '',
-            titulo: r.titulo ?? '',
-            estado: r.estado ?? '',
-            fecha_aprobacion: r.fecha ?? '',
-            unidad_nombre: r.unidad_nombre ?? null,
-            categoria_nombre: r.categoria ?? null,
-            autor_nombre: r.autor_nombre ?? null,
-            canView: !!r.canView,
-            canDownload: !!r.canDownload,
-            estadoEtiqueta: r.estado ?? '',
-          }));
+    let params = new HttpParams().set('panelExterno', '1');
+    const entries = Object.entries(q).filter(
+      ([k, v]) =>
+        k !== 'panelExterno' &&
+        v !== undefined &&
+        v !== null &&
+        String(v).trim() !== '',
+    );
 
-          const qText = String(q.q ?? '').trim().toLowerCase();
-          if (qText) {
-            mapped = mapped.filter((row) =>
-              [
-                row.codigo,
-                row.titulo,
-                row.categoria_nombre,
-                row.unidad_nombre,
-                row.autor_nombre,
-              ]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase()
-                .includes(qText),
-            );
-          }
+    for (const [k, v] of entries) {
+      params = params.set(k, String(v));
+    }
 
-          if (q.categoriaId) {
-            const cat = String(q.categoriaId).trim().toLowerCase();
-            mapped = mapped.filter(
-              (row) => String(row.categoria_nombre ?? '').toLowerCase() === cat,
-            );
-          }
-
-          if (q.dateFrom) {
-            const from = new Date(q.dateFrom);
-            mapped = mapped.filter((row) => {
-              if (!row.fecha_aprobacion) return false;
-              return new Date(row.fecha_aprobacion) >= from;
-            });
-          }
-
-          if (q.dateTo) {
-            const to = new Date(q.dateTo);
-            to.setHours(23, 59, 59, 999);
-            mapped = mapped.filter((row) => {
-              if (!row.fecha_aprobacion) return false;
-              return new Date(row.fecha_aprobacion) <= to;
-            });
-          }
-
-          const page = Number(q.page ?? 1);
-          const pageSize = Number(q.pageSize ?? 10);
-          const totalItems = mapped.length;
-          const totalDescargables = mapped.filter((r) => r.canDownload).length;
-          const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-          const start = (page - 1) * pageSize;
-          const items = mapped.slice(start, start + pageSize);
-
-          return {
-            items,
-            totalItems,
-            totalDescargables,
-            totalPages,
-            page,
-            pageSize,
-            viewer: 'externo' as const,
-          };
-        }),
-      );
+    return this.http.get<ConsultaSearchResponse>(
+      `${this.base}/search-approved`,
+      { params },
+    );
   }
 
   getPreview(documentoId: number): Observable<{
@@ -184,11 +137,24 @@ export class ConsultaAprobadosApiService {
     }>(`${environment.apiUrl}/documentos/${documentoId}/contenido`);
   }
 
+  /**
+   * Descarga PDF vía ruta de firma (acceso VW / Permiso_Usuario). Usada por panel externo.
+   */
   download(documentoId: number): Observable<Blob> {
     return this.http.get(
       `${environment.apiUrl}/documentos/${documentoId}/firma/descargar/pdf`,
       { responseType: 'blob' },
     );
+  }
+
+  /**
+   * HU-025: descarga alineada con la búsqueda (`assertCanAccess` en backend).
+   * Preferir en panel de consulta interno para evitar 403 cuando el listado ya autorizó el documento.
+   */
+  downloadConsulta(documentoId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/${documentoId}/download`, {
+      responseType: 'blob',
+    });
   }
   createSolicitudAcceso(
     documentoId: number,

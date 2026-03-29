@@ -120,7 +120,7 @@
                 type="button"
                 class="btn sm primary"
                 (click)="descargar(row)"
-                [disabled]="!row.canDownload"
+                [disabled]="row.canDownload === false"
               >
                 Descargar
               </button>
@@ -172,6 +172,27 @@
         <p *ngIf="previewLoading">Cargando vista previa…</p>
         <div *ngIf="previewHtml" class="html-preview" [innerHTML]="previewHtml"></div>
       </div>
+    </div>
+  </div>
+
+  <div
+    class="overlay overlay--alert"
+    *ngIf="downloadErrorOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="download-err-interno-title"
+    (click)="cerrarErrorDescarga()"
+  >
+    <div class="modal modal--alert" (click)="$event.stopPropagation()">
+      <header class="modal--alert__head">
+        <h3 id="download-err-interno-title">{{ downloadErrorTitle }}</h3>
+      </header>
+      <div class="modal--alert__body">
+        <p>{{ downloadErrorMessage }}</p>
+      </div>
+      <footer class="modal--alert__foot">
+        <button type="button" class="btn primary" (click)="cerrarErrorDescarga()">Entendido</button>
+      </footer>
     </div>
   </div>
 </div>

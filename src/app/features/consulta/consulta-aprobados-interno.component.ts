@@ -47,6 +47,10 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public previewHtml: SafeHtml | null = null;
   public previewLoading = false;
 
+  public downloadErrorOpen = false;
+  public downloadErrorTitle = 'No se pudo descargar';
+  public downloadErrorMessage = '';
+
   /** Unidad con la que filtra el API (solo aplica a internos que no son administrador). */
   public filtroUnidadUsuario: number | null = null;
   public aplicaFiltroUnidad = false;
@@ -165,8 +169,9 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   }
 
   public descargar(row: ConsultaDocumentoRow): void {
-    if (!row.canDownload) return;
-    this.api.download(row.id).subscribe({
+    if (row.canDownload === false) return;
+
+    this.api.downloadConsulta(row.id).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -175,8 +180,38 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         a.click();
         URL.revokeObjectURL(url);
       },
-      error: () => alert('No se pudo descargar el documento.'),
+      error: (err: unknown) => {
+        void this.handleDownloadHttpError(err);
+      },
     });
+  }
+
+  private async handleDownloadHttpError(err: unknown): Promise<void> {
+    let msg =
+      'No se pudo descargar el documento. Intente de nuevo o contacte a soporte.';
+    const e = err as {
+      error?: Blob | { message?: string };
+      message?: string;
+    };
+    if (e.error instanceof Blob) {
+      try {
+        const t = await e.error.text();
+        const j = JSON.parse(t) as { message?: string };
+        if (j.message) msg = j.message;
+      } catch {
+        /* mantener mensaje por defecto */
+      }
+    } else if (e.error && typeof e.error === 'object' && 'message' in e.error) {
+      msg = String((e.error as { message?: string }).message || msg);
+    }
+    this.downloadErrorTitle = 'No se pudo descargar';
+    this.downloadErrorMessage = msg;
+    this.downloadErrorOpen = true;
+  }
+
+  public cerrarErrorDescarga(): void {
+    this.downloadErrorOpen = false;
+    this.downloadErrorMessage = '';
   }
 
   public volver(): void {

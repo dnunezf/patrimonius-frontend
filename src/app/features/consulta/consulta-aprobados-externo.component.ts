@@ -80,7 +80,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.api.getFilterOptions().subscribe({
+    this.api.getFilterOptions(true).subscribe({
       next: (f) => {
         this.filtros = f;
         this.filtersError = '';
@@ -163,6 +163,8 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   }
 
   ver(row: ConsultaDocumentoRow): void {
+    if (row.canView !== true) return;
+
     this.previewOpen = true;
     this.previewLoading = true;
     this.previewTitle = row.titulo;
@@ -191,7 +193,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   }
 
   descargar(row: ConsultaDocumentoRow): void {
-    if (!row.canDownload) return;
+    if (row.canDownload !== true) return;
 
     try {
       if (
