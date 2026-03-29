@@ -1,0 +1,41 @@
+<div class="overlay" *ngIf="open" (click)="close()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <header>
+      <div>
+        <h3>Documentos del expediente</h3>
+        <p class="muted" *ngIf="expedienteNombre">{{ expedienteNombre }}</p>
+      </div>
+
+      <button type="button" class="btn ghost" (click)="close()">
+        Cerrar
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <p *ngIf="loading" class="loading">Cargando documentos...</p>
+
+      <p class="toolbar-error" *ngIf="!loading && errorMsg">
+        {{ errorMsg }}
+      </p>
+
+      <div *ngIf="!loading && !errorMsg" class="docs-list">
+        <div class="doc-card" *ngFor="let doc of documentos">
+          <div class="doc-main">
+            <div class="doc-title">{{ doc.titulo }}</div>
+            <div class="doc-code">{{ doc.numero_serie || 'Sin código' }}</div>
+          </div>
+
+          <div class="doc-side">
+            <span [class]="estadoClass(doc.estado)">
+              {{ doc.estado }}
+            </span>
+          </div>
+        </div>
+
+        <p class="empty" *ngIf="documentos.length === 0">
+          Este expediente no tiene documentos asignados.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
