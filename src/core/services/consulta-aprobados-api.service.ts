@@ -140,6 +140,12 @@ export class ConsultaAprobadosApiService {
     }>(`${this.base}/${documentoId}/preview`);
   }
 
+  getPreviewPdf(documentoId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/${documentoId}/preview-pdf`, {
+      responseType: 'blob',
+    });
+  }
+
   /**
    * Descarga PDF vía ruta de firma (acceso VW / Permiso_Usuario). Usada por panel externo.
    */

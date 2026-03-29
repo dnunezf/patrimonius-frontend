@@ -117,7 +117,15 @@
               <span class="badge ok">{{ row.estadoEtiqueta || row.estado }}</span>
             </td>
             <td class="actions-cell">
-              <button type="button" class="btn sm" (click)="ver(row)" title="Vista previa">Ver</button>
+              <button
+                type="button"
+                class="btn sm ghost"
+                (click)="ver(row)"
+                [disabled]="row.canDownload === false"
+                title="Vista previa del documento (solo lectura, sin descargar)"
+              >
+                Vista previa
+              </button>
               <button
                 type="button"
                 class="btn sm primary"
@@ -164,15 +172,62 @@
 
   <div class="loading" *ngIf="loading">Cargando…</div>
 
-  <div class="overlay" *ngIf="previewOpen" (click)="cerrarPreview()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <header>
-        <h3>{{ previewTitle }}</h3>
+  <div class="overlay consulta-preview-overlay" *ngIf="previewOpen" (click)="cerrarPreview()">
+    <div
+      class="modal consulta-preview-modal"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="consulta-preview-title"
+    >
+      <header class="consulta-preview-header">
+        <h3 id="consulta-preview-title">{{ previewTitle }}</h3>
         <button type="button" class="btn ghost" (click)="cerrarPreview()">Cerrar</button>
       </header>
-      <div class="modal-body">
-        <p *ngIf="previewLoading">Cargando vista previa…</p>
-        <div *ngIf="previewHtml" class="html-preview" [innerHTML]="previewHtml"></div>
+      <div class="consulta-preview-body">
+        <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'pdf'">
+          Vista previa del mismo PDF que puede descargar. Renderizado como imagen por página: el texto no es
+          seleccionable ni copiable desde aquí.
+        </p>
+        <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'html'">
+          Vista previa en formato web (respaldo). Solo visualización: no copie ni guarde el contenido desde
+          esta ventana.
+        </p>
+        <p class="consulta-preview-loading" *ngIf="previewLoading">Generando vista previa en PDF…</p>
+        <div
+          class="consulta-preview-scroll"
+          *ngIf="!previewLoading && previewMode === 'pdf'"
+          role="region"
+          aria-label="Vista previa del documento en PDF"
+          (copy)="$event.preventDefault()"
+          (cut)="$event.preventDefault()"
+          (contextmenu)="$event.preventDefault()"
+        >
+          <p class="consulta-preview-scroll-hint">Desplace para ver todas las páginas.</p>
+          <p class="consulta-preview-warn" *ngIf="pdfPreviewTruncated">
+            Se muestran las primeras {{ pdfMaxPagesShown }} páginas para mantener el rendimiento.
+          </p>
+          <div #pdfHost class="consulta-pdf-canvas-host"></div>
+        </div>
+        <div
+          class="consulta-preview-scroll"
+          *ngIf="!previewLoading && previewMode === 'html' && previewHtml"
+          role="region"
+          aria-label="Contenido del documento"
+        >
+          <p class="consulta-preview-scroll-hint">Desplace hacia abajo si el texto es largo.</p>
+          <div class="consulta-preview-page">
+            <div
+              class="html-preview consulta-preview-safe"
+              [innerHTML]="previewHtml"
+              (click)="onPreviewHtmlLinkClick($event)"
+              (copy)="$event.preventDefault()"
+              (cut)="$event.preventDefault()"
+              (contextmenu)="$event.preventDefault()"
+              (dragstart)="$event.preventDefault()"
+            ></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

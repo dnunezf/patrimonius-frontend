@@ -1,4 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,6 +15,7 @@ import {
   ConsultaDocumentoRow,
   ConsultaFiltrosOpciones,
 } from '../../../core/services/consulta-aprobados-api.service';
+import { onConsultaPreviewLinkClick } from './consulta-preview-link.util';
 
 @Component({
   selector: 'app-consulta-aprobados-interno',
@@ -20,6 +28,15 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   private readonly api = inject(ConsultaAprobadosApiService);
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  @ViewChild('pdfHost') pdfHost?: ElementRef<HTMLDivElement>;
+
+  private static readonly PDF_MAX_PAGES = 48;
+  readonly pdfMaxPagesShown = ConsultaAprobadosInternoComponent.PDF_MAX_PAGES;
+
+  /** Índices / anclas del HTML: scroll dentro del modal, sin navegar la SPA. */
+  readonly onPreviewHtmlLinkClick = onConsultaPreviewLinkClick;
 
   /** Visibles en plantilla (strictTemplates / strictInputAccessModifiers). */
   public filtros: ConsultaFiltrosOpciones | null = null;
@@ -46,6 +63,10 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public previewTitle = '';
   public previewHtml: SafeHtml | null = null;
   public previewLoading = false;
+  public previewMode: 'pdf' | 'html' | null = null;
+  public pdfPreviewTruncated = false;
+
+  private previewDocumentoId: number | null = null;
 
   public downloadErrorOpen = false;
   public downloadErrorTitle = 'No se pudo descargar';
@@ -143,29 +164,148 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   }
 
   public ver(row: ConsultaDocumentoRow): void {
+   
+    if (row.canDownload === false) return;
+
+    this.previewDocumentoId = row.id;
     this.previewOpen = true;
     this.previewLoading = true;
     this.previewTitle = row.titulo;
     this.previewHtml = null;
+    this.previewMode = null;
+    this.pdfPreviewTruncated = false;
+    this.clearPdfHost();
+
+    this.api.getPreviewPdf(row.id).subscribe({
+      next: (blob) => void this.handlePreviewPdfBlob(blob, row),
+      error: () => this.cargarVistaPreviaHtml(row),
+    });
+  }
+
+  private async handlePreviewPdfBlob(
+    blob: Blob,
+    row: ConsultaDocumentoRow,
+  ): Promise<void> {
+    if (!blob?.size) {
+      this.cargarVistaPreviaHtml(row);
+      return;
+    }
+    const mime = (blob.type || '').toLowerCase();
+    if (mime.includes('json')) {
+      this.cargarVistaPreviaHtml(row);
+      return;
+    }
+    const isPdfMime =
+      mime.includes('pdf') || mime.includes('octet-stream') || mime === '';
+    if (!isPdfMime && !(await this.blobStartsWithPdfSignature(blob))) {
+      this.cargarVistaPreviaHtml(row);
+      return;
+    }
+    this.previewMode = 'pdf';
+    this.previewLoading = false;
+    this.cdr.detectChanges();
+    setTimeout(() => void this.renderPdfIntoHost(blob), 0);
+  }
+
+  private async blobStartsWithPdfSignature(blob: Blob): Promise<boolean> {
+    if (blob.size < 4) return false;
+    const buf = await blob.slice(0, 4).arrayBuffer();
+    const u = new Uint8Array(buf);
+    return u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46;
+  }
+
+  private cargarVistaPreviaHtml(row: ConsultaDocumentoRow): void {
+    this.previewMode = 'html';
     this.api.getPreview(row.id).subscribe({
       next: (p) => {
         this.previewTitle = p.titulo || this.previewTitle;
         const html = String(p.contenido || '').trim();
         this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(html);
         this.previewLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.previewLoading = false;
         this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(
           '<p>No se pudo cargar la vista previa.</p>',
         );
+        this.cdr.markForCheck();
       },
     });
+  }
+
+  private clearPdfHost(): void {
+    const el = this.pdfHost?.nativeElement;
+    if (el) el.innerHTML = '';
+  }
+
+  private async renderPdfIntoHost(blob: Blob, attempt = 0): Promise<void> {
+    const host = this.pdfHost?.nativeElement;
+    if (!host) {
+      if (attempt < 8) {
+        setTimeout(() => void this.renderPdfIntoHost(blob, attempt + 1), 40);
+        return;
+      }
+      this.cargarVistaPreviaHtmlDesdeIdGuardado();
+      return;
+    }
+    host.innerHTML = '';
+    try {
+      const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist');
+      GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
+
+      const data = await blob.arrayBuffer();
+      const pdf = await getDocument({ data }).promise;
+      const total = pdf.numPages;
+      const max = ConsultaAprobadosInternoComponent.PDF_MAX_PAGES;
+      const pagesToRender = Math.min(total, max);
+      this.pdfPreviewTruncated = total > max;
+      this.cdr.markForCheck();
+
+      const scale = 1.35;
+      for (let i = 1; i <= pagesToRender; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        if (!ctx) continue;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.className = 'consulta-pdf-canvas';
+        canvas.setAttribute('draggable', 'false');
+        const task = page.render({ canvasContext: ctx, viewport });
+        await task.promise;
+        host.appendChild(canvas);
+      }
+    } catch {
+      host.innerHTML = '';
+      this.previewMode = 'html';
+      this.previewLoading = true;
+      this.cdr.detectChanges();
+      this.cargarVistaPreviaHtmlDesdeIdGuardado();
+    }
+  }
+
+  private cargarVistaPreviaHtmlDesdeIdGuardado(): void {
+    const id = this.previewDocumentoId;
+    if (id == null) {
+      this.previewLoading = false;
+      this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(
+        '<p>No se pudo cargar la vista previa.</p>',
+      );
+      this.cdr.markForCheck();
+      return;
+    }
+    this.cargarVistaPreviaHtml({ id, codigo: '', titulo: this.previewTitle } as ConsultaDocumentoRow);
   }
 
   public cerrarPreview(): void {
     this.previewOpen = false;
     this.previewHtml = null;
+    this.previewMode = null;
+    this.pdfPreviewTruncated = false;
+    this.previewDocumentoId = null;
+    this.clearPdfHost();
   }
 
   public descargar(row: ConsultaDocumentoRow): void {
