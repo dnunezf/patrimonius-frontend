@@ -1,0 +1,34 @@
+<div class="dialog-container">
+  <h2>Crear Nueva Serie</h2>
+
+  <form (ngSubmit)="crearSerie()">
+    <div class="form-group">
+      <label for="codigo">Código *</label>
+      <input type="text" id="codigo" [(ngModel)]="codigo" name="codigo" required />
+    </div>
+
+    <div class="form-group">
+      <label for="nombre">Serie *</label>
+      <input type="text" id="nombre" [(ngModel)]="nombre" name="nombre" required />
+    </div>
+
+    <div class="form-group">
+      <label for="descripcion">Descripción</label>
+      <textarea id="descripcion" [(ngModel)]="descripcion" name="descripcion"></textarea>
+    </div>
+
+    <div class="form-group">
+      <select id="unidad" [(ngModel)]="unidad_id" name="unidad" required>
+        <option [ngValue]="0" disabled>Seleccione una unidad organizacional</option>
+        <option *ngFor="let unidad of unidades" [ngValue]="unidad.id">
+          {{ unidad.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Crear</button>
+      <button type="button" class="btn btn--secondary" (click)="cancelar()">Cancelar</button>
+    </div>
+  </form>
+</div>

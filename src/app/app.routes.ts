@@ -3,6 +3,11 @@ import { HomeComponent } from './features/home/home.component';
 import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
 import { ActivateComponent } from './auth/activate.component';
 import { AuthGuard } from '../core/services/auth.guard';
+import {ArchivistaDashboardComponent} from './features/archivista/dashboard/archivista-dashboard.component';
+import {ArchivistaClasificacionComponent} from './features/archivista/clasificacion/archivista-clasificacion.component';
+import { ArchivistaSerieDialogComponent } from './features/archivista/seriecrear/archivista-serie-dialog.component';
+import { ArchivistaSubserieDialogComponent } from './features/archivista/subseriecrear/archivista-subserie-dialog.component';
+
 
 
 export const routes: Routes = [
@@ -25,6 +30,25 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     loadChildren: () =>
       import('./features/editor/editor.routes').then((m) => m.EDITOR_ROUTES),
+  },
+  {
+    path: 'archivista/dashboard',
+    canActivate: [AuthGuard],
+    component: ArchivistaDashboardComponent,
+  },
+  {
+    path: 'archivista/clasificacion',
+    component: ArchivistaClasificacionComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'archivista/crear-serie',
+    component: ArchivistaSerieDialogComponent,
+  },
+  {
+    path: 'archivista/crear-subserie',
+    component: ArchivistaSubserieDialogComponent,
+    canActivate: [AuthGuard],
   },
 
   // ✅ HU-21: Carga masiva de documentos
@@ -99,14 +123,14 @@ export const routes: Routes = [
         (m) => m.ConsultaAprobadosExternoComponent,
       ),
   },
-  {
+  /*{
     path: 'consulta/solicitud-externa',
     canActivate: [AuthGuard],
     loadComponent: () =>
       import('./features/consulta/solicitud-consulta-externa.component').then(
         (m) => m.SolicitudConsultaExternaComponent,
       ),
-  },
+  },*/
 
   { path: 'access-exceptions', component: AccessExceptionsComponent, canActivate: [AuthGuard] },
   { path: 'activate', component: ActivateComponent },

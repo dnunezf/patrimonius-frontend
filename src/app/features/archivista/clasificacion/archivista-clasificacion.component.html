@@ -1,0 +1,251 @@
+<div class="page">
+  <section class="banner">
+    <h2>Clasificación archivística</h2>
+    <p>
+      Gestione series, subseries y expedientes archivísticos. Desde esta pantalla también
+      puede cerrar expedientes existentes para generar su índice electrónico.
+    </p>
+
+    <div class="banner-meta">
+      <span class="pill ok">{{ series.length }} series</span>
+      <span class="pill info">{{ subseries.length }} subseries</span>
+      <span class="pill warn">{{ expedientes.length }} expedientes</span>
+    </div>
+  </section>
+
+  <section class="top-actions">
+    <button class="btn primary" (click)="crearSerie()">Crear Serie</button>
+    <button class="btn primary" (click)="crearSubserie()">Crear Subserie</button>
+  </section>
+
+  <!-- SERIES -->
+  <section class="panel-block">
+    <div class="panel-head">
+      <div>
+        <h3>Lista de Series</h3>
+        <p class="muted">Catálogo de series disponibles para clasificación.</p>
+      </div>
+    </div>
+
+    <div class="toolbar-search">
+      <div class="search-input-wrap">
+        <span class="search-ico">🔍</span>
+        <input
+          type="search"
+          [(ngModel)]="searchSeries"
+          (input)="aplicarFiltroSeries()"
+          placeholder="Buscar por código, nombre o unidad..."
+        />
+      </div>
+    </div>
+
+    <p class="toolbar-error" *ngIf="errorSeries">{{ errorSeries }}</p>
+    <div class="loading" *ngIf="loadingSeries">Cargando series...</div>
+
+    <div class="table-scroll" *ngIf="!loadingSeries">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Serie</th>
+          <th>Unidad</th>
+          <th>Acciones</th>
+          <th>Eliminar</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let serie of filteredSeries">
+          <td class="mono">{{ serie.codigo }}</td>
+          <td>{{ serie.nombre }}</td>
+          <td>{{ serie.unidad_nombre || '—' }}</td>
+          <td>
+            <button class="btn sm ghost" (click)="verSerie(serie.id)">Ver</button>
+          </td>
+          <td>
+            <button class="btn sm danger" (click)="eliminarSerie(serie.id, serie.nombre)">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="empty" *ngIf="!loadingSeries && filteredSeries.length === 0">
+      No hay series registradas.
+    </p>
+  </section>
+
+  <!-- SUBSERIES -->
+  <section class="panel-block">
+    <div class="panel-head">
+      <div>
+        <h3>Lista de Subseries</h3>
+        <p class="muted">Subseries relacionadas con las series documentales.</p>
+      </div>
+    </div>
+
+    <div class="toolbar-search">
+      <div class="search-input-wrap">
+        <span class="search-ico">🔍</span>
+        <input
+          type="search"
+          [(ngModel)]="searchSubseries"
+          (input)="aplicarFiltroSubseries()"
+          placeholder="Buscar por código, nombre o serie..."
+        />
+      </div>
+    </div>
+
+    <p class="toolbar-error" *ngIf="errorSubseries">{{ errorSubseries }}</p>
+    <div class="loading" *ngIf="loadingSubseries">Cargando subseries...</div>
+
+    <div class="table-scroll" *ngIf="!loadingSubseries">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Subserie</th>
+          <th>Serie</th>
+          <th>Acciones</th>
+          <th>Eliminar</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let subserie of filteredSubseries">
+          <td class="mono">{{ subserie.codigo }}</td>
+          <td>{{ subserie.nombre }}</td>
+          <td>{{ subserie.serie_nombre || '—' }}</td>
+          <td>
+            <button class="btn sm ghost" (click)="verSubserie(subserie.id)">Ver</button>
+          </td>
+          <td>
+            <button
+              class="btn sm danger"
+              (click)="eliminarSubserie(subserie.id, subserie.nombre)"
+            >
+              Eliminar
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="empty" *ngIf="!loadingSubseries && filteredSubseries.length === 0">
+      No hay subseries registradas.
+    </p>
+  </section>
+
+  <!-- EXPEDIENTES -->
+  <section class="panel-block">
+    <div class="panel-head">
+      <div>
+        <h3>Lista de Expedientes</h3>
+        <p class="muted">
+          Desde aquí puede revisar expedientes existentes y abrir/cerrar su estado.
+        </p>
+      </div>
+    </div>
+
+    <div class="toolbar-search">
+      <div class="search-input-wrap">
+        <span class="search-ico">🔍</span>
+        <input
+          type="search"
+          [(ngModel)]="searchExpedientes"
+          (input)="aplicarFiltroExpedientes()"
+          placeholder="Buscar por código, nombre, estado, unidad, serie o subserie..."
+        />
+      </div>
+    </div>
+
+    <p class="toolbar-error" *ngIf="errorExpedientes">{{ errorExpedientes }}</p>
+    <div class="loading" *ngIf="loadingExpedientes">Cargando expedientes...</div>
+
+    <div class="table-scroll" *ngIf="!loadingExpedientes">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Unidad</th>
+          <th>Serie / Subserie</th>
+          <th>Creación</th>
+          <th>Cierre</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let expediente of filteredExpedientes">
+          <td class="mono">{{ expediente.codigo }}</td>
+          <td>
+            <div class="doc-title">{{ expediente.nombre }}</div>
+            <div class="muted small" *ngIf="expediente.descripcion">
+              {{ expediente.descripcion }}
+            </div>
+          </td>
+          <td>{{ expediente.unidad_nombre || '—' }}</td>
+          <td>
+            <div>{{ expediente.serie_nombre || '—' }}</div>
+            <div class="muted small">{{ expediente.subserie_nombre || 'Sin subserie' }}</div>
+          </td>
+          <td>{{ formatDate(expediente.fecha_creacion) }}</td>
+          <td>{{ formatDate(expediente.fecha_cierre) }}</td>
+          <td>
+            <span [class]="estadoClass(expediente.estado)">{{ expediente.estado }}</span>
+          </td>
+          <td class="actions-cell">
+            <button
+              class="btn sm ghost"
+              (click)="verDocumentosExpediente(expediente)"
+              title="Ver documentos asignados al expediente"
+            >
+              Ver documentos
+            </button>
+            <button
+              class="btn sm primary"
+              (click)="cerrarExpediente(expediente)"
+              [disabled]="expediente.estado !== 'ACTIVO'"
+              [title]="
+                  expediente.estado === 'ACTIVO'
+                    ? 'Cerrar expediente y generar índice electrónico'
+                    : 'Solo los expedientes activos se pueden cerrar'
+                "
+            >
+              Cerrar
+            </button>
+
+            <button
+              class="btn sm outline"
+              (click)="abrirExpediente(expediente)"
+              [disabled]="expediente.estado !== 'CERRADO'"
+              [title]="
+                  expediente.estado === 'CERRADO'
+                    ? 'Reabrir expediente'
+                    : 'Solo los expedientes cerrados se pueden reabrir'
+                "
+            >
+              Abrir
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="empty" *ngIf="!loadingExpedientes && filteredExpedientes.length === 0">
+      No hay expedientes registrados.
+    </p>
+
+  </section>
+  <app-expediente-documentos-dialog
+    [open]="expedienteDocsOpen"
+    [expedienteNombre]="expedienteDocsTitle"
+    [documentos]="expedienteDocsRows"
+    [loading]="expedienteDocsLoading"
+    [errorMsg]="expedienteDocsError"
+    (closed)="cerrarDocumentosExpediente()"
+  ></app-expediente-documentos-dialog>
+</div>

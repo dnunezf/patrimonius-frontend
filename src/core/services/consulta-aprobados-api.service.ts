@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 export type ConsultaFiltrosOpciones = {
   categorias: { id: number; nombre: string }[];
@@ -25,6 +25,7 @@ export type ConsultaDocumentoRow = {
   autor_nombre?: string | null;
   canPreview?: boolean;
   canDownload?: boolean;
+  canView?: boolean;
   estadoEtiqueta?: string;
 };
 
@@ -66,18 +67,99 @@ export class ConsultaAprobadosApiService {
     );
   }
 
-  search(q: ConsultaSearchQuery): Observable<ConsultaSearchResponse> {
+  searchInterno(q: ConsultaSearchQuery): Observable<ConsultaSearchResponse> {
     let params = new HttpParams();
     const entries = Object.entries(q).filter(
       ([, v]) => v !== undefined && v !== null && String(v).trim() !== '',
     );
+
     for (const [k, v] of entries) {
       params = params.set(k, String(v));
     }
+
     return this.http.get<ConsultaSearchResponse>(
       `${this.base}/search-approved`,
       { params },
     );
+  }
+
+  searchExterno(q: ConsultaSearchQuery): Observable<ConsultaSearchResponse> {
+    return this.http
+      .get<any[]>(`${environment.apiUrl}/documentos/externos`)
+      .pipe(
+        map((rows) => {
+          let mapped: ConsultaDocumentoRow[] = (rows ?? []).map((r) => ({
+            id: Number(r.id),
+            codigo: r.numero_serie ?? '',
+            titulo: r.titulo ?? '',
+            estado: r.estado ?? '',
+            fecha_aprobacion: r.fecha ?? '',
+            unidad_nombre: r.unidad_nombre ?? null,
+            categoria_nombre: r.categoria ?? null,
+            autor_nombre: r.autor_nombre ?? null,
+            canView: !!r.canView,
+            canDownload: !!r.canDownload,
+            estadoEtiqueta: r.estado ?? '',
+          }));
+
+          const qText = String(q.q ?? '').trim().toLowerCase();
+          if (qText) {
+            mapped = mapped.filter((row) =>
+              [
+                row.codigo,
+                row.titulo,
+                row.categoria_nombre,
+                row.unidad_nombre,
+                row.autor_nombre,
+              ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+                .includes(qText),
+            );
+          }
+
+          if (q.categoriaId) {
+            const cat = String(q.categoriaId).trim().toLowerCase();
+            mapped = mapped.filter(
+              (row) => String(row.categoria_nombre ?? '').toLowerCase() === cat,
+            );
+          }
+
+          if (q.dateFrom) {
+            const from = new Date(q.dateFrom);
+            mapped = mapped.filter((row) => {
+              if (!row.fecha_aprobacion) return false;
+              return new Date(row.fecha_aprobacion) >= from;
+            });
+          }
+
+          if (q.dateTo) {
+            const to = new Date(q.dateTo);
+            to.setHours(23, 59, 59, 999);
+            mapped = mapped.filter((row) => {
+              if (!row.fecha_aprobacion) return false;
+              return new Date(row.fecha_aprobacion) <= to;
+            });
+          }
+
+          const page = Number(q.page ?? 1);
+          const pageSize = Number(q.pageSize ?? 10);
+          const totalItems = mapped.length;
+          const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+          const start = (page - 1) * pageSize;
+          const items = mapped.slice(start, start + pageSize);
+
+          return {
+            items,
+            totalItems,
+            totalPages,
+            page,
+            pageSize,
+            viewer: 'externo' as const,
+          };
+        }),
+      );
   }
 
   getPreview(documentoId: number): Observable<{
@@ -95,12 +177,35 @@ export class ConsultaAprobadosApiService {
       contenido: string;
       prefer_signed_pdf_view?: boolean;
       signed_pdf_url?: string | null;
-    }>(`${this.base}/${documentoId}/preview`);
+    }>(`${environment.apiUrl}/documentos/${documentoId}/contenido`);
   }
 
   download(documentoId: number): Observable<Blob> {
-    return this.http.get(`${this.base}/${documentoId}/download`, {
-      responseType: 'blob',
-    });
+    return this.http.get(
+      `${environment.apiUrl}/documentos/${documentoId}/firma/descargar/pdf`,
+      { responseType: 'blob' },
+    );
+  }
+  createSolicitudAcceso(
+    documentoId: number,
+    payload: { justificacion: string },
+  ) {
+    return this.http.post(
+      `${environment.apiUrl}/documentos/${documentoId}/solicitudes-acceso`,
+      payload,
+    );
+  }
+  listSolicitudesAcceso() {
+    return this.http.get<any[]>(`${environment.apiUrl}/solicitudes-acceso`);
+  }
+
+  resolverSolicitudAcceso(
+    solicitudId: number,
+    payload: { estado_solicitud: 'APROBADA' | 'RECHAZADA'; motivo_resolucion: string }
+  ) {
+    return this.http.patch(
+      `${environment.apiUrl}/solicitudes-acceso/${solicitudId}/resolver`,
+      payload
+    );
   }
 }
