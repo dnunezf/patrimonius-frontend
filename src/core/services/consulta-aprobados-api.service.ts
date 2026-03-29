@@ -36,6 +36,8 @@ export type ConsultaSearchResponse = {
   page: number;
   pageSize: number;
   viewer: 'interno' | 'externo';
+  /** Consulta externa: filas con permiso de descarga (VIEW aprobado). */
+  totalDescargables?: number;
   /** Unidad con la que filtra el backend (interno no administrador). */
   filtroUnidadUsuario?: number | null;
   aplicaFiltroUnidad?: boolean;
@@ -146,6 +148,7 @@ export class ConsultaAprobadosApiService {
           const page = Number(q.page ?? 1);
           const pageSize = Number(q.pageSize ?? 10);
           const totalItems = mapped.length;
+          const totalDescargables = mapped.filter((r) => r.canDownload).length;
           const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
           const start = (page - 1) * pageSize;
           const items = mapped.slice(start, start + pageSize);
@@ -153,6 +156,7 @@ export class ConsultaAprobadosApiService {
           return {
             items,
             totalItems,
+            totalDescargables,
             totalPages,
             page,
             pageSize,

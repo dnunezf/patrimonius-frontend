@@ -1,13 +1,13 @@
 <div class="ext-page">
   <section class="banner">
-    <h2>Documentos aprobados disponibles</h2>
+    <h2>Consulta de documentos</h2>
     <p>
-      Solo se listan documentos en estado <strong>aprobado</strong> para consulta pública, y únicamente
-      aquellos a los que usted tiene permiso de acceso. Solo lectura; la descarga depende de los permisos
-      asignados.
+      El listado puede incluir documentos archivados a los que aún no tiene acceso. Solo cuenta como
+      <strong>aprobado para descarga</strong> quien tiene permiso explícito (solicitud aprobada o asignación
+      VIEW). El resto puede solicitar acceso desde la tabla.
     </p>
     <div class="banner-meta">
-      <span class="pill ok">{{ totalItems }} documentos aprobados</span>
+      <span class="pill ok">{{ totalDescargables }} con descarga aprobada</span>
       <span class="hint">Acceso autorizado · Solo lectura</span>
     </div>
   </section>
@@ -184,4 +184,62 @@
     (closed)="cerrarSolicitud()"
     (created)="solicitudCreada()"
   ></app-solicitud-acceso-dialog>
+
+  <div
+    class="overlay overlay--alert"
+    *ngIf="browserDownloadHintOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="browser-download-hint-title"
+    (click)="cancelarAvisoDescarga()"
+  >
+    <div class="modal modal--info" (click)="$event.stopPropagation()">
+      <header class="modal--info__head">
+        <h3 id="browser-download-hint-title">Aviso del navegador</h3>
+      </header>
+      <div class="modal--info__body">
+        <p>
+          Al guardar el PDF, <strong>su navegador</strong> (Chrome, Edge, etc.) puede mostrar un
+          mensaje propio pidiendo permiso para descargar archivos (“Descargar varios archivos” o
+          descargas automáticas). Es una medida de seguridad: <strong>no</strong> la controla
+          Patrimonius.
+        </p>
+        <p class="muted small">
+          Pulse <strong>Permitir</strong> en ese cuadro si desea guardar el documento. Si ya lo
+          concedió antes, no volverá a preguntar en este sitio.
+        </p>
+        <label class="modal--info__check">
+          <input type="checkbox" [(ngModel)]="noMostrarAvisoDescarga" />
+          No volver a mostrar este aviso
+        </label>
+      </div>
+      <footer class="modal--info__foot">
+        <button type="button" class="btn ghost" (click)="cancelarAvisoDescarga()">Cancelar</button>
+        <button type="button" class="btn primary" (click)="confirmarAvisoDescarga()">
+          Continuar descarga
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <div
+    class="overlay overlay--alert"
+    *ngIf="downloadErrorOpen"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'download-err-title'"
+    (click)="cerrarErrorDescarga()"
+  >
+    <div class="modal modal--alert" (click)="$event.stopPropagation()">
+      <header class="modal--alert__head">
+        <h3 id="download-err-title">{{ downloadErrorTitle }}</h3>
+      </header>
+      <div class="modal--alert__body">
+        <p>{{ downloadErrorMessage }}</p>
+      </div>
+      <footer class="modal--alert__foot">
+        <button type="button" class="btn primary" (click)="cerrarErrorDescarga()">Entendido</button>
+      </footer>
+    </div>
+  </div>
 </div>
