@@ -119,6 +119,9 @@ export class ConsultaAprobadosApiService {
     );
   }
 
+  /**
+   * Vista previa HU-025 (`assertCanAccess` + bitácora). Usa `/documents/:id/preview`.
+   */
   getPreview(documentoId: number): Observable<{
     documento_id: number;
     titulo: string;
@@ -134,7 +137,7 @@ export class ConsultaAprobadosApiService {
       contenido: string;
       prefer_signed_pdf_view?: boolean;
       signed_pdf_url?: string | null;
-    }>(`${environment.apiUrl}/documentos/${documentoId}/contenido`);
+    }>(`${this.base}/${documentoId}/preview`);
   }
 
   /**

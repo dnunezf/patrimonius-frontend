@@ -2,8 +2,9 @@
   min-height: 100vh;
   background: #f8fafc;
   font-family: system-ui, Segoe UI, Roboto, sans-serif;
-  padding: 0 1rem 2rem;
+  padding: 0 1.35rem 2.5rem;
   box-sizing: border-box;
+  font-size: 1.02rem;
 }
 
 .pill {
@@ -26,23 +27,25 @@
 }
 
 .banner {
-  max-width: 1100px;
+  max-width: 1320px;
   margin: 1.25rem auto 1rem;
-  padding: 1.25rem 1.5rem;
+  padding: 1.4rem 1.65rem;
   background: #e0f2fe;
   border-radius: 14px;
   border: 1px solid #bae6fd;
 }
 
 .banner h2 {
-  margin: 0 0 0.35rem;
-  font-size: 1.25rem;
+  margin: 0 0 0.45rem;
+  font-size: 1.35rem;
 }
 
 .banner p {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.85rem;
   color: #334155;
-  max-width: 80ch;
+  max-width: none;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .banner-meta {
@@ -58,7 +61,7 @@
 }
 
 .consulta-toolbar {
-  max-width: 1100px;
+  max-width: 1320px;
   margin: 0 auto 1.25rem;
   padding: 1.25rem 1.35rem;
   background: #fff;
@@ -259,7 +262,7 @@
 }
 
 .tabla {
-  max-width: 1100px;
+  max-width: 1320px;
   margin: 0 auto 2rem;
   padding: 0 1rem;
   box-sizing: border-box;

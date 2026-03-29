@@ -1,0 +1,54 @@
+<div class="page">
+  <header class="page__head">
+    <div>
+      <h1>Novedades</h1>
+      <p class="page__sub">
+        Aquí aparecen documentos <strong>aprobados</strong> o <strong>archivados</strong> que para el sistema se
+        consideran <strong>novedades de esta semana</strong> (de lunes a domingo), dentro de lo que su unidad y sus
+        permisos le permiten ver. La lista se actualiza al abrir la página o al pulsar <strong>Actualizar</strong>.
+      </p>
+    </div>
+    <div class="page__head-actions">
+      <button type="button" class="btn ghost" (click)="cargar()" [disabled]="loading">Actualizar</button>
+      <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    </div>
+  </header>
+
+  <p class="muted" *ngIf="semana">
+    Semana: <strong>{{ semana.desde }}</strong> al <strong>{{ semana.hasta }}</strong>
+  </p>
+
+  <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+  <section class="panel" *ngIf="!loading">
+    <p class="muted" *ngIf="novedades.length === 0">
+      No hay documentos nuevos para mostrar en esta semana, o ninguno coincide con su unidad y nivel de acceso.
+    </p>
+    <div class="table-scroll" *ngIf="novedades.length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Categoría</th>
+            <th>Unidad</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of novedades">
+            <td class="mono">{{ row.codigo }}</td>
+            <td>{{ row.titulo }}</td>
+            <td>{{ row.categoria_nombre || '—' }}</td>
+            <td>{{ row.unidad_nombre || '—' }}</td>
+            <td>{{ formatDate(row.fecha_aprobacion) }}</td>
+            <td><span class="badge">{{ row.estado }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="loading" *ngIf="loading">Cargando…</div>
+</div>

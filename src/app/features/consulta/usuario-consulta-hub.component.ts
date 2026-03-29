@@ -6,7 +6,7 @@ type HubCard = {
   title: string;
   badge: string;
   description: string;
-  icon: 'search' | 'eye' | 'doc' | 'clock' | 'box';
+  icon: 'search' | 'history' | 'doc' | 'sparkles' | 'star';
   route?: string;
   disabled?: boolean;
 };
@@ -31,31 +31,31 @@ export class UsuarioConsultaHubComponent {
     },
     {
       title: 'Mis consultas',
-      badge: '—',
-      description: 'Historial de documentos consultados',
-      icon: 'eye',
-      disabled: true,
+      badge: 'Historial',
+      description: 'Historial, descargas por documento y última descarga',
+      icon: 'history',
+      route: '/consulta/historial',
     },
     {
       title: 'Documentos recientes',
-      badge: '—',
-      description: 'Últimos documentos consultados',
+      badge: 'Top 3',
+      description: 'Últimos 3 documentos descargados (fecha y hora)',
       icon: 'doc',
-      disabled: true,
+      route: '/consulta/recientes',
     },
     {
       title: 'Novedades',
-      badge: '—',
-      description: 'Documentos recientemente publicados',
-      icon: 'clock',
-      disabled: true,
+      badge: 'Semana',
+      description: 'Aprobados o archivados ingresados esta semana',
+      icon: 'sparkles',
+      route: '/consulta/novedades',
     },
     {
       title: 'Favoritos',
-      badge: '—',
-      description: 'Documentos marcados como importantes',
-      icon: 'box',
-      disabled: true,
+      badge: '★',
+      description: 'Buscar, marcar con estrella y filtrar sus favoritos',
+      icon: 'star',
+      route: '/consulta/favoritos',
     },
   ];
 

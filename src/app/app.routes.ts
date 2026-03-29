@@ -123,6 +123,38 @@ export const routes: Routes = [
         (m) => m.ConsultaAprobadosExternoComponent,
       ),
   },
+  {
+    path: 'consulta/historial',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-historial.component').then(
+        (m) => m.ConsultaHistorialComponent,
+      ),
+  },
+  {
+    path: 'consulta/recientes',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-recientes.component').then(
+        (m) => m.ConsultaRecientesComponent,
+      ),
+  },
+  {
+    path: 'consulta/novedades',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-novedades.component').then(
+        (m) => m.ConsultaNovedadesComponent,
+      ),
+  },
+  {
+    path: 'consulta/favoritos',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-favoritos.component').then(
+        (m) => m.ConsultaFavoritosComponent,
+      ),
+  },
   /*{
     path: 'consulta/solicitud-externa',
     canActivate: [AuthGuard],

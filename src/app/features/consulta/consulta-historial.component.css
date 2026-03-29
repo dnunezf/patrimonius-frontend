@@ -1,0 +1,5 @@
+@import './consulta-subpanel.css';
+
+.table-scroll {
+  overflow-x: auto;
+}

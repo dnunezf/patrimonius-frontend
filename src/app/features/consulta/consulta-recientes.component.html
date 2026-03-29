@@ -1,0 +1,42 @@
+<div class="page">
+  <header class="page__head">
+    <div>
+      <h1>Documentos recientes</h1>
+      <p class="page__sub">
+        Un resumen rápido de su actividad: le mostramos hasta <strong>tres documentos distintos</strong> que ha
+        <strong>descargado</strong> recientemente. En cada fila verá la <strong>fecha y hora</strong> de la descarga
+        más reciente de ese documento, para que ubique en segundos lo que guardó por última vez.
+      </p>
+    </div>
+    <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+  </header>
+
+  <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+  <section class="panel" *ngIf="!loading">
+    <p class="muted" *ngIf="recientes.length === 0">
+      Cuando descargue un documento en PDF desde <strong>Buscar documentos</strong>, aparecerá automáticamente en
+      esta lista. Si acaba de empezar, todavía no hay descargas que mostrar.
+    </p>
+    <table class="data-table" *ngIf="recientes.length > 0">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Título</th>
+          <th>Estado</th>
+          <th>Última descarga</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of recientes">
+          <td class="mono">{{ r.codigo }}</td>
+          <td>{{ r.titulo }}</td>
+          <td><span class="badge">{{ r.estado }}</span></td>
+          <td>{{ formatDateTime(r.fecha) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="loading" *ngIf="loading">Cargando…</div>
+</div>

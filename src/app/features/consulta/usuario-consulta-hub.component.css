@@ -1,7 +1,7 @@
 .hub {
-  max-width: 1100px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 1.75rem 1.25rem 3rem;
+  padding: 2.25rem 1.75rem 3.5rem;
   font-family: system-ui, Segoe UI, Roboto, sans-serif;
   min-height: calc(100vh - 120px);
 }
@@ -11,39 +11,47 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.75rem;
+  gap: 1.25rem 1.75rem;
+  margin-bottom: 2.25rem;
+}
+
+.hub__header > div:first-child {
+  flex: 1 1 0;
+  min-width: min(100%, 300px);
 }
 
 .hub__header h1 {
-  margin: 0 0 0.4rem;
-  font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
   font-weight: 800;
   color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
 .hub__sub {
   margin: 0;
   color: #475569;
-  max-width: 48ch;
-  font-size: 1rem;
+  max-width: none;
+  font-size: 1.125rem;
+  line-height: 1.55;
+  text-wrap: balance;
 }
 
 .hub__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 1.35rem;
 }
 
 .card {
   display: flex;
-  gap: 0.85rem;
+  gap: 1.1rem;
   text-align: left;
-  padding: 1.1rem 1rem;
-  border-radius: 14px;
+  padding: 1.45rem 1.35rem;
+  border-radius: 16px;
   border: 1px solid #e8e8ef;
   background: #fff;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.07);
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
@@ -61,55 +69,46 @@
 
 .card__icon {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   background: linear-gradient(145deg, #fff7ed, #ffedd5);
   border: 1px solid #fed7aa;
   position: relative;
 }
 
+/* Mismo tamaño visual que la lupa en todos los iconos (emojis suelen escalar distinto en Windows) */
+.card__icon::after {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
 .card__icon[data-icon='search']::after {
   content: '🔍';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
 }
-.card__icon[data-icon='eye']::after {
-  content: '👁';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
+
+/* Historial: lista / expediente (la 👁 suele verse pequeña o rara según fuente) */
+.card__icon[data-icon='history']::after {
+  content: '📋';
 }
+
+/* Documento reciente: página con buen contraste a este tamaño */
 .card__icon[data-icon='doc']::after {
   content: '📄';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
-.card__icon[data-icon='clock']::after {
-  content: '🕐';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+
+/* Novedades de la semana */
+.card__icon[data-icon='sparkles']::after {
+  content: '✨';
 }
-.card__icon[data-icon='box']::after {
-  content: '📦';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+
+.card__icon[data-icon='star']::after {
+  content: '⭐';
 }
 
 .card__body {
@@ -121,32 +120,42 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
+  gap: 0.65rem;
+  margin-bottom: 0.45rem;
 }
 
 .card__title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.22rem;
   font-weight: 700;
   color: #c2410c;
+  line-height: 1.25;
 }
 
 .card__badge {
   flex-shrink: 0;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  padding: 0.15rem 0.45rem;
+  padding: 0.22rem 0.55rem;
   border-radius: 999px;
   background: #fff7ed;
   color: #9a3412;
 }
 
+.card__badge--star {
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.38rem 0.7rem;
+  color: #b45309;
+  border: 1px solid #fbbf24;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.2);
+}
+
 .card__desc {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 1.02rem;
   color: #64748b;
-  line-height: 1.35;
+  line-height: 1.45;
 }
 
 .card__hint {
@@ -159,11 +168,11 @@
 
 .btn {
   border: none;
-  border-radius: 10px;
-  padding: 0.5rem 0.9rem;
+  border-radius: 12px;
+  padding: 0.65rem 1.2rem;
   font-weight: 600;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .btn.ghost {
