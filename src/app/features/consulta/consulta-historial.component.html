@@ -3,21 +3,37 @@
     <div>
       <h1>Mis consultas</h1>
       <p class="page__sub">
-        Revise todo lo que ha hecho en la consulta de documentos: <strong>búsquedas</strong>, cuando abrió la
-        <strong>vista previa</strong> de un documento y cada <strong>descarga</strong> en PDF, con fecha y hora.
-        Más abajo puede ver, por documento, cuántas veces lo ha descargado y cuándo fue la última vez.
+        Revise lo que ha hecho en la consulta de documentos: <strong>búsquedas</strong>, <strong>vista previa</strong> y
+        <strong>descargas</strong> en PDF, con fecha y hora. La actividad se guarda en el sistema; puede
+        <strong>ocultar lo anterior</strong> con limpiar (no borra la auditoría institucional). Use
+        <strong>Restaurar vistas</strong> para volver a ver todo desde el principio.
       </p>
     </div>
-    <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    <div class="page__head-actions">
+      <button type="button" class="btn ghost" (click)="restaurarVistas()" [disabled]="!usuarioId">
+        Restaurar vistas
+      </button>
+      <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    </div>
   </header>
 
   <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
 
   <section class="panel" *ngIf="!loading">
-    <h2>Descargas por documento</h2>
-    <p class="muted" *ngIf="descargasPorDocumento.length === 0">
-      Aún no hay descargas registradas. Al descargar PDF desde la consulta, aparecerán aquí el conteo y la
-      última fecha y hora.
+    <div class="panel__toolbar">
+      <h2>Descargas por documento</h2>
+      <button
+        type="button"
+        class="btn ghost btn--sm"
+        (click)="limpiarDescargasPorDocumento()"
+        [disabled]="!usuarioId"
+      >
+        Limpiar tabla de descargas
+      </button>
+    </div>
+    <p class="muted" *ngIf="descargasPorDocumento.length === 0 && !loadingDescargas">
+      No hay filas que mostrar con los filtros actuales. Si usó “Limpiar”, solo verá descargas nuevas a partir de ese
+      momento.
     </p>
     <div class="table-scroll" *ngIf="descargasPorDocumento.length > 0">
       <table class="data-table">
@@ -39,11 +55,37 @@
         </tbody>
       </table>
     </div>
+    <div class="pager" *ngIf="descargasTotalPages > 1">
+      <button type="button" class="btn ghost" (click)="prevDescargas()" [disabled]="descargasPage <= 1">
+        Anterior
+      </button>
+      <span class="muted"
+        >Página {{ descargasPage }} / {{ descargasTotalPages }} ({{ descargasTotal }} documentos)</span
+      >
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextDescargas()"
+        [disabled]="descargasPage >= descargasTotalPages"
+      >
+        Siguiente
+      </button>
+    </div>
   </section>
 
   <section class="panel" *ngIf="!loading">
-    <h2>Historial detallado</h2>
-    <p class="muted" *ngIf="totalItems === 0">Sin actividad registrada aún.</p>
+    <div class="panel__toolbar">
+      <h2>Historial detallado</h2>
+      <button
+        type="button"
+        class="btn ghost btn--sm"
+        (click)="limpiarHistorialDetallado()"
+        [disabled]="!usuarioId"
+      >
+        Limpiar historial detallado
+      </button>
+    </div>
+    <p class="muted" *ngIf="totalItems === 0">Sin actividad registrada con los filtros actuales.</p>
     <div class="table-scroll" *ngIf="totalItems > 0">
       <table class="data-table">
         <thead>
@@ -67,9 +109,7 @@
       </table>
     </div>
     <div class="pager" *ngIf="totalPages > 1">
-      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="page <= 1">
-        Anterior
-      </button>
+      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="page <= 1">Anterior</button>
       <span class="muted">Página {{ page }} / {{ totalPages }}</span>
       <button type="button" class="btn ghost" (click)="nextPage()" [disabled]="page >= totalPages">
         Siguiente

@@ -37,6 +37,8 @@ export class ConsultaFavoritosComponent implements OnInit {
   favRows: ConsultaDocumentoRow[] = [];
   loadingFav = false;
   filtroFav = '';
+  favPage = 1;
+  favPageSize = 10;
 
   ngOnInit(): void {
     const u = this.auth.currentUser?.();
@@ -119,6 +121,38 @@ export class ConsultaFavoritosComponent implements OnInit {
         .toLowerCase()
         .includes(t),
     );
+  }
+
+  get favoritosPagina(): ConsultaDocumentoRow[] {
+    const all = this.favoritosFiltrados;
+    const start = (this.favPage - 1) * this.favPageSize;
+    return all.slice(start, start + this.favPageSize);
+  }
+
+  get favTotalPages(): number {
+    return Math.max(1, Math.ceil(this.favoritosFiltrados.length / this.favPageSize));
+  }
+
+  limpiarFavoritos(): void {
+    if (!this.usuarioId) return;
+    if (
+      !confirm(
+        '¿Quitar todos los favoritos guardados en este navegador? Esta acción no se puede deshacer.',
+      )
+    ) {
+      return;
+    }
+    this.fav.clearAll(this.usuarioId);
+    this.favPage = 1;
+    this.loadFavorites();
+  }
+
+  prevFavPage(): void {
+    if (this.favPage > 1) this.favPage--;
+  }
+
+  nextFavPage(): void {
+    if (this.favPage < this.favTotalPages) this.favPage++;
   }
 
   formatDate(iso: string | null | undefined): string {

@@ -3,26 +3,28 @@
     <div>
       <h1>Novedades</h1>
       <p class="page__sub">
-        Aquí aparecen documentos <strong>aprobados</strong> o <strong>archivados</strong> que para el sistema se
-        consideran <strong>novedades de esta semana</strong> (de lunes a domingo), dentro de lo que su unidad y sus
-        permisos le permiten ver. La lista se actualiza al abrir la página o al pulsar <strong>Actualizar</strong>.
+        Documentos <strong>aprobados</strong> o <strong>archivados</strong> cuya fecha efectiva cae en la
+        <strong>semana calendario actual</strong> (de lunes a domingo), según sus permisos y unidad. Puede
+        <strong>limpiar la vista</strong> o <strong>restaurar</strong> el listado.
       </p>
     </div>
     <div class="page__head-actions">
       <button type="button" class="btn ghost" (click)="cargar()" [disabled]="loading">Actualizar</button>
+      <button type="button" class="btn ghost" (click)="restaurar()" [disabled]="!usuarioId">Restaurar vista</button>
+      <button type="button" class="btn ghost" (click)="limpiar()" [disabled]="!usuarioId">Limpiar novedades</button>
       <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
     </div>
   </header>
 
-  <p class="muted" *ngIf="semana">
-    Semana: <strong>{{ semana.desde }}</strong> al <strong>{{ semana.hasta }}</strong>
+  <p class="muted" *ngIf="periodo">
+    Semana: <strong>{{ periodo.desde }}</strong> al <strong>{{ periodo.hasta }}</strong> (lunes a domingo)
   </p>
 
   <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
 
   <section class="panel" *ngIf="!loading">
     <p class="muted" *ngIf="novedades.length === 0">
-      No hay documentos nuevos para mostrar en esta semana, o ninguno coincide con su unidad y nivel de acceso.
+      No hay documentos que mostrar con los filtros actuales, o ninguno coincide con su unidad y nivel de acceso.
     </p>
     <div class="table-scroll" *ngIf="novedades.length > 0">
       <table class="data-table">
@@ -47,6 +49,13 @@
           </tr>
         </tbody>
       </table>
+    </div>
+    <div class="pager" *ngIf="totalPages > 1">
+      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="page <= 1">Anterior</button>
+      <span class="muted">Página {{ page }} / {{ totalPages }} ({{ totalItems }} documentos)</span>
+      <button type="button" class="btn ghost" (click)="nextPage()" [disabled]="page >= totalPages">
+        Siguiente
+      </button>
     </div>
   </section>
 
