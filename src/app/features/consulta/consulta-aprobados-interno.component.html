@@ -117,23 +117,34 @@
               <span class="badge ok">{{ row.estadoEtiqueta || row.estado }}</span>
             </td>
             <td class="actions-cell">
-              <button
-                type="button"
-                class="btn sm ghost"
-                (click)="ver(row)"
-                [disabled]="row.canDownload === false"
-                title="Vista previa del documento (solo lectura, sin descargar)"
-              >
-                Vista previa
-              </button>
-              <button
-                type="button"
-                class="btn sm primary"
-                (click)="descargar(row)"
-                [disabled]="row.canDownload === false"
-              >
-                Descargar
-              </button>
+              <ng-container *ngIf="tieneAccesoAlDocumento(row)">
+                <button
+                  type="button"
+                  class="btn sm ghost"
+                  (click)="ver(row)"
+                  title="Vista previa del documento (solo lectura, sin descargar)"
+                >
+                  Vista previa
+                </button>
+                <button
+                  type="button"
+                  class="btn sm primary"
+                  (click)="descargar(row)"
+                  title="Descargar documento"
+                >
+                  Descargar
+                </button>
+              </ng-container>
+              <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
+                <button
+                  type="button"
+                  class="btn sm outline"
+                  (click)="abrirSolicitud(row)"
+                  title="Solicitar acceso a este documento archivado"
+                >
+                  Solicitar acceso
+                </button>
+              </ng-container>
             </td>
           </tr>
         </tbody>
@@ -252,4 +263,13 @@
       </footer>
     </div>
   </div>
+
+  <app-solicitud-acceso-dialog
+    [open]="solicitudOpen"
+    [documento]="selectedDocumento"
+    [usuarioSolicitanteId]="usuarioSolicitanteId"
+    [usuarioNombre]="usuarioSolicitanteNombre"
+    (closed)="cerrarSolicitud()"
+    (created)="solicitudCreada()"
+  ></app-solicitud-acceso-dialog>
 </div>

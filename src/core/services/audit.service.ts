@@ -146,11 +146,53 @@ export interface PermissionBitacoraPage {
   hasPrev: boolean;
 }
 
+/** Lista: Bitacora_Base + Bitacora_Actividad_Usuario. */
+export interface UserActivityBitacoraItem {
+  id_evento: number;
+  fecha_hora: string;
+  usuario: string | null;
+  accion: string | null;
+  resultado: string | null;
+  actividad: string | null;
+  recurso: string | null;
+  documento_titulo: string | null;
+  documento_codigo_unico: string | null;
+  parametros_resumen: string | null;
+}
+
+export interface UserActivityBitacoraDetail {
+  id_evento: number;
+  fecha_evento: string;
+  usuario_id: number | null;
+  usuario_email: string | null;
+  usuario_nombre_completo: string | null;
+  rol_usuario: string | null;
+  accion: string | null;
+  resultado: string | null;
+  documento_id: number | null;
+  documento_titulo: string | null;
+  documento_numero_serie: string | null;
+  actividad: string | null;
+  recurso: string | null;
+  parametros: string | null;
+}
+
+export interface UserActivityBitacoraPage {
+  items: UserActivityBitacoraItem[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 
 @Injectable({ providedIn: 'root' })
 export class AuditService {
   private base = `${environment.apiUrl}/audit`;
   private permissionBitacoraBase = `${environment.apiUrl}/audit/permission-bitacora`;
+  private bitacoraActividadBase = `${environment.apiUrl}/audit/bitacora-actividad`;
 
   constructor(private http: HttpClient) {}
 
@@ -332,6 +374,77 @@ export class AuditService {
       .get<{ items: string[]; totalItems?: number }>(
         `${this.permissionBitacoraBase}/estado-flujo`,
       )
+      .pipe(map((res) => res.items || []));
+  }
+
+  /** Bitácora de actividad de usuario (Base + Bitacora_Actividad_Usuario). */
+  listUserActivityBitacoraEvents(opts: {
+    page?: number;
+    pageSize?: number;
+    q?: string;
+    usuario?: string;
+    documento?: string;
+    actividad?: string;
+    recurso?: string;
+    resultado?: string;
+    from?: string;
+    to?: string;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+  }) {
+    const o = opts || {};
+    const page = o.page ?? 1;
+    const pageSize = o.pageSize ?? 25;
+    const sortBy = (o.sortBy && String(o.sortBy).trim()) || 'fecha_hora';
+    const sortDir =
+      o.sortDir === 'asc' || o.sortDir === 'desc' ? o.sortDir : 'desc';
+
+    let params = new HttpParams()
+      .set('page', String(page))
+      .set('pageSize', String(pageSize))
+      .set('sortBy', sortBy)
+      .set('sortDir', sortDir);
+
+    const optional: (keyof typeof o)[] = [
+      'q',
+      'usuario',
+      'documento',
+      'actividad',
+      'recurso',
+      'resultado',
+      'from',
+      'to',
+    ];
+    for (const key of optional) {
+      const v = o[key];
+      if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+        params = params.set(String(key), String(v));
+      }
+    }
+
+    return this.http.get<UserActivityBitacoraPage>(
+      `${this.bitacoraActividadBase}/events`,
+      { params },
+    );
+  }
+
+  getUserActivityBitacoraDetail(id: number): Observable<UserActivityBitacoraDetail> {
+    return this.http
+      .get<{ item: UserActivityBitacoraDetail }>(
+        `${this.bitacoraActividadBase}/events/${id}`,
+      )
+      .pipe(map((res) => res.item));
+  }
+
+  getUserActivityBitacoraActividades(): Observable<string[]> {
+    return this.http
+      .get<{ items: string[] }>(`${this.bitacoraActividadBase}/actividades`)
+      .pipe(map((res) => res.items || []));
+  }
+
+  getUserActivityBitacoraRecursos(): Observable<string[]> {
+    return this.http
+      .get<{ items: string[] }>(`${this.bitacoraActividadBase}/recursos`)
       .pipe(map((res) => res.items || []));
   }
 }

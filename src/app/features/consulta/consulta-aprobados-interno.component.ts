@@ -16,11 +16,12 @@ import {
   ConsultaFiltrosOpciones,
 } from '../../../core/services/consulta-aprobados-api.service';
 import { onConsultaPreviewLinkClick } from './consulta-preview-link.util';
+import { SolicitudAccesoDialogComponent } from './solicitud-acceso-dialog-component';
 
 @Component({
   selector: 'app-consulta-aprobados-interno',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SolicitudAccesoDialogComponent],
   templateUrl: './consulta-aprobados-interno.component.html',
   styleUrls: ['./consulta-aprobados-interno.component.css'],
 })
@@ -71,6 +72,11 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public downloadErrorOpen = false;
   public downloadErrorTitle = 'No se pudo descargar';
   public downloadErrorMessage = '';
+
+  public solicitudOpen = false;
+  public selectedDocumento: ConsultaDocumentoRow | null = null;
+  public usuarioSolicitanteId: number | null = null;
+  public usuarioSolicitanteNombre = 'Usuario autenticado';
 
   /** Unidad con la que filtra el API (solo aplica a internos que no son administrador). */
   public filtroUnidadUsuario: number | null = null;
@@ -150,6 +156,27 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       this.page++;
       this.load();
     }
+  }
+
+  /**
+   * Fila con permiso de vista/descarga en consulta (el API suele omitir flags = acceso pleno).
+   */
+  public tieneAccesoAlDocumento(row: ConsultaDocumentoRow): boolean {
+    return row.canDownload !== false && row.canPreview !== false;
+  }
+
+  public abrirSolicitud(row: ConsultaDocumentoRow): void {
+    this.selectedDocumento = row;
+    this.solicitudOpen = true;
+  }
+
+  public cerrarSolicitud(): void {
+    this.solicitudOpen = false;
+    this.selectedDocumento = null;
+  }
+
+  public solicitudCreada(): void {
+    this.cerrarSolicitud();
   }
 
   public formatDate(iso: string | null | undefined): string {

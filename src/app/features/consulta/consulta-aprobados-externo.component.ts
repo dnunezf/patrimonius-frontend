@@ -98,6 +98,11 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     return Math.min(this.page * this.pageSize, this.totalItems);
   }
 
+  /** Permiso VIEW explícito (consulta externa / HU-024). */
+  tieneAccesoAlDocumento(row: ConsultaDocumentoRow): boolean {
+    return row.canDownload === true;
+  }
+
   ngOnInit(): void {
     this.api.getFilterOptions(true).subscribe({
       next: (f) => {

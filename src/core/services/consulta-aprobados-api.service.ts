@@ -147,18 +147,16 @@ export class ConsultaAprobadosApiService {
   }
 
   /**
-   * Descarga PDF vía ruta de firma (acceso VW / Permiso_Usuario). Usada por panel externo.
+   * HU-025 / HU-027: misma ruta que interno — `GET /documents/:id/download`
+   * (assertCanAccess + bitácora DESCARGA; permiso VIEW para externos).
+   * No usar `/documentos/.../firma/descargar/pdf` aquí: esa ruta no registra consulta.
    */
   download(documentoId: number): Observable<Blob> {
-    return this.http.get(
-      `${environment.apiUrl}/documentos/${documentoId}/firma/descargar/pdf`,
-      { responseType: 'blob' },
-    );
+    return this.downloadConsulta(documentoId);
   }
 
   /**
-   * HU-025: descarga alineada con la búsqueda (`assertCanAccess` en backend).
-   * Preferir en panel de consulta interno para evitar 403 cuando el listado ya autorizó el documento.
+   * HU-025: descarga alineada con la búsqueda (`assertCanAccess` + bitácora).
    */
   downloadConsulta(documentoId: number): Observable<Blob> {
     return this.http.get(`${this.base}/${documentoId}/download`, {
