@@ -38,8 +38,8 @@ export class UsuarioConsultaHubComponent {
     },
     {
       title: 'Documentos recientes',
-      badge: 'Top 3',
-      description: 'Últimos 3 documentos descargados (fecha y hora)',
+      badge: 'Top 15',
+      description: 'Hasta 15 documentos distintos por última descarga',
       icon: 'doc',
       route: '/consulta/recientes',
     },

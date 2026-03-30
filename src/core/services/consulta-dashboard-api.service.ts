@@ -4,7 +4,14 @@ import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
 import { ConsultaDocumentoRow } from './consulta-aprobados-api.service';
 
+export type ConsultaDashboardPeriodo = {
+  desde: string;
+  hasta: string;
+};
+
 export type ConsultaDashboardResumen = {
+  periodo?: ConsultaDashboardPeriodo;
+  /** @deprecated usar periodo */
   semana: { desde: string; hasta: string };
   recientes: {
     documento_id: number;
@@ -13,6 +20,10 @@ export type ConsultaDashboardResumen = {
     titulo: string;
     estado: string;
   }[];
+  recientesTotal?: number;
+  recientesTotalPages?: number;
+  recientesPage?: number;
+  recientesPageSize?: number;
   descargasPorDocumento: {
     documento_id: number;
     codigo: string;
@@ -20,7 +31,25 @@ export type ConsultaDashboardResumen = {
     veces: number;
     ultima_descarga: string;
   }[];
+  descargasTotal?: number;
+  descargasTotalPages?: number;
+  descargasPage?: number;
+  descargasPageSize?: number;
   novedades: ConsultaDocumentoRow[];
+  novedadesTotal?: number;
+  novedadesTotalPages?: number;
+  novedadesPage?: number;
+  novedadesPageSize?: number;
+};
+
+export type ConsultaResumenQuery = {
+  recientesDesde?: string | null;
+  descargasPage?: number;
+  descargasPageSize?: number;
+  descargasDesde?: string | null;
+  novedadesPage?: number;
+  novedadesPageSize?: number;
+  novedadesDesde?: string | null;
 };
 
 export type ConsultaHistorialItem = {
@@ -46,20 +75,39 @@ export class ConsultaDashboardApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/documents`;
 
-  getResumen(): Observable<ConsultaDashboardResumen> {
+  getResumen(q?: ConsultaResumenQuery): Observable<ConsultaDashboardResumen> {
+    let params = new HttpParams();
+    const o = q || {};
+    if (o.recientesDesde)
+      params = params.set('recientesDesde', o.recientesDesde);
+    if (o.descargasPage != null)
+      params = params.set('descargasPage', String(o.descargasPage));
+    if (o.descargasPageSize != null)
+      params = params.set('descargasPageSize', String(o.descargasPageSize));
+    if (o.descargasDesde)
+      params = params.set('descargasDesde', o.descargasDesde);
+    if (o.novedadesPage != null)
+      params = params.set('novedadesPage', String(o.novedadesPage));
+    if (o.novedadesPageSize != null)
+      params = params.set('novedadesPageSize', String(o.novedadesPageSize));
+    if (o.novedadesDesde)
+      params = params.set('novedadesDesde', o.novedadesDesde);
     return this.http.get<ConsultaDashboardResumen>(
       `${this.base}/consulta-dashboard/resumen`,
+      { params },
     );
   }
 
   getHistorial(query: {
     page?: number;
     pageSize?: number;
+    desde?: string | null;
   }): Observable<ConsultaHistorialResponse> {
     let params = new HttpParams();
     if (query.page != null) params = params.set('page', String(query.page));
     if (query.pageSize != null)
       params = params.set('pageSize', String(query.pageSize));
+    if (query.desde) params = params.set('desde', query.desde);
     return this.http.get<ConsultaHistorialResponse>(
       `${this.base}/consulta-dashboard/historial`,
       { params },

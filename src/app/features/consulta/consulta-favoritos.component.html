@@ -8,7 +8,9 @@
         estrella. Use el filtro de texto para acotar la lista de favoritos.
       </p>
     </div>
-    <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    <div class="page__head-actions">
+      <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    </div>
   </header>
 
   <section class="panel">
@@ -77,12 +79,23 @@
   </section>
 
   <section class="panel">
-    <h2>Mis favoritos ({{ favRows.length }})</h2>
+    <div class="panel__toolbar">
+      <h2>Mis favoritos ({{ favRows.length }})</h2>
+      <button
+        type="button"
+        class="btn ghost btn--sm"
+        (click)="limpiarFavoritos()"
+        [disabled]="!usuarioId || favRows.length === 0"
+      >
+        Limpiar favoritos
+      </button>
+    </div>
     <div class="fav-filter">
       <label>Filtrar en favoritos</label>
       <input
         type="search"
         [(ngModel)]="filtroFav"
+        (ngModelChange)="favPage = 1"
         placeholder="Filtrar por código, título, categoría o unidad…"
       />
     </div>
@@ -101,7 +114,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of favoritosFiltrados">
+          <tr *ngFor="let row of favoritosPagina">
             <td class="data-table__star-cell">
               <button
                 type="button"
@@ -120,6 +133,15 @@
           </tr>
         </tbody>
       </table>
+    </div>
+    <div class="pager" *ngIf="favoritosFiltrados.length > 0 && favTotalPages > 1">
+      <button type="button" class="btn ghost" (click)="prevFavPage()" [disabled]="favPage <= 1">
+        Anterior
+      </button>
+      <span class="muted">Página {{ favPage }} / {{ favTotalPages }}</span>
+      <button type="button" class="btn ghost" (click)="nextFavPage()" [disabled]="favPage >= favTotalPages">
+        Siguiente
+      </button>
     </div>
     <p class="muted" *ngIf="favRows.length > 0 && favoritosFiltrados.length === 0">
       Ningún favorito coincide con el filtro.

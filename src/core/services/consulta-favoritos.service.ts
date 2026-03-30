@@ -52,4 +52,15 @@ export class ConsultaFavoritosService {
   private setIds(usuarioId: number, ids: number[]): void {
     localStorage.setItem(this.key(usuarioId), JSON.stringify(ids));
   }
+
+  /** Quita todos los favoritos guardados en este navegador para el usuario. */
+  clearAll(usuarioId: number): void {
+    if (!Number.isFinite(usuarioId) || usuarioId <= 0) return;
+    try {
+      localStorage.removeItem(this.key(usuarioId));
+    } catch {
+      /* ignore */
+    }
+  }
 }
+

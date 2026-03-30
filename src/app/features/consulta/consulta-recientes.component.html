@@ -3,39 +3,48 @@
     <div>
       <h1>Documentos recientes</h1>
       <p class="page__sub">
-        Un resumen rápido de su actividad: le mostramos hasta <strong>tres documentos distintos</strong> que ha
-        <strong>descargado</strong> recientemente. En cada fila verá la <strong>fecha y hora</strong> de la descarga
-        más reciente de ese documento, para que ubique en segundos lo que guardó por última vez.
+        Los <strong>15 documentos distintos</strong> que haya <strong>descargado</strong> más recientemente en PDF
+        (ordenados por la última descarga de cada uno). Es un resumen corto, pensado para alto volumen de consultas;
+        el detalle completo sigue en <strong>Mis consultas</strong>. Puede <strong>limpiar la vista</strong> o
+        <strong>restaurar</strong> como antes.
       </p>
     </div>
-    <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    <div class="page__head-actions">
+      <button type="button" class="btn ghost" (click)="restaurar()" [disabled]="!usuarioId">Restaurar vista</button>
+      <button type="button" class="btn ghost" (click)="limpiar()" [disabled]="!usuarioId">Limpiar recientes</button>
+      <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    </div>
   </header>
 
   <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
 
   <section class="panel" *ngIf="!loading">
     <p class="muted" *ngIf="recientes.length === 0">
-      Cuando descargue un documento en PDF desde <strong>Buscar documentos</strong>, aparecerá automáticamente en
-      esta lista. Si acaba de empezar, todavía no hay descargas que mostrar.
+      No hay filas que mostrar. Si usó “Limpiar”, solo verá descargas nuevas después de ese momento.
     </p>
-    <table class="data-table" *ngIf="recientes.length > 0">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Título</th>
-          <th>Estado</th>
-          <th>Última descarga</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let r of recientes">
-          <td class="mono">{{ r.codigo }}</td>
-          <td>{{ r.titulo }}</td>
-          <td><span class="badge">{{ r.estado }}</span></td>
-          <td>{{ formatDateTime(r.fecha) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <p class="muted" *ngIf="recientes.length > 0">
+      Mostrando hasta <strong>{{ topRecientes }}</strong> documentos
+    </p>
+    <div class="table-scroll" *ngIf="recientes.length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Estado</th>
+            <th>Última descarga</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of recientes">
+            <td class="mono">{{ r.codigo }}</td>
+            <td>{{ r.titulo }}</td>
+            <td><span class="badge">{{ r.estado }}</span></td>
+            <td>{{ formatDateTime(r.fecha) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <div class="loading" *ngIf="loading">Cargando…</div>
