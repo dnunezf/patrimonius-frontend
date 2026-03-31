@@ -157,37 +157,6 @@
               </div>
             </div>
 
-            <div class="metadata-box">
-              <div class="metadata-box__header">
-                <h3 class="section-title">Valores comunes opcionales</h3>
-              </div>
-
-              <div class="metadata-grid">
-                <div class="field">
-                  <label class="field__label">Fecha de creación</label>
-                  <input
-                    class="field__input"
-                    type="date"
-                    [(ngModel)]="metadataLoteDefaults.fechaCreacion"
-                  />
-                </div>
-
-                <div class="field">
-                  <label class="field__label">Unidad responsable</label>
-                  <input
-                    class="field__input"
-                    type="text"
-                    [(ngModel)]="metadataLoteDefaults.unidadResponsable"
-                    placeholder="Ej. Archivo Central"
-                  />
-                </div>
-              </div>
-
-              <p class="metadata-note">
-                Los metadatos específicos se completan por cada archivo en el panel derecho.
-              </p>
-            </div>
-
             <div class="alert alert--error" *ngIf="currentStep === 1 && errorMessage">
               {{ errorMessage }}
             </div>
@@ -239,7 +208,7 @@
                   <div class="file-card__content">
                     <div class="file-card__name">{{ getFileDisplayName(entry.file) }}</div>
                     <div class="file-card__meta">
-                      {{ (entry.file.size / 1024 / 1024).toFixed(2) }} MB
+                      {{ formatTamano(entry.file.size) }}
                     </div>
                   </div>
 
@@ -264,7 +233,7 @@
             <div class="metadata-editor" *ngIf="activeDocumentEntry as active">
               <h3 class="section-title">Metadatos del documento</h3>
               <p class="metadata-note">
-                Edita los metadatos del archivo seleccionado.
+                Completa los metadatos archivísticos del archivo seleccionado.
               </p>
 
               <div class="field">
@@ -272,51 +241,183 @@
                 <div class="field__static">{{ getFileDisplayName(active.file) }}</div>
               </div>
 
-              <div class="metadata-grid">
-                <div class="field">
-                  <label class="field__label">Título *</label>
-                  <input
-                    class="field__input"
-                    type="text"
-                    [(ngModel)]="active.metadata.title"
-                    placeholder="Título del documento"
-                  />
+              <!-- AUTOMÁTICOS -->
+              <div class="metadata-box">
+                <div class="metadata-box__header">
+                  <h3 class="section-title">Metadatos automáticos</h3>
                 </div>
 
-                <div class="field">
-                  <label class="field__label">Palabras clave (CSV)</label>
-                  <input
-                    class="field__input"
-                    type="text"
-                    [(ngModel)]="active.metadata.keywords"
-                    placeholder="contrato, servicios, ana"
-                  />
+                <div class="metadata-grid">
+                  <div class="field">
+                    <label class="field__label">Código de referencia *</label>
+                    <div class="field__static">{{ active.metadata.codigoReferencia }}</div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Tamaño *</label>
+                    <div class="field__static">
+                      {{ formatTamano(active.metadata.tamanoBytes) }}
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Formato *</label>
+                    <div class="field__static">{{ active.metadata.formato }}</div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Fecha de inicio *</label>
+                    <div class="field__static">{{ active.metadata.fechaInicio }}</div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Fecha de caducidad *</label>
+                    <div class="field__static">{{ active.metadata.fechaCaducidad }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MANUALES -->
+              <div class="metadata-box">
+                <div class="metadata-box__header">
+                  <h3 class="section-title">Metadatos manuales</h3>
                 </div>
 
-                <div class="field">
-                  <label class="field__label">Clase preliminar</label>
-                  <input
-                    class="field__input"
-                    type="text"
-                    [(ngModel)]="active.metadata.preliminaryClass"
-                    placeholder="CONTRATO"
-                  />
-                </div>
+                <div class="metadata-grid">
+                  <div class="field">
+                    <label class="field__label">Unidad productora *</label>
+                    <select
+                      class="field__input"
+                      [(ngModel)]="active.metadata.unidadProductoraId"
+                      (ngModelChange)="onUnidadChange(active)"
+                    >
+                      <option [ngValue]="null">Seleccione una unidad</option>
+                      <option
+                        *ngFor="let unidad of unidadesProductoras"
+                        [ngValue]="unidad.id"
+                      >
+                        {{ unidad.nombre }}
+                      </option>
+                    </select>
+                  </div>
 
-                <div class="field">
-                  <label class="field__label">Código de clasificación</label>
-                  <input
-                    class="field__input"
-                    type="text"
-                    [(ngModel)]="active.metadata.classificationCode"
-                    placeholder="LEG-2026-01"
-                  />
+                  <div class="field">
+                    <label class="field__label">Título del documento *</label>
+                    <input
+                      class="field__input"
+                      type="text"
+                      [(ngModel)]="active.metadata.tituloDocumento"
+                      placeholder="Título del documento"
+                    />
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Palabras clave</label>
+                    <input
+                      class="field__input"
+                      type="text"
+                      [(ngModel)]="active.metadata.palabrasClave"
+                      placeholder="acta, archivo, museo"
+                    />
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Nombre de productores / firmantes</label>
+                    <input
+                      class="field__input"
+                      type="text"
+                      [(ngModel)]="active.metadata.nombreProductores"
+                      placeholder="Ana Pérez, Luis Rojas"
+                    />
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Fecha del documento</label>
+                    <input
+                      class="field__input"
+                      type="date"
+                      [(ngModel)]="active.metadata.fechaDocumento"
+                    />
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Nivel de acceso *</label>
+                    <select
+                      class="field__input"
+                      [(ngModel)]="active.metadata.nivelAcceso"
+                    >
+                      <option
+                        *ngFor="let nivel of nivelesAcceso"
+                        [ngValue]="nivel.value"
+                      >
+                        {{ nivel.label }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Serie *</label>
+                    <select
+                      class="field__input"
+                      [(ngModel)]="active.metadata.serieId"
+                      (ngModelChange)="onSerieChange(active)"
+                    >
+                      <option [ngValue]="null">Seleccione una serie</option>
+                      <option *ngFor="let serie of series" [ngValue]="serie.id">
+                        {{ serie.nombre }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Subserie</label>
+                    <select
+                      class="field__input"
+                      [(ngModel)]="active.metadata.subserieId"
+                      (ngModelChange)="onSubserieChange(active)"
+                    >
+                      <option [ngValue]="null">Seleccione una subserie</option>
+                      <option
+                        *ngFor="let subserie of active.subseriesDisponibles"
+                        [ngValue]="subserie.id"
+                      >
+                        {{ subserie.nombre }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Expediente *</label>
+                    <select
+                      class="field__input"
+                      [(ngModel)]="active.metadata.expedienteId"
+                    >
+                      <option [ngValue]="null">Seleccione un expediente</option>
+                      <option
+                        *ngFor="let expediente of active.expedientesDisponibles"
+                        [ngValue]="expediente.id"
+                      >
+                        {{ expediente.nombre }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label class="field__label">Plazo de conservación</label>
+                    <input
+                      class="field__input"
+                      type="number"
+                      [(ngModel)]="active.metadata.plazoConservacionAnios"
+                      (ngModelChange)="onPlazoChange(active)"
+                      placeholder="Ej. 5"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
             <div class="alert alert--error" *ngIf="hasMissingTitles">
-              Debes completar el título de todos los documentos antes de cargar el lote.
+              Debes completar los campos obligatorios de todos los documentos antes de cargar el lote.
             </div>
           </section>
 
@@ -341,7 +442,15 @@
                 >
                   <span class="doc-select-item__name">{{ getFileDisplayName(entry.file) }}</span>
                   <span class="doc-select-item__meta">
-                    {{ entry.metadata.title.trim() ? 'Título listo' : 'Falta título' }}
+                    {{
+                      entry.metadata.unidadProductoraId &&
+                      entry.metadata.tituloDocumento.trim() &&
+                      entry.metadata.nivelAcceso &&
+                      entry.metadata.serieId &&
+                      entry.metadata.expedienteId
+                        ? 'Metadatos obligatorios listos'
+                        : 'Faltan campos obligatorios'
+                    }}
                   </span>
                 </button>
               </div>

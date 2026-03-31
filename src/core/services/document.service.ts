@@ -141,6 +141,55 @@ export interface ConfirmSignatureResponse {
   firmas_requeridas?: number;
 }
 
+export interface ConfirmSignatureResponse {
+  ok?: boolean;
+  documento_id: number;
+  estado?: string;
+  firmas_obtenidas?: number;
+  firmas_requeridas?: number;
+}
+
+export interface UnidadOption {
+  id: number;
+  nombre: string;
+  descripcion?: string | null;
+}
+
+export interface SerieOption {
+  id: number;
+  codigo?: string;
+  nombre: string;
+  descripcion?: string | null;
+  unidad_id?: number;
+}
+
+export interface SubserieOption {
+  id: number;
+  codigo?: string;
+  nombre: string;
+  descripcion?: string | null;
+  serie_id: number;
+}
+
+export interface ExpedienteOption {
+  id: number;
+  codigo: string;
+  nombre: string;
+  descripcion?: string | null;
+  estado?: string;
+  unidad_id: number;
+  serie_id: number;
+  subserie_id?: number | null;
+  unidad_nombre?: string;
+  serie_nombre?: string;
+  subserie_nombre?: string | null;
+}
+
+export interface NivelAccesoOption {
+  value: 'PUBLIC' | 'INTERNAL' | 'HIGH' | 'RESTRICTED';
+  label: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   /** Base API URL configured per environment. */
@@ -661,6 +710,47 @@ export class DocumentService {
   deleteAnexo(documentId: number, anexoId: number): Observable<any> {
     return this.http.delete<any>(
       `${this.api}/documentos/${documentId}/anexos/${anexoId}`,
+    );
+  }
+  getUnidadesCatalogo(): Observable<UnidadOption[]> {
+    return this.http.get<UnidadOption[]>(
+      `${this.api}/api/carga-masiva/catalogos/unidades`
+    );
+  }
+
+  getSeriesCatalogo(): Observable<SerieOption[]> {
+    return this.http.get<SerieOption[]>(
+      `${this.api}/api/carga-masiva/catalogos/series`
+    );
+  }
+
+  getSubseriesCatalogo(serieId: number): Observable<SubserieOption[]> {
+    return this.http.get<SubserieOption[]>(
+      `${this.api}/api/carga-masiva/catalogos/subseries?serie_id=${serieId}`
+    );
+  }
+
+  getExpedientesCatalogo(filters: {
+    unidad_id?: number | null;
+    serie_id?: number | null;
+    subserie_id?: number | null;
+    estado?: string | null;
+  }): Observable<ExpedienteOption[]> {
+    const params = new URLSearchParams();
+
+    if (filters.unidad_id) params.set('unidad_id', String(filters.unidad_id));
+    if (filters.serie_id) params.set('serie_id', String(filters.serie_id));
+    if (filters.subserie_id) params.set('subserie_id', String(filters.subserie_id));
+    if (filters.estado) params.set('estado', String(filters.estado));
+
+    return this.http.get<ExpedienteOption[]>(
+      `${this.api}/api/carga-masiva/catalogos/expedientes?${params.toString()}`
+    );
+  }
+
+  getNivelesAccesoCatalogo(): Observable<NivelAccesoOption[]> {
+    return this.http.get<NivelAccesoOption[]>(
+      `${this.api}/api/carga-masiva/catalogos/niveles-acceso`
     );
   }
 }
