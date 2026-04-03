@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SecurityDetail } from '../../../../core/services/audit.service';
+import { SecurityDetail } from '../../../../../core/services/audit.service';
 
 @Component({
   selector: 'app-security-detail-modal',

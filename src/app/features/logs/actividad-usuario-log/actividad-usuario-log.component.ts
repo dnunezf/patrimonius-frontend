@@ -8,7 +8,7 @@ import {
   UserActivityBitacoraItem,
 } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
-import { ActividadUsuarioDetailModalComponent } from './actividad-usuario-detail-modal.component';
+import { ActividadUsuarioDetailModalComponent } from './actividad-usuario-detail-modal/actividad-usuario-detail-modal.component';
 
 @Component({
   selector: 'app-actividad-usuario-log',

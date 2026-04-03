@@ -51,7 +51,7 @@ export class LogQueriesComponent {
     {
       title: 'Bitácora de Actividad de Usuario',
       description:
-        'Registro de acciones sobre recursos del sistema enlazadas a Bitacora_Base: tipo de actividad, recurso afectado, parámetros y documento asociado cuando aplica.',
+        'Monitorea las descargas, búsquedas y visualización de documentos  conservación.',
       icon: 'users.png',
       funciones: [
         'Filtrar por usuario, actividad, recurso y fechas',
