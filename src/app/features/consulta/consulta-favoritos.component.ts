@@ -10,6 +10,7 @@ import {
 } from '../../../core/services/consulta-aprobados-api.service';
 import { ConsultaDashboardApiService } from '../../../core/services/consulta-dashboard-api.service';
 import { ConsultaFavoritosService } from '../../../core/services/consulta-favoritos.service';
+import { ConfirmService } from '../../shared/ui/confirm.service';
 
 @Component({
   selector: 'app-consulta-favoritos',
@@ -24,6 +25,7 @@ export class ConsultaFavoritosComponent implements OnInit {
   private readonly dash = inject(ConsultaDashboardApiService);
   private readonly fav = inject(ConsultaFavoritosService);
   private readonly router = inject(Router);
+  private readonly confirm = inject(ConfirmService);
 
   usuarioId = 0;
   filtros: ConsultaFiltrosOpciones | null = null;
@@ -133,15 +135,14 @@ export class ConsultaFavoritosComponent implements OnInit {
     return Math.max(1, Math.ceil(this.favoritosFiltrados.length / this.favPageSize));
   }
 
-  limpiarFavoritos(): void {
+  async limpiarFavoritos(): Promise<void> {
     if (!this.usuarioId) return;
-    if (
-      !confirm(
-        '¿Quitar todos los favoritos guardados en este navegador? Esta acción no se puede deshacer.',
-      )
-    ) {
-      return;
-    }
+    const ok = await this.confirm.ask(
+      '¿Quitar todos los favoritos guardados en este navegador? Esta acción no se puede deshacer.',
+      'Quitar favoritos',
+      { confirmLabel: 'Aceptar', cancelLabel: 'Cancelar' },
+    );
+    if (!ok) return;
     this.fav.clearAll(this.usuarioId);
     this.favPage = 1;
     this.loadFavorites();
