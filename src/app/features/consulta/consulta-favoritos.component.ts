@@ -132,7 +132,10 @@ export class ConsultaFavoritosComponent implements OnInit {
   }
 
   get favTotalPages(): number {
-    return Math.max(1, Math.ceil(this.favoritosFiltrados.length / this.favPageSize));
+    return Math.max(
+      1,
+      Math.ceil(this.favoritosFiltrados.length / this.favPageSize),
+    );
   }
 
   async limpiarFavoritos(): Promise<void> {
