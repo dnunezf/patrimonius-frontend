@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 import {
   AbstractControl,
@@ -145,96 +145,6 @@ export class ConservationIntakePageComponent {
 
     senderNameRole: [''],
     senderInstitution: [''],
-  });
-
-  readonly filteredSubseries = computed(() => {
-    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
-    if (!serieId) return [];
-    return this.subseries().filter((item) => item.serieId === serieId);
-  });
-
-  readonly filteredExpedientes = computed(() => {
-    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
-    const subserieId = this.archivalForm.get('subserieId')?.value;
-
-    return this.expedientes().filter((item) => {
-      if (serieId && item.serieId !== serieId) return false;
-      if (subserieId != null && item.subserieId !== Number(subserieId))
-        return false;
-      return true;
-    });
-  });
-
-  readonly eligibility = computed<EligibilityState>(() => {
-    const classificationReady = this.isClassificationReady();
-    const flowDataReady = this.hasRequiredFlowData();
-
-    return {
-      pdfa: !!this.selected()?.isPDFA,
-      signatures: !!this.selected()?.signaturesComplete,
-      officialCodeComplete: this.hasCompleteOfficialCode(),
-      requiredMetadata: this.hasRequiredArchivalMetadata(),
-      classificationReady,
-      flowDataReady,
-      duplicateChecked: this.duplicateState(),
-    };
-  });
-
-  readonly canSave = computed(() => {
-    const eligibility = this.eligibility();
-
-    return (
-      eligibility.pdfa &&
-      eligibility.signatures &&
-      eligibility.officialCodeComplete &&
-      eligibility.requiredMetadata &&
-      eligibility.classificationReady &&
-      eligibility.flowDataReady &&
-      eligibility.duplicateChecked === 'OK' &&
-      this.archivalForm.valid
-    );
-  });
-
-  readonly formErrorSummary = computed<string | null>(() => {
-    if (!this.archivalForm.touched) return null;
-    const missing: string[] = [];
-
-    if (!this.hasRequiredArchivalMetadata()) {
-      if (!this.archivalForm.getRawValue().producingUnit?.trim()) {
-        missing.push('Unidad productora');
-      }
-      if (!this.archivalForm.getRawValue().accessLevel) {
-        missing.push('Nivel de acceso');
-      }
-    }
-
-    if (!this.isClassificationReady()) {
-      missing.push('Serie');
-      missing.push('Expediente');
-    }
-
-    if (!this.archivalForm.get('retentionRuleId')?.value) {
-      missing.push('Regla de retención');
-    }
-
-    if (!this.hasRequiredFlowData()) {
-      if (this.currentFlow() === 'PRODUCED_SENT') {
-        if (!this.archivalForm.get('recipientNameRole')?.value?.trim()) {
-          missing.push('Destinatario (nombre y cargo)');
-        }
-        if (!this.archivalForm.get('recipientInstitution')?.value?.trim()) {
-          missing.push('Destinatario (institución)');
-        }
-        if (!this.archivalForm.get('dispatchEmails')?.value?.trim()) {
-          missing.push('Correos para despacho');
-        }
-      }
-    }
-
-    const unique = Array.from(new Set(missing));
-    return unique.length
-      ? `Campos obligatorios pendientes: ${unique.join(', ')}.`
-      : null;
   });
 
   constructor() {
@@ -504,6 +414,28 @@ export class ConservationIntakePageComponent {
     );
   }
 
+  filteredSubseries(): ArchivalSubseries[] {
+    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
+    if (!serieId) return [];
+
+    return this.subseries().filter((item) => Number(item.serieId) === serieId);
+  }
+
+  filteredExpedientes(): ArchivalExpediente[] {
+    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
+    const subserieId = this.archivalForm.get('subserieId')?.value as
+      | number
+      | null;
+
+    return this.expedientes().filter((item) => {
+      if (serieId && Number(item.serieId) !== serieId) return false;
+      if (subserieId != null) {
+        return Number(item.subserieId ?? 0) === Number(subserieId);
+      }
+      return true;
+    });
+  }
+
   selectedSerie(): ArchivalSeries | null {
     const id = Number(this.archivalForm.get('serieId')?.value || 0);
     return this.series().find((item) => item.id === id) || null;
@@ -574,6 +506,76 @@ export class ConservationIntakePageComponent {
     }
 
     return true;
+  }
+
+  eligibility(): EligibilityState {
+    return {
+      pdfa: !!this.selected()?.isPDFA,
+      signatures: !!this.selected()?.signaturesComplete,
+      officialCodeComplete: this.hasCompleteOfficialCode(),
+      requiredMetadata: this.hasRequiredArchivalMetadata(),
+      classificationReady: this.isClassificationReady(),
+      flowDataReady: this.hasRequiredFlowData(),
+      duplicateChecked: this.duplicateState(),
+    };
+  }
+
+  canSave(): boolean {
+    const eligibility = this.eligibility();
+
+    return (
+      eligibility.pdfa &&
+      eligibility.signatures &&
+      eligibility.officialCodeComplete &&
+      eligibility.requiredMetadata &&
+      eligibility.classificationReady &&
+      eligibility.flowDataReady &&
+      eligibility.duplicateChecked === 'OK' &&
+      this.archivalForm.valid
+    );
+  }
+
+  formErrorSummary(): string | null {
+    if (!this.archivalForm.touched) return null;
+
+    const missing: string[] = [];
+
+    if (!this.hasRequiredArchivalMetadata()) {
+      if (!this.archivalForm.getRawValue().producingUnit?.trim()) {
+        missing.push('Unidad productora');
+      }
+      if (!this.archivalForm.getRawValue().accessLevel) {
+        missing.push('Nivel de acceso');
+      }
+    }
+
+    if (!this.isClassificationReady()) {
+      if (!this.selectedSerie()) missing.push('Serie');
+      if (!this.selectedExpediente()) missing.push('Expediente');
+    }
+
+    if (!this.archivalForm.get('retentionRuleId')?.value) {
+      missing.push('Regla de retención');
+    }
+
+    if (!this.hasRequiredFlowData()) {
+      if (this.currentFlow() === 'PRODUCED_SENT') {
+        if (!this.archivalForm.get('recipientNameRole')?.value?.trim()) {
+          missing.push('Destinatario (nombre y cargo)');
+        }
+        if (!this.archivalForm.get('recipientInstitution')?.value?.trim()) {
+          missing.push('Destinatario (institución)');
+        }
+        if (!this.archivalForm.get('dispatchEmails')?.value?.trim()) {
+          missing.push('Correos para despacho');
+        }
+      }
+    }
+
+    const unique = Array.from(new Set(missing));
+    return unique.length
+      ? `Campos obligatorios pendientes: ${unique.join(', ')}.`
+      : null;
   }
 
   refreshRetentionEndDate(): void {
