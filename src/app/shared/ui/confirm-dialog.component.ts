@@ -19,10 +19,10 @@ import { ConfirmService } from './confirm.service';
         <p class="msg">{{ svc.text() }}</p>
         <div class="row">
           <button class="btn ghost" type="button" (click)="svc.resolve(false)">
-            Cancelar
+            {{ svc.cancelLabel() }}
           </button>
           <button class="btn danger" type="button" (click)="svc.resolve(true)">
-            Sí, continuar
+            {{ svc.confirmLabel() }}
           </button>
         </div>
       </div>
