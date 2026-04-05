@@ -1,0 +1,91 @@
+<div class="backdrop" *ngIf="open">
+  <div class="dialog">
+    <div class="dialog-header">
+      <div>
+        <h2>Asignar plazo de conservación</h2>
+        <p>Completa la información para registrar el plazo del documento.</p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        (click)="cerrar()"
+        aria-label="Cerrar"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="dialog-body" *ngIf="documento">
+      <div class="document-box">
+        <span class="label">Documento</span>
+        <strong>{{ documento.titulo }}</strong>
+        <small>ID: {{ documento.id }}</small>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="plazo_valor">Valor del plazo</label>
+          <input
+            id="plazo_valor"
+            type="number"
+            min="1"
+            [(ngModel)]="plazo_valor"
+            placeholder="Ej: 5"
+          />
+        </div>
+
+        <div class="field">
+          <label for="plazo_unidad">Unidad</label>
+          <select id="plazo_unidad" [(ngModel)]="plazo_unidad">
+            <option value="DIAS">Días</option>
+            <option value="MESES">Meses</option>
+            <option value="ANIOS">Años</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="plazo_tipo">Tipo de plazo</label>
+          <select id="plazo_tipo" [(ngModel)]="plazo_tipo">
+            <option value="ADMINISTRATIVO">Administrativo</option>
+            <option value="LEGAL">Legal</option>
+            <option value="HISTORICO">Histórico</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="fecha_inicio">Fecha de inicio</label>
+          <input
+            id="fecha_inicio"
+            type="date"
+            [(ngModel)]="fecha_inicio_conservacion"
+          />
+        </div>
+      </div>
+
+      <div *ngIf="error" class="error-box">
+        {{ error }}
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button
+        type="button"
+        class="btn secondary"
+        (click)="cerrar()"
+        [disabled]="loading"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn primary"
+        (click)="guardar()"
+        [disabled]="loading"
+      >
+        {{ loading ? 'Guardando...' : 'Guardar plazo' }}
+      </button>
+    </div>
+  </div>
+</div>

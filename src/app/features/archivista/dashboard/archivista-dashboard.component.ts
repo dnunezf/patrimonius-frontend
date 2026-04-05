@@ -1,33 +1,31 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import {FormsModule} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-archivista-dashboard',
+  standalone: true,
   templateUrl: './archivista-dashboard.component.html',
   styleUrls: ['./archivista-dashboard.component.css'],
-  imports: [
-    FormsModule
-  ]
+  imports: [FormsModule]
 })
 export class ArchivistaDashboardComponent {
-  // Variables para manejar la creación de Series y Subseries
   filters = { author: 'Todos', status: 'Todos' };
 
-  // Constructor donde inyectamos el Router
   constructor(private router: Router) {}
 
-  // Redirección a los formularios de creación
   CrearSerie_Subserie(): void {
     this.router.navigate(['/archivista/clasificacion']);
   }
 
-  // Métodos para los filtros
+  irGestionPlazos(): void {
+    this.router.navigate(['/archivista/gestion-plazos']);
+  }
+
   clearFilters(): void {
     this.filters = { author: 'Todos', status: 'Todos' };
   }
 
   applyFilters(): void {
-    // Aquí deberías añadir la lógica para aplicar los filtros si es necesario
   }
 }

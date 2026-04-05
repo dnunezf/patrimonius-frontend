@@ -7,7 +7,7 @@ import {ArchivistaDashboardComponent} from './features/archivista/dashboard/arch
 import {ArchivistaClasificacionComponent} from './features/archivista/clasificacion/archivista-clasificacion.component';
 import { ArchivistaSerieDialogComponent } from './features/archivista/seriecrear/archivista-serie-dialog.component';
 import { ArchivistaSubserieDialogComponent } from './features/archivista/subseriecrear/archivista-subserie-dialog.component';
-
+import { GestionPlazosComponent } from './features/archivista/gestion-plazos/gestion-plazos.component';
 
 
 export const routes: Routes = [
@@ -48,6 +48,11 @@ export const routes: Routes = [
   {
     path: 'archivista/crear-subserie',
     component: ArchivistaSubserieDialogComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'archivista/gestion-plazos',
+    component: GestionPlazosComponent,
     canActivate: [AuthGuard],
   },
 
