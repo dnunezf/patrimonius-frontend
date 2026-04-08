@@ -23,9 +23,9 @@ export interface DocumentoPlazoRow {
 
 export interface AsignarPlazoBody {
   plazo_valor: number;
-  plazo_unidad: 'DIAS' | 'MESES' | 'ANIOS';
-  plazo_tipo: 'ADMINISTRATIVO' | 'LEGAL' | 'HISTORICO';
+  plazo_unidad: 'DIAS' | 'MESES' | 'ANIOS';  // Asegúrate de que las unidades sean correctas
   fecha_inicio_conservacion: string;
+  fecha_vencimiento: string;  // Necesario para calcular la fecha de vencimiento
 }
 /**
  * Generic document model used by legacy/general document screens.
@@ -722,7 +722,7 @@ export class DocumentService {
     body: AsignarPlazoBody
   ): Observable<any> {
     return this.http.post(
-      `${this.api}/gestion-plazos/${documentoId}/asignar`,
+      `${this.api}/gestion-plazos/${documentoId}/asignar`, // Asegúrate de que la ruta esté correcta
       body
     );
   }

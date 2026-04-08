@@ -32,26 +32,18 @@
             min="1"
             [(ngModel)]="plazo_valor"
             placeholder="Ej: 5"
+            (ngModelChange)="calcularFechaVencimiento()"
           />
         </div>
 
         <div class="field">
           <label for="plazo_unidad">Unidad</label>
-          <select id="plazo_unidad" [(ngModel)]="plazo_unidad">
-            <option value="DIAS">Días</option>
-            <option value="MESES">Meses</option>
+          <select id="plazo_unidad" [(ngModel)]="plazo_unidad" disabled>
             <option value="ANIOS">Años</option>
           </select>
         </div>
 
-        <div class="field">
-          <label for="plazo_tipo">Tipo de plazo</label>
-          <select id="plazo_tipo" [(ngModel)]="plazo_tipo">
-            <option value="ADMINISTRATIVO">Administrativo</option>
-            <option value="LEGAL">Legal</option>
-            <option value="HISTORICO">Histórico</option>
-          </select>
-        </div>
+        <!-- El campo "Tipo de plazo" ha sido eliminado -->
 
         <div class="field">
           <label for="fecha_inicio">Fecha de inicio</label>
@@ -59,6 +51,18 @@
             id="fecha_inicio"
             type="date"
             [(ngModel)]="fecha_inicio_conservacion"
+            [value]="fecha_inicio_conservacion"
+            disabled
+          />
+        </div>
+
+        <div class="field">
+          <label for="fecha_vencimiento">Fecha de vencimiento</label>
+          <input
+            id="fecha_vencimiento"
+            type="date"
+            [value]="fecha_vencimiento"
+            disabled
           />
         </div>
       </div>

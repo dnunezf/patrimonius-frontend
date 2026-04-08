@@ -1,22 +1,14 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  EventEmitter,
-  Input,
-  OnChanges,
-  Output,
-  SimpleChanges
-} from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {AsignarPlazoBody, DocumentoPlazoRow, DocumentService} from '../../../../core/services/document.service';
-
+import { AsignarPlazoBody, DocumentoPlazoRow, DocumentService } from '../../../../core/services/document.service';
 
 @Component({
   selector: 'app-asignar-plazo-dialog',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './asignar-plazo-dialog.component.html',
-  styleUrl: './asignar-plazo-dialog.component.css'
+  styleUrls: ['./asignar-plazo-dialog.component.css']
 })
 export class AsignarPlazoDialogComponent implements OnChanges {
   @Input() open = false;
@@ -26,9 +18,9 @@ export class AsignarPlazoDialogComponent implements OnChanges {
   @Output() saved = new EventEmitter<void>();
 
   plazo_valor: number | null = null;
-  plazo_unidad: 'DIAS' | 'MESES' | 'ANIOS' = 'ANIOS';
-  plazo_tipo: 'ADMINISTRATIVO' | 'LEGAL' | 'HISTORICO' = 'ADMINISTRATIVO';
-  fecha_inicio_conservacion = '';
+  plazo_unidad: 'ANIOS' = 'ANIOS'; // Solo Años
+  fecha_inicio_conservacion = new Date().toISOString().slice(0, 10); // Establece la fecha de inicio como la fecha actual
+  fecha_vencimiento = ''; // Fecha de vencimiento calculada
 
   loading = false;
   error = '';
@@ -38,17 +30,24 @@ export class AsignarPlazoDialogComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['documento'] && this.documento) {
       this.plazo_valor = this.documento.plazo_valor;
-      this.plazo_unidad = this.documento.plazo_unidad || 'ANIOS';
-      this.plazo_tipo = this.documento.plazo_tipo || 'ADMINISTRATIVO';
       this.fecha_inicio_conservacion = this.toDateInput(
-        this.documento.fecha_inicio_conservacion
+        this.documento?.fecha_inicio_conservacion || new Date()
       );
       this.error = '';
+      this.calcularFechaVencimiento(); // Calcula la fecha de vencimiento cada vez que cambia el plazo
     }
 
     if (changes['open'] && !this.open) {
       this.loading = false;
       this.error = '';
+    }
+  }
+
+  calcularFechaVencimiento(): void {
+    if (this.plazo_valor && this.plazo_unidad === 'ANIOS') {
+      const fechaInicio = new Date(this.fecha_inicio_conservacion);
+      fechaInicio.setFullYear(fechaInicio.getFullYear() + this.plazo_valor); // Añadimos el plazo de años
+      this.fecha_vencimiento = fechaInicio.toISOString().slice(0, 10); // Establece la fecha de vencimiento en formato 'YYYY-MM-DD'
     }
   }
 
@@ -70,11 +69,17 @@ export class AsignarPlazoDialogComponent implements OnChanges {
       return;
     }
 
+    // Asegúrate de que fecha_vencimiento no esté vacía antes de enviar
+    if (!this.fecha_vencimiento) {
+      this.error = 'La fecha de vencimiento no puede estar vacía.';
+      return;
+    }
+
     const body: AsignarPlazoBody = {
       plazo_valor: this.plazo_valor,
       plazo_unidad: this.plazo_unidad,
-      plazo_tipo: this.plazo_tipo,
-      fecha_inicio_conservacion: this.fecha_inicio_conservacion
+      fecha_inicio_conservacion: this.fecha_inicio_conservacion,
+      fecha_vencimiento: this.fecha_vencimiento,
     };
 
     this.loading = true;
@@ -93,8 +98,13 @@ export class AsignarPlazoDialogComponent implements OnChanges {
     });
   }
 
-  private toDateInput(value: string | null | undefined): string {
+  private toDateInput(value: string | Date): string {
     if (!value) return '';
+    // Si value es un Date, lo convertimos a string en formato 'yyyy-mm-dd'
+    if (value instanceof Date) {
+      return value.toISOString().slice(0, 10);
+    }
+    // Si ya es un string, lo devolvemos tal cual
     return value.slice(0, 10);
   }
 }
