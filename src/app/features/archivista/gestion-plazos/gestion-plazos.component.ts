@@ -3,14 +3,14 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { AsignarPlazoDialogComponent } from './asignar-plazo-dialog.component';
-import {DocumentoPlazoRow, DocumentService} from '../../../../core/services/document.service';
+import { DocumentoPlazoRow, DocumentService } from '../../../../core/services/document.service';
 
 @Component({
   selector: 'app-gestion-plazos',
   standalone: true,
   imports: [CommonModule, FormsModule, AsignarPlazoDialogComponent],
   templateUrl: './gestion-plazos.component.html',
-  styleUrl: './gestion-plazos.component.css'
+  styleUrls: ['./gestion-plazos.component.css']
 })
 export class GestionPlazosComponent implements OnInit {
   documentos: DocumentoPlazoRow[] = [];
@@ -40,7 +40,11 @@ export class GestionPlazosComponent implements OnInit {
       plazo_tipo: this.filtroTipo || undefined
     }).subscribe({
       next: (data) => {
-        this.documentos = data;
+        // Asegúrate de que 'asignado_por_correo' esté presente en los documentos
+        this.documentos = data.map(doc => ({
+          ...doc,
+          asignado_por_correo: doc.asignado_por_correo || 'No asignado' // Asignar un valor por defecto si no hay correo
+        }));
         this.loading = false;
       },
       error: (err) => {

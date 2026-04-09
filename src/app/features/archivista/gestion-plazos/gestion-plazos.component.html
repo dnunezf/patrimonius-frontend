@@ -59,7 +59,7 @@
           <th>Fecha inicio</th>
           <th>Fecha vencimiento</th>
           <th>Estado</th>
-          <th>Asignado por</th>
+          <th>Asignado por</th> <!-- Columna "Asignado por" -->
           <th>Acciones</th>
         </tr>
         </thead>
@@ -95,7 +95,7 @@
                 {{ doc.estado_conservacion || 'SIN ESTADO' }}
               </span>
           </td>
-          <td>{{ doc.asignado_por_correo || '-' }}</td>
+          <td>{{ doc.asignado_por_correo || 'No asignado' }}</td> <!-- Mostrar el correo de quien asignó -->
           <td>
             <button
               class="btn sm primary"
