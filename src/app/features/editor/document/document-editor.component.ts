@@ -19,6 +19,7 @@ import { RealtimeService } from 'core/services/realtime.service';
 import { CommentPanelComponent } from './comment/comment-panel.component';
 import { VersionHistoryDialogComponent } from './version-history-dialog.component';
 import { DocumentMetadataDialogComponent } from './metadata/document-metadata-dialog.component';
+import { ConsultarExpedientesDialogComponent } from './consultaExpediente/consultar-expedientes-dialog.component';
 
 type UiUser = { id: number; label: string };
 
@@ -31,6 +32,7 @@ type UiUser = { id: number; label: string };
     CommentPanelComponent,
     VersionHistoryDialogComponent,
     DocumentMetadataDialogComponent,
+    ConsultarExpedientesDialogComponent,
   ],
   templateUrl: './document-editor.component.html',
   styleUrls: ['./document-editor.component.css'],
@@ -75,6 +77,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   firmantes: UiUser[] = [];
   selectedCandidateId: number | null = null;
   selectedFirmantesList: UiUser[] = [];
+
+  consultaExpedientesOpen = false;
 
   private readonly clientId =
     (globalThis as any).crypto?.randomUUID?.() ?? this.fallbackUuid();
@@ -194,6 +198,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   openHistory(): void {
     this.showHistory = true;
     this.info = '';
+  }
+
+  openConsultaExpedientes(): void {
+    this.consultaExpedientesOpen = true;
   }
 
   onRestored(e: { newVersionId: number; html: string }) {

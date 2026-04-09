@@ -1,98 +1,62 @@
-<div class="container">
-  <!-- Encabezado del dashboard -->
-  <header class="section-header">
-    <h1>Dashboard de Archivista</h1>
-    <p>Gestiona Series y Subseries desde este panel.</p>
-  </header>
+<main class="container">
+  <section class="page-header">
+    <h1>Gestión Archivística</h1>
+    <p>
+      Clasifique, conserve y evalúe documentos según normativas archivísticas
+      institucionales
+    </p>
+  </section>
 
-  <!-- Módulos de Gestión Archivística -->
-  <div class="kpi-container">
-    <div class="kpi-card">
-      <p class="kpi-title">Documentos Recibidos</p>
-      <div class="kpi-value">
-        <p>1</p>
-      </div>
-      <p class="kpi-description">Pendientes de clasificación</p>
-    </div>
+  <!-- KPIs -->
+  <section class="stats-grid">
+    <article class="stat-card" *ngFor="let stat of statsCards">
+      <div class="stat-content">
+        <div>
+          <p class="stat-title">{{ stat.title }}</p>
+          <p class="stat-value">{{ stat.value }}</p>
+          <p class="stat-subtitle">{{ stat.subtitle }}</p>
+        </div>
 
-    <div class="kpi-card">
-      <p class="kpi-title">En Conservación</p>
-      <div class="kpi-value">
-        <p>1</p>
+        <div class="stat-icon" [ngClass]="stat.iconClass">
+          <span>{{ getIcon(stat.icon) }}</span>
+        </div>
       </div>
-      <p class="kpi-description">Conservación activa</p>
-    </div>
+    </article>
+  </section>
 
-    <div class="kpi-card">
-      <p class="kpi-title">Próximos a Disposición</p>
-      <div class="kpi-value">
-        <p>1</p>
-      </div>
-      <p class="kpi-description">Requieren evaluación</p>
-    </div>
+  <!-- Modules -->
+  <section class="modules-section">
+    <h2>Módulos de Gestión Archivística</h2>
 
-    <div class="kpi-card">
-      <p class="kpi-title">Eventos de Auditoría</p>
-      <div class="kpi-value">
-        <p>3</p>
-      </div>
-      <p class="kpi-description">Registros totales</p>
-    </div>
-  </div>
+    <div class="modules-grid">
+      <article
+        class="module-card"
+        *ngFor="let module of moduleCards"
+        (click)="goTo(module.link)"
+      >
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-icon" [ngClass]="module.iconClass">
+              <span>{{ getIcon(module.icon) }}</span>
+            </div>
 
-  <!-- Sección de módulos -->
-  <div class="module-container">
-    <!-- Clasificación Archivística -->
-    <div class="module-card">
-      <div class="module-header">
-        <img src="assets/icons/classification-icon.png" alt="Creación de Series y Subseries" class="module-icon" />
-        <p class="module-title">Creación de Series y Subseries</p>
-      </div>
-      <p class="module-description">Creación de Series y Subseries para la clasificación de documentos</p>
-      <div class="module-actions">
-        <button class="btn btn--primary" (click)="CrearSerie_Subserie()">Crear Serie y Subserie</button>
-      </div>
-    </div>
+            <div>
+              <h3>{{ module.title }}</h3>
+            </div>
+          </div>
 
-    <!-- Gestión de Disposiciones -->
-    <div class="module-card">
-      <div class="module-header">
-        <img src="assets/icons/disposition-icon.png" alt="Gestión de Disposiciones" class="module-icon" />
-        <p class="module-title">Gestión de Disposiciones</p>
-      </div>
-      <p class="module-description">Control de eliminación y transferencia de documentos</p>
-      <div class="module-actions">
-        <button class="btn btn--primary">Aprobar eliminación</button>
-        <button class="btn btn--secondary">Generar SIP</button>
-      </div>
-    </div>
+          <span class="module-badge">{{ module.badge }}</span>
+        </div>
 
-    <!-- Evaluación y Conservación -->
-    <div class="module-card">
-      <div class="module-header">
-        <img src="assets/icons/evaluation-icon.png" alt="Evaluación y Conservación" class="module-icon" />
-        <p class="module-title">Evaluación y Conservación</p>
-      </div>
-      <p class="module-description">Evaluar integridad y vigencia de documentos</p>
-      <div class="module-actions">
-        <button class="btn btn--primary">Validar integridad</button>
-        <button class="btn btn--secondary">Asignar índices</button>
-      </div>
-    </div>
+        <p class="module-description">{{ module.description }}</p>
 
-    <!-- Plazos de Conservación -->
-    <div class="module-card">
-      <div class="module-header">
-        <img src="assets/icons/plazo-icon.png" alt="Plazos de Conservación" class="module-icon" />
-        <p class="module-title">Plazos de Conservación</p>
-      </div>
-      <p class="module-description">Asignación automática de plazos según serie documental</p>
-      <div class="module-actions">
-        <button class="btn btn--primary" (click)="irGestionPlazos()">
-          Ver plazos asignados
-        </button>
-        <button class="btn btn--secondary">Consultar bitácora</button>
-      </div>
+        <div class="tasks-block">
+          <p class="tasks-title">Tareas principales:</p>
+          <ul>
+            <li *ngFor="let feature of module.features">{{ feature }}</li>
+          </ul>
+        </div>
+      </article>
     </div>
-  </div>
-</div>
+  </section>
+</main>
