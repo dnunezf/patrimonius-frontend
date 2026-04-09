@@ -3,6 +3,11 @@ import { HomeComponent } from './features/home/home.component';
 import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
 import { ActivateComponent } from './auth/activate.component';
 import { AuthGuard } from '../core/services/auth.guard';
+import {ArchivistaDashboardComponent} from './features/archivista/dashboard/archivista-dashboard.component';
+import {ArchivistaClasificacionComponent} from './features/archivista/clasificacion/archivista-clasificacion.component';
+import { ArchivistaSerieDialogComponent } from './features/archivista/seriecrear/archivista-serie-dialog.component';
+import { ArchivistaSubserieDialogComponent } from './features/archivista/subseriecrear/archivista-subserie-dialog.component';
+import { GestionPlazosComponent } from './features/archivista/gestion-plazos/gestion-plazos.component';
 
 
 export const routes: Routes = [
@@ -25,6 +30,30 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     loadChildren: () =>
       import('./features/editor/editor.routes').then((m) => m.EDITOR_ROUTES),
+  },
+  {
+    path: 'archivista/dashboard',
+    canActivate: [AuthGuard],
+    component: ArchivistaDashboardComponent,
+  },
+  {
+    path: 'archivista/clasificacion',
+    component: ArchivistaClasificacionComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'archivista/crear-serie',
+    component: ArchivistaSerieDialogComponent,
+  },
+  {
+    path: 'archivista/crear-subserie',
+    component: ArchivistaSubserieDialogComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'archivista/gestion-plazos',
+    component: GestionPlazosComponent,
+    canActivate: [AuthGuard],
   },
 
   // ✅ HU-21: Carga masiva de documentos
@@ -68,6 +97,77 @@ export const routes: Routes = [
         (m) => m.MainDashboardComponent,
       ),
   },
+
+  {
+    path: 'usuario/dashboard',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/usuario-consulta-hub.component').then(
+        (m) => m.UsuarioConsultaHubComponent,
+      ),
+  },
+  {
+    path: 'externo/dashboard',
+    redirectTo: '/consulta/aprobados-externo',
+    pathMatch: 'full',
+  },
+
+  {
+    path: 'consulta/aprobados',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-aprobados-interno.component').then(
+        (m) => m.ConsultaAprobadosInternoComponent,
+      ),
+  },
+  {
+    path: 'consulta/aprobados-externo',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-aprobados-externo.component').then(
+        (m) => m.ConsultaAprobadosExternoComponent,
+      ),
+  },
+  {
+    path: 'consulta/historial',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-historial.component').then(
+        (m) => m.ConsultaHistorialComponent,
+      ),
+  },
+  {
+    path: 'consulta/recientes',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-recientes.component').then(
+        (m) => m.ConsultaRecientesComponent,
+      ),
+  },
+  {
+    path: 'consulta/novedades',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-novedades.component').then(
+        (m) => m.ConsultaNovedadesComponent,
+      ),
+  },
+  {
+    path: 'consulta/favoritos',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/consulta-favoritos.component').then(
+        (m) => m.ConsultaFavoritosComponent,
+      ),
+  },
+  /*{
+    path: 'consulta/solicitud-externa',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/consulta/solicitud-consulta-externa.component').then(
+        (m) => m.SolicitudConsultaExternaComponent,
+      ),
+  },*/
 
   { path: 'access-exceptions', component: AccessExceptionsComponent, canActivate: [AuthGuard] },
   { path: 'activate', component: ActivateComponent },

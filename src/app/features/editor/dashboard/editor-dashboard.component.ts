@@ -327,25 +327,13 @@ export class EditorDashboardComponent implements OnInit {
         this.signLoading = false;
         this.selectedPdf = null;
         this.loadDocuments();
-        this.reloadSignatureInfo();
-        this.loadAnexos();
+        this.closeSignModal();
       },
       error: (e) => {
         this.signLoading = false;
         this.signError =
           e?.error?.message || 'La firma fue válida, pero no se pudo confirmar.';
       },
-    });
-  }
-
-  private reloadSignatureInfo(): void {
-    if (!this.signDocId) return;
-
-    this.docs.getSignatureInfo(this.signDocId).subscribe({
-      next: (info) => {
-        this.signInfo = info;
-      },
-      error: () => {},
     });
   }
 

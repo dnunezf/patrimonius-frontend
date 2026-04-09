@@ -13,6 +13,9 @@ import { CatalogoExpedienteComponent } from './catalogos/catalogo-expediente/cat
 import { PermisosEditorComponent } from './permisosEditor/permisos-editor.component';
 import { CatalogosModulePageComponent } from './moduleCatalogos/catalogos-module-page.component';
 import { AccessControlComponent } from './access-control/access-control.component';
+import {
+  AdminSolicitudesDocumentosPageComponent
+} from './solicitudesDocumentos/admin-solicitudesDocumentos-page.component';
 
 export const ADMIN_ROUTES: Routes = [
   {
@@ -64,6 +67,10 @@ export const ADMIN_ROUTES: Routes = [
       { path: 'module/catalogs/expedientes', component: CatalogoExpedienteComponent },
 
       { path: 'permisos-editor', component: PermisosEditorComponent },
+      {
+        path: 'solicitudes-documentos',
+        component: AdminSolicitudesDocumentosPageComponent,
+      },
     ],
   },
 ];

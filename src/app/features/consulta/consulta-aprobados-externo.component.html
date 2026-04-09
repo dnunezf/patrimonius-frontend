@@ -1,0 +1,293 @@
+<div class="ext-page">
+  <section class="banner">
+    <h2>Consulta de documentos</h2>
+    <p>
+      El listado puede incluir documentos archivados a los que aún no tiene acceso. Solo cuenta como
+      <strong>aprobado para descarga</strong> quien tiene permiso explícito.
+    </p>
+    <div class="banner-meta">
+      <span class="pill ok">{{ totalDescargables }} con descarga aprobada</span>
+      <span class="hint">Acceso autorizado · Solo lectura</span>
+    </div>
+  </section>
+
+  <section class="consulta-toolbar" aria-label="Búsqueda y filtros">
+    <div class="toolbar-search">
+      <label class="toolbar-label" for="q-externo">Buscar</label>
+      <div class="toolbar-search-row">
+        <div class="search-input-wrap">
+          <span class="search-ico" aria-hidden="true">🔍</span>
+          <input
+            id="q-externo"
+            type="search"
+            [(ngModel)]="q"
+            (keyup.enter)="page = 1; load()"
+            placeholder="Buscar por título, código, categoría, autor o palabras clave…"
+            autocomplete="off"
+          />
+        </div>
+        <button type="button" class="btn primary btn-buscar" (click)="page = 1; load()">
+          Buscar
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar-divider" role="presentation"></div>
+
+    <div class="toolbar-filters">
+      <div class="filter-grid">
+        <div class="field">
+          <label for="cat-externo">Categoría</label>
+          <select
+            id="cat-externo"
+            [(ngModel)]="categoriaId"
+            (change)="page = 1; load()"
+          >
+            <option value="">Todas</option>
+            <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="desde-externo">Desde</label>
+          <input
+            id="desde-externo"
+            type="date"
+            [(ngModel)]="dateFrom"
+            (change)="page = 1; load()"
+          />
+        </div>
+        <div class="field">
+          <label for="hasta-externo">Hasta</label>
+          <input
+            id="hasta-externo"
+            type="date"
+            [(ngModel)]="dateTo"
+            (change)="page = 1; load()"
+          />
+        </div>
+      </div>
+      <div class="toolbar-side">
+        <button type="button" class="btn ghost btn-panel" (click)="volver()">Regresar</button>
+      </div>
+    </div>
+
+    <p class="toolbar-warn" *ngIf="filtersError" role="status">{{ filtersError }}</p>
+    <p class="toolbar-error" *ngIf="errorMsg" role="alert">{{ errorMsg }}</p>
+  </section>
+
+  <section class="panel tabla" *ngIf="!loading">
+    <div class="tabla-head">
+      <div>
+        <h3>Listado de documentos</h3>
+        <p class="muted">Todos los documentos están disponibles en modo de solo lectura.</p>
+      </div>
+      <div class="tabla-meta muted" *ngIf="totalItems > 0">
+        Registros {{ rangeStart }}–{{ rangeEnd }} de {{ totalItems }} · {{ pageSize }} por página
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre del documento</th>
+            <th>Categoría</th>
+            <th>Fecha de aprobación</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of rows">
+            <td class="mono">{{ row.codigo }}</td>
+            <td>
+              <div class="doc-title">{{ row.titulo }}</div>
+              <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
+            </td>
+            <td>
+              <span class="cat-badge" [ngClass]="categoriaClass(row.categoria_nombre)">{{
+                row.categoria_nombre || '—'
+              }}</span>
+            </td>
+            <td>📅 {{ formatDate(row.fecha_aprobacion) }}</td>
+            <td>
+              <span class="pill ok sm">{{ row.estadoEtiqueta || row.estado || '—' }}</span>
+            </td>
+            <td class="actions-cell">
+              <ng-container *ngIf="tieneAccesoAlDocumento(row)">
+                <button
+                  type="button"
+                  class="btn sm ghost"
+                  (click)="ver(row)"
+                  title="Vista previa del documento (solo lectura, sin descargar)"
+                >
+                  Vista previa
+                </button>
+                <button
+                  type="button"
+                  class="btn sm primary"
+                  (click)="descargar(row)"
+                  title="Descargar documento"
+                >
+                  Descargar
+                </button>
+              </ng-container>
+              <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
+                <button
+                  type="button"
+                  class="btn sm outline"
+                  (click)="abrirSolicitud(row)"
+                  title="Solicitar acceso a este documento archivado"
+                >
+                  Solicitar acceso
+                </button>
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pager" *ngIf="totalPages > 1">
+      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="page <= 1">
+        Anterior
+      </button>
+      <span>Página {{ page }} / {{ totalPages }}</span>
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextPage()"
+        [disabled]="page >= totalPages"
+      >
+        Siguiente
+      </button>
+    </div>
+  </section>
+
+  <div class="loading" *ngIf="loading">Cargando…</div>
+
+  <div class="overlay consulta-preview-overlay" *ngIf="previewOpen" (click)="cerrarPreview()">
+    <div
+      class="modal consulta-preview-modal consulta-preview-modal--doc"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="'consulta-preview-ext-title'"
+    >
+      <header class="consulta-preview-header">
+        <h3 id="consulta-preview-ext-title">{{ previewTitle }}</h3>
+        <button type="button" class="btn ghost" (click)="cerrarPreview()">Cerrar</button>
+      </header>
+      <div class="consulta-preview-body">
+        <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'pdf'">
+          Vista previa del mismo PDF que puede descargar. Renderizado por páginas (imagen): el texto no es
+          seleccionable aquí.
+        </p>
+        <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'html'">
+          Vista previa en formato web (respaldo). Solo visualización: no copie ni guarde el contenido desde
+          esta ventana.
+        </p>
+        <p class="consulta-preview-loading" *ngIf="previewLoading">Generando vista previa en PDF…</p>
+        <div
+          class="consulta-preview-scroll"
+          *ngIf="!previewLoading && previewMode === 'pdf'"
+          role="region"
+          aria-label="Vista previa del documento en PDF"
+          (copy)="$event.preventDefault()"
+          (cut)="$event.preventDefault()"
+          (contextmenu)="$event.preventDefault()"
+        >
+          <p class="consulta-preview-scroll-hint">Desplace para ver todas las páginas.</p>
+          <p class="consulta-preview-warn" *ngIf="pdfPreviewTruncated">
+            Se muestran las primeras {{ pdfMaxPagesShown }} páginas para mantener el rendimiento.
+          </p>
+          <div #pdfHost class="consulta-pdf-canvas-host"></div>
+        </div>
+        <div
+          class="consulta-preview-scroll"
+          *ngIf="!previewLoading && previewMode === 'html' && previewHtml"
+          role="region"
+          aria-label="Contenido del documento"
+        >
+          <p class="consulta-preview-scroll-hint">Desplace hacia abajo si el texto es largo.</p>
+          <div class="consulta-preview-page">
+            <div
+              class="html-preview consulta-preview-safe"
+              [innerHTML]="previewHtml"
+              (click)="onPreviewHtmlLinkClick($event)"
+              (copy)="$event.preventDefault()"
+              (cut)="$event.preventDefault()"
+              (contextmenu)="$event.preventDefault()"
+              (dragstart)="$event.preventDefault()"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <app-solicitud-acceso-dialog
+    [open]="solicitudOpen"
+    [documento]="selectedDocumento"
+    [usuarioSolicitanteId]="usuarioSolicitanteId"
+    [usuarioNombre]="usuarioSolicitanteNombre"
+    (closed)="cerrarSolicitud()"
+    (created)="solicitudCreada()"
+  ></app-solicitud-acceso-dialog>
+
+  <div
+    class="overlay overlay--alert"
+    *ngIf="browserDownloadHintOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="browser-download-hint-title"
+    (click)="cancelarAvisoDescarga()"
+  >
+    <div class="modal modal--info" (click)="$event.stopPropagation()">
+      <header class="modal--info__head">
+        <h3 id="browser-download-hint-title">Aviso del navegador</h3>
+      </header>
+      <div class="modal--info__body">
+        <p>
+          Al guardar el PDF, <strong>su navegador</strong> (Chrome, Edge, etc.) puede mostrar un
+          mensaje propio pidiendo permiso para descargar archivos (“Descargar varios archivos” o
+          descargas automáticas). Es una medida de seguridad: <strong>no</strong> la controla
+          Patrimonius.
+        </p>
+        <p class="muted small">
+          Pulse <strong>Permitir</strong> en ese cuadro si desea guardar el documento. Si ya lo
+          concedió antes, no volverá a preguntar en este sitio.
+        </p>
+        <label class="modal--info__check">
+          <input type="checkbox" [(ngModel)]="noMostrarAvisoDescarga" />
+          No volver a mostrar este aviso
+        </label>
+      </div>
+      <footer class="modal--info__foot">
+        <button type="button" class="btn ghost" (click)="cancelarAvisoDescarga()">Cancelar</button>
+        <button type="button" class="btn primary" (click)="confirmarAvisoDescarga()">
+          Continuar descarga
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <div
+    class="overlay overlay--alert"
+    *ngIf="downloadErrorOpen"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'download-err-title'"
+    (click)="cerrarErrorDescarga()"
+  >
+    <div class="modal modal--alert" (click)="$event.stopPropagation()">
+      <header class="modal--alert__head">
+        <h3 id="download-err-title">{{ downloadErrorTitle }}</h3>
+      </header>
+      <div class="modal--alert__body">
+        <p>{{ downloadErrorMessage }}</p>
+      </div>
+      <footer class="modal--alert__foot">
+        <button type="button" class="btn primary" (click)="cerrarErrorDescarga()">Entendido</button>
+      </footer>
+    </div>
+  </div>
+</div>

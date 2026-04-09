@@ -1,0 +1,275 @@
+<div class="consulta-page">
+  <header class="consulta-header">
+    <div>
+      <h1>Consulta general de documentos aprobados o archivados</h1>
+      <p class="sub">
+        Aquí puede <strong>buscar</strong> y <strong>filtrar</strong> documentos en estado
+        <strong>aprobado</strong> o <strong>archivado</strong> que correspondan a su unidad organizacional y a los
+        permisos de acceso que tenga asignados.
+      </p>
+    </div>
+    <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+  </header>
+
+  <section class="panel filtros">
+    <div class="field grow">
+      <label>Palabra clave <span class="label-optional">(opcional)</span></label>
+      <input
+        type="search"
+        [(ngModel)]="q"
+        placeholder="Título, código, categoría, metadatos…"
+        (keyup.enter)="page = 1; load()"
+      />
+      <p class="field-hint keyword-active" *ngIf="q?.trim()">
+        Solo se muestran documentos que contengan «<strong>{{ q.trim() }}</strong>» en título, código,
+        categoría, texto del documento (HTML) o metadatos. Déjelo vacío para ver todos los permitidos
+        según su unidad.
+        <button type="button" class="link-clear" (click)="q = ''; page = 1; load()">
+          Quitar filtro de texto
+        </button>
+      </p>
+    </div>
+    <div class="field">
+      <label>Categoría</label>
+      <select [(ngModel)]="categoriaId">
+        <option value="">Todas</option>
+        <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Serie</label>
+      <select [(ngModel)]="serieId" (ngModelChange)="subserieId = ''">
+        <option value="">Todas</option>
+        <option *ngFor="let s of filtros?.series" [value]="s.id">{{ s.nombre }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Subserie</label>
+      <select [(ngModel)]="subserieId">
+        <option value="">Todas</option>
+        <option *ngFor="let ss of subseriesFiltradas" [value]="ss.id">{{ ss.nombre }}</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Expediente (id)</label>
+      <input type="number" [(ngModel)]="expedienteId" placeholder="Opcional" />
+    </div>
+    <div class="field">
+      <label>Desde</label>
+      <input type="date" [(ngModel)]="dateFrom" />
+    </div>
+    <div class="field">
+      <label>Hasta</label>
+      <input type="date" [(ngModel)]="dateTo" />
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary" (click)="page = 1; load()">Buscar</button>
+    </div>
+  </section>
+
+  <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+  <p class="consulta-hint" *ngIf="aplicaFiltroUnidad && filtroUnidadUsuario != null && !loading">
+    Solo se listan documentos en estado <strong>aprobado</strong> o <strong>archivado</strong> cuya
+    <strong>unidad organizacional</strong> coincide con la suya
+    <span class="mono">(unidad_id = {{ filtroUnidadUsuario }})</span>, y según nivel de confidencialidad.
+  </p>
+
+  <section class="panel tabla-wrap" *ngIf="!loading">
+    <div class="tabla-head">
+      <h2>Resultados</h2>
+      <div class="tabla-meta">
+        <span class="muted">{{ totalItems }} documento(s)</span>
+        <span class="muted" *ngIf="totalItems > 0">
+          · Registros {{ rangeStart }}–{{ rangeEnd }} de {{ totalItems }}
+        </span>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th (click)="onSort('codigo')" class="sortable">Código</th>
+            <th (click)="onSort('titulo')" class="sortable">Título</th>
+            <th (click)="onSort('categoria')" class="sortable">Categoría</th>
+            <th (click)="onSort('unidad')" class="sortable">Unidad</th>
+            <th>Serie / Subserie</th>
+            <th (click)="onSort('fecha_aprobacion')" class="sortable">Fecha</th>
+            <th (click)="onSort('estado')" class="sortable">Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of rows">
+            <td class="mono">{{ row.codigo }}</td>
+            <td>
+              <div class="title">{{ row.titulo }}</div>
+              <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
+            </td>
+            <td>{{ row.categoria_nombre || '—' }}</td>
+            <td>{{ row.unidad_nombre || '—' }}</td>
+            <td>
+              <span class="small">{{ row.serie_nombre || '—' }}</span>
+              <span class="small muted" *ngIf="row.subserie_nombre"> / {{ row.subserie_nombre }}</span>
+            </td>
+            <td>{{ formatDate(row.fecha_aprobacion) }}</td>
+            <td>
+              <span class="badge ok">{{ row.estadoEtiqueta || row.estado }}</span>
+            </td>
+            <td class="actions-cell">
+              <ng-container *ngIf="tieneAccesoAlDocumento(row)">
+                <button
+                  type="button"
+                  class="btn sm ghost"
+                  (click)="ver(row)"
+                  title="Vista previa del documento (solo lectura, sin descargar)"
+                >
+                  Vista previa
+                </button>
+                <button
+                  type="button"
+                  class="btn sm primary"
+                  (click)="descargar(row)"
+                  title="Descargar documento"
+                >
+                  Descargar
+                </button>
+              </ng-container>
+              <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
+                <button
+                  type="button"
+                  class="btn sm outline"
+                  (click)="abrirSolicitud(row)"
+                  title="Solicitar acceso a este documento archivado"
+                >
+                  Solicitar acceso
+                </button>
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="empty-hint" *ngIf="totalItems === 0">
+      <p>
+        No hay documentos que cumplan las reglas. Compruebe en la base de datos que exista al menos un
+        <span class="mono">Documento</span> con
+        <span class="mono">estado</span> en <strong>APROBADO</strong> o <strong>ARCHIVADO</strong>, con
+        <span class="mono">unidad_id</span> igual al de su usuario
+        <ng-container *ngIf="aplicaFiltroUnidad && filtroUnidadUsuario != null">
+          (<strong>{{ filtroUnidadUsuario }}</strong>)</ng-container
+        >, y confidencialidad <strong>PUBLIC</strong> o <strong>INTERNAL</strong> (para
+        <strong>HIGH</strong>/<strong>RESTRICTED</strong> hace falta permiso explícito en listas del
+        documento).
+      </p>
+    </div>
+
+    <div class="pager" *ngIf="totalItems > 0 && totalPages > 1">
+      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="page <= 1">
+        Anterior
+      </button>
+      <span>Página {{ page }} / {{ totalPages }}</span>
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextPage()"
+        [disabled]="page >= totalPages"
+      >
+        Siguiente
+      </button>
+    </div>
+  </section>
+
+  <div class="loading" *ngIf="loading">Cargando…</div>
+
+  <div class="overlay consulta-preview-overlay" *ngIf="previewOpen" (click)="cerrarPreview()">
+    <div
+      class="modal consulta-preview-modal"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="consulta-preview-title"
+    >
+      <header class="consulta-preview-header">
+        <h3 id="consulta-preview-title">{{ previewTitle }}</h3>
+        <button type="button" class="btn ghost" (click)="cerrarPreview()">Cerrar</button>
+      </header>
+      <div class="consulta-preview-body">
+        <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'pdf'">
+          Vista previa del mismo PDF que puede descargar. Renderizado como imagen por página: el texto no es
+          seleccionable ni copiable desde aquí.
+        </p>
+        <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'html'">
+          Vista previa en formato web (respaldo). Solo visualización: no copie ni guarde el contenido desde
+          esta ventana.
+        </p>
+        <p class="consulta-preview-loading" *ngIf="previewLoading">Generando vista previa en PDF…</p>
+        <div
+          class="consulta-preview-scroll"
+          *ngIf="!previewLoading && previewMode === 'pdf'"
+          role="region"
+          aria-label="Vista previa del documento en PDF"
+          (copy)="$event.preventDefault()"
+          (cut)="$event.preventDefault()"
+          (contextmenu)="$event.preventDefault()"
+        >
+          <p class="consulta-preview-scroll-hint">Desplace para ver todas las páginas.</p>
+          <p class="consulta-preview-warn" *ngIf="pdfPreviewTruncated">
+            Se muestran las primeras {{ pdfMaxPagesShown }} páginas para mantener el rendimiento.
+          </p>
+          <div #pdfHost class="consulta-pdf-canvas-host"></div>
+        </div>
+        <div
+          class="consulta-preview-scroll"
+          *ngIf="!previewLoading && previewMode === 'html' && previewHtml"
+          role="region"
+          aria-label="Contenido del documento"
+        >
+          <p class="consulta-preview-scroll-hint">Desplace hacia abajo si el texto es largo.</p>
+          <div class="consulta-preview-page">
+            <div
+              class="html-preview consulta-preview-safe"
+              [innerHTML]="previewHtml"
+              (click)="onPreviewHtmlLinkClick($event)"
+              (copy)="$event.preventDefault()"
+              (cut)="$event.preventDefault()"
+              (contextmenu)="$event.preventDefault()"
+              (dragstart)="$event.preventDefault()"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="overlay overlay--alert"
+    *ngIf="downloadErrorOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="download-err-interno-title"
+    (click)="cerrarErrorDescarga()"
+  >
+    <div class="modal modal--alert" (click)="$event.stopPropagation()">
+      <header class="modal--alert__head">
+        <h3 id="download-err-interno-title">{{ downloadErrorTitle }}</h3>
+      </header>
+      <div class="modal--alert__body">
+        <p>{{ downloadErrorMessage }}</p>
+      </div>
+      <footer class="modal--alert__foot">
+        <button type="button" class="btn primary" (click)="cerrarErrorDescarga()">Entendido</button>
+      </footer>
+    </div>
+  </div>
+
+  <app-solicitud-acceso-dialog
+    [open]="solicitudOpen"
+    [documento]="selectedDocumento"
+    [usuarioSolicitanteId]="usuarioSolicitanteId"
+    [usuarioNombre]="usuarioSolicitanteNombre"
+    (closed)="cerrarSolicitud()"
+    (created)="solicitudCreada()"
+  ></app-solicitud-acceso-dialog>
+</div>

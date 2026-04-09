@@ -1,0 +1,51 @@
+<div class="page">
+  <header class="page__head">
+    <div>
+      <h1>Documentos recientes</h1>
+      <p class="page__sub">
+        Los <strong>15 documentos distintos</strong> que haya <strong>descargado</strong> más recientemente en PDF
+        (ordenados por la última descarga de cada uno). Es un resumen corto, pensado para alto volumen de consultas;
+        el detalle completo sigue en <strong>Mis consultas</strong>. Puede <strong>limpiar la vista</strong> o
+        <strong>restaurar</strong> como antes.
+      </p>
+    </div>
+    <div class="page__head-actions">
+      <button type="button" class="btn ghost" (click)="restaurar()" [disabled]="!usuarioId">Restaurar vista</button>
+      <button type="button" class="btn ghost" (click)="limpiar()" [disabled]="!usuarioId">Limpiar recientes</button>
+      <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    </div>
+  </header>
+
+  <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+  <section class="panel" *ngIf="!loading">
+    <p class="muted" *ngIf="recientes.length === 0">
+      No hay filas que mostrar. Si usó “Limpiar”, solo verá descargas nuevas después de ese momento.
+    </p>
+    <p class="muted" *ngIf="recientes.length > 0">
+      Mostrando hasta <strong>{{ topRecientes }}</strong> documentos
+    </p>
+    <div class="table-scroll" *ngIf="recientes.length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Estado</th>
+            <th>Última descarga</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of recientes">
+            <td class="mono">{{ r.codigo }}</td>
+            <td>{{ r.titulo }}</td>
+            <td><span class="badge">{{ r.estado }}</span></td>
+            <td>{{ formatDateTime(r.fecha) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="loading" *ngIf="loading">Cargando…</div>
+</div>

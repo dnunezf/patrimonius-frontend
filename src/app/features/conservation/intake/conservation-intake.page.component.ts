@@ -1,17 +1,69 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs/operators';
 
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConservationIntakeService } from '../../../../core/services/conservation-intake.service';
 
 import {
+  ArchivalExpediente,
+  ArchivalSeries,
+  ArchivalSubseries,
   CandidateDoc,
   ConfidentialityLevel,
   EligibilityState,
+  FinalDocumentFlow,
+  IntakePayload,
+  ProcedureType,
   RetentionRule,
 } from './models';
+
+function humanSize(bytes: number | null | undefined): string {
+  if (bytes == null || Number.isNaN(bytes)) return '—';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let index = 0;
+
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index++;
+  }
+
+  return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`;
+}
+
+function csvToUniqueArray(value: string): string[] {
+  return String(value || '')
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .filter((item, index, arr) => arr.indexOf(item) === index);
+}
+
+function commaEmailsValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = String(control.value || '').trim();
+    if (!value) return { required: true };
+
+    const emails = csvToUniqueArray(value);
+    if (!emails.length) return { required: true };
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emails.every((email) => emailRegex.test(email))
+      ? null
+      : { emails: true };
+  };
+}
 
 @Component({
   selector: 'app-conservation-intake-page',
@@ -25,27 +77,29 @@ export class ConservationIntakePageComponent {
   private readonly toasts = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly loading = signal(false);
   readonly candidates = signal<CandidateDoc[]>([]);
   readonly selected = signal<CandidateDoc | null>(null);
   readonly retentionRules = signal<RetentionRule[]>([]);
+
+  readonly series = signal<ArchivalSeries[]>([]);
+  readonly subseries = signal<ArchivalSubseries[]>([]);
+  readonly expedientes = signal<ArchivalExpediente[]>([]);
+
   readonly duplicateState =
     signal<EligibilityState['duplicateChecked']>('NOT_CHECKED');
 
-  readonly classificationQuery = signal('');
-  readonly classificationSelected = signal<{
-    code: string;
+  readonly procedureOptions: Array<{
+    value: ProcedureType;
     label: string;
-  } | null>(null);
-
-  readonly classificationOptions = signal<
-    Array<{ code: string; label: string }>
-  >([
-    { code: '1.1.01', label: 'Serie 1 — Actas' },
-    { code: '1.1.02', label: 'Serie 1 — Informes' },
-    { code: '2.3.10', label: 'Serie 2 — Correspondencia' },
-  ]);
+  }> = [
+    { value: 'CONOCIMIENTO', label: 'Conocimiento' },
+    { value: 'ARCHIVO', label: 'Archivo' },
+    { value: 'RESPUESTA', label: 'Respuesta' },
+    { value: 'SEGUIMIENTO', label: 'Seguimiento' },
+  ];
 
   readonly searchForm = this.fb.group({
     q: [''],
@@ -58,74 +112,132 @@ export class ConservationIntakePageComponent {
 
   readonly archivalForm = this.fb.group({
     officialCode: [{ value: '', disabled: true }, [Validators.required]],
-    title: ['', [Validators.required, Validators.minLength(3)]],
+    documentType: [{ value: '', disabled: true }, [Validators.required]],
+    title: [{ value: '', disabled: true }, [Validators.required]],
+
+    documentFlow: ['PRODUCED_SENT' as FinalDocumentFlow, [Validators.required]],
+
     producingUnit: ['', [Validators.required]],
-    author: [{ value: '', disabled: true }, [Validators.required]],
-    keywords: ['', [Validators.required]],
+    keywords: [''],
     accessLevel: ['INTERNAL' as ConfidentialityLevel, [Validators.required]],
-    trackingEnabled: [true, [Validators.requiredTrue]],
+    procedureType: [null as ProcedureType | null],
+
+    sizeBytes: [{ value: null as number | null, disabled: true }],
+    format: [{ value: '', disabled: true }],
+    signers: [{ value: '', disabled: true }],
+    signedAt: [{ value: '', disabled: true }],
+    softwareVersion: [{ value: '', disabled: true }],
+
+    serieId: [null as number | null, [Validators.required]],
+    subserieId: [null as number | null],
+    expedienteId: [null as number | null, [Validators.required]],
+
     retentionRuleId: [null as number | null, [Validators.required]],
     retentionStartDateISO: [
       { value: '', disabled: true },
       [Validators.required],
     ],
-  });
+    retentionEndDateISO: [{ value: '', disabled: true }],
 
-  readonly eligibility = computed<EligibilityState>(() => {
-    const doc = this.selected();
-    const officialOk =
-      !!doc?.officialCode && doc.officialCode.trim().length >= 8;
+    recipientNameRole: [''],
+    recipientInstitution: [''],
+    dispatchEmails: [''],
 
-    return {
-      pdfa: !!doc?.isPDFA,
-      signatures: !!doc?.signaturesComplete,
-      officialCodeComplete: officialOk,
-      requiredMetadata: this.hasRequiredArchivalMetadata(),
-      duplicateChecked: this.duplicateState(),
-    };
-  });
-
-  readonly canSave = computed(() => {
-    const eligibility = this.eligibility();
-    return (
-      eligibility.pdfa &&
-      eligibility.signatures &&
-      eligibility.officialCodeComplete &&
-      eligibility.requiredMetadata &&
-      this.archivalForm.valid &&
-      !!this.classificationSelected() &&
-      eligibility.duplicateChecked === 'OK'
-    );
-  });
-
-  readonly formErrorSummary = computed<string | null>(() => {
-    if (!this.archivalForm.touched) return null;
-    if (this.archivalForm.valid) return null;
-
-    const missing: string[] = [];
-    const requiredFields: Array<[string, string]> = [
-      ['title', 'Título'],
-      ['producingUnit', 'Unidad productora'],
-      ['keywords', 'Palabras clave'],
-      ['retentionRuleId', 'Regla de retención'],
-      ['trackingEnabled', 'Seguimiento'],
-    ];
-
-    for (const [key, label] of requiredFields) {
-      const control = this.archivalForm.get(key);
-      if (control?.errors?.['required'] || control?.errors?.['requiredTrue']) {
-        missing.push(label);
-      }
-    }
-
-    return missing.length
-      ? `Campos obligatorios pendientes: ${missing.join(', ')}.`
-      : 'Revise los campos obligatorios.';
+    senderNameRole: [''],
+    senderInstitution: [''],
   });
 
   constructor() {
+    this.setupDynamicValidators();
+    this.setupRetentionPreview();
+    this.setupClassificationReset();
     this.loadRetentionRules();
+    this.loadArchivalStructure();
     this.search();
+  }
+
+  private setupDynamicValidators(): void {
+    const flowControl = this.archivalForm.get('documentFlow');
+
+    flowControl?.valueChanges
+      .pipe(startWith(flowControl.value), takeUntilDestroyed(this.destroyRef))
+      .subscribe((flow) => {
+        const recipientNameRole = this.archivalForm.get('recipientNameRole');
+        const recipientInstitution = this.archivalForm.get(
+          'recipientInstitution',
+        );
+        const dispatchEmails = this.archivalForm.get('dispatchEmails');
+
+        const senderNameRole = this.archivalForm.get('senderNameRole');
+        const senderInstitution = this.archivalForm.get('senderInstitution');
+
+        if (flow === 'PRODUCED_SENT') {
+          recipientNameRole?.setValidators([Validators.required]);
+          recipientInstitution?.setValidators([Validators.required]);
+          dispatchEmails?.setValidators([commaEmailsValidator()]);
+
+          senderNameRole?.clearValidators();
+          senderInstitution?.clearValidators();
+        } else {
+          recipientNameRole?.clearValidators();
+          recipientInstitution?.clearValidators();
+          dispatchEmails?.clearValidators();
+
+          senderNameRole?.clearValidators();
+          senderInstitution?.clearValidators();
+        }
+
+        recipientNameRole?.updateValueAndValidity({ emitEvent: false });
+        recipientInstitution?.updateValueAndValidity({ emitEvent: false });
+        dispatchEmails?.updateValueAndValidity({ emitEvent: false });
+        senderNameRole?.updateValueAndValidity({ emitEvent: false });
+        senderInstitution?.updateValueAndValidity({ emitEvent: false });
+      });
+  }
+
+  private setupRetentionPreview(): void {
+    this.archivalForm
+      .get('retentionRuleId')
+      ?.valueChanges.pipe(
+        startWith(this.archivalForm.get('retentionRuleId')?.value),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.refreshRetentionEndDate());
+
+    this.archivalForm
+      .get('retentionStartDateISO')
+      ?.valueChanges.pipe(
+        startWith(this.archivalForm.get('retentionStartDateISO')?.value),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.refreshRetentionEndDate());
+  }
+
+  private setupClassificationReset(): void {
+    this.archivalForm
+      .get('serieId')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.archivalForm.patchValue(
+          {
+            subserieId: null,
+            expedienteId: null,
+          },
+          { emitEvent: false },
+        );
+      });
+
+    this.archivalForm
+      .get('subserieId')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.archivalForm.patchValue(
+          {
+            expedienteId: null,
+          },
+          { emitEvent: false },
+        );
+      });
   }
 
   async search(): Promise<void> {
@@ -167,22 +279,47 @@ export class ConservationIntakePageComponent {
   selectDoc(doc: CandidateDoc): void {
     this.selected.set(doc);
     this.duplicateState.set('NOT_CHECKED');
-    this.classificationSelected.set(null);
 
-    this.archivalForm.patchValue({
-      officialCode: doc.officialCode || '',
-      title: doc.title || '',
-      producingUnit: doc.producingUnit || '',
-      author: doc.author || '',
-      keywords: Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
-      retentionStartDateISO: new Date().toISOString().slice(0, 10),
-      accessLevel: 'INTERNAL',
-      trackingEnabled: true,
-      retentionRuleId: null,
-    });
+    this.archivalForm.reset(
+      {
+        officialCode: doc.officialCode || '',
+        documentType: doc.documentType || '',
+        title: doc.title || '',
+        documentFlow: (doc.documentFlow ||
+          'PRODUCED_SENT') as FinalDocumentFlow,
+
+        producingUnit: doc.producingUnit || '',
+        keywords: Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
+        accessLevel:
+          (doc.accessLevel as ConfidentialityLevel | null) || 'INTERNAL',
+        procedureType: null,
+
+        sizeBytes: doc.sizeBytes ?? null,
+        format: doc.format || '',
+        signers: this.signersText(doc),
+        signedAt: this.signedAtText(doc),
+        softwareVersion: doc.softwareVersion || '',
+
+        serieId: null,
+        subserieId: null,
+        expedienteId: null,
+
+        retentionRuleId: null,
+        retentionStartDateISO: new Date().toISOString().slice(0, 10),
+        retentionEndDateISO: '',
+
+        recipientNameRole: '',
+        recipientInstitution: '',
+        dispatchEmails: '',
+
+        senderNameRole: '',
+        senderInstitution: '',
+      },
+      { emitEvent: true },
+    );
 
     this.archivalForm.markAsUntouched();
-    this.archivalForm.updateValueAndValidity();
+    this.refreshRetentionEndDate();
 
     this.api
       .audit('CANDIDATE_SELECTED', {
@@ -192,20 +329,48 @@ export class ConservationIntakePageComponent {
       .subscribe();
   }
 
-  private hasRequiredArchivalMetadata(): boolean {
-    const form = this.archivalForm;
-    return (
-      !!form.get('title')?.value &&
-      !!form.get('producingUnit')?.value &&
-      !!form.get('author')?.value &&
-      !!form.get('keywords')?.value
-    );
+  private loadRetentionRules(): void {
+    this.api.getRetentionRules().subscribe({
+      next: (rules) => this.retentionRules.set(rules),
+      error: (err) => {
+        if (err?.status === 401) {
+          this.toasts.error('La sesión expiró. Inicie sesión nuevamente.');
+          return;
+        }
+
+        this.toasts.error(
+          err?.error?.message ||
+            'No se pudieron cargar las reglas de retención.',
+        );
+      },
+    });
+  }
+
+  private loadArchivalStructure(): void {
+    this.api.getSeries().subscribe({
+      next: (rows) => this.series.set(rows),
+      error: () =>
+        this.toasts.error('No se pudieron cargar las series archivísticas.'),
+    });
+
+    this.api.getSubseries().subscribe({
+      next: (rows) => this.subseries.set(rows),
+      error: () =>
+        this.toasts.error('No se pudieron cargar las subseries archivísticas.'),
+    });
+
+    this.api.getExpedientes().subscribe({
+      next: (rows) => this.expedientes.set(rows),
+      error: () => this.toasts.error('No se pudieron cargar los expedientes.'),
+    });
   }
 
   async verifyDuplicate(): Promise<void> {
-    const doc = this.selected();
+    const code = String(
+      this.archivalForm.getRawValue().officialCode || '',
+    ).trim();
 
-    if (!doc?.officialCode?.trim()) {
+    if (!code) {
       this.toasts.error('El documento seleccionado no tiene código oficial.');
       return;
     }
@@ -214,11 +379,11 @@ export class ConservationIntakePageComponent {
 
     this.api
       .audit('DUPLICATE_CHECK_REQUESTED', {
-        code: doc.officialCode,
+        code,
       })
       .subscribe();
 
-    this.api.checkDuplicateOfficialCode(doc.officialCode).subscribe({
+    this.api.checkDuplicateOfficialCode(code).subscribe({
       next: async (result) => {
         if (result.status === 'DUPLICATE') {
           this.duplicateState.set('DUPLICATE');
@@ -242,42 +407,207 @@ export class ConservationIntakePageComponent {
     });
   }
 
-  pickClassification(opt: { code: string; label: string }): void {
-    this.classificationSelected.set(opt);
-  }
-
-  classificationFiltered(): Array<{ code: string; label: string }> {
-    const q = (this.classificationQuery() || '').trim().toLowerCase();
-    if (!q) return this.classificationOptions();
-
-    return this.classificationOptions().filter(
-      (item) =>
-        item.code.toLowerCase().includes(q) ||
-        item.label.toLowerCase().includes(q),
+  currentFlow(): FinalDocumentFlow {
+    return (
+      (this.archivalForm.get('documentFlow')?.value as FinalDocumentFlow) ||
+      'PRODUCED_SENT'
     );
   }
 
-  private loadRetentionRules(): void {
-    this.api.getRetentionRules().subscribe({
-      next: (rules) => this.retentionRules.set(rules),
-      error: (err) => {
-        if (err?.status === 401) {
-          this.toasts.error('La sesión expiró. Inicie sesión nuevamente.');
-          return;
-        }
+  filteredSubseries(): ArchivalSubseries[] {
+    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
+    if (!serieId) return [];
 
-        this.toasts.error(
-          err?.error?.message ||
-            'No se pudieron cargar las reglas de retención.',
-        );
-      },
+    return this.subseries().filter((item) => Number(item.serieId) === serieId);
+  }
+
+  filteredExpedientes(): ArchivalExpediente[] {
+    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
+    const subserieId = this.archivalForm.get('subserieId')?.value as
+      | number
+      | null;
+
+    return this.expedientes().filter((item) => {
+      if (serieId && Number(item.serieId) !== serieId) return false;
+      if (subserieId != null) {
+        return Number(item.subserieId ?? 0) === Number(subserieId);
+      }
+      return true;
     });
   }
 
-  retentionPreviewText(): string {
-    const ruleId = Number(this.archivalForm.get('retentionRuleId')?.value);
+  selectedSerie(): ArchivalSeries | null {
+    const id = Number(this.archivalForm.get('serieId')?.value || 0);
+    return this.series().find((item) => item.id === id) || null;
+  }
+
+  selectedSubserie(): ArchivalSubseries | null {
+    const id = Number(this.archivalForm.get('subserieId')?.value || 0);
+    if (!id) return null;
+    return this.subseries().find((item) => item.id === id) || null;
+  }
+
+  selectedExpediente(): ArchivalExpediente | null {
+    const id = Number(this.archivalForm.get('expedienteId')?.value || 0);
+    return this.expedientes().find((item) => item.id === id) || null;
+  }
+
+  buildClassificationCode(): string {
+    return (
+      this.selectedExpediente()?.code ||
+      this.selectedSubserie()?.code ||
+      this.selectedSerie()?.code ||
+      ''
+    );
+  }
+
+  buildClassificationLabel(): string {
+    const parts = [
+      this.selectedSerie()?.name,
+      this.selectedSubserie()?.name,
+      this.selectedExpediente()?.name,
+    ].filter(Boolean);
+
+    return parts.join(' / ');
+  }
+
+  isClassificationReady(): boolean {
+    return !!this.selectedSerie() && !!this.selectedExpediente();
+  }
+
+  hasCompleteOfficialCode(): boolean {
+    const code = String(
+      this.archivalForm.getRawValue().officialCode || '',
+    ).trim();
+    return code.length >= 8;
+  }
+
+  hasRequiredArchivalMetadata(): boolean {
+    const raw = this.archivalForm.getRawValue();
+
+    return (
+      !!String(raw.documentType || '').trim() &&
+      !!String(raw.title || '').trim() &&
+      !!String(raw.producingUnit || '').trim() &&
+      !!raw.accessLevel &&
+      raw.sizeBytes != null &&
+      !!String(raw.format || '').trim()
+    );
+  }
+
+  hasRequiredFlowData(): boolean {
+    if (this.currentFlow() === 'PRODUCED_SENT') {
+      return (
+        !!this.archivalForm.get('recipientNameRole')?.value?.trim() &&
+        !!this.archivalForm.get('recipientInstitution')?.value?.trim() &&
+        !this.archivalForm.get('dispatchEmails')?.errors &&
+        !!this.archivalForm.get('dispatchEmails')?.value?.trim()
+      );
+    }
+
+    return true;
+  }
+
+  eligibility(): EligibilityState {
+    return {
+      pdfa: !!this.selected()?.isPDFA,
+      signatures: !!this.selected()?.signaturesComplete,
+      officialCodeComplete: this.hasCompleteOfficialCode(),
+      requiredMetadata: this.hasRequiredArchivalMetadata(),
+      classificationReady: this.isClassificationReady(),
+      flowDataReady: this.hasRequiredFlowData(),
+      duplicateChecked: this.duplicateState(),
+    };
+  }
+
+  canSave(): boolean {
+    const eligibility = this.eligibility();
+
+    return (
+      eligibility.pdfa &&
+      eligibility.signatures &&
+      eligibility.officialCodeComplete &&
+      eligibility.requiredMetadata &&
+      eligibility.classificationReady &&
+      eligibility.flowDataReady &&
+      eligibility.duplicateChecked === 'OK' &&
+      this.archivalForm.valid
+    );
+  }
+
+  formErrorSummary(): string | null {
+    if (!this.archivalForm.touched) return null;
+
+    const missing: string[] = [];
+
+    if (!this.hasRequiredArchivalMetadata()) {
+      if (!this.archivalForm.getRawValue().producingUnit?.trim()) {
+        missing.push('Unidad productora');
+      }
+      if (!this.archivalForm.getRawValue().accessLevel) {
+        missing.push('Nivel de acceso');
+      }
+    }
+
+    if (!this.isClassificationReady()) {
+      if (!this.selectedSerie()) missing.push('Serie');
+      if (!this.selectedExpediente()) missing.push('Expediente');
+    }
+
+    if (!this.archivalForm.get('retentionRuleId')?.value) {
+      missing.push('Regla de retención');
+    }
+
+    if (!this.hasRequiredFlowData()) {
+      if (this.currentFlow() === 'PRODUCED_SENT') {
+        if (!this.archivalForm.get('recipientNameRole')?.value?.trim()) {
+          missing.push('Destinatario (nombre y cargo)');
+        }
+        if (!this.archivalForm.get('recipientInstitution')?.value?.trim()) {
+          missing.push('Destinatario (institución)');
+        }
+        if (!this.archivalForm.get('dispatchEmails')?.value?.trim()) {
+          missing.push('Correos para despacho');
+        }
+      }
+    }
+
+    const unique = Array.from(new Set(missing));
+    return unique.length
+      ? `Campos obligatorios pendientes: ${unique.join(', ')}.`
+      : null;
+  }
+
+  refreshRetentionEndDate(): void {
+    const ruleId = Number(this.archivalForm.get('retentionRuleId')?.value || 0);
     const start = String(
-      this.archivalForm.get('retentionStartDateISO')?.value || '',
+      this.archivalForm.getRawValue().retentionStartDateISO || '',
+    );
+    const rule = this.retentionRules().find((item) => item.id === ruleId);
+
+    if (!rule || !start) {
+      this.archivalForm.patchValue(
+        { retentionEndDateISO: '' },
+        { emitEvent: false },
+      );
+      return;
+    }
+
+    const date = new Date(`${start}T00:00:00`);
+    date.setFullYear(date.getFullYear() + Number(rule.years || 0));
+    this.archivalForm.patchValue(
+      { retentionEndDateISO: date.toISOString().slice(0, 10) },
+      { emitEvent: false },
+    );
+  }
+
+  retentionPreviewText(): string {
+    const ruleId = Number(this.archivalForm.get('retentionRuleId')?.value || 0);
+    const start = String(
+      this.archivalForm.getRawValue().retentionStartDateISO || '',
+    );
+    const end = String(
+      this.archivalForm.getRawValue().retentionEndDateISO || '',
     );
     const rule = this.retentionRules().find((item) => item.id === ruleId);
 
@@ -285,11 +615,36 @@ export class ConservationIntakePageComponent {
       return 'Seleccione una regla de retención para visualizar la vigencia.';
     }
 
-    const date = new Date(start);
-    date.setFullYear(date.getFullYear() + rule.years);
-    const endISO = date.toISOString().slice(0, 10);
+    return `Inicio: ${start} · Duración: ${rule.years} año(s) · Fin estimado: ${end || '—'}`;
+  }
 
-    return `Inicio: ${start} · Duración: ${rule.years} año(s) · Fin estimado: ${endISO}`;
+  signersText(doc: CandidateDoc | null): string {
+    if (!doc?.signers?.length) return '—';
+    return doc.signers.join(', ');
+  }
+
+  signedAtText(doc: CandidateDoc | null): string {
+    if (!doc?.signedAt?.length) return '—';
+
+    return doc.signedAt
+      .map((value) => this.formatDateTime(value))
+      .filter(Boolean)
+      .join(' · ');
+  }
+
+  sizeHuman(): string {
+    return humanSize(this.archivalForm.getRawValue().sizeBytes);
+  }
+
+  formatDateTime(value: string | null | undefined): string {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('es-CR', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
   }
 
   async save(): Promise<void> {
@@ -306,9 +661,10 @@ export class ConservationIntakePageComponent {
       return;
     }
 
-    const classification = this.classificationSelected();
-    if (!classification) {
-      this.toasts.error('Debe seleccionar una clasificación institucional.');
+    if (!this.isClassificationReady()) {
+      this.toasts.error(
+        'Debe seleccionar la serie y el expediente archivístico.',
+      );
       return;
     }
 
@@ -337,7 +693,14 @@ export class ConservationIntakePageComponent {
 
     if (!eligibility.requiredMetadata) {
       this.toasts.error(
-        'Los metadatos archivísticos requeridos están incompletos.',
+        'Los metadatos finales obligatorios están incompletos.',
+      );
+      return;
+    }
+
+    if (!eligibility.flowDataReady) {
+      this.toasts.error(
+        'Complete la información específica del tipo de documento.',
       );
       return;
     }
@@ -349,8 +712,8 @@ export class ConservationIntakePageComponent {
       return;
     }
 
-    const accessLevel = this.archivalForm.get('accessLevel')
-      ?.value as ConfidentialityLevel;
+    const raw = this.archivalForm.getRawValue();
+    const accessLevel = raw.accessLevel as ConfidentialityLevel;
 
     if (accessLevel === 'HIGH' || accessLevel === 'RESTRICTED') {
       const accepted = await this.confirm.ask(
@@ -369,29 +732,67 @@ export class ConservationIntakePageComponent {
       return;
     }
 
-    const raw = this.archivalForm.getRawValue();
-    const keywords = String(raw.keywords || '')
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean)
-      .filter((value, index, arr) => arr.indexOf(value) === index);
+    const serie = this.selectedSerie();
+    const subserie = this.selectedSubserie();
+    const expediente = this.selectedExpediente();
 
-    const payload = {
+    if (!serie || !expediente) {
+      this.toasts.error('La selección archivística está incompleta.');
+      return;
+    }
+
+    const keywords = csvToUniqueArray(String(raw.keywords || ''));
+    const documentFlow = raw.documentFlow as FinalDocumentFlow;
+
+    const payload: IntakePayload = {
       candidateId: doc.id,
-      officialCode: doc.officialCode.trim(),
+      officialCode: String(raw.officialCode || '').trim(),
       metadata: {
-        title: String(raw.title).trim(),
-        producingUnit: String(raw.producingUnit).trim(),
-        author: String(raw.author || doc.author || '').trim(),
+        documentFlow,
+        documentType: String(raw.documentType || '').trim(),
+        title: String(raw.title || '').trim(),
+        producingUnit: String(raw.producingUnit || '').trim(),
         keywords,
         accessLevel,
+        procedureType: raw.procedureType || null,
+        sizeBytes: raw.sizeBytes ?? null,
+        format: String(raw.format || '').trim() || null,
+        signers: doc.signers || [],
+        signedAt: doc.signedAt || [],
+        softwareVersion: String(raw.softwareVersion || '').trim() || null,
       },
-      classification,
+      classification: {
+        serieId: serie.id,
+        subserieId: subserie?.id ?? null,
+        expedienteId: expediente.id,
+        code: this.buildClassificationCode(),
+        label: this.buildClassificationLabel(),
+      },
       retention: {
         ruleId: Number(raw.retentionRuleId),
         startDateISO: String(raw.retentionStartDateISO),
-        trackingEnabled: !!raw.trackingEnabled,
+        trackingEnabled: true,
       },
+      outgoing:
+        documentFlow === 'PRODUCED_SENT'
+          ? {
+              recipientNameRole: String(raw.recipientNameRole || '').trim(),
+              recipientInstitution: String(
+                raw.recipientInstitution || '',
+              ).trim(),
+              dispatchEmails: csvToUniqueArray(
+                String(raw.dispatchEmails || ''),
+              ).map((item) => item.toLowerCase()),
+            }
+          : null,
+      incoming:
+        documentFlow === 'RECEIVED'
+          ? {
+              senderNameRole: String(raw.senderNameRole || '').trim() || null,
+              senderInstitution:
+                String(raw.senderInstitution || '').trim() || null,
+            }
+          : null,
     };
 
     this.loading.set(true);
@@ -408,14 +809,21 @@ export class ConservationIntakePageComponent {
 
         this.selected.set(null);
         this.duplicateState.set('NOT_CHECKED');
-        this.classificationSelected.set(null);
 
-        this.archivalForm.reset({
-          accessLevel: 'INTERNAL',
-          trackingEnabled: true,
-          retentionRuleId: null,
-          retentionStartDateISO: new Date().toISOString().slice(0, 10),
-        } as any);
+        this.archivalForm.reset(
+          {
+            documentFlow: 'PRODUCED_SENT',
+            accessLevel: 'INTERNAL',
+            procedureType: null,
+            retentionRuleId: null,
+            retentionStartDateISO: new Date().toISOString().slice(0, 10),
+            retentionEndDateISO: '',
+            serieId: null,
+            subserieId: null,
+            expedienteId: null,
+          } as any,
+          { emitEvent: true },
+        );
 
         this.search();
       },
@@ -473,6 +881,8 @@ export class ConservationIntakePageComponent {
     if (control.errors['required']) return 'Obligatorio.';
     if (control.errors['requiredTrue']) return 'Debe activar el seguimiento.';
     if (control.errors['minlength']) return 'Muy corto.';
+    if (control.errors['emails'])
+      return 'Ingrese correos válidos separados por coma.';
     return 'Valor inválido.';
   }
 }

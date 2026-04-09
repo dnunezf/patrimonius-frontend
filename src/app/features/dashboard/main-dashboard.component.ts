@@ -10,7 +10,7 @@ type RoleKey =
   | 'USUARIO'
   | 'USUARIO_EXTERNO';
 
-type FeatureKey = 'CARGA_DOCUMENTOS' | 'CONSERVACION_INGRESO';
+type FeatureKey = 'CARGA_DOCUMENTOS' | 'CONSERVACION_INGRESO' | 'CONSULTA_APROBADOS';
 
 type DashboardCard = {
   roleKey?: RoleKey;
@@ -111,6 +111,19 @@ export class MainDashboardComponent {
     ],
   };
 
+  private readonly CONSULTA_APROBADOS_CARD: DashboardCard = {
+    featureKey: 'CONSULTA_APROBADOS',
+    title: 'Consulta de documentos',
+    subtitle: 'Documentos aprobados y archivados según sus permisos',
+    icon: 'assets/icons/user_2.png',
+    cssClass: 'usuario',
+    bullets: [
+      'Búsqueda y filtros',
+      'Vista previa y descarga',
+      'Registro en bitácora',
+    ],
+  };
+
   get userRoleKeys(): RoleKey[] {
     const u: any = this.auth.currentUser?.();
     if (!u) return [];
@@ -178,6 +191,8 @@ export class MainDashboardComponent {
       extras.push(this.CONSERVATION_INTAKE_CARD);
     }
 
+    extras.push(this.CONSULTA_APROBADOS_CARD);
+
     return [...byRole, ...extras];
   }
 
@@ -196,6 +211,16 @@ export class MainDashboardComponent {
       this.router.navigate(['/conservacion/ingreso']);
       return;
     }
+
+    if (c.featureKey === 'CONSULTA_APROBADOS') {
+      const roles = new Set(this.userRoleKeys);
+      if (roles.has('USUARIO_EXTERNO')) {
+        this.router.navigate(['/consulta/aprobados-externo']);
+      } else {
+        this.router.navigate(['/consulta/aprobados']);
+      }
+      return;
+    }
   }
 
   private roleLink(role: RoleKey): string {
@@ -209,7 +234,7 @@ export class MainDashboardComponent {
       case 'USUARIO':
         return '/usuario/dashboard';
       case 'USUARIO_EXTERNO':
-        return '/externo/dashboard';
+        return '/consulta/aprobados-externo';
       default:
         return '/';
     }

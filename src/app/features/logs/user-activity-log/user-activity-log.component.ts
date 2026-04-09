@@ -25,7 +25,6 @@ export class UserActivityLogComponent implements OnInit {
   readonly tipoFlujoOptions = [
     'EXCEPCION_ACCESO',
     'SOLICITUD_ACCESO_EXTERNO',
-    'DESCARGA_DOCUMENTO_APROBADO',
   ] as const;
 
   /** Valores fijos alineados con estado_flujo (ENUM). */
