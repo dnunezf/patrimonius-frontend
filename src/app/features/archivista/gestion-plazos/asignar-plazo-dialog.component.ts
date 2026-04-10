@@ -18,7 +18,7 @@ export class AsignarPlazoDialogComponent implements OnChanges {
   @Output() saved = new EventEmitter<void>();
 
   plazo_valor: number | null = null;
-  plazo_unidad: 'ANIOS' = 'ANIOS'; // Solo Años
+  plazo_unidad: 'ANIOS' | 'MESES' | 'DIAS' = 'ANIOS'; // Ahora soporta Años, Meses y Días
   fecha_inicio_conservacion = new Date().toISOString().slice(0, 10); // Establece la fecha de inicio como la fecha actual
   fecha_vencimiento = ''; // Fecha de vencimiento calculada
 
@@ -47,6 +47,16 @@ export class AsignarPlazoDialogComponent implements OnChanges {
     if (this.plazo_valor && this.plazo_unidad === 'ANIOS') {
       const fechaInicio = new Date(this.fecha_inicio_conservacion);
       fechaInicio.setFullYear(fechaInicio.getFullYear() + this.plazo_valor); // Añadimos el plazo de años
+      this.fecha_vencimiento = fechaInicio.toISOString().slice(0, 10); // Establece la fecha de vencimiento en formato 'YYYY-MM-DD'
+    }
+    else if (this.plazo_valor && this.plazo_unidad === 'MESES') {
+      const fechaInicio = new Date(this.fecha_inicio_conservacion);
+      fechaInicio.setMonth(fechaInicio.getMonth() + this.plazo_valor); // Añadimos el plazo de meses
+      this.fecha_vencimiento = fechaInicio.toISOString().slice(0, 10); // Establece la fecha de vencimiento en formato 'YYYY-MM-DD'
+    }
+    else if (this.plazo_valor && this.plazo_unidad === 'DIAS') {
+      const fechaInicio = new Date(this.fecha_inicio_conservacion);
+      fechaInicio.setDate(fechaInicio.getDate() + this.plazo_valor); // Añadimos el plazo de días
       this.fecha_vencimiento = fechaInicio.toISOString().slice(0, 10); // Establece la fecha de vencimiento en formato 'YYYY-MM-DD'
     }
   }

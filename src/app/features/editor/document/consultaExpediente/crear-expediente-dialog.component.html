@@ -1,0 +1,70 @@
+<div class="ced-backdrop" *ngIf="open" (click)="close()"></div>
+
+<div
+  class="ced-modal"
+  *ngIf="open"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="cedTitle"
+>
+  <header class="ced-header">
+    <div>
+      <h3 id="cedTitle">Crear expediente</h3>
+      <p class="ced-header__text">
+        Complete el nombre del expediente y asígnelo a una serie y subserie.
+      </p>
+    </div>
+
+    <button type="button" class="ced-close" (click)="close()" aria-label="Cerrar">
+      ×
+    </button>
+  </header>
+
+  <section class="ced-body">
+    <div *ngIf="loading" class="ced-info">Cargando series…</div>
+    <div *ngIf="error" class="ced-error">{{ error }}</div>
+
+    <ng-container *ngIf="!loading">
+      <div class="ced-form-grid">
+        <div class="ced-field ced-field--full">
+          <label>Nombre del expediente</label>
+          <input
+            type="text"
+            [(ngModel)]="nombre"
+            placeholder="Ingrese el nombre del expediente"
+          />
+        </div>
+
+        <div class="ced-field">
+          <label>Serie</label>
+          <select [(ngModel)]="serieId" (change)="onSerieChange()">
+            <option [ngValue]="null">-- Seleccione una serie --</option>
+            <option *ngFor="let s of series" [ngValue]="s.id">
+              {{ s.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="ced-field">
+          <label>Subserie</label>
+          <select [(ngModel)]="subserieId" [disabled]="!serieId">
+            <option [ngValue]="null">-- Sin subserie --</option>
+            <option *ngFor="let ss of subseries" [ngValue]="ss.id">
+              {{ ss.nombre }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+
+  <footer class="ced-footer">
+    <button type="button" class="btn btn--ghost" (click)="close()">
+      Cancelar
+    </button>
+
+    <button type="button" class="btn btn--primary" (click)="guardar()" [disabled]="saving">
+      {{ saving ? 'Guardando…' : 'Crear expediente' }}
+    </button>
+  </footer>
+</div>

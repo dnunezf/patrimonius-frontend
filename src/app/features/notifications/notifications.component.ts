@@ -63,8 +63,10 @@ export class NotificationsComponent implements OnInit {
     return new Date(raw).toLocaleString('es-CR');
   }
 
+  // Actualización del título según el tipo de notificación
   titleFor(tipo?: string) {
     switch (tipo) {
+      case 'PLAZO_ASIGNADO': return 'Plazo asignado';
       case 'DOC_EDITADO': return 'Documento editado';
       case 'DOC_FIRMA_SOLICITADA': return 'Firma requerida';
       case 'DOC_ARCHIVADO': return 'Documento archivado';

@@ -40,6 +40,10 @@
           Restaurar versión
         </button>
 
+        <button type="button" class="btn-secondary" (click)="openConsultaExpedientes()">
+          Consultar expedientes
+        </button>
+
         <button type="button" class="btn-secondary" (click)="openMetadata()">
           Metadatos
         </button>
@@ -117,6 +121,12 @@
   (restored)="onRestored($event)"
 >
 </app-version-history-dialog>
+
+<!-- Dialog Consultar Expedientes -->
+<app-consultar-expedientes-dialog
+  [open]="consultaExpedientesOpen"
+  (closed)="consultaExpedientesOpen = false"
+></app-consultar-expedientes-dialog>
 
 <!-- Dialog metadatos -->
 <app-document-metadata-dialog
