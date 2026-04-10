@@ -15,17 +15,46 @@
     <div class="toolbar-search">
       <label class="toolbar-label" for="q-externo">Buscar</label>
       <div class="toolbar-search-row">
-        <div class="search-input-wrap">
+        <div class="search-input-wrap search-history-wrap">
           <span class="search-ico" aria-hidden="true">🔍</span>
           <input
             id="q-externo"
             type="search"
             [(ngModel)]="q"
+            (focus)="onFocusBusqueda()"
+            (blur)="onBlurBusqueda()"
+            (input)="mostrarSugerenciasHistorial = true"
             (keyup.enter)="page = 1; load()"
             placeholder="Buscar por título, código, categoría, autor o palabras clave…"
             autocomplete="off"
           />
+
+          <div
+            class="search-history-dropdown"
+            *ngIf="mostrarSugerenciasHistorial && historialVisible.length > 0"
+          >
+            <button
+              type="button"
+              class="search-history-item"
+              *ngFor="let item of historialVisible"
+              (mousedown)="seleccionarSugerenciaHistorial(item)"
+            >
+              <span class="search-history-text">{{ item.texto_busqueda }}</span>
+              <small class="search-history-date">{{ formatDateTime(item.fecha_consulta) }}</small>
+            </button>
+
+            <div class="search-history-footer">
+              <button
+                type="button"
+                class="search-history-clear"
+                (mousedown)="limpiarHistorialBusquedas()"
+              >
+                Limpiar historial
+              </button>
+            </div>
+          </div>
         </div>
+
         <button type="button" class="btn primary btn-buscar" (click)="page = 1; load()">
           Buscar
         </button>
@@ -88,62 +117,62 @@
     <div class="table-scroll">
       <table class="data-table">
         <thead>
-          <tr>
-            <th>Código</th>
-            <th>Nombre del documento</th>
-            <th>Categoría</th>
-            <th>Fecha de aprobación</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
+        <tr>
+          <th>Código</th>
+          <th>Nombre del documento</th>
+          <th>Categoría</th>
+          <th>Fecha de aprobación</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of rows">
-            <td class="mono">{{ row.codigo }}</td>
-            <td>
-              <div class="doc-title">{{ row.titulo }}</div>
-              <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
-            </td>
-            <td>
-              <span class="cat-badge" [ngClass]="categoriaClass(row.categoria_nombre)">{{
-                row.categoria_nombre || '—'
-              }}</span>
-            </td>
-            <td>📅 {{ formatDate(row.fecha_aprobacion) }}</td>
-            <td>
-              <span class="pill ok sm">{{ row.estadoEtiqueta || row.estado || '—' }}</span>
-            </td>
-            <td class="actions-cell">
-              <ng-container *ngIf="tieneAccesoAlDocumento(row)">
-                <button
-                  type="button"
-                  class="btn sm ghost"
-                  (click)="ver(row)"
-                  title="Vista previa del documento (solo lectura, sin descargar)"
-                >
-                  Vista previa
-                </button>
-                <button
-                  type="button"
-                  class="btn sm primary"
-                  (click)="descargar(row)"
-                  title="Descargar documento"
-                >
-                  Descargar
-                </button>
-              </ng-container>
-              <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
-                <button
-                  type="button"
-                  class="btn sm outline"
-                  (click)="abrirSolicitud(row)"
-                  title="Solicitar acceso a este documento archivado"
-                >
-                  Solicitar acceso
-                </button>
-              </ng-container>
-            </td>
-          </tr>
+        <tr *ngFor="let row of rows">
+          <td class="mono">{{ row.codigo }}</td>
+          <td>
+            <div class="doc-title">{{ row.titulo }}</div>
+            <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
+          </td>
+          <td>
+              <span class="cat-badge" [ngClass]="categoriaClass(row.categoria_nombre)">
+                {{ row.categoria_nombre || '—' }}
+              </span>
+          </td>
+          <td>📅 {{ formatDate(row.fecha_aprobacion) }}</td>
+          <td>
+            <span class="pill ok sm">{{ row.estadoEtiqueta || row.estado || '—' }}</span>
+          </td>
+          <td class="actions-cell">
+            <ng-container *ngIf="tieneAccesoAlDocumento(row)">
+              <button
+                type="button"
+                class="btn sm ghost"
+                (click)="ver(row)"
+                title="Vista previa del documento (solo lectura, sin descargar)"
+              >
+                Vista previa
+              </button>
+              <button
+                type="button"
+                class="btn sm primary"
+                (click)="descargar(row)"
+                title="Descargar documento"
+              >
+                Descargar
+              </button>
+            </ng-container>
+            <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
+              <button
+                type="button"
+                class="btn sm outline"
+                (click)="abrirSolicitud(row)"
+                title="Solicitar acceso a este documento archivado"
+              >
+                Solicitar acceso
+              </button>
+            </ng-container>
+          </td>
+        </tr>
         </tbody>
       </table>
     </div>
@@ -224,6 +253,7 @@
       </div>
     </div>
   </div>
+
   <app-solicitud-acceso-dialog
     [open]="solicitudOpen"
     [documento]="selectedDocumento"
