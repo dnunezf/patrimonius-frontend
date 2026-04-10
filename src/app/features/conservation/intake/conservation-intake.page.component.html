@@ -126,7 +126,7 @@
             class="dot"
             [ngClass]="eligibility().officialCodeComplete ? 'ok' : 'bad'"
           ></span>
-          Código de referencia completo
+          Código de referencia final completo
         </li>
         <li>
           <span
@@ -172,7 +172,8 @@
           (click)="verifyDuplicate()"
           [disabled]="
             !archivalForm.getRawValue().officialCode ||
-            eligibility().duplicateChecked === 'PENDING'
+            eligibility().duplicateChecked === 'PENDING' ||
+            referenceCodeLoading()
           "
         >
           Verificar duplicidad
@@ -198,8 +199,15 @@
 
           <div class="grid2">
             <label>
-              Código de referencia *
-              <input type="text" formControlName="officialCode" readonly />
+              Código de referencia final *
+              <input
+                type="text"
+                formControlName="officialCode"
+                readonly
+                [placeholder]="
+                  referenceCodeLoading() ? 'Generando código...' : ''
+                "
+              />
             </label>
 
             <label>
@@ -477,6 +485,10 @@
             <ul>
               <li><strong>Documento:</strong> {{ doc.title }}</li>
               <li>
+                <strong>Código final:</strong>
+                {{ archivalForm.getRawValue().officialCode || "—" }}
+              </li>
+              <li>
                 <strong>Clasificación:</strong>
                 {{ buildClassificationCode() || "—" }}
               </li>
@@ -504,15 +516,16 @@
               class="btn primary"
               type="button"
               (click)="save()"
-              [disabled]="loading()"
+              [disabled]="loading() || referenceCodeLoading()"
             >
               Guardar en conservación
             </button>
           </div>
 
           <div class="blocked" *ngIf="!canSave()">
-            Complete el checklist, la clasificación archivística, la retención y
-            la verificación de duplicidad antes de guardar.
+            Complete el checklist, la clasificación archivística, la retención,
+            la verificación de duplicidad y espere la generación del código
+            final antes de guardar.
           </div>
         </section>
       </form>

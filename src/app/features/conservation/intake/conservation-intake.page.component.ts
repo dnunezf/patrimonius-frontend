@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 import {
   AbstractControl,
@@ -80,6 +80,7 @@ export class ConservationIntakePageComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly loading = signal(false);
+  readonly referenceCodeLoading = signal(false);
   readonly candidates = signal<CandidateDoc[]>([]);
   readonly selected = signal<CandidateDoc | null>(null);
   readonly retentionRules = signal<RetentionRule[]>([]);
@@ -147,10 +148,111 @@ export class ConservationIntakePageComponent {
     senderInstitution: [''],
   });
 
+  filteredSubseries(): ArchivalSubseries[] {
+    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
+    if (!serieId) return [];
+
+    return this.subseries().filter((item) => Number(item.serieId) === serieId);
+  }
+
+  filteredExpedientes(): ArchivalExpediente[] {
+    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
+    const subserieValue = this.archivalForm.get('subserieId')?.value as
+      | number
+      | null;
+    const subserieId = subserieValue != null ? Number(subserieValue) : null;
+
+    return this.expedientes().filter((item) => {
+      if (serieId && Number(item.serieId) !== serieId) return false;
+      if (subserieId != null) {
+        return Number(item.subserieId ?? 0) === subserieId;
+      }
+      return true;
+    });
+  }
+
+  readonly eligibility = computed<EligibilityState>(() => {
+    const classificationReady = this.isClassificationReady();
+    const flowDataReady = this.hasRequiredFlowData();
+
+    return {
+      pdfa: !!this.selected()?.isPDFA,
+      signatures: !!this.selected()?.signaturesComplete,
+      officialCodeComplete: this.hasCompleteOfficialCode(),
+      requiredMetadata: this.hasRequiredArchivalMetadata(),
+      classificationReady,
+      flowDataReady,
+      duplicateChecked: this.duplicateState(),
+    };
+  });
+
+  readonly canSave = computed(() => {
+    const eligibility = this.eligibility();
+
+    return (
+      eligibility.pdfa &&
+      eligibility.signatures &&
+      eligibility.officialCodeComplete &&
+      eligibility.requiredMetadata &&
+      eligibility.classificationReady &&
+      eligibility.flowDataReady &&
+      eligibility.duplicateChecked === 'OK' &&
+      this.archivalForm.valid &&
+      !this.referenceCodeLoading()
+    );
+  });
+
+  readonly formErrorSummary = computed<string | null>(() => {
+    if (!this.archivalForm.touched) return null;
+    const missing: string[] = [];
+
+    if (!this.hasCompleteOfficialCode()) {
+      missing.push('Código de referencia final');
+    }
+
+    if (!this.hasRequiredArchivalMetadata()) {
+      if (!this.archivalForm.getRawValue().producingUnit?.trim()) {
+        missing.push('Unidad productora');
+      }
+      if (!this.archivalForm.getRawValue().accessLevel) {
+        missing.push('Nivel de acceso');
+      }
+    }
+
+    if (!this.isClassificationReady()) {
+      missing.push('Serie');
+      missing.push('Expediente');
+    }
+
+    if (!this.archivalForm.get('retentionRuleId')?.value) {
+      missing.push('Regla de retención');
+    }
+
+    if (!this.hasRequiredFlowData()) {
+      if (this.currentFlow() === 'PRODUCED_SENT') {
+        if (!this.archivalForm.get('recipientNameRole')?.value?.trim()) {
+          missing.push('Destinatario (nombre y cargo)');
+        }
+        if (!this.archivalForm.get('recipientInstitution')?.value?.trim()) {
+          missing.push('Destinatario (institución)');
+        }
+        if (!this.archivalForm.get('dispatchEmails')?.value?.trim()) {
+          missing.push('Correos para despacho');
+        }
+      }
+    }
+
+    const unique = Array.from(new Set(missing));
+    return unique.length
+      ? `Campos obligatorios pendientes: ${unique.join(', ')}.`
+      : null;
+  });
+
   constructor() {
     this.setupDynamicValidators();
     this.setupRetentionPreview();
     this.setupClassificationReset();
+    this.setupReferenceCodePreview();
     this.loadRetentionRules();
     this.loadArchivalStructure();
     this.search();
@@ -240,6 +342,30 @@ export class ConservationIntakePageComponent {
       });
   }
 
+  /**
+   * Recomputes the final reference-code preview whenever the selected document
+   * changes its relevant metadata in the form.
+   */
+  private setupReferenceCodePreview(): void {
+    this.archivalForm
+      .get('producingUnit')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.selected()) {
+          this.refreshReferenceCodePreview(true);
+        }
+      });
+
+    this.archivalForm
+      .get('documentType')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.selected()) {
+          this.refreshReferenceCodePreview(true);
+        }
+      });
+  }
+
   async search(): Promise<void> {
     this.loading.set(true);
     this.selected.set(null);
@@ -282,7 +408,7 @@ export class ConservationIntakePageComponent {
 
     this.archivalForm.reset(
       {
-        officialCode: doc.officialCode || '',
+        officialCode: '',
         documentType: doc.documentType || '',
         title: doc.title || '',
         documentFlow: (doc.documentFlow ||
@@ -320,6 +446,7 @@ export class ConservationIntakePageComponent {
 
     this.archivalForm.markAsUntouched();
     this.refreshRetentionEndDate();
+    this.refreshReferenceCodePreview(false);
 
     this.api
       .audit('CANDIDATE_SELECTED', {
@@ -365,13 +492,61 @@ export class ConservationIntakePageComponent {
     });
   }
 
+  private refreshReferenceCodePreview(silent: boolean): void {
+    const doc = this.selected();
+    if (!doc) return;
+
+    const raw = this.archivalForm.getRawValue();
+    const documentType = String(raw.documentType || '').trim();
+    const producingUnit = String(raw.producingUnit || '').trim();
+
+    if (!documentType) {
+      this.archivalForm.patchValue({ officialCode: '' }, { emitEvent: false });
+      return;
+    }
+
+    this.referenceCodeLoading.set(true);
+
+    this.api
+      .previewReferenceCode({
+        candidateId: doc.id,
+        documentType,
+        producingUnit,
+      })
+      .subscribe({
+        next: (preview) => {
+          this.referenceCodeLoading.set(false);
+          this.archivalForm.patchValue(
+            { officialCode: preview.referenceCode },
+            { emitEvent: false },
+          );
+        },
+        error: (err) => {
+          this.referenceCodeLoading.set(false);
+          this.archivalForm.patchValue(
+            { officialCode: '' },
+            { emitEvent: false },
+          );
+
+          if (!silent) {
+            this.toasts.error(
+              err?.error?.message ||
+                'No se pudo generar el código de referencia final.',
+            );
+          }
+        },
+      });
+  }
+
   async verifyDuplicate(): Promise<void> {
     const code = String(
       this.archivalForm.getRawValue().officialCode || '',
     ).trim();
 
     if (!code) {
-      this.toasts.error('El documento seleccionado no tiene código oficial.');
+      this.toasts.error(
+        'Primero debe generarse el código de referencia final.',
+      );
       return;
     }
 
@@ -412,28 +587,6 @@ export class ConservationIntakePageComponent {
       (this.archivalForm.get('documentFlow')?.value as FinalDocumentFlow) ||
       'PRODUCED_SENT'
     );
-  }
-
-  filteredSubseries(): ArchivalSubseries[] {
-    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
-    if (!serieId) return [];
-
-    return this.subseries().filter((item) => Number(item.serieId) === serieId);
-  }
-
-  filteredExpedientes(): ArchivalExpediente[] {
-    const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
-    const subserieId = this.archivalForm.get('subserieId')?.value as
-      | number
-      | null;
-
-    return this.expedientes().filter((item) => {
-      if (serieId && Number(item.serieId) !== serieId) return false;
-      if (subserieId != null) {
-        return Number(item.subserieId ?? 0) === Number(subserieId);
-      }
-      return true;
-    });
   }
 
   selectedSerie(): ArchivalSeries | null {
@@ -479,7 +632,7 @@ export class ConservationIntakePageComponent {
     const code = String(
       this.archivalForm.getRawValue().officialCode || '',
     ).trim();
-    return code.length >= 8;
+    return code.length >= 8 && !code.startsWith('TMP');
   }
 
   hasRequiredArchivalMetadata(): boolean {
@@ -506,76 +659,6 @@ export class ConservationIntakePageComponent {
     }
 
     return true;
-  }
-
-  eligibility(): EligibilityState {
-    return {
-      pdfa: !!this.selected()?.isPDFA,
-      signatures: !!this.selected()?.signaturesComplete,
-      officialCodeComplete: this.hasCompleteOfficialCode(),
-      requiredMetadata: this.hasRequiredArchivalMetadata(),
-      classificationReady: this.isClassificationReady(),
-      flowDataReady: this.hasRequiredFlowData(),
-      duplicateChecked: this.duplicateState(),
-    };
-  }
-
-  canSave(): boolean {
-    const eligibility = this.eligibility();
-
-    return (
-      eligibility.pdfa &&
-      eligibility.signatures &&
-      eligibility.officialCodeComplete &&
-      eligibility.requiredMetadata &&
-      eligibility.classificationReady &&
-      eligibility.flowDataReady &&
-      eligibility.duplicateChecked === 'OK' &&
-      this.archivalForm.valid
-    );
-  }
-
-  formErrorSummary(): string | null {
-    if (!this.archivalForm.touched) return null;
-
-    const missing: string[] = [];
-
-    if (!this.hasRequiredArchivalMetadata()) {
-      if (!this.archivalForm.getRawValue().producingUnit?.trim()) {
-        missing.push('Unidad productora');
-      }
-      if (!this.archivalForm.getRawValue().accessLevel) {
-        missing.push('Nivel de acceso');
-      }
-    }
-
-    if (!this.isClassificationReady()) {
-      if (!this.selectedSerie()) missing.push('Serie');
-      if (!this.selectedExpediente()) missing.push('Expediente');
-    }
-
-    if (!this.archivalForm.get('retentionRuleId')?.value) {
-      missing.push('Regla de retención');
-    }
-
-    if (!this.hasRequiredFlowData()) {
-      if (this.currentFlow() === 'PRODUCED_SENT') {
-        if (!this.archivalForm.get('recipientNameRole')?.value?.trim()) {
-          missing.push('Destinatario (nombre y cargo)');
-        }
-        if (!this.archivalForm.get('recipientInstitution')?.value?.trim()) {
-          missing.push('Destinatario (institución)');
-        }
-        if (!this.archivalForm.get('dispatchEmails')?.value?.trim()) {
-          missing.push('Correos para despacho');
-        }
-      }
-    }
-
-    const unique = Array.from(new Set(missing));
-    return unique.length
-      ? `Campos obligatorios pendientes: ${unique.join(', ')}.`
-      : null;
   }
 
   refreshRetentionEndDate(): void {
@@ -668,6 +751,13 @@ export class ConservationIntakePageComponent {
       return;
     }
 
+    if (this.referenceCodeLoading()) {
+      this.toasts.error(
+        'Espere a que se genere el código de referencia final.',
+      );
+      return;
+    }
+
     const eligibility = this.eligibility();
 
     if (!eligibility.pdfa) {
@@ -686,7 +776,7 @@ export class ConservationIntakePageComponent {
 
     if (!eligibility.officialCodeComplete) {
       this.toasts.error(
-        'El documento seleccionado no tiene un código oficial completo.',
+        'El documento seleccionado no tiene un código de referencia final válido.',
       );
       return;
     }
@@ -802,7 +892,7 @@ export class ConservationIntakePageComponent {
         this.loading.set(false);
 
         this.toasts.success(
-          `Documento registrado en conservación (${response.intakeId}).`,
+          `Documento registrado en conservación (${response.officialCode || response.intakeId}).`,
         );
 
         this.api.audit('INTAKE_SUCCESS', response).subscribe();
@@ -812,6 +902,9 @@ export class ConservationIntakePageComponent {
 
         this.archivalForm.reset(
           {
+            officialCode: '',
+            documentType: '',
+            title: '',
             documentFlow: 'PRODUCED_SENT',
             accessLevel: 'INTERNAL',
             procedureType: null,
