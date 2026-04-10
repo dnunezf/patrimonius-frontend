@@ -1,0 +1,62 @@
+<main class="container">
+  <section class="page-header">
+    <h1>Gestión Archivística</h1>
+    <p>
+      Clasifique, conserve y evalúe documentos según normativas archivísticas
+      institucionales
+    </p>
+  </section>
+
+  <!-- KPIs -->
+  <section class="stats-grid">
+    <article class="stat-card" *ngFor="let stat of statsCards">
+      <div class="stat-content">
+        <div>
+          <p class="stat-title">{{ stat.title }}</p>
+          <p class="stat-value">{{ stat.value }}</p>
+          <p class="stat-subtitle">{{ stat.subtitle }}</p>
+        </div>
+
+        <div class="stat-icon" [ngClass]="stat.iconClass">
+          <span>{{ getIcon(stat.icon) }}</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- Modules -->
+  <section class="modules-section">
+    <h2>Módulos de Gestión Archivística</h2>
+
+    <div class="modules-grid">
+      <article
+        class="module-card"
+        *ngFor="let module of moduleCards"
+        (click)="goTo(module.link)"
+      >
+        <div class="module-header">
+          <div class="module-title-block">
+            <div class="module-icon" [ngClass]="module.iconClass">
+              <span>{{ getIcon(module.icon) }}</span>
+            </div>
+
+            <div>
+              <h3>{{ module.title }}</h3>
+            </div>
+          </div>
+
+          <span class="module-badge">{{ module.badge }}</span>
+        </div>
+
+        <p class="module-description">{{ module.description }}</p>
+
+        <div class="tasks-block">
+          <p class="tasks-title">Tareas principales:</p>
+          <ul>
+            <li *ngFor="let feature of module.features">{{ feature }}</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>

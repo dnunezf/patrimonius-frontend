@@ -7,13 +7,22 @@
 
     <div class="body">
       <div class="row1">
-        <div class="card-title">{{ titleFor(n.tipo) }}</div>
+        <div class="card-title">
+          {{ n.tipo === 'PLAZO_ASIGNADO' ? 'Plazo asignado' : titleFor(n.tipo) }}
+        </div>
         <span class="pill pill-new" *ngIf="isUnread(n)">Nueva</span>
       </div>
 
       <div class="notif-body">
+        <!-- Modificamos el mensaje para mostrar el título del documento -->
         <div><b>Título:</b> "{{ n.documento_titulo || 'Sin título' }}"</div>
 
+        <!-- Detalle de la notificación -->
+        <div *ngIf="n.tipo === 'PLAZO_ASIGNADO'">
+          <b>Plazo asignado para el documento:</b> {{ n.resultado || 'Información no disponible' }}
+        </div>
+
+        <!-- Mostrar detalles según el tipo de notificación -->
         <div *ngIf="n.tipo === 'DOC_FIRMA_SOLICITADA'">
           <b>Acción requerida:</b> Firmar
         </div>
@@ -31,7 +40,7 @@
         </div>
 
         <div *ngIf="n.tipo === 'DOC_FIRMA_INVALIDA'">
-          <b>Resultado:</b> {{ n.resultado || 'Se detectó un problema con la firma digital.' }}
+          <b>Resultado:</b> {{ n.resultado || 'Se detectó un resultado pendiente de revisión.' }}
         </div>
       </div>
 

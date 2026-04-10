@@ -1,0 +1,11 @@
+@import './consulta-subpanel.css';
+
+.page__head-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}

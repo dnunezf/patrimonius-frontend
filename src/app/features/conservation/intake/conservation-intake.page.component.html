@@ -1,7 +1,8 @@
 <header class="page-header">
   <h1>Ingreso a conservación</h1>
   <p class="sub">
-    Seleccione un documento candidato y complete el registro archivístico.
+    Seleccione un documento final y complete su registro archivístico de
+    conservación.
   </p>
 </header>
 
@@ -10,17 +11,17 @@
     <div class="card">
       <div class="card-header">
         <h2>Búsqueda de candidatos</h2>
-        <span class="hint">Filtre documentos elegibles</span>
+        <span class="hint">Documentos finales listos para revisión</span>
       </div>
 
       <form class="filters" [formGroup]="searchForm" (ngSubmit)="search()">
         <div class="row">
           <label>
-            Código oficial
+            Código de referencia
             <input
               type="text"
               formControlName="officialCode"
-              placeholder="MNCR-..."
+              placeholder="OFI-MNCR-..."
             />
           </label>
 
@@ -73,7 +74,7 @@
         <div class="thead">
           <div>Código</div>
           <div>Título</div>
-          <div>PDF/A</div>
+          <div>Tipo</div>
           <div>Firmas</div>
         </div>
 
@@ -85,11 +86,7 @@
         >
           <div class="mono">{{ d.officialCode || "—" }}</div>
           <div class="title">{{ d.title }}</div>
-          <div>
-            <span class="badge" [ngClass]="d.isPDFA ? 'ok' : 'bad'">
-              {{ d.isPDFA ? "Sí" : "No" }}
-            </span>
-          </div>
+          <div>{{ d.documentType || "—" }}</div>
           <div>
             <span class="badge" [ngClass]="d.signaturesComplete ? 'ok' : 'bad'">
               {{ d.signaturesComplete ? "Completas" : "Incompletas" }}
@@ -106,7 +103,7 @@
     <div class="card" *ngIf="selected()">
       <div class="card-header">
         <h2>Elegibilidad</h2>
-        <span class="hint">Checklist requerido</span>
+        <span class="hint">Checklist previo al registro</span>
       </div>
 
       <ul class="checklist">
@@ -115,7 +112,7 @@
             class="dot"
             [ngClass]="eligibility().pdfa ? 'ok' : 'bad'"
           ></span>
-          PDF/A
+          Formato elegible (PDF/A)
         </li>
         <li>
           <span
@@ -129,14 +126,28 @@
             class="dot"
             [ngClass]="eligibility().officialCodeComplete ? 'ok' : 'bad'"
           ></span>
-          Código oficial completo
+          Código de referencia final completo
         </li>
         <li>
           <span
             class="dot"
             [ngClass]="eligibility().requiredMetadata ? 'ok' : 'bad'"
           ></span>
-          Metadatos requeridos completos
+          Metadatos generales completos
+        </li>
+        <li>
+          <span
+            class="dot"
+            [ngClass]="eligibility().classificationReady ? 'ok' : 'bad'"
+          ></span>
+          Clasificación archivística seleccionada
+        </li>
+        <li>
+          <span
+            class="dot"
+            [ngClass]="eligibility().flowDataReady ? 'ok' : 'bad'"
+          ></span>
+          Datos específicos del tipo de documento
         </li>
         <li>
           <span
@@ -149,7 +160,7 @@
                 eligibility().duplicateChecked === 'NOT_CHECKED',
             }"
           ></span>
-          Sin código oficial duplicado
+          Sin código duplicado
           <small class="state">({{ eligibility().duplicateChecked }})</small>
         </li>
       </ul>
@@ -160,8 +171,9 @@
           type="button"
           (click)="verifyDuplicate()"
           [disabled]="
-            !selected()?.officialCode ||
-            eligibility().duplicateChecked === 'PENDING'
+            !archivalForm.getRawValue().officialCode ||
+            eligibility().duplicateChecked === 'PENDING' ||
+            referenceCodeLoading()
           "
         >
           Verificar duplicidad
@@ -173,7 +185,7 @@
   <main class="right" *ngIf="selected() as doc; else emptyState">
     <div class="card">
       <div class="card-header">
-        <h2>Registro archivístico</h2>
+        <h2>Registro archivístico final</h2>
         <span class="hint">Campos obligatorios marcados con *</span>
       </div>
 
@@ -183,12 +195,39 @@
 
       <form [formGroup]="archivalForm" class="form">
         <section class="section">
-          <h3 class="section-title">Metadatos archivísticos</h3>
+          <h3 class="section-title">Identificación final del documento</h3>
 
           <div class="grid2">
             <label>
-              Código oficial *
-              <input type="text" formControlName="officialCode" readonly />
+              Código de referencia final *
+              <input
+                type="text"
+                formControlName="officialCode"
+                readonly
+                [placeholder]="
+                  referenceCodeLoading() ? 'Generando código...' : ''
+                "
+              />
+            </label>
+
+            <label>
+              Tipo documental *
+              <input type="text" formControlName="documentType" readonly />
+            </label>
+          </div>
+
+          <label>
+            Título del documento *
+            <input type="text" formControlName="title" readonly />
+          </label>
+
+          <div class="grid2">
+            <label>
+              Unidad productora *
+              <input type="text" formControlName="producingUnit" />
+              <div class="err" *ngIf="fieldErr('producingUnit')">
+                {{ fieldErr("producingUnit") }}
+              </div>
             </label>
 
             <label>
@@ -203,91 +242,198 @@
           </div>
 
           <label>
-            Título *
-            <input type="text" formControlName="title" />
-            <div class="err" *ngIf="fieldErr('title')">
-              {{ fieldErr("title") }}
-            </div>
+            Palabras clave
+            <input
+              type="text"
+              formControlName="keywords"
+              placeholder="acta, consejo, museo..."
+            />
           </label>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title">Metadatos automáticos</h3>
 
           <div class="grid2">
             <label>
-              Unidad productora *
-              <input type="text" formControlName="producingUnit" />
-              <div class="err" *ngIf="fieldErr('producingUnit')">
-                {{ fieldErr("producingUnit") }}
+              Tamaño *
+              <input type="text" [value]="sizeHuman()" readonly />
+            </label>
+
+            <label>
+              Formato *
+              <input type="text" formControlName="format" readonly />
+            </label>
+          </div>
+
+          <label>
+            Nombre del productor (firmantes) *
+            <textarea
+              class="ro-area"
+              formControlName="signers"
+              rows="2"
+              readonly
+            ></textarea>
+          </label>
+
+          <label>
+            Fecha y hora de firmas *
+            <textarea
+              class="ro-area"
+              formControlName="signedAt"
+              rows="2"
+              readonly
+            ></textarea>
+          </label>
+
+          <label *ngIf="currentFlow() === 'PRODUCED_SENT'">
+            Aplicación de software y versión *
+            <input type="text" formControlName="softwareVersion" readonly />
+          </label>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title">Tipo de documento final</h3>
+
+          <div class="grid2">
+            <label>
+              Flujo documental *
+              <select formControlName="documentFlow">
+                <option value="PRODUCED_SENT">
+                  Documento producido / enviado
+                </option>
+                <option value="RECEIVED">Documento recibido</option>
+              </select>
+            </label>
+
+            <label>
+              Trámite
+              <select formControlName="procedureType">
+                <option [ngValue]="null">Seleccione…</option>
+                <option
+                  *ngFor="let item of procedureOptions"
+                  [ngValue]="item.value"
+                >
+                  {{ item.label }}
+                </option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="section" *ngIf="currentFlow() === 'PRODUCED_SENT'">
+          <h3 class="section-title">Datos de despacho / salida</h3>
+
+          <div class="grid2">
+            <label>
+              Destinatario (nombre y cargo) *
+              <input type="text" formControlName="recipientNameRole" />
+              <div class="err" *ngIf="fieldErr('recipientNameRole')">
+                {{ fieldErr("recipientNameRole") }}
               </div>
             </label>
 
             <label>
-              Autor *
-              <input type="text" formControlName="author" readonly />
-              <div class="err" *ngIf="fieldErr('author')">
-                {{ fieldErr("author") }}
+              Destinatario (institución) *
+              <input type="text" formControlName="recipientInstitution" />
+              <div class="err" *ngIf="fieldErr('recipientInstitution')">
+                {{ fieldErr("recipientInstitution") }}
               </div>
             </label>
           </div>
 
           <label>
-            Palabras clave *
+            Correos para despacho *
             <input
               type="text"
-              formControlName="keywords"
-              placeholder="acta, consejo..."
+              formControlName="dispatchEmails"
+              placeholder="correo1@dominio.com, correo2@dominio.com"
             />
-            <div class="err" *ngIf="fieldErr('keywords')">
-              {{ fieldErr("keywords") }}
+            <div class="err" *ngIf="fieldErr('dispatchEmails')">
+              {{ fieldErr("dispatchEmails") }}
             </div>
           </label>
 
-          <div class="meta-line">
-            <strong>Documento:</strong> {{ doc.title }} ·
-            <strong>Unidad:</strong> {{ doc.producingUnit }} ·
-            <strong>Fecha:</strong> {{ doc.createdAtISO | date: "yyyy-MM-dd" }}
+          <div class="infobox">
+            La fecha/hora de despacho y el responsable del despacho se
+            registrarán automáticamente al guardar.
           </div>
         </section>
 
-        <section class="section">
-          <h3 class="section-title">Clasificación institucional *</h3>
+        <section class="section" *ngIf="currentFlow() === 'RECEIVED'">
+          <h3 class="section-title">Datos de recepción / entrada</h3>
 
           <div class="grid2">
             <label>
-              Buscar
-              <input
-                type="text"
-                [value]="classificationQuery()"
-                (input)="classificationQuery.set($any($event.target).value)"
-                placeholder="Código o etiqueta..."
-              />
+              Remitente (nombre y cargo)
+              <input type="text" formControlName="senderNameRole" />
             </label>
 
-            <div class="picked">
-              <div class="cap">Seleccionado</div>
-              <div class="val mono">
-                {{ classificationSelected()?.code || "—" }}
-              </div>
-              <div class="val">
-                {{ classificationSelected()?.label || "Sin selección" }}
-              </div>
-            </div>
+            <label>
+              Remitente (institución)
+              <input type="text" formControlName="senderInstitution" />
+            </label>
           </div>
 
-          <div class="class-list">
-            <button
-              type="button"
-              class="class-item"
-              *ngFor="let c of classificationFiltered()"
-              (click)="pickClassification(c)"
-              [class.active]="classificationSelected()?.code === c.code"
-            >
-              <span class="mono">{{ c.code }}</span>
-              <span>{{ c.label }}</span>
-            </button>
+          <div class="infobox">
+            La fecha/hora de recepción y el responsable de la recepción se
+            registrarán automáticamente al guardar.
           </div>
         </section>
 
         <section class="section">
-          <h3 class="section-title">Retención y vigencia *</h3>
+          <h3 class="section-title">Clasificación archivística *</h3>
+
+          <div class="grid3">
+            <label>
+              Serie *
+              <select formControlName="serieId">
+                <option [ngValue]="null">Seleccione…</option>
+                <option *ngFor="let item of series()" [ngValue]="item.id">
+                  {{ item.code }} · {{ item.name }}
+                </option>
+              </select>
+            </label>
+
+            <label>
+              Subserie
+              <select formControlName="subserieId">
+                <option [ngValue]="null">Seleccione…</option>
+                <option
+                  *ngFor="let item of filteredSubseries()"
+                  [ngValue]="item.id"
+                >
+                  {{ item.code }} · {{ item.name }}
+                </option>
+              </select>
+            </label>
+
+            <label>
+              Expediente *
+              <select formControlName="expedienteId">
+                <option [ngValue]="null">Seleccione…</option>
+                <option
+                  *ngFor="let item of filteredExpedientes()"
+                  [ngValue]="item.id"
+                >
+                  {{ item.code }} · {{ item.name }}
+                </option>
+              </select>
+            </label>
+          </div>
+
+          <div class="picked">
+            <div class="cap">Código de clasificación</div>
+            <div class="val mono">{{ buildClassificationCode() || "—" }}</div>
+            <div class="cap mt">Ruta seleccionada</div>
+            <div class="val">
+              {{ buildClassificationLabel() || "Sin selección" }}
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title">Retención y vigencia</h3>
 
           <div class="grid2">
             <label>
@@ -313,12 +459,20 @@
             </label>
           </div>
 
-          <label class="chk">
-            <input type="checkbox" formControlName="trackingEnabled" />
-            Activar seguimiento de vigencia al ingresar
-          </label>
-          <div class="err" *ngIf="fieldErr('trackingEnabled')">
-            {{ fieldErr("trackingEnabled") }}
+          <div class="grid2">
+            <label>
+              Fecha de caducidad *
+              <input
+                type="date"
+                formControlName="retentionEndDateISO"
+                readonly
+              />
+            </label>
+
+            <label class="chk">
+              <input type="checkbox" checked disabled />
+              Seguimiento de vigencia activo
+            </label>
           </div>
 
           <div class="infobox">{{ retentionPreviewText() }}</div>
@@ -329,25 +483,30 @@
 
           <div class="summary">
             <ul>
+              <li><strong>Documento:</strong> {{ doc.title }}</li>
               <li>
-                <strong>Elegibilidad:</strong>
-                {{ canSave() ? "OK" : "Pendiente" }}
+                <strong>Código final:</strong>
+                {{ archivalForm.getRawValue().officialCode || "—" }}
               </li>
               <li>
                 <strong>Clasificación:</strong>
-                {{ classificationSelected()?.code || "—" }}
+                {{ buildClassificationCode() || "—" }}
+              </li>
+              <li>
+                <strong>Ruta:</strong>
+                {{ buildClassificationLabel() || "—" }}
               </li>
               <li>
                 <strong>Acceso:</strong>
                 {{ archivalForm.get("accessLevel")?.value }}
               </li>
               <li>
-                <strong>Seguimiento:</strong>
-                {{
-                  archivalForm.get("trackingEnabled")?.value
-                    ? "Activo"
-                    : "Inactivo"
-                }}
+                <strong>Trámite:</strong>
+                {{ archivalForm.get("procedureType")?.value || "—" }}
+              </li>
+              <li>
+                <strong>Elegibilidad:</strong>
+                {{ canSave() ? "OK" : "Pendiente" }}
               </li>
             </ul>
           </div>
@@ -357,15 +516,16 @@
               class="btn primary"
               type="button"
               (click)="save()"
-              [disabled]="loading()"
+              [disabled]="loading() || referenceCodeLoading()"
             >
               Guardar en conservación
             </button>
           </div>
 
           <div class="blocked" *ngIf="!canSave()">
-            Complete el checklist requerido, la clasificación, la regla de
-            retención y la verificación de duplicidad.
+            Complete el checklist, la clasificación archivística, la retención,
+            la verificación de duplicidad y espere la generación del código
+            final antes de guardar.
           </div>
         </section>
       </form>
@@ -376,7 +536,7 @@
     <main class="right">
       <div class="card empty">
         <h2>Seleccione un candidato</h2>
-        <p>Use el panel de búsqueda para seleccionar un documento.</p>
+        <p>Use el panel de búsqueda para seleccionar un documento final.</p>
       </div>
     </main>
   </ng-template>

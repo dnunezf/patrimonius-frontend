@@ -1,0 +1,120 @@
+<section class="page">
+  <div class="page-header">
+    <div>
+      <h1>Gestión de Plazos de Conservación</h1>
+      <p>Consulta y asigna plazos de conservación a documentos archivados.</p>
+    </div>
+  </div>
+
+  <div class="filters-card">
+    <div class="filters">
+      <input
+        type="text"
+        [(ngModel)]="filtroTexto"
+        placeholder="Buscar por título"
+      />
+
+      <select [(ngModel)]="filtroEstado">
+        <option value="">Todos los estados</option>
+        <option value="VIGENTE">Vigente</option>
+        <option value="PROXIMO_A_VENCER">Próximo a vencer</option>
+        <option value="VENCIDO">Vencido</option>
+      </select>
+
+      <select [(ngModel)]="filtroTipo">
+        <option value="">Todos los tipos</option>
+        <option value="ADMINISTRATIVO">Administrativo</option>
+        <option value="LEGAL">Legal</option>
+        <option value="HISTORICO">Histórico</option>
+      </select>
+
+      <div class="actions">
+        <button class="btn secondary" type="button" (click)="limpiarFiltros()">
+          Limpiar
+        </button>
+        <button class="btn primary" type="button" (click)="cargarPlazos()">
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div *ngIf="loading" class="state">
+      Cargando plazos...
+    </div>
+
+    <div *ngIf="!loading && error" class="state error">
+      {{ error }}
+    </div>
+
+    <div *ngIf="!loading && !error" class="table-wrapper">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Título</th>
+          <th>Plazo</th>
+          <th>Tipo</th>
+          <th>Fecha inicio</th>
+          <th>Fecha vencimiento</th>
+          <th>Estado</th>
+          <th>Asignado por</th> <!-- Columna "Asignado por" -->
+          <th>Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngIf="documentos.length === 0">
+          <td colspan="9" class="empty">
+            No hay documentos con plazos para mostrar.
+          </td>
+        </tr>
+
+        <tr *ngFor="let doc of documentos">
+          <td>{{ doc.id }}</td>
+          <td>{{ doc.titulo }}</td>
+          <td>{{ formatearPlazo(doc) }}</td>
+          <td>{{ doc.plazo_tipo || 'Sin asignar' }}</td>
+          <td>
+            {{
+              doc.fecha_inicio_conservacion
+                ? (doc.fecha_inicio_conservacion | date:'yyyy-MM-dd')
+                : '-'
+            }}
+          </td>
+          <td>
+            {{
+              doc.fecha_vencimiento
+                ? (doc.fecha_vencimiento | date:'yyyy-MM-dd')
+                : '-'
+            }}
+          </td>
+          <td>
+              <span [class]="getEstadoClass(doc.estado_conservacion)">
+                {{ doc.estado_conservacion || 'SIN ESTADO' }}
+              </span>
+          </td>
+          <td>{{ doc.asignado_por_correo || 'No asignado' }}</td> <!-- Mostrar el correo de quien asignó -->
+          <td>
+            <button
+              class="btn sm primary"
+              type="button"
+              (click)="abrirAsignar(doc)"
+            >
+              {{ doc.plazo_valor ? 'Reasignar' : 'Asignar plazo' }}
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <app-asignar-plazo-dialog
+    [open]="asignarOpen"
+    [documento]="selectedDocumento"
+    (closed)="cerrarAsignar()"
+    (saved)="onSaved()"
+  ></app-asignar-plazo-dialog>
+</section>

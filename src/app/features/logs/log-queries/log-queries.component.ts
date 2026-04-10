@@ -37,9 +37,9 @@ export class LogQueriesComponent {
       link: '/logs/security',
     },
     {
-      title: 'Bitácora de Actividad de Usuario',
+      title: 'Bitácora de Permisos y Accesos',
       description:
-        'Registra solicitudes de permisos, excepciones de acceso, responsables, usuarios objetivo y ventanas de acceso a documentos.',
+        'Auditoría de permisos sobre documentos: solicitudes de acceso, excepciones, responsables, usuarios beneficiarios y ventanas de acceso.',
       icon: 'users.png',
       funciones: [
         'Filtrar por flujo, fechas y documento',
@@ -47,6 +47,18 @@ export class LogQueriesComponent {
         'Auditar acciones sobre permisos',
       ],
       link: '/logs/user-activity',
+    },
+    {
+      title: 'Bitácora de Actividad de Usuario',
+      description:
+        'Monitorea las descargas, búsquedas y visualización de documentos  conservación.',
+      icon: 'users.png',
+      funciones: [
+        'Filtrar por usuario, actividad, recurso y fechas',
+        'Ver detalle con parámetros completos',
+        'Exportar CSV y XML del listado visible',
+      ],
+      link: '/logs/actividad-usuario',
     },
   ];
 

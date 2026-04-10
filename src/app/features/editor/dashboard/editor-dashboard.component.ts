@@ -51,20 +51,6 @@ export class EditorDashboardComponent implements OnInit {
   selectedPdf: File | null = null;
   signDocId: number | null = null;
 
-  // ✅ Modal de validación de firma
-  validationModalOpen = false;
-  validationResult: any = null;
-  validationMainItem: any = null;
-  validationFileName = '';
-  validationStatusLabel = '';
-  validationStatusClass = 'badge';
-  isValidationValid = false;
-  validationRecipient: string | null = null;
-  validationAlertSent = false;
-  validationCurrentIndex = 0;
-  validationItems: any[] = [];
-  pendingValidationPdf: File | null = null;
-
   signInfo: {
     documento_id: number;
     titulo: string;
@@ -325,68 +311,10 @@ export class EditorDashboardComponent implements OnInit {
       return;
     }
 
-    this.signLoading = true;
     this.signError = '';
-
-    // const uploadedFileName = this.selectedPdf.name;
-    const pdfFile = this.selectedPdf;
-
-    this.docs.validateSignedPdf(pdfFile, this.signDocId).subscribe({
-      next: (validation) => {
-        this.signLoading = false;
-
-        console.log('VALIDACION DESDE /firma/validar =>', validation);
-
-        this.validationResult = validation;
-        this.validationFileName = this.selectedPdf?.name || '';
-
-        this.validationItems = Array.isArray(validation?.firmas) ? validation.firmas : [];
-        this.validationCurrentIndex = 0;
-        this.validationMainItem = this.validationItems.length
-          ? this.validationItems[0]
-          : null;
-
-        const businessState = String(
-          validation?.estadoVerificacion || ''
-        ).toUpperCase();
-
-        this.isValidationValid = businessState === 'VALIDA';
-
-        switch (businessState) {
-          case 'VALIDA':
-            this.validationStatusLabel = 'Válida';
-            this.validationStatusClass = 'badge badge-green';
-            break;
-          case 'REVOCADA':
-            this.validationStatusLabel = 'Revocada';
-            this.validationStatusClass = 'badge badge-red';
-            break;
-          case 'CADUCADA':
-            this.validationStatusLabel = 'Caducada';
-            this.validationStatusClass = 'badge badge-orange';
-            break;
-          default:
-            this.validationStatusLabel = 'Inválida';
-            this.validationStatusClass = 'badge badge-red';
-            break;
-        }
-
-        //usar estos ??
-        // this.validationRecipient = validation?.destinatarioAlerta || null;
-        // this.validationAlertSent = !!validation?.alertaEnviada;
-        //temporales
-        this.validationRecipient = null;
-        this.validationAlertSent = false;
-
-
-        this.validationModalOpen = true;
-        this.pendingValidationPdf = this.isValidationValid ? pdfFile : null;
-      },
-      error: (e) => {
-        this.signLoading = false;
-        this.signError = e?.error?.message || 'No se pudo validar la firma.';
-      },
-    });
+    // HU-20 simplificada:
+    // se elimina la validación previa de firma digital y se confirma directo.
+    this.executeRealSignatureConfirm(this.selectedPdf);
   }
 
   private executeRealSignatureConfirm(file: File): void {
@@ -397,26 +325,15 @@ export class EditorDashboardComponent implements OnInit {
     this.docs.confirmSignature(this.signDocId, file).subscribe({
       next: () => {
         this.signLoading = false;
+        this.selectedPdf = null;
         this.loadDocuments();
-        this.reloadSignatureInfo();
-        this.loadAnexos();
+        this.closeSignModal();
       },
       error: (e) => {
         this.signLoading = false;
         this.signError =
           e?.error?.message || 'La firma fue válida, pero no se pudo confirmar.';
       },
-    });
-  }
-
-  private reloadSignatureInfo(): void {
-    if (!this.signDocId) return;
-
-    this.docs.getSignatureInfo(this.signDocId).subscribe({
-      next: (info) => {
-        this.signInfo = info;
-      },
-      error: () => {},
     });
   }
 
@@ -524,73 +441,4 @@ export class EditorDashboardComponent implements OnInit {
     URL.revokeObjectURL(url);
   }
 
-  closeValidationModal(): void {
-    this.validationModalOpen = false;
-    this.validationResult = null;
-    this.validationMainItem = null;
-    this.validationFileName = '';
-    this.validationStatusLabel = '';
-    this.validationStatusClass = 'badge';
-    this.validationRecipient = null;
-    this.validationAlertSent = false;
-    this.validationItems = [];
-    this.validationCurrentIndex = 0;
-    this.pendingValidationPdf = null;
-
-    // no confirma nada
-    // si era inválida, limpia archivo
-    this.selectedPdf = null;
-  }
-
-  formatValidationDate(value?: string | null): string {
-    if (!value) return 'No disponible';
-
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return 'No disponible';
-
-    return d.toLocaleString('es-CR');
-  }
-
-  prevValidationItem(): void {
-    if (this.validationCurrentIndex <= 0) return;
-
-    this.validationCurrentIndex--;
-    this.validationMainItem = this.validationItems[this.validationCurrentIndex] || null;
-  }
-
-  nextValidationItem(): void {
-    if (this.validationCurrentIndex >= this.validationItems.length - 1) return;
-
-    this.validationCurrentIndex++;
-    this.validationMainItem = this.validationItems[this.validationCurrentIndex] || null;
-  }
-
-  get validationTotalItems(): number {
-    return this.validationItems.length;
-  }
-
-  confirmValidatedSignature(): void {
-    if (!this.isValidationValid || !this.pendingValidationPdf) {
-      this.closeValidationModal();
-      return;
-    }
-
-    const file = this.pendingValidationPdf;
-
-    // cerrar modal visualmente antes de confirmar
-    this.validationModalOpen = false;
-
-    this.validationResult = null;
-    this.validationMainItem = null;
-    this.validationFileName = '';
-    this.validationStatusLabel = '';
-    this.validationStatusClass = 'badge';
-    this.validationRecipient = null;
-    this.validationAlertSent = false;
-    this.validationItems = [];
-    this.validationCurrentIndex = 0;
-    this.pendingValidationPdf = null;
-
-    this.executeRealSignatureConfirm(file);
-  }
 }

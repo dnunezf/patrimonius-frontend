@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuditService, SecurityDetail, SecurityItem } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
-import { SecurityDetailModalComponent } from './security-detail-modal.component';
+import { SecurityDetailModalComponent } from './security-detail-modal/security-detail-modal.component';
 
 @Component({
   selector: 'app-security-log',

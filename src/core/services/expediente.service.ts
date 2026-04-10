@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface SerieLite {
   id: number;
@@ -62,9 +63,9 @@ export interface UpdateExpedienteDto {
 export class ExpedienteService {
   private http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:3000/api/admin/expedientes';
-  private readonly seriesUrl = 'http://localhost:3000/api/admin/series';
-  private readonly subseriesUrl = 'http://localhost:3000/api/admin/subseries';
+  private readonly baseUrl = 'http://localhost:3000/api/expedientes';
+  private readonly seriesUrl = 'http://localhost:3000/api/series';
+  private readonly subseriesUrl = 'http://localhost:3000/subseries';
 
   getExpedientes(filters?: {
     unidad_id?: number;
@@ -117,12 +118,10 @@ export class ExpedienteService {
   }
 
   getSubseries(serieId?: number): Observable<SubserieLite[]> {
-    let params = new HttpParams();
-
-    if (serieId != null) {
-      params = params.set('serie_id', serieId);
-    }
-
-    return this.http.get<SubserieLite[]>(this.subseriesUrl, { params });
+    return this.http.get<SubserieLite[]>(this.subseriesUrl).pipe(
+      map((rows) =>
+        serieId != null ? rows.filter((s) => s.serie_id === serieId) : rows
+      )
+    );
   }
 }

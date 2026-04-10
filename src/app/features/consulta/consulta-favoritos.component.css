@@ -1,0 +1,115 @@
+@import './consulta-subpanel.css';
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.filtros__btn {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 0.05rem;
+}
+
+.fav-filter {
+  margin-bottom: 1rem;
+}
+
+.fav-filter label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.4rem;
+}
+
+.fav-filter input {
+  width: 100%;
+  max-width: min(560px, 100%);
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.fav-filter input::placeholder {
+  color: #94a3b8;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* Columna de estrella: espacio fijo y centrado */
+.data-table--favoritos .data-table__star-head,
+.data-table--favoritos .data-table__star-cell {
+  width: 4.75rem;
+  min-width: 4.75rem;
+  max-width: 5rem;
+  text-align: center;
+  vertical-align: middle;
+  padding-inline: 0.35rem;
+}
+
+.data-table--favoritos .data-table__star-head {
+  color: #94a3b8;
+  font-size: 0.72rem;
+}
+
+/* Estrella grande y clara para usuarios */
+.favoritos .star--fav {
+  font-size: 2.35rem;
+  line-height: 1;
+  padding: 0.35rem 0.5rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.favoritos .star--fav.star--on {
+  color: #b45309;
+  background: linear-gradient(165deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #fbbf24;
+  box-shadow:
+    0 2px 8px rgba(245, 158, 11, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.favoritos .star--fav.star--off {
+  color: #94a3b8;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+}
+
+.favoritos .star--fav:hover {
+  transform: scale(1.06);
+}
+
+.favoritos .star--fav.star--on:hover {
+  box-shadow:
+    0 4px 14px rgba(245, 158, 11, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+}
+
+.favoritos .star--fav:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 3px;
+}
+
+.favoritos .page__head {
+  margin-bottom: 1.5rem;
+}

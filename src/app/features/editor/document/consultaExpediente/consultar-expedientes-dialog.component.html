@@ -1,0 +1,79 @@
+<div class="ce-backdrop" *ngIf="open" (click)="close()"></div>
+
+<div
+  class="ce-modal"
+  *ngIf="open"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="ceTitle"
+>
+  <header class="ce-header">
+    <div>
+      <h3 id="ceTitle">Consultar expedientes</h3>
+      <p class="ce-header__text">
+        Lista de expedientes existentes con su serie y subserie asignada.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="ce-close"
+      (click)="close()"
+      aria-label="Cerrar"
+    >
+      ×
+    </button>
+  </header>
+
+  <section class="ce-body">
+    <div *ngIf="loading" class="ce-info">Cargando expedientes…</div>
+    <div *ngIf="!loading && error" class="ce-error">{{ error }}</div>
+    <ng-container *ngIf="!loading && !error">
+        <button type="button" class="ce-btn ce-btn--primary" (click)="openCrearExpediente()">
+          Crear expediente
+        </button>
+      <div class="ce-toolbar-search">
+        <div class="ce-search-input-wrap">
+          <span class="ce-search-ico">🔍</span>
+          <input
+            type="search"
+            [(ngModel)]="searchExpedientes"
+            (input)="aplicarFiltroExpedientes()"
+            placeholder="Buscar por código, nombre, unidad, serie o subserie..."
+          />
+        </div>
+      </div>
+
+
+      <div *ngIf="!filteredExpedientes.length" class="ce-empty">
+        No hay expedientes registrados.
+      </div>
+
+      <div *ngIf="filteredExpedientes.length" class="ce-table-wrapper">
+        <table class="ce-table">
+          <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Serie</th>
+            <th>Subserie</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let e of filteredExpedientes">
+            <td>{{ e.codigo }}</td>
+            <td>{{ e.nombre }}</td>
+            <td>{{ e.serie_nombre || '—' }}</td>
+            <td>{{ e.subserie_nombre || '—' }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+  </section>
+</div>
+<app-crear-expediente-dialog
+  [open]="crearExpedienteOpen"
+  (closed)="crearExpedienteOpen = false"
+  (created)="onExpedienteCreated()"
+></app-crear-expediente-dialog>
