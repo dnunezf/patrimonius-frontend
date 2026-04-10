@@ -60,6 +60,14 @@ export type ConsultaSearchQuery = {
   panelExterno?: string | boolean;
 };
 
+export type HistorialBusquedaRow = {
+  id: number;
+  usuario_id: number;
+  texto_busqueda: string | null;
+  filtros: Record<string, any> | null;
+  fecha_consulta: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class ConsultaAprobadosApiService {
   private readonly http = inject(HttpClient);
@@ -183,6 +191,27 @@ export class ConsultaAprobadosApiService {
     return this.http.patch(
       `${environment.apiUrl}/solicitudes-acceso/${solicitudId}/resolver`,
       payload
+    );
+  }
+
+  /*Para el historial de busquedaaa*/
+  getHistorialBusquedas(limit = 10): Observable<HistorialBusquedaRow[]> {
+    const params = new HttpParams().set('limit', String(limit));
+    return this.http.get<HistorialBusquedaRow[]>(
+      `${environment.apiUrl}/historial-busquedas`,
+      { params },
+    );
+  }
+
+  clearHistorialBusquedas(): Observable<{ deletedCount: number }> {
+    return this.http.delete<{ deletedCount: number }>(
+      `${environment.apiUrl}/historial-busquedas`,
+    );
+  }
+
+  deleteHistorialBusqueda(id: number): Observable<{ deletedCount: number }> {
+    return this.http.delete<{ deletedCount: number }>(
+      `${environment.apiUrl}/historial-busquedas/${id}`,
     );
   }
 }
