@@ -133,15 +133,20 @@
           <div class="md-form-grid">
             <div class="form-field">
               <label>Tipo documental <span class="req">*</span></label>
-              <input
-                formControlName="documentType"
-                placeholder="Ej. Oficio, acta, informe, memorando"
-              />
+              <select formControlName="documentType">
+                <option value="">Seleccione…</option>
+                <option
+                  *ngFor="let item of documentTypeOptions"
+                  [value]="item.value"
+                >
+                  {{ item.value }} · {{ item.code }}
+                </option>
+              </select>
               <small
                 class="err"
                 *ngIf="f['documentType'].touched && f['documentType'].invalid"
               >
-                Obligatorio. Máx. 150.
+                Debe seleccionar un tipo documental válido.
               </small>
             </div>
 
