@@ -36,7 +36,9 @@ export type ConsultaSearchResponse = {
   page: number;
   pageSize: number;
   viewer: 'interno' | 'externo';
+  /** Consulta externa: filas con permiso de descarga (VIEW aprobado). */
   totalDescargables?: number;
+  /** Unidad con la que filtra el backend (interno no administrador). */
   filtroUnidadUsuario?: number | null;
   aplicaFiltroUnidad?: boolean;
 };
@@ -77,7 +79,16 @@ export type ConsultaSearchQuery = {
   expedienteId?: number | string;
   dateFrom?: string;
   dateTo?: string;
+  /** Solo panel externo: fuerza catálogo + permisos por solicitud (multi-rol con USUARIO_EXTERNO). */
   panelExterno?: string | boolean;
+};
+
+export type HistorialBusquedaRow = {
+  id: number;
+  usuario_id: number;
+  texto_busqueda: string | null;
+  filtros: Record<string, any> | null;
+  fecha_consulta: string;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -119,6 +130,10 @@ export class ConsultaAprobadosApiService {
     );
   }
 
+  /**
+   * Misma API que interno (`/documents/search-approved`): el backend aplica HU-025/HU-024
+   * (catálogo completo aprobado/archivado firmado para usuario externo; permisos VIEW por solicitud).
+   */
   searchExterno(q: ConsultaSearchQuery): Observable<ConsultaSearchResponse> {
     let params = new HttpParams().set('panelExterno', '1');
     const entries = Object.entries(q).filter(
@@ -139,6 +154,9 @@ export class ConsultaAprobadosApiService {
     );
   }
 
+  /**
+   * Vista previa HU-025 (`assertCanAccess` + bitácora). Usa `/documents/:id/preview`.
+   */
   getPreview(documentoId: number): Observable<{
     documento_id: number;
     titulo: string;
@@ -163,10 +181,18 @@ export class ConsultaAprobadosApiService {
     });
   }
 
+  /**
+   * HU-025 / HU-027: misma ruta que interno — `GET /documents/:id/download`
+   * (assertCanAccess + bitácora DESCARGA; permiso VIEW para externos).
+   * No usar `/documentos/.../firma/descargar/pdf` aquí: esa ruta no registra consulta.
+   */
   download(documentoId: number): Observable<Blob> {
     return this.downloadConsulta(documentoId);
   }
 
+  /**
+   * HU-025: descarga alineada con la búsqueda (`assertCanAccess` + bitácora).
+   */
   downloadConsulta(documentoId: number): Observable<Blob> {
     return this.http.get(`${this.base}/${documentoId}/download`, {
       responseType: 'blob',
@@ -194,6 +220,27 @@ export class ConsultaAprobadosApiService {
     return this.http.patch(
       `${environment.apiUrl}/solicitudes-acceso/${solicitudId}/resolver`,
       payload
+    );
+  }
+
+  /*Para el historial de busquedaaa*/
+  getHistorialBusquedas(limit = 10): Observable<HistorialBusquedaRow[]> {
+    const params = new HttpParams().set('limit', String(limit));
+    return this.http.get<HistorialBusquedaRow[]>(
+      `${environment.apiUrl}/historial-busquedas`,
+      { params },
+    );
+  }
+
+  clearHistorialBusquedas(): Observable<{ deletedCount: number }> {
+    return this.http.delete<{ deletedCount: number }>(
+      `${environment.apiUrl}/historial-busquedas`,
+    );
+  }
+
+  deleteHistorialBusqueda(id: number): Observable<{ deletedCount: number }> {
+    return this.http.delete<{ deletedCount: number }>(
+      `${environment.apiUrl}/historial-busquedas/${id}`,
     );
   }
 

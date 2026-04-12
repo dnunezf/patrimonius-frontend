@@ -16,27 +16,19 @@ type DuplicateCheckResult =
   | { status: 'OK' }
   | { status: 'DUPLICATE'; existingId: number };
 
-function extractArray<T = any>(raw: any, extraKeys: string[] = []): T[] {
+export type ReferenceCodePreview = {
+  referenceCode: string;
+  typeCode: string;
+  unitCode: string;
+  sequence: number;
+  year: number;
+};
+
+function extractArray<T = any>(raw: any): T[] {
   if (Array.isArray(raw)) return raw as T[];
-
-  const keys = [
-    'items',
-    'rows',
-    'data',
-    'results',
-    'series',
-    'subseries',
-    'subSeries',
-    'expedientes',
-    ...extraKeys,
-  ];
-
-  for (const key of keys) {
-    if (Array.isArray(raw?.[key])) {
-      return raw[key] as T[];
-    }
-  }
-
+  if (Array.isArray(raw?.items)) return raw.items as T[];
+  if (Array.isArray(raw?.rows)) return raw.rows as T[];
+  if (Array.isArray(raw?.data)) return raw.data as T[];
   return [];
 }
 
@@ -65,6 +57,34 @@ export class ConservationIntakeService {
     });
   }
 
+  /**
+   * Returns the final reference-code preview that will replace the temporary
+   * TMP... code when the document is sent to conservation.
+   */
+  previewReferenceCode(payload: {
+    candidateId: number;
+    documentType?: string | null;
+    producingUnit?: string | null;
+  }): Observable<ReferenceCodePreview> {
+    let params = new HttpParams().set(
+      'candidateId',
+      String(payload.candidateId),
+    );
+
+    if (payload.documentType) {
+      params = params.set('documentType', String(payload.documentType));
+    }
+
+    if (payload.producingUnit) {
+      params = params.set('producingUnit', String(payload.producingUnit));
+    }
+
+    return this.http.get<ReferenceCodePreview>(
+      `${this.base}/reference-code-preview`,
+      { params },
+    );
+  }
+
   getRetentionRules(): Observable<RetentionRule[]> {
     return this.http.get<RetentionRule[]>(`${this.base}/retention-rules`);
   }
@@ -74,24 +94,21 @@ export class ConservationIntakeService {
   ): Observable<{
     intakeId: string;
     id: number;
-    officialCode?: string;
     message: string;
+    officialCode?: string;
   }> {
     return this.http.post<{
       intakeId: string;
       id: number;
-      officialCode?: string;
       message: string;
+      officialCode?: string;
     }>(`${this.base}/intakes`, payload);
   }
 
-  /**
-   * Loads archival series from the existing admin catalog module.
-   */
   getSeries(): Observable<ArchivalSeries[]> {
     return this.http.get<any>(`${this.apiRoot}/api/admin/series`).pipe(
       map((raw) =>
-        extractArray(raw, ['series']).map((item: any) => ({
+        extractArray(raw).map((item: any) => ({
           id: Number(item.id),
           code: String(item.codigo ?? item.code ?? ''),
           name: String(item.nombre ?? item.name ?? ''),
@@ -100,66 +117,45 @@ export class ConservationIntakeService {
               ? Number(item.unidad_id)
               : item.unitId != null
                 ? Number(item.unitId)
-                : item.unidad?.id != null
-                  ? Number(item.unidad.id)
-                  : null,
+                : null,
         })),
       ),
     );
   }
 
-  /**
-   * Loads archival subseries from the existing admin catalog module.
-   * This mapper is intentionally defensive because some admin endpoints
-   * return nested keys or slightly different property names.
-   */
   getSubseries(): Observable<ArchivalSubseries[]> {
     return this.http.get<any>(`${this.apiRoot}/api/admin/subseries`).pipe(
       map((raw) =>
-        extractArray(raw, ['subseries', 'subSeries']).map((item: any) => ({
+        extractArray(raw).map((item: any) => ({
           id: Number(item.id),
           code: String(item.codigo ?? item.code ?? ''),
           name: String(item.nombre ?? item.name ?? ''),
-          serieId: Number(
-            item.serie_id ??
-              item.serieId ??
-              item.serie?.id ??
-              item.series_id ??
-              item.seriesId ??
-              0,
-          ),
+          serieId: Number(item.serie_id ?? item.serieId ?? 0),
         })),
       ),
     );
   }
 
-  /**
-   * Loads archival expedientes from the existing admin catalog module.
-   */
   getExpedientes(): Observable<ArchivalExpediente[]> {
     return this.http.get<any>(`${this.apiRoot}/api/admin/expedientes`).pipe(
       map((raw) =>
-        extractArray(raw, ['expedientes']).map((item: any) => ({
+        extractArray(raw).map((item: any) => ({
           id: Number(item.id),
           code: String(item.codigo ?? item.code ?? ''),
           name: String(item.nombre ?? item.name ?? ''),
-          serieId: Number(item.serie_id ?? item.serieId ?? item.serie?.id ?? 0),
+          serieId: Number(item.serie_id ?? item.serieId ?? 0),
           subserieId:
             item.subserie_id != null
               ? Number(item.subserie_id)
               : item.subserieId != null
                 ? Number(item.subserieId)
-                : item.subserie?.id != null
-                  ? Number(item.subserie.id)
-                  : null,
+                : null,
           unitId:
             item.unidad_id != null
               ? Number(item.unidad_id)
               : item.unitId != null
                 ? Number(item.unitId)
-                : item.unidad?.id != null
-                  ? Number(item.unidad.id)
-                  : null,
+                : null,
         })),
       ),
     );

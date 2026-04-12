@@ -1,21 +1,47 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import {
+  DocumentService,
+  UnidadOption,
+  SerieOption,
+  SubserieOption,
+  ExpedienteOption,
+  NivelAccesoOption,
+} from '../../../core/services/document.service';
 
 type DocumentOrigin = 'ESCANEADO' | 'ELECTRONICO';
 type UploadMode = 'FILES' | 'FOLDER';
+
 type PerDocumentMetadata = {
-  title: string;
-  keywords: string;
-  preliminaryClass: string;
-  classificationCode: string;
+  // Automáticos
+  codigoReferencia: string;
+  tamanoBytes: number;
+  formato: string;
+  fechaInicio: string;
+  fechaCaducidad: string;
+
+  // Manuales
+  unidadProductoraId: number | null;
+  tituloDocumento: string;
+  palabrasClave: string;
+  nombreProductores: string;
+  fechaDocumento: string;
+  nivelAcceso: 'PUBLIC' | 'INTERNAL' | 'HIGH' | 'RESTRICTED';
+  serieId: number | null;
+  subserieId: number | null;
+  expedienteId: number | null;
+  plazoConservacionAnios: number | null;
 };
+
 type DocumentEntry = {
   key: string;
   file: File;
   metadata: PerDocumentMetadata;
+  subseriesDisponibles: SubserieOption[];
+  expedientesDisponibles: ExpedienteOption[];
 };
 
 @Component({
@@ -25,8 +51,9 @@ type DocumentEntry = {
   templateUrl: './carga-masiva.component.html',
   styleUrls: ['./carga-masiva.component.css'],
 })
-export class CargaMasivaPageComponent {
+export class CargaMasivaPageComponent implements OnInit {
   private http = inject(HttpClient);
+  private documentService = inject(DocumentService);
 
   currentStep = 1;
   selectedMetadataIndex = 0;
@@ -42,15 +69,48 @@ export class CargaMasivaPageComponent {
   errorMessage = '';
   uploadResult: any = null;
 
-  metadataLoteDefaults = {
-    fechaCreacion: this.getToday(),
-    unidadResponsable: '',
-  };
   documentEntries: DocumentEntry[] = [];
+
+  unidadesProductoras: UnidadOption[] = [];
+  series: SerieOption[] = [];
+  nivelesAcceso: NivelAccesoOption[] = [];
 
   private readonly API_URL = 'http://localhost:3000/documentos/carga-masiva/pdf';
 
   constructor(private router: Router) {}
+
+  ngOnInit(): void {
+    this.loadCatalogos();
+  }
+
+  private loadCatalogos(): void {
+    this.documentService.getUnidadesCatalogo().subscribe({
+      next: (rows) => {
+        this.unidadesProductoras = rows || [];
+      },
+      error: () => {
+        this.unidadesProductoras = [];
+      },
+    });
+
+    this.documentService.getSeriesCatalogo().subscribe({
+      next: (rows) => {
+        this.series = rows || [];
+      },
+      error: () => {
+        this.series = [];
+      },
+    });
+
+    this.documentService.getNivelesAccesoCatalogo().subscribe({
+      next: (rows) => {
+        this.nivelesAcceso = rows || [];
+      },
+      error: () => {
+        this.nivelesAcceso = [];
+      },
+    });
+  }
 
   private getToday(): string {
     const today = new Date();
@@ -58,6 +118,40 @@ export class CargaMasivaPageComponent {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private generateReferenceCode(index: number): string {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mi = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    return `REF-MNCR-${yyyy}${mm}${dd}-${hh}${mi}${ss}-${index + 1}`;
+  }
+
+  private computeFechaCaducidad(fechaInicio: string, plazo: number | null): string {
+    const base = new Date(fechaInicio);
+    const years = Number(plazo || 0);
+    const out = new Date(base);
+    out.setFullYear(out.getFullYear() + years);
+    const yyyy = out.getFullYear();
+    const mm = String(out.getMonth() + 1).padStart(2, '0');
+    const dd = String(out.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  formatTamano(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+
+    const kb = bytes / 1024;
+    if (kb < 1024) {
+      return `${kb.toFixed(2)} KB`;
+    }
+
+    const mb = kb / 1024;
+    return `${mb.toFixed(2)} MB`;
   }
 
   onClose(): void {
@@ -193,25 +287,55 @@ export class CargaMasivaPageComponent {
     return entry.key;
   }
 
-  private createDefaultMetadata(file: File): PerDocumentMetadata {
+  private createDefaultMetadata(file: File, index = 0): PerDocumentMetadata {
+    const fechaInicio = this.getToday();
+    const plazo = null;
+
     return {
-      title: file.name.replace(/\.pdf$/i, ''),
-      keywords: '',
-      preliminaryClass: '',
-      classificationCode: '',
+      codigoReferencia: this.generateReferenceCode(index),
+      tamanoBytes: file.size,
+      formato: 'PDF',
+      fechaInicio,
+      fechaCaducidad: this.computeFechaCaducidad(fechaInicio, plazo),
+
+      unidadProductoraId: null,
+      tituloDocumento: file.name.replace(/\.pdf$/i, ''),
+      palabrasClave: '',
+      nombreProductores: '',
+      fechaDocumento: '',
+      nivelAcceso: 'INTERNAL',
+      serieId: null,
+      subserieId: null,
+      expedienteId: null,
+      plazoConservacionAnios: null,
     };
   }
 
   private syncDocumentEntries(): void {
     const previous = new Map(this.documentEntries.map((entry) => [entry.key, entry]));
-    this.documentEntries = this.selectedFiles.map((file) => {
+
+    this.documentEntries = this.selectedFiles.map((file, index) => {
       const key = this.getFileKey(file);
       const existing = previous.get(key);
+
+      const metadata = existing?.metadata ?? this.createDefaultMetadata(file, index);
+
       return {
         key,
         file,
-        metadata: existing?.metadata ?? this.createDefaultMetadata(file),
+        metadata,
+        subseriesDisponibles: existing?.subseriesDisponibles ?? [],
+        expedientesDisponibles: existing?.expedientesDisponibles ?? [],
       };
+    });
+
+    this.documentEntries.forEach((entry) => {
+      entry.metadata.tamanoBytes = entry.file.size;
+      entry.metadata.formato = 'PDF';
+      entry.metadata.fechaCaducidad = this.computeFechaCaducidad(
+        entry.metadata.fechaInicio,
+        entry.metadata.plazoConservacionAnios
+      );
     });
   }
 
@@ -231,7 +355,16 @@ export class CargaMasivaPageComponent {
   }
 
   get hasMissingTitles(): boolean {
-    return this.documentEntries.some((entry) => !entry.metadata.title.trim());
+    return this.documentEntries.some((entry) => {
+      const m = entry.metadata;
+      return (
+        !m.unidadProductoraId ||
+        !m.tituloDocumento.trim() ||
+        !m.nivelAcceso ||
+        !m.serieId ||
+        !m.expedienteId
+      );
+    });
   }
 
   get canUpload(): boolean {
@@ -316,56 +449,108 @@ export class CargaMasivaPageComponent {
     return this.selectedFiles.length;
   }
 
+  onSerieChange(entry: DocumentEntry): void {
+    entry.metadata.subserieId = null;
+    entry.metadata.expedienteId = null;
+    entry.subseriesDisponibles = [];
+    entry.expedientesDisponibles = [];
+
+    if (!entry.metadata.serieId) return;
+
+    this.documentService.getSubseriesCatalogo(entry.metadata.serieId).subscribe({
+      next: (rows) => {
+        entry.subseriesDisponibles = rows || [];
+        this.loadExpedientes(entry);
+      },
+      error: () => {
+        entry.subseriesDisponibles = [];
+      },
+    });
+  }
+
+  onSubserieChange(entry: DocumentEntry): void {
+    entry.metadata.expedienteId = null;
+    entry.expedientesDisponibles = [];
+    this.loadExpedientes(entry);
+  }
+
+  onUnidadChange(entry: DocumentEntry): void {
+    entry.metadata.expedienteId = null;
+    entry.expedientesDisponibles = [];
+    this.loadExpedientes(entry);
+  }
+
+  onPlazoChange(entry: DocumentEntry): void {
+    entry.metadata.fechaCaducidad = this.computeFechaCaducidad(
+      entry.metadata.fechaInicio,
+      entry.metadata.plazoConservacionAnios
+    );
+  }
+
+  private loadExpedientes(entry: DocumentEntry): void {
+    this.documentService
+      .getExpedientesCatalogo({
+        unidad_id: entry.metadata.unidadProductoraId,
+        serie_id: entry.metadata.serieId,
+        subserie_id: entry.metadata.subserieId,
+        estado: 'ACTIVO',
+      })
+      .subscribe({
+        next: (rows) => {
+          entry.expedientesDisponibles = rows || [];
+        },
+        error: () => {
+          entry.expedientesDisponibles = [];
+        },
+      });
+  }
+
   private buildMetadataPorDocumento(): Array<Record<string, unknown>> {
     return this.documentEntries.map((entry) => {
       const perFile = entry.metadata;
-      const title = perFile.title.trim();
-      const keywords = perFile.keywords
+
+      const palabrasClave = perFile.palabrasClave
         .split(',')
         .map((keyword) => keyword.trim())
         .filter(Boolean);
-      const preliminaryClass = perFile.preliminaryClass.trim();
-      const classificationCode = perFile.classificationCode.trim();
+
+      const nombreProductores = perFile.nombreProductores
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
 
       const metadataDocumento: Record<string, unknown> = {
-        // Debe coincidir con originalname en backend.
         archivo: entry.file.name,
+
+        unidadProductoraId: perFile.unidadProductoraId,
+        tituloDocumento: perFile.tituloDocumento.trim(),
+        nivelAcceso: perFile.nivelAcceso,
+        serieId: perFile.serieId,
+        subserieId: perFile.subserieId,
+        expedienteId: perFile.expedienteId,
+        plazoConservacionAnios: perFile.plazoConservacionAnios,
+
+        codigoReferencia: perFile.codigoReferencia,
+        tamanoBytes: perFile.tamanoBytes,
+        formato: perFile.formato,
+        fechaInicio: perFile.fechaInicio,
+        fechaCaducidad: perFile.fechaCaducidad,
       };
 
-      if (title) {
-        metadataDocumento['title'] = title;
+      if (palabrasClave.length) {
+        metadataDocumento['palabrasClave'] = palabrasClave;
       }
 
-      if (keywords.length) {
-        metadataDocumento['keywords'] = keywords;
+      if (nombreProductores.length) {
+        metadataDocumento['nombreProductores'] = nombreProductores;
       }
 
-      if (preliminaryClass) {
-        metadataDocumento['preliminaryClass'] = preliminaryClass;
-      }
-
-      if (classificationCode) {
-        metadataDocumento['classificationCode'] = classificationCode;
+      if (perFile.fechaDocumento) {
+        metadataDocumento['fechaDocumento'] = perFile.fechaDocumento;
       }
 
       return metadataDocumento;
     });
-  }
-
-  private buildMetadataLote(): Record<string, unknown> | null {
-    const metadataLote: Record<string, unknown> = {};
-    const fechaCreacion = this.metadataLoteDefaults.fechaCreacion.trim();
-    const unidadResponsable = this.metadataLoteDefaults.unidadResponsable.trim();
-
-    if (fechaCreacion) {
-      metadataLote['creationDate'] = fechaCreacion;
-    }
-
-    if (unidadResponsable) {
-      metadataLote['responsibleUnit'] = unidadResponsable;
-    }
-
-    return Object.keys(metadataLote).length ? metadataLote : null;
   }
 
   uploadFiles(): void {
@@ -373,8 +558,10 @@ export class CargaMasivaPageComponent {
       this.errorMessage = 'Debes seleccionar al menos un archivo PDF.';
       return;
     }
+
     if (this.hasMissingTitles) {
-      this.errorMessage = 'Todos los documentos deben tener título para poder cargar el lote.';
+      this.errorMessage =
+        'Debes completar los campos obligatorios de todos los documentos antes de cargar el lote.';
       return;
     }
 
@@ -396,11 +583,6 @@ export class CargaMasivaPageComponent {
       JSON.stringify(this.buildMetadataPorDocumento())
     );
 
-    const metadataLote = this.buildMetadataLote();
-    if (metadataLote) {
-      formData.append('metadata_lote', JSON.stringify(metadataLote));
-    }
-
     this.http.post(this.API_URL, formData).subscribe({
       next: (resp: any) => {
         this.uploadResult = resp;
@@ -416,7 +598,7 @@ export class CargaMasivaPageComponent {
 
         this.isUploading = false;
         this.currentStep = 3;
-      }
+      },
     });
   }
 }

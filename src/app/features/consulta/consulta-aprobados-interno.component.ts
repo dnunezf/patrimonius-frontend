@@ -14,6 +14,7 @@ import {
   ConsultaAprobadosApiService,
   ConsultaDocumentoRow,
   ConsultaFiltrosOpciones,
+  HistorialBusquedaRow,
 } from '../../../core/services/consulta-aprobados-api.service';
 import { onConsultaPreviewLinkClick } from './consulta-preview-link.util';
 import { SolicitudAccesoDialogComponent } from './solicitud-acceso-dialog-component';
@@ -39,7 +40,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   /** Índices / anclas del HTML: scroll dentro del modal, sin navegar la SPA. */
   readonly onPreviewHtmlLinkClick = onConsultaPreviewLinkClick;
 
-  /** Visibles en plantilla (strictTemplates / strictInputAccessModifiers). */
   public filtros: ConsultaFiltrosOpciones | null = null;
   public rows: ConsultaDocumentoRow[] = [];
   public totalItems = 0;
@@ -82,11 +82,18 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public filtroUnidadUsuario: number | null = null;
   public aplicaFiltroUnidad = false;
 
+  /** ===== NUEVO: historial tipo navegador ===== */
+  public historialBusquedas: HistorialBusquedaRow[] = [];
+  public loadingHistorial = false;
+  public mostrarSugerenciasHistorial = false;
+
   public ngOnInit(): void {
     this.api.getFilterOptions().subscribe({
       next: (f) => (this.filtros = f),
       error: () => (this.errorMsg = 'No se pudieron cargar los filtros.'),
     });
+
+    this.cargarHistorialBusquedas();
     this.load();
   }
 
@@ -100,6 +107,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public load(): void {
     this.loading = true;
     this.errorMsg = '';
+
     this.api
       .searchInterno({
         q: this.q.trim() || undefined,
@@ -124,6 +132,10 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
             res.filtroUnidadUsuario != null ? Number(res.filtroUnidadUsuario) : null;
           this.aplicaFiltroUnidad = !!res.aplicaFiltroUnidad;
           this.loading = false;
+          this.cargarHistorialBusquedas();
+
+          /** refresca historial porque esta búsqueda ya quedó guardada en backend */
+          this.cargarHistorialBusquedas();
         },
         error: (e) => {
           this.loading = false;
@@ -131,6 +143,89 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
             e?.error?.message || 'Error al consultar documentos aprobados.';
         },
       });
+  }
+
+  /** ===== NUEVO ===== */
+  public cargarHistorialBusquedas(): void {
+    this.loadingHistorial = true;
+
+    this.api.getHistorialBusquedas(10).subscribe({
+      next: (rows) => {
+        this.historialBusquedas = rows ?? [];
+        this.loadingHistorial = false;
+      },
+      error: () => {
+        this.historialBusquedas = [];
+        this.loadingHistorial = false;
+      },
+    });
+  }
+
+  /** ===== NUEVO ===== */
+  public limpiarHistorialBusquedas(): void {
+    this.api.clearHistorialBusquedas().subscribe({
+      next: () => {
+        this.historialBusquedas = [];
+      },
+      error: (e) => {
+        this.errorMsg =
+          e?.error?.message || 'No se pudo limpiar el historial de búsquedas.';
+      },
+    });
+  }
+
+  /** ===== NUEVO ===== */
+  public usarBusquedaHistorial(item: HistorialBusquedaRow): void {
+    const filtros = item.filtros || {};
+
+    this.q = item.texto_busqueda || '';
+    this.categoriaId = filtros['categoriaId'] ? String(filtros['categoriaId']) : '';
+    this.serieId = filtros['serieId'] ? String(filtros['serieId']) : '';
+    this.subserieId = filtros['subserieId'] ? String(filtros['subserieId']) : '';
+    this.expedienteId = filtros['expedienteId'] ? String(filtros['expedienteId']) : '';
+    this.dateFrom = filtros['dateFrom'] || '';
+    this.dateTo = filtros['dateTo'] || '';
+
+    if (filtros['sortBy']) {
+      this.sortBy = String(filtros['sortBy']);
+    }
+    if (filtros['sortDir'] === 'asc' || filtros['sortDir'] === 'desc') {
+      this.sortDir = filtros['sortDir'];
+    }
+
+    this.page = 1;
+    this.load();
+  }
+
+  /** ===== NUEVO ===== */
+  public formatHistorialResumen(item: HistorialBusquedaRow): string {
+    const filtros = item.filtros || {};
+    const partes: string[] = [];
+
+    if (item.texto_busqueda) {
+      partes.push(`"${item.texto_busqueda}"`);
+    }
+    if (filtros['categoriaId']) partes.push('Categoría');
+    if (filtros['serieId']) partes.push('Serie');
+    if (filtros['subserieId']) partes.push('Subserie');
+    if (filtros['expedienteId']) partes.push('Expediente');
+    if (filtros['dateFrom'] || filtros['dateTo']) partes.push('Rango de fecha');
+
+    return partes.length ? partes.join(' · ') : 'Búsqueda sin texto';
+  }
+
+  /** ===== NUEVO ===== */
+  public formatDateTime(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString('es-CR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 
   public onSort(col: string): void {
@@ -158,9 +253,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     }
   }
 
-  /**
-   * Fila con permiso de vista/descarga en consulta (el API suele omitir flags = acceso pleno).
-   */
   public tieneAccesoAlDocumento(row: ConsultaDocumentoRow): boolean {
     return row.canDownload !== false && row.canPreview !== false;
   }
@@ -191,7 +283,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   }
 
   public ver(row: ConsultaDocumentoRow): void {
-   
     if (row.canDownload === false) return;
 
     this.previewDocumentoId = row.id;
@@ -385,15 +476,48 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.router.navigate(['/usuario/dashboard']);
   }
 
-  /** Primer índice mostrado en la página actual (1-based). */
   public get rangeStart(): number {
     if (this.totalItems === 0) return 0;
     return (this.page - 1) * this.pageSize + 1;
   }
 
-  /** Último índice mostrado en la página actual. */
   public get rangeEnd(): number {
     if (this.totalItems === 0) return 0;
     return Math.min(this.page * this.pageSize, this.totalItems);
+  }
+
+  public onFocusBusqueda(): void {
+    this.mostrarSugerenciasHistorial = this.historialVisible.length > 0;
+  }
+
+  public onBlurBusqueda(): void {
+    setTimeout(() => {
+      this.mostrarSugerenciasHistorial = false;
+    }, 150);
+  }
+
+  public get historialVisible(): HistorialBusquedaRow[] {
+    const texto = this.q.trim().toLowerCase();
+
+    const base = (this.historialBusquedas || []).filter(
+      (item) => !!String(item.texto_busqueda || '').trim(),
+    );
+
+    if (!texto) {
+      return base.slice(0, 8);
+    }
+
+    return base
+      .filter((item) =>
+        String(item.texto_busqueda || '')
+          .toLowerCase()
+          .includes(texto),
+      )
+      .slice(0, 8);
+  }
+
+  public seleccionarSugerenciaHistorial(item: HistorialBusquedaRow): void {
+    this.usarBusquedaHistorial(item);
+    this.mostrarSugerenciasHistorial = false;
   }
 }

@@ -38,12 +38,12 @@
 
         <div class="field">
           <label for="plazo_unidad">Unidad</label>
-          <select id="plazo_unidad" [(ngModel)]="plazo_unidad" disabled>
+          <select id="plazo_unidad" [(ngModel)]="plazo_unidad" (ngModelChange)="calcularFechaVencimiento()">
             <option value="ANIOS">Años</option>
+            <option value="MESES">Meses</option>
+            <option value="DIAS">Días</option>
           </select>
         </div>
-
-        <!-- El campo "Tipo de plazo" ha sido eliminado -->
 
         <div class="field">
           <label for="fecha_inicio">Fecha de inicio</label>

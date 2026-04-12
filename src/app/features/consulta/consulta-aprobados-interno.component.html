@@ -12,14 +12,47 @@
   </header>
 
   <section class="panel filtros">
-    <div class="field grow">
+    <div class="field grow search-history-wrap">
       <label>Palabra clave <span class="label-optional">(opcional)</span></label>
-      <input
-        type="search"
-        [(ngModel)]="q"
-        placeholder="Título, código, categoría, metadatos…"
-        (keyup.enter)="page = 1; load()"
-      />
+
+      <div class="search-history-box">
+        <input
+          type="search"
+          [(ngModel)]="q"
+          placeholder="Título, código, categoría, metadatos…"
+          (focus)="onFocusBusqueda()"
+          (blur)="onBlurBusqueda()"
+          (input)="mostrarSugerenciasHistorial = true"
+          (keyup.enter)="page = 1; load()"
+        />
+
+        <div
+          class="search-history-dropdown"
+          *ngIf="mostrarSugerenciasHistorial && historialVisible.length > 0"
+        >
+          <button
+            type="button"
+            class="search-history-item"
+            *ngFor="let item of historialVisible"
+            (mousedown)="seleccionarSugerenciaHistorial(item)"
+            title="Volver a ejecutar esta búsqueda"
+          >
+            <span class="search-history-text">{{ item.texto_busqueda }}</span>
+            <small class="search-history-date">{{ formatDateTime(item.fecha_consulta) }}</small>
+          </button>
+
+          <div class="search-history-footer">
+            <button
+              type="button"
+              class="search-history-clear"
+              (mousedown)="limpiarHistorialBusquedas()"
+            >
+              Limpiar historial
+            </button>
+          </div>
+        </div>
+      </div>
+
       <p class="field-hint keyword-active" *ngIf="q?.trim()">
         Solo se muestran documentos que contengan «<strong>{{ q.trim() }}</strong>» en título, código,
         categoría, texto del documento (HTML) o metadatos. Déjelo vacío para ver todos los permitidos
@@ -29,6 +62,7 @@
         </button>
       </p>
     </div>
+
     <div class="field">
       <label>Categoría</label>
       <select [(ngModel)]="categoriaId">
@@ -36,6 +70,7 @@
         <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
       </select>
     </div>
+
     <div class="field">
       <label>Serie</label>
       <select [(ngModel)]="serieId" (ngModelChange)="subserieId = ''">
@@ -43,6 +78,7 @@
         <option *ngFor="let s of filtros?.series" [value]="s.id">{{ s.nombre }}</option>
       </select>
     </div>
+
     <div class="field">
       <label>Subserie</label>
       <select [(ngModel)]="subserieId">
@@ -50,18 +86,22 @@
         <option *ngFor="let ss of subseriesFiltradas" [value]="ss.id">{{ ss.nombre }}</option>
       </select>
     </div>
+
     <div class="field">
       <label>Expediente (id)</label>
       <input type="number" [(ngModel)]="expedienteId" placeholder="Opcional" />
     </div>
+
     <div class="field">
       <label>Desde</label>
       <input type="date" [(ngModel)]="dateFrom" />
     </div>
+
     <div class="field">
       <label>Hasta</label>
       <input type="date" [(ngModel)]="dateTo" />
     </div>
+
     <div class="actions">
       <button type="button" class="btn primary" (click)="page = 1; load()">Buscar</button>
     </div>
@@ -85,68 +125,70 @@
         </span>
       </div>
     </div>
+
     <div class="table-scroll">
       <table class="data-table">
         <thead>
-          <tr>
-            <th (click)="onSort('codigo')" class="sortable">Código</th>
-            <th (click)="onSort('titulo')" class="sortable">Título</th>
-            <th (click)="onSort('categoria')" class="sortable">Categoría</th>
-            <th (click)="onSort('unidad')" class="sortable">Unidad</th>
-            <th>Serie / Subserie</th>
-            <th (click)="onSort('fecha_aprobacion')" class="sortable">Fecha</th>
-            <th (click)="onSort('estado')" class="sortable">Estado</th>
-            <th>Acciones</th>
-          </tr>
+        <tr>
+          <th (click)="onSort('codigo')" class="sortable">Código</th>
+          <th (click)="onSort('titulo')" class="sortable">Título</th>
+          <th (click)="onSort('categoria')" class="sortable">Categoría</th>
+          <th (click)="onSort('unidad')" class="sortable">Unidad</th>
+          <th>Serie / Subserie</th>
+          <th (click)="onSort('fecha_aprobacion')" class="sortable">Fecha</th>
+          <th (click)="onSort('estado')" class="sortable">Estado</th>
+          <th>Acciones</th>
+        </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of rows">
-            <td class="mono">{{ row.codigo }}</td>
-            <td>
-              <div class="title">{{ row.titulo }}</div>
-              <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
-            </td>
-            <td>{{ row.categoria_nombre || '—' }}</td>
-            <td>{{ row.unidad_nombre || '—' }}</td>
-            <td>
-              <span class="small">{{ row.serie_nombre || '—' }}</span>
-              <span class="small muted" *ngIf="row.subserie_nombre"> / {{ row.subserie_nombre }}</span>
-            </td>
-            <td>{{ formatDate(row.fecha_aprobacion) }}</td>
-            <td>
-              <span class="badge ok">{{ row.estadoEtiqueta || row.estado }}</span>
-            </td>
-            <td class="actions-cell">
-              <ng-container *ngIf="tieneAccesoAlDocumento(row)">
-                <button
-                  type="button"
-                  class="btn sm ghost"
-                  (click)="ver(row)"
-                  title="Vista previa del documento (solo lectura, sin descargar)"
-                >
-                  Vista previa
-                </button>
-                <button
-                  type="button"
-                  class="btn sm primary"
-                  (click)="descargar(row)"
-                  title="Descargar documento"
-                >
-                  Descargar
-                </button>
-              </ng-container>
-              <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
-                <button
-                  type="button"
-                  class="btn sm outline"
-                  (click)="abrirSolicitud(row)"
-                  title="Solicitar acceso a este documento archivado"
-                >
-                  Solicitar acceso
-                </button>
-              </ng-container>
-            </td>
-          </tr>
+        <tr *ngFor="let row of rows">
+          <td class="mono">{{ row.codigo }}</td>
+          <td>
+            <div class="title">{{ row.titulo }}</div>
+            <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
+          </td>
+          <td>{{ row.categoria_nombre || '—' }}</td>
+          <td>{{ row.unidad_nombre || '—' }}</td>
+          <td>
+            <span class="small">{{ row.serie_nombre || '—' }}</span>
+            <span class="small muted" *ngIf="row.subserie_nombre"> / {{ row.subserie_nombre }}</span>
+          </td>
+          <td>{{ formatDate(row.fecha_aprobacion) }}</td>
+          <td>
+            <span class="badge ok">{{ row.estadoEtiqueta || row.estado }}</span>
+          </td>
+          <td class="actions-cell">
+            <ng-container *ngIf="tieneAccesoAlDocumento(row)">
+              <button
+                type="button"
+                class="btn sm ghost"
+                (click)="ver(row)"
+                title="Vista previa del documento (solo lectura, sin descargar)"
+              >
+                Vista previa
+              </button>
+              <button
+                type="button"
+                class="btn sm primary"
+                (click)="descargar(row)"
+                title="Descargar documento"
+              >
+                Descargar
+              </button>
+            </ng-container>
+
+            <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
+              <button
+                type="button"
+                class="btn sm outline"
+                (click)="abrirSolicitud(row)"
+                title="Solicitar acceso a este documento archivado"
+              >
+                Solicitar acceso
+              </button>
+            </ng-container>
+          </td>
+        </tr>
         </tbody>
       </table>
     </div>
