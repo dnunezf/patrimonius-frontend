@@ -65,9 +65,20 @@ export class ArchivistaClasificacionComponent implements OnInit {
   filteredSubseries: SubserieRow[] = [];
   filteredExpedientes: ExpedienteRow[] = [];
 
-  searchSeries = '';
-  searchSubseries = '';
-  searchExpedientes = '';
+  filtroSerieCodigo = '';
+  filtroSerieNombre = '';
+  filtroSerieUnidad = '';
+
+  filtroSubserieCodigo = '';
+  filtroSubserieNombre = '';
+  filtroSubserieSerie = '';
+
+  filtroExpedienteCodigo = '';
+  filtroExpedienteNombre = '';
+  filtroExpedienteUnidad = '';
+  filtroExpedienteSerie = '';
+  filtroExpedienteSubserie = '';
+  filtroExpedienteEstado = '';
 
   loadingSeries = false;
   loadingSubseries = false;
@@ -82,6 +93,18 @@ export class ArchivistaClasificacionComponent implements OnInit {
   expedienteDocsError = '';
   expedienteDocsTitle = '';
   expedienteDocsRows: ExpedienteDocumentoRow[] = [];
+
+  seriesPage = 1;
+  seriesPageSize = 5;
+  pagedSeries: SerieRow[] = [];
+
+  subseriesPage = 1;
+  subseriesPageSize = 5;
+  pagedSubseries: SubserieRow[] = [];
+
+  expedientesPage = 1;
+  expedientesPageSize = 5;
+  pagedExpedientes: ExpedienteRow[] = [];
 
   constructor(
     private router: Router,
@@ -149,45 +172,109 @@ export class ArchivistaClasificacionComponent implements OnInit {
   }
 
   aplicarFiltroSeries(): void {
-    const q = this.searchSeries.trim().toLowerCase();
+    const codigoQ = this.filtroSerieCodigo.trim().toLowerCase();
+    const nombreQ = this.filtroSerieNombre.trim().toLowerCase();
+    const unidadQ = this.filtroSerieUnidad.trim().toLowerCase();
 
     this.filteredSeries = this.series.filter((s) => {
-      if (!q) return true;
-      return (
-        String(s.codigo || '').toLowerCase().includes(q) ||
-        String(s.nombre || '').toLowerCase().includes(q) ||
-        String(s.unidad_nombre || '').toLowerCase().includes(q)
-      );
+      const matchCodigo =
+        !codigoQ || String(s.codigo || '').toLowerCase().includes(codigoQ);
+
+      const matchNombre =
+        !nombreQ || String(s.nombre || '').toLowerCase().includes(nombreQ);
+
+      const matchUnidad =
+        !unidadQ || String(s.unidad_nombre || '').toLowerCase().includes(unidadQ);
+
+      return matchCodigo && matchNombre && matchUnidad;
     });
+    this.seriesPage = 1;
+    this.repaginarSeries();
   }
 
   aplicarFiltroSubseries(): void {
-    const q = this.searchSubseries.trim().toLowerCase();
+    const codigoQ = this.filtroSubserieCodigo.trim().toLowerCase();
+    const nombreQ = this.filtroSubserieNombre.trim().toLowerCase();
+    const serieQ = this.filtroSubserieSerie.trim().toLowerCase();
 
     this.filteredSubseries = this.subseries.filter((s) => {
-      if (!q) return true;
-      return (
-        String(s.codigo || '').toLowerCase().includes(q) ||
-        String(s.nombre || '').toLowerCase().includes(q) ||
-        String(s.serie_nombre || '').toLowerCase().includes(q)
-      );
+      const matchCodigo =
+        !codigoQ || String(s.codigo || '').toLowerCase().includes(codigoQ);
+
+      const matchNombre =
+        !nombreQ || String(s.nombre || '').toLowerCase().includes(nombreQ);
+
+      const matchSerie =
+        !serieQ || String(s.serie_nombre || '').toLowerCase().includes(serieQ);
+
+      return matchCodigo && matchNombre && matchSerie;
     });
+    this.subseriesPage = 1;
+    this.repaginarSubseries();
   }
 
   aplicarFiltroExpedientes(): void {
-    const q = this.searchExpedientes.trim().toLowerCase();
+    const codigoQ = this.filtroExpedienteCodigo.trim().toLowerCase();
+    const nombreQ = this.filtroExpedienteNombre.trim().toLowerCase();
+    const unidadQ = this.filtroExpedienteUnidad.trim().toLowerCase();
+    const serieQ = this.filtroExpedienteSerie.trim().toLowerCase();
+    const subserieQ = this.filtroExpedienteSubserie.trim().toLowerCase();
+    const estadoQ = this.filtroExpedienteEstado.trim().toLowerCase();
 
     this.filteredExpedientes = this.expedientes.filter((e) => {
-      if (!q) return true;
+      const matchCodigo =
+        !codigoQ || String(e.codigo || '').toLowerCase().includes(codigoQ);
+
+      const matchNombre =
+        !nombreQ || String(e.nombre || '').toLowerCase().includes(nombreQ);
+
+      const matchUnidad =
+        !unidadQ || String(e.unidad_nombre || '').toLowerCase().includes(unidadQ);
+
+      const matchSerie =
+        !serieQ || String(e.serie_nombre || '').toLowerCase().includes(serieQ);
+
+      const matchSubserie =
+        !subserieQ || String(e.subserie_nombre || '').toLowerCase().includes(subserieQ);
+
+      const matchEstado =
+        !estadoQ || String(e.estado || '').toLowerCase().includes(estadoQ);
+
       return (
-        String(e.codigo || '').toLowerCase().includes(q) ||
-        String(e.nombre || '').toLowerCase().includes(q) ||
-        String(e.estado || '').toLowerCase().includes(q) ||
-        String(e.unidad_nombre || '').toLowerCase().includes(q) ||
-        String(e.serie_nombre || '').toLowerCase().includes(q) ||
-        String(e.subserie_nombre || '').toLowerCase().includes(q)
+        matchCodigo &&
+        matchNombre &&
+        matchUnidad &&
+        matchSerie &&
+        matchSubserie &&
+        matchEstado
       );
     });
+    this.expedientesPage = 1;
+    this.repaginarExpedientes();
+  }
+
+  limpiarFiltrosSeries(): void {
+    this.filtroSerieCodigo = '';
+    this.filtroSerieNombre = '';
+    this.filtroSerieUnidad = '';
+    this.aplicarFiltroSeries();
+  }
+
+  limpiarFiltrosSubseries(): void {
+    this.filtroSubserieCodigo = '';
+    this.filtroSubserieNombre = '';
+    this.filtroSubserieSerie = '';
+    this.aplicarFiltroSubseries();
+  }
+
+  limpiarFiltrosExpedientes(): void {
+    this.filtroExpedienteCodigo = '';
+    this.filtroExpedienteNombre = '';
+    this.filtroExpedienteUnidad = '';
+    this.filtroExpedienteSerie = '';
+    this.filtroExpedienteSubserie = '';
+    this.filtroExpedienteEstado = '';
+    this.aplicarFiltroExpedientes();
   }
 
   crearSerie(): void {
@@ -372,5 +459,105 @@ export class ArchivistaClasificacionComponent implements OnInit {
     if (e === 'ELIMINACION' || e === 'TRANSFERENCIA') return 'pill danger';
 
     return 'pill';
+  }
+
+  get totalSeriesPages(): number {
+    return Math.max(1, Math.ceil(this.filteredSeries.length / this.seriesPageSize));
+  }
+
+  get totalSubseriesPages(): number {
+    return Math.max(1, Math.ceil(this.filteredSubseries.length / this.subseriesPageSize));
+  }
+
+  get totalExpedientesPages(): number {
+    return Math.max(1, Math.ceil(this.filteredExpedientes.length / this.expedientesPageSize));
+  }
+
+  get seriesRangeStart(): number {
+    if (this.filteredSeries.length === 0) return 0;
+    return (this.seriesPage - 1) * this.seriesPageSize + 1;
+  }
+
+  get seriesRangeEnd(): number {
+    return Math.min(this.seriesPage * this.seriesPageSize, this.filteredSeries.length);
+  }
+
+  get subseriesRangeStart(): number {
+    if (this.filteredSubseries.length === 0) return 0;
+    return (this.subseriesPage - 1) * this.subseriesPageSize + 1;
+  }
+
+  get subseriesRangeEnd(): number {
+    return Math.min(this.subseriesPage * this.subseriesPageSize, this.filteredSubseries.length);
+  }
+
+  get expedientesRangeStart(): number {
+    if (this.filteredExpedientes.length === 0) return 0;
+    return (this.expedientesPage - 1) * this.expedientesPageSize + 1;
+  }
+
+  get expedientesRangeEnd(): number {
+    return Math.min(this.expedientesPage * this.expedientesPageSize, this.filteredExpedientes.length);
+  }
+
+  private repaginarSeries(): void {
+    const start = (this.seriesPage - 1) * this.seriesPageSize;
+    this.pagedSeries = this.filteredSeries.slice(start, start + this.seriesPageSize);
+  }
+
+  private repaginarSubseries(): void {
+    const start = (this.subseriesPage - 1) * this.subseriesPageSize;
+    this.pagedSubseries = this.filteredSubseries.slice(start, start + this.subseriesPageSize);
+  }
+
+  private repaginarExpedientes(): void {
+    const start = (this.expedientesPage - 1) * this.expedientesPageSize;
+    this.pagedExpedientes = this.filteredExpedientes.slice(start, start + this.expedientesPageSize);
+  }
+
+  prevSeriesPage(): void {
+    if (this.seriesPage > 1) {
+      this.seriesPage--;
+      this.repaginarSeries();
+    }
+  }
+
+  nextSeriesPage(): void {
+    if (this.seriesPage < this.totalSeriesPages) {
+      this.seriesPage++;
+      this.repaginarSeries();
+    }
+  }
+
+  prevSubseriesPage(): void {
+    if (this.subseriesPage > 1) {
+      this.subseriesPage--;
+      this.repaginarSubseries();
+    }
+  }
+
+  nextSubseriesPage(): void {
+    if (this.subseriesPage < this.totalSubseriesPages) {
+      this.subseriesPage++;
+      this.repaginarSubseries();
+    }
+  }
+
+  prevExpedientesPage(): void {
+    if (this.expedientesPage > 1) {
+      this.expedientesPage--;
+      this.repaginarExpedientes();
+    }
+  }
+
+  nextExpedientesPage(): void {
+    if (this.expedientesPage < this.totalExpedientesPages) {
+      this.expedientesPage++;
+      this.repaginarExpedientes();
+    }
+  }
+
+  volverDashboard(): void {
+    this.router.navigate(['/archivista/dashboard']);
   }
 }

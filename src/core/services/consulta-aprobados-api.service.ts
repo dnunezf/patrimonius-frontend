@@ -68,6 +68,11 @@ export type ConsultaExpedienteSearchResponse = {
 
 export type ConsultaSearchQuery = {
   q?: string;
+  codigo?: string;
+  titulo?: string;
+  nombre?: string;
+  soloConElegibles?: string | boolean;
+
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -79,7 +84,6 @@ export type ConsultaSearchQuery = {
   expedienteId?: number | string;
   dateFrom?: string;
   dateTo?: string;
-  /** Solo panel externo: fuerza catálogo + permisos por solicitud (multi-rol con USUARIO_EXTERNO). */
   panelExterno?: string | boolean;
 };
 

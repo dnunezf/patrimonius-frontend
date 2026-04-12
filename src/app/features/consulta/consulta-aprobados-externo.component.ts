@@ -94,6 +94,15 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   documentosExpedienteRows: ConsultaDocumentoRow[] = [];
   selectedExpedienteDocs: ConsultaExpedienteRow | null = null;
 
+  codigoDocumentoFiltro = '';
+  nombreDocumentoFiltro = '';
+
+  codigoExpedienteFiltro = '';
+  nombreExpedienteFiltro = '';
+  serieId = '';
+  subserieId = '';
+  soloConElegiblesFiltro = '';
+
   /** Modal de error al fallar la descarga (sustituye alert nativo). */
   downloadErrorOpen = false;
   downloadErrorTitle = 'No se pudo descargar';
@@ -170,9 +179,16 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.loading = true;
     this.errorMsg = '';
 
+    const qCompuesta = [
+      this.codigoDocumentoFiltro.trim(),
+      this.nombreDocumentoFiltro.trim(),
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     this.api
       .searchExterno({
-        q: this.q.trim() || undefined,
+        q: qCompuesta || undefined,
         page: this.page,
         pageSize: this.pageSize,
         sortBy: 'fecha_aprobacion',
@@ -229,12 +245,54 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   usarBusquedaHistorial(item: HistorialBusquedaRow): void {
     const filtros = item.filtros || {};
 
-    this.q = item.texto_busqueda || '';
+    this.codigoDocumentoFiltro = filtros['codigo'] ? String(filtros['codigo']) : '';
+    this.nombreDocumentoFiltro = filtros['titulo'] ? String(filtros['titulo']) : '';
     this.categoriaId = filtros['categoriaId'] ? String(filtros['categoriaId']) : '';
     this.dateFrom = filtros['dateFrom'] || '';
     this.dateTo = filtros['dateTo'] || '';
 
+    this.codigoExpedienteFiltro = filtros['codigo'] ? String(filtros['codigo']) : '';
+    this.nombreExpedienteFiltro = filtros['nombre'] ? String(filtros['nombre']) : '';
+    this.serieId = filtros['serieId'] ? String(filtros['serieId']) : '';
+    this.subserieId = filtros['subserieId'] ? String(filtros['subserieId']) : '';
+    this.soloConElegiblesFiltro = filtros['soloConElegibles']
+      ? String(filtros['soloConElegibles'])
+      : '';
+
     this.page = 1;
+    this.expedientePage = 1;
+    this.load();
+  }
+
+  get subseriesFiltradas() {
+    const list = this.filtros?.subseries ?? [];
+    const sid = Number(this.serieId);
+    if (!Number.isFinite(sid) || sid <= 0) return list;
+    return list.filter((s) => Number(s.serie_id) === sid);
+  }
+
+  aplicarFiltrosConsulta(): void {
+    this.page = 1;
+    this.expedientePage = 1;
+    this.load();
+  }
+
+  limpiarFiltrosConsulta(): void {
+    this.codigoDocumentoFiltro = '';
+    this.nombreDocumentoFiltro = '';
+    this.categoriaId = '';
+    this.dateFrom = '';
+    this.dateTo = '';
+
+    this.codigoExpedienteFiltro = '';
+    this.nombreExpedienteFiltro = '';
+    this.serieId = '';
+    this.subserieId = '';
+    this.soloConElegiblesFiltro = '';
+
+    this.q = '';
+    this.page = 1;
+    this.expedientePage = 1;
     this.load();
   }
 
@@ -569,21 +627,46 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.loading = true;
     this.errorMsg = '';
 
+    const qCompuesta = [
+      this.codigoExpedienteFiltro.trim(),
+      this.nombreExpedienteFiltro.trim(),
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     this.api
       .searchExpedientesExternos({
-        q: this.q.trim() || undefined,
+        q: qCompuesta || undefined,
         page: this.expedientePage,
         pageSize: this.expedientePageSize,
         sortBy: 'nombre',
         sortDir: 'asc',
+        serieId: this.serieId || undefined,
+        subserieId: this.subserieId || undefined,
       })
       .subscribe({
         next: (res) => {
-          this.expedientesRows = res.items ?? [];
-          this.totalExpedientes = res.totalItems ?? 0;
-          this.totalExpedientesPages = res.totalPages ?? 1;
-          this.expedientePage = res.page ?? 1;
+          let items = res.items ?? [];
+
+          if (this.soloConElegiblesFiltro === '1') {
+            items = items.filter(
+              (row) => Number(row.total_documentos_elegibles ?? 0) > 0,
+            );
+          }
+
+          this.expedientesRows = items;
+          this.totalExpedientes = this.soloConElegiblesFiltro === '1'
+            ? items.length
+            : (res.totalItems ?? 0);
+          this.totalExpedientesPages = this.soloConElegiblesFiltro === '1'
+            ? 1
+            : (res.totalPages ?? 1);
+          this.expedientePage = this.soloConElegiblesFiltro === '1'
+            ? 1
+            : (res.page ?? 1);
+
           this.loading = false;
+          this.cargarHistorialBusquedas();
         },
         error: (e) => {
           this.loading = false;
@@ -592,6 +675,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
         },
       });
   }
+
   cambiarVista(vista: 'documentos' | 'expedientes'): void {
     if (this.vistaActual === vista) return;
 

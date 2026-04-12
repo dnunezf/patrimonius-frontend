@@ -14,6 +14,7 @@
   </section>
 
   <section class="top-actions">
+    <button class="btn ghost" (click)="volverDashboard()">Regresar</button>
     <button class="btn primary" (click)="crearSerie()">Crear Serie</button>
     <button class="btn primary" (click)="crearSubserie()">Crear Subserie</button>
     <button class="btn primary" (click)="verIndices()">Consultar índices</button>
@@ -28,17 +29,46 @@
       </div>
     </div>
 
-    <div class="toolbar-search">
-      <div class="search-input-wrap">
-        <span class="search-ico">🔍</span>
+    <section class="panel filtros">
+      <div class="field">
+        <label>Código</label>
         <input
           type="search"
-          [(ngModel)]="searchSeries"
-          (input)="aplicarFiltroSeries()"
-          placeholder="Buscar por código, nombre o unidad..."
+          [(ngModel)]="filtroSerieCodigo"
+          placeholder="Código"
         />
       </div>
-    </div>
+
+      <div class="field">
+        <label>Nombre</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroSerieNombre"
+          placeholder="Nombre de la serie"
+        />
+      </div>
+
+      <div class="field">
+        <label>Unidad</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroSerieUnidad"
+          placeholder="Unidad organizacional"
+        />
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="button" (click)="aplicarFiltroSeries()">
+          Buscar
+        </button>
+      </div>
+
+      <div class="actions">
+        <button class="btn ghost" type="button" (click)="limpiarFiltrosSeries()">
+          Limpiar
+        </button>
+      </div>
+    </section>
 
     <p class="toolbar-error" *ngIf="errorSeries">{{ errorSeries }}</p>
     <div class="loading" *ngIf="loadingSeries">Cargando series...</div>
@@ -54,7 +84,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let serie of filteredSeries">
+        <tr *ngFor="let serie of pagedSeries">
           <td class="mono">{{ serie.codigo }}</td>
           <td>{{ serie.nombre }}</td>
           <td>{{ serie.unidad_nombre || '—' }}</td>
@@ -66,6 +96,32 @@
         </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="pager" *ngIf="!loadingSeries && filteredSeries.length > 0">
+      <span class="muted">
+        Registros {{ seriesRangeStart }}–{{ seriesRangeEnd }} de {{ filteredSeries.length }}
+      </span>
+
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="prevSeriesPage()"
+        [disabled]="seriesPage <= 1"
+      >
+        Anterior
+      </button>
+
+      <span class="muted">Página {{ seriesPage }} / {{ totalSeriesPages }}</span>
+
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextSeriesPage()"
+        [disabled]="seriesPage >= totalSeriesPages"
+      >
+        Siguiente
+      </button>
     </div>
 
     <p class="empty" *ngIf="!loadingSeries && filteredSeries.length === 0">
@@ -82,17 +138,46 @@
       </div>
     </div>
 
-    <div class="toolbar-search">
-      <div class="search-input-wrap">
-        <span class="search-ico">🔍</span>
+    <section class="panel filtros">
+      <div class="field">
+        <label>Código</label>
         <input
           type="search"
-          [(ngModel)]="searchSubseries"
-          (input)="aplicarFiltroSubseries()"
-          placeholder="Buscar por código, nombre o serie..."
+          [(ngModel)]="filtroSubserieCodigo"
+          placeholder="Código"
         />
       </div>
-    </div>
+
+      <div class="field">
+        <label>Nombre</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroSubserieNombre"
+          placeholder="Nombre de la subserie"
+        />
+      </div>
+
+      <div class="field">
+        <label>Serie</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroSubserieSerie"
+          placeholder="Serie relacionada"
+        />
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="button" (click)="aplicarFiltroSubseries()">
+          Buscar
+        </button>
+      </div>
+
+      <div class="actions">
+        <button class="btn ghost" type="button" (click)="limpiarFiltrosSubseries()">
+          Limpiar
+        </button>
+      </div>
+    </section>
 
     <p class="toolbar-error" *ngIf="errorSubseries">{{ errorSubseries }}</p>
     <div class="loading" *ngIf="loadingSubseries">Cargando subseries...</div>
@@ -108,7 +193,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let subserie of filteredSubseries">
+        <tr *ngFor="let subserie of pagedSubseries">
           <td class="mono">{{ subserie.codigo }}</td>
           <td>{{ subserie.nombre }}</td>
           <td>{{ subserie.serie_nombre || '—' }}</td>
@@ -123,6 +208,32 @@
         </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="pager" *ngIf="!loadingSubseries && filteredSubseries.length > 0">
+      <span class="muted">
+        Registros {{ subseriesRangeStart }}–{{ subseriesRangeEnd }} de {{ filteredSubseries.length }}
+      </span>
+
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="prevSubseriesPage()"
+        [disabled]="subseriesPage <= 1"
+      >
+        Anterior
+      </button>
+
+      <span class="muted">Página {{ subseriesPage }} / {{ totalSubseriesPages }}</span>
+
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextSubseriesPage()"
+        [disabled]="subseriesPage >= totalSubseriesPages"
+      >
+        Siguiente
+      </button>
     </div>
 
     <p class="empty" *ngIf="!loadingSubseries && filteredSubseries.length === 0">
@@ -144,17 +255,73 @@
       </div>
     </div>
 
-    <div class="toolbar-search">
-      <div class="search-input-wrap">
-        <span class="search-ico">🔍</span>
+    <section class="panel filtros">
+      <div class="field">
+        <label>Código</label>
         <input
           type="search"
-          [(ngModel)]="searchExpedientes"
-          (input)="aplicarFiltroExpedientes()"
-          placeholder="Buscar por código, nombre, estado, unidad, serie o subserie..."
+          [(ngModel)]="filtroExpedienteCodigo"
+          placeholder="Código"
         />
       </div>
-    </div>
+
+      <div class="field">
+        <label>Nombre</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroExpedienteNombre"
+          placeholder="Nombre del expediente"
+        />
+      </div>
+
+      <div class="field">
+        <label>Unidad</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroExpedienteUnidad"
+          placeholder="Unidad"
+        />
+      </div>
+
+      <div class="field">
+        <label>Serie</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroExpedienteSerie"
+          placeholder="Serie"
+        />
+      </div>
+
+      <div class="field">
+        <label>Subserie</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroExpedienteSubserie"
+          placeholder="Subserie"
+        />
+      </div>
+
+      <div class="field">
+        <label>Estado</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroExpedienteEstado"
+          placeholder="ACTIVO, CERRADO..."
+        />
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="button" (click)="aplicarFiltroExpedientes()">
+          Buscar
+        </button>
+      </div>
+
+      <div class="actions">
+        <button class="btn ghost" type="button" (click)="limpiarFiltrosExpedientes()">
+          Limpiar
+        </button>
+      </div>
+    </section>
 
     <p class="toolbar-error" *ngIf="errorExpedientes">{{ errorExpedientes }}</p>
     <div class="loading" *ngIf="loadingExpedientes">Cargando expedientes...</div>
@@ -174,7 +341,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let expediente of filteredExpedientes">
+        <tr *ngFor="let expediente of pagedExpedientes">
           <td class="mono">{{ expediente.codigo }}</td>
           <td>
             <div class="doc-title">{{ expediente.nombre }}</div>
@@ -205,10 +372,10 @@
               (click)="cerrarExpediente(expediente)"
               [disabled]="expediente.estado !== 'ACTIVO'"
               [title]="
-                  expediente.estado === 'ACTIVO'
-                    ? 'Cerrar expediente y generar índice electrónico'
-                    : 'Solo los expedientes activos se pueden cerrar'
-                "
+                expediente.estado === 'ACTIVO'
+                  ? 'Cerrar expediente y generar índice electrónico'
+                  : 'Solo los expedientes activos se pueden cerrar'
+              "
             >
               Cerrar
             </button>
@@ -218,10 +385,10 @@
               (click)="abrirExpediente(expediente)"
               [disabled]="expediente.estado !== 'CERRADO'"
               [title]="
-                  expediente.estado === 'CERRADO'
-                    ? 'Reabrir expediente'
-                    : 'Solo los expedientes cerrados se pueden reabrir'
-                "
+                expediente.estado === 'CERRADO'
+                  ? 'Reabrir expediente'
+                  : 'Solo los expedientes cerrados se pueden reabrir'
+              "
             >
               Abrir
             </button>
@@ -231,11 +398,37 @@
       </table>
     </div>
 
+    <div class="pager" *ngIf="!loadingExpedientes && filteredExpedientes.length > 0">
+      <span class="muted">
+        Registros {{ expedientesRangeStart }}–{{ expedientesRangeEnd }} de {{ filteredExpedientes.length }}
+      </span>
+
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="prevExpedientesPage()"
+        [disabled]="expedientesPage <= 1"
+      >
+        Anterior
+      </button>
+
+      <span class="muted">Página {{ expedientesPage }} / {{ totalExpedientesPages }}</span>
+
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextExpedientesPage()"
+        [disabled]="expedientesPage >= totalExpedientesPages"
+      >
+        Siguiente
+      </button>
+    </div>
+
     <p class="empty" *ngIf="!loadingExpedientes && filteredExpedientes.length === 0">
       No hay expedientes registrados.
     </p>
-
   </section>
+
   <app-expediente-documentos-dialog
     [open]="expedienteDocsOpen"
     [expedienteNombre]="expedienteDocsTitle"

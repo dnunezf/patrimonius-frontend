@@ -84,8 +84,19 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
   rows: SolicitudDocumentoRow[] = [];
   filteredRows: SolicitudDocumentoRow[] = [];
 
-  estadoFiltro: '' | EstadoSolicitud = '';
-  textoFiltro = '';
+  docIdFiltro = '';
+  docDocumentoFiltro = '';
+  docSolicitanteFiltro = '';
+  docEstadoFiltro: '' | EstadoSolicitud = '';
+  docFechaDesdeFiltro = '';
+  docFechaHastaFiltro = '';
+
+  expIdFiltro = '';
+  expExpedienteFiltro = '';
+  expSolicitanteFiltro = '';
+  expEstadoFiltro: '' | EstadoSolicitud = '';
+  expFechaDesdeFiltro = '';
+  expFechaHastaFiltro = '';
 
   detalleOpen = false;
   selected: SolicitudDocumentoRow | null = null;
@@ -144,60 +155,120 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
   }
 
   applyFilters(): void {
-    const texto = this.textoFiltro.trim().toLowerCase();
+    const id = this.docIdFiltro.trim().toLowerCase();
+    const documento = this.docDocumentoFiltro.trim().toLowerCase();
+    const solicitante = this.docSolicitanteFiltro.trim().toLowerCase();
 
     this.filteredRows = this.rows.filter((row) => {
-      const matchEstado = !this.estadoFiltro || row.estado_solicitud === this.estadoFiltro;
+      const matchId =
+        !id || String(row.id).toLowerCase().includes(id);
 
-      const fullText = [
-        row.id,
+      const documentoTexto = [
         row.documento_titulo,
         row.numero_serie,
-        row.solicitante_nombre,
-        row.solicitante_apellido1,
-        row.solicitante_apellido2,
-        row.solicitante_rol,
-        row.justificacion,
-        row.motivo_resolucion,
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
 
-      const matchTexto = !texto || fullText.includes(texto);
+      const matchDocumento =
+        !documento || documentoTexto.includes(documento);
 
-      return matchEstado && matchTexto;
+      const solicitanteTexto = [
+        row.solicitante_nombre,
+        row.solicitante_apellido1,
+        row.solicitante_apellido2,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      const matchSolicitante =
+        !solicitante || solicitanteTexto.includes(solicitante);
+
+      const matchEstado =
+        !this.docEstadoFiltro || row.estado_solicitud === this.docEstadoFiltro;
+
+      const fecha = row.created_at ? new Date(row.created_at) : null;
+
+      const matchFechaDesde =
+        !this.docFechaDesdeFiltro || !fecha
+          ? true
+          : fecha >= new Date(`${this.docFechaDesdeFiltro}T00:00:00`);
+
+      const matchFechaHasta =
+        !this.docFechaHastaFiltro || !fecha
+          ? true
+          : fecha <= new Date(`${this.docFechaHastaFiltro}T23:59:59`);
+
+      return (
+        matchId &&
+        matchDocumento &&
+        matchSolicitante &&
+        matchEstado &&
+        matchFechaDesde &&
+        matchFechaHasta
+      );
     });
   }
 
   applyFiltersExpedientes(): void {
-    const texto = this.textoFiltro.trim().toLowerCase();
+    const id = this.expIdFiltro.trim().toLowerCase();
+    const expediente = this.expExpedienteFiltro.trim().toLowerCase();
+    const solicitante = this.expSolicitanteFiltro.trim().toLowerCase();
 
     this.filteredRowsExpedientes = this.rowsExpedientes.filter((row) => {
-      const matchEstado =
-        !this.estadoFiltro || row.estado_solicitud === this.estadoFiltro;
+      const matchId =
+        !id || String(row.id).toLowerCase().includes(id);
 
-      const fullText = [
-        row.id,
+      const expedienteTexto = [
         row.expediente_codigo,
         row.expediente_nombre,
-        row.expediente_estado,
         row.serie_nombre,
         row.subserie_nombre,
-        row.solicitante_nombre,
-        row.solicitante_apellido1,
-        row.solicitante_apellido2,
-        row.solicitante_rol,
-        row.justificacion,
-        row.motivo_resolucion,
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
 
-      const matchTexto = !texto || fullText.includes(texto);
+      const matchExpediente =
+        !expediente || expedienteTexto.includes(expediente);
 
-      return matchEstado && matchTexto;
+      const solicitanteTexto = [
+        row.solicitante_nombre,
+        row.solicitante_apellido1,
+        row.solicitante_apellido2,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      const matchSolicitante =
+        !solicitante || solicitanteTexto.includes(solicitante);
+
+      const matchEstado =
+        !this.expEstadoFiltro || row.estado_solicitud === this.expEstadoFiltro;
+
+      const fecha = row.created_at ? new Date(row.created_at) : null;
+
+      const matchFechaDesde =
+        !this.expFechaDesdeFiltro || !fecha
+          ? true
+          : fecha >= new Date(`${this.expFechaDesdeFiltro}T00:00:00`);
+
+      const matchFechaHasta =
+        !this.expFechaHastaFiltro || !fecha
+          ? true
+          : fecha <= new Date(`${this.expFechaHastaFiltro}T23:59:59`);
+
+      return (
+        matchId &&
+        matchExpediente &&
+        matchSolicitante &&
+        matchEstado &&
+        matchFechaDesde &&
+        matchFechaHasta
+      );
     });
   }
 
@@ -295,22 +366,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
 
   cambiarSeccion(seccion: 'documentos' | 'expedientes'): void {
     this.seccionActual = seccion;
-
-    if (seccion === 'documentos') {
-      this.applyFilters();
-      return;
-    }
-
-    this.applyFiltersExpedientes();
-  }
-
-  onFiltersChange(): void {
-    if (this.seccionActual === 'documentos') {
-      this.applyFilters();
-      return;
-    }
-
-    this.applyFiltersExpedientes();
+    this.aplicarFiltros();
   }
 
   openDetalleExpediente(row: SolicitudExpedienteRow): void {
@@ -356,5 +412,31 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
             e?.error?.message || 'No se pudo resolver la solicitud de expediente.';
         },
       });
+  }
+  aplicarFiltros(): void {
+    if (this.seccionActual === 'documentos') {
+      this.applyFilters();
+      return;
+    }
+
+    this.applyFiltersExpedientes();
+  }
+
+  limpiarFiltros(): void {
+    this.docIdFiltro = '';
+    this.docDocumentoFiltro = '';
+    this.docSolicitanteFiltro = '';
+    this.docEstadoFiltro = '';
+    this.docFechaDesdeFiltro = '';
+    this.docFechaHastaFiltro = '';
+
+    this.expIdFiltro = '';
+    this.expExpedienteFiltro = '';
+    this.expSolicitanteFiltro = '';
+    this.expEstadoFiltro = '';
+    this.expFechaDesdeFiltro = '';
+    this.expFechaHastaFiltro = '';
+
+    this.aplicarFiltros();
   }
 }

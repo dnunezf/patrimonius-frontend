@@ -1,82 +1,262 @@
-<main class="container">
-  <div class="back-container">
-    <a routerLink="/admin/module" class="back-link">
-      ← Volver al módulo de administración
-    </a>
-  </div>
+<main class="page">
+  <section class="panel-block panel-block--top">
+    <div class="back-container">
+      <a routerLink="/admin/module" class="back-link">
+        ← Volver al módulo de administración
+      </a>
+    </div>
 
-  <header class="head">
-    <h1>Solicitudes a documentos</h1>
-    <p class="sub">
-      Revise, apruebe o rechace las solicitudes de acceso a documentos realizadas por usuarios externos.
-    </p>
-  </header>
+    <header class="head">
+      <h1>Solicitudes de acceso</h1>
+      <p class="sub">
+        Revise, apruebe o rechace las solicitudes de acceso realizadas por usuarios externos a documentos y expedientes.
+      </p>
+    </header>
+  </section>
 
-  <section class="toolbar toolbar--sections">
-    <div class="field">
-      <label>Sección</label>
-      <div class="section-switch">
+  <section class="panel-block">
+    <div class="panel-head">
+      <div>
+        <h3>Sección</h3>
+        <p class="muted">
+          Cambie entre solicitudes de documentos y solicitudes de expedientes.
+        </p>
+      </div>
+    </div>
+
+    <section class="panel filtros filtros--acciones">
+      <div class="actions">
         <button
           type="button"
-          class="btn-detail"
-          [class.active]="seccionActual === 'documentos'"
+          class="btn"
+          [class.primary]="seccionActual === 'documentos'"
+          [class.ghost]="seccionActual !== 'documentos'"
           (click)="cambiarSeccion('documentos')"
         >
           Solicitudes de documentos
         </button>
+      </div>
 
+      <div class="actions">
         <button
           type="button"
-          class="btn-detail"
-          [class.active]="seccionActual === 'expedientes'"
+          class="btn"
+          [class.primary]="seccionActual === 'expedientes'"
+          [class.ghost]="seccionActual !== 'expedientes'"
           (click)="cambiarSeccion('expedientes')"
         >
           Solicitudes de expedientes
         </button>
       </div>
-    </div>
+    </section>
   </section>
 
-  <section class="toolbar">
-    <div class="field">
-      <label for="textoFiltro">Buscar</label>
-      <input
-        id="textoFiltro"
-        type="text"
-        [(ngModel)]="textoFiltro"
-        (ngModelChange)="onFiltersChange()"
-        placeholder="Título, código, solicitante, justificación..."
-      />
+  <section class="panel-block">
+    <div class="panel-head">
+      <div>
+        <h3>Filtros</h3>
+
+        <p class="muted" *ngIf="seccionActual === 'documentos'">
+          Filtre solicitudes de acceso a documentos por ID, documento, solicitante, estado y rango de fechas.
+        </p>
+
+        <p class="muted" *ngIf="seccionActual === 'expedientes'">
+          Filtre solicitudes de acceso a expedientes por ID, expediente, solicitante, estado y rango de fechas.
+        </p>
+      </div>
     </div>
 
-    <div class="field">
-      <label for="estadoFiltro">Estado</label>
-      <select
-        id="estadoFiltro"
-        [(ngModel)]="estadoFiltro"
-        (ngModelChange)="onFiltersChange()"
-      >
-        <option value="">Todos</option>
-        <option value="PENDIENTE">Pendiente</option>
-        <option value="APROBADA">Aprobada</option>
-        <option value="RECHAZADA">Rechazada</option>
-      </select>
-    </div>
+    <section class="panel filtros" *ngIf="seccionActual === 'documentos'">
+      <div class="field">
+        <label for="docIdFiltro">ID</label>
+        <input
+          id="docIdFiltro"
+          type="search"
+          [(ngModel)]="docIdFiltro"
+          (keyup.enter)="aplicarFiltros()"
+          placeholder="Ej. 15"
+        />
+      </div>
+
+      <div class="field grow">
+        <label for="docDocumentoFiltro">Documento</label>
+        <input
+          id="docDocumentoFiltro"
+          type="search"
+          [(ngModel)]="docDocumentoFiltro"
+          (keyup.enter)="aplicarFiltros()"
+          placeholder="Título o código del documento"
+        />
+      </div>
+
+      <div class="field">
+        <label for="docSolicitanteFiltro">Solicitante</label>
+        <input
+          id="docSolicitanteFiltro"
+          type="search"
+          [(ngModel)]="docSolicitanteFiltro"
+          (keyup.enter)="aplicarFiltros()"
+          placeholder="Nombre del solicitante"
+        />
+      </div>
+
+      <div class="field">
+        <label for="docEstadoFiltro">Estado</label>
+        <select
+          id="docEstadoFiltro"
+          [(ngModel)]="docEstadoFiltro"
+        >
+          <option value="">Todos</option>
+          <option value="PENDIENTE">Pendiente</option>
+          <option value="APROBADA">Aprobada</option>
+          <option value="RECHAZADA">Rechazada</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="docFechaDesdeFiltro">Desde</label>
+        <input
+          id="docFechaDesdeFiltro"
+          type="date"
+          [(ngModel)]="docFechaDesdeFiltro"
+        />
+      </div>
+
+      <div class="field">
+        <label for="docFechaHastaFiltro">Hasta</label>
+        <input
+          id="docFechaHastaFiltro"
+          type="date"
+          [(ngModel)]="docFechaHastaFiltro"
+        />
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn primary"
+          (click)="aplicarFiltros()"
+        >
+          Buscar
+        </button>
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn ghost"
+          (click)="limpiarFiltros()"
+        >
+          Limpiar filtros
+        </button>
+      </div>
+    </section>
+
+    <section class="panel filtros" *ngIf="seccionActual === 'expedientes'">
+      <div class="field">
+        <label for="expIdFiltro">ID</label>
+        <input
+          id="expIdFiltro"
+          type="search"
+          [(ngModel)]="expIdFiltro"
+          (keyup.enter)="aplicarFiltros()"
+          placeholder="Ej. 8"
+        />
+      </div>
+
+      <div class="field grow">
+        <label for="expExpedienteFiltro">Expediente</label>
+        <input
+          id="expExpedienteFiltro"
+          type="search"
+          [(ngModel)]="expExpedienteFiltro"
+          (keyup.enter)="aplicarFiltros()"
+          placeholder="Nombre o código del expediente"
+        />
+      </div>
+
+      <div class="field">
+        <label for="expSolicitanteFiltro">Solicitante</label>
+        <input
+          id="expSolicitanteFiltro"
+          type="search"
+          [(ngModel)]="expSolicitanteFiltro"
+          (keyup.enter)="aplicarFiltros()"
+          placeholder="Nombre del solicitante"
+        />
+      </div>
+
+      <div class="field">
+        <label for="expEstadoFiltro">Estado</label>
+        <select
+          id="expEstadoFiltro"
+          [(ngModel)]="expEstadoFiltro"
+        >
+          <option value="">Todos</option>
+          <option value="PENDIENTE">Pendiente</option>
+          <option value="APROBADA">Aprobada</option>
+          <option value="RECHAZADA">Rechazada</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="expFechaDesdeFiltro">Desde</label>
+        <input
+          id="expFechaDesdeFiltro"
+          type="date"
+          [(ngModel)]="expFechaDesdeFiltro"
+        />
+      </div>
+
+      <div class="field">
+        <label for="expFechaHastaFiltro">Hasta</label>
+        <input
+          id="expFechaHastaFiltro"
+          type="date"
+          [(ngModel)]="expFechaHastaFiltro"
+        />
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn primary"
+          (click)="aplicarFiltros()"
+        >
+          Buscar
+        </button>
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn ghost"
+          (click)="limpiarFiltros()"
+        >
+          Limpiar filtros
+        </button>
+      </div>
+    </section>
+
+    <div class="loading" *ngIf="loading">Cargando solicitudes…</div>
+    <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
   </section>
-
-  <div class="loading" *ngIf="loading">Cargando solicitudes…</div>
-  <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
 
   <section
-    class="table-card"
+    class="panel-block"
     *ngIf="!loading && !errorMsg && seccionActual === 'documentos'"
   >
-    <div class="table-meta">
-      <span>{{ filteredRows.length }} solicitudes</span>
+    <div class="panel-head">
+      <div>
+        <h3>Resultados</h3>
+        <p class="muted">
+          {{ filteredRows.length }} solicitud(es) encontradas.
+        </p>
+      </div>
     </div>
 
-    <div class="table-wrap">
-      <table>
+    <div class="table-scroll">
+      <table class="data-table">
         <thead>
         <tr>
           <th>ID</th>
@@ -97,7 +277,7 @@
         </tr>
 
         <tr *ngFor="let row of filteredRows">
-          <td>#{{ row.id }}</td>
+          <td class="mono">#{{ row.id }}</td>
           <td>
             <div class="doc-cell">
               <strong>{{ row.documento_titulo || 'Documento sin título' }}</strong>
@@ -112,8 +292,8 @@
               </span>
           </td>
           <td>{{ formatDate(row.created_at) }}</td>
-          <td>
-            <button type="button" class="btn-detail" (click)="openDetalle(row)">
+          <td class="actions-cell">
+            <button type="button" class="btn sm ghost" (click)="openDetalle(row)">
               Ver detalle
             </button>
           </td>
@@ -124,15 +304,20 @@
   </section>
 
   <section
-    class="table-card"
+    class="panel-block"
     *ngIf="!loading && !errorMsg && seccionActual === 'expedientes'"
   >
-    <div class="table-meta">
-      <span>{{ filteredRowsExpedientes.length }} solicitudes</span>
+    <div class="panel-head">
+      <div>
+        <h3>Resultados</h3>
+        <p class="muted">
+          {{ filteredRowsExpedientes.length }} solicitud(es) encontradas.
+        </p>
+      </div>
     </div>
 
-    <div class="table-wrap">
-      <table>
+    <div class="table-scroll">
+      <table class="data-table">
         <thead>
         <tr>
           <th>ID</th>
@@ -153,7 +338,7 @@
         </tr>
 
         <tr *ngFor="let row of filteredRowsExpedientes">
-          <td>#{{ row.id }}</td>
+          <td class="mono">#{{ row.id }}</td>
           <td>
             <div class="doc-cell">
               <strong>{{ row.expediente_nombre || 'Expediente sin nombre' }}</strong>
@@ -168,10 +353,10 @@
               </span>
           </td>
           <td>{{ formatDate(row.created_at) }}</td>
-          <td>
+          <td class="actions-cell">
             <button
               type="button"
-              class="btn-detail"
+              class="btn sm ghost"
               (click)="openDetalleExpediente(row)"
             >
               Ver detalle

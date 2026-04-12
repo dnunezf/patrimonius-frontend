@@ -10,6 +10,7 @@
       <span class="hint">Acceso autorizado · Solo lectura</span>
     </div>
   </section>
+
   <section class="consulta-view-switch" aria-label="Selector de vista">
     <div class="panel consulta-view-switch__panel">
       <div class="consulta-view-switch__head">
@@ -43,97 +44,165 @@
     </div>
   </section>
 
-  <section class="consulta-toolbar" aria-label="Búsqueda y filtros">
-    <div class="toolbar-search">
-      <label class="toolbar-label" for="q-externo">Buscar</label>
-      <div class="toolbar-search-row">
-        <div class="search-input-wrap search-history-wrap">
-          <span class="search-ico" aria-hidden="true">🔍</span>
-          <input
-            id="q-externo"
-            type="search"
-            [(ngModel)]="q"
-            (focus)="onFocusBusqueda()"
-            (blur)="onBlurBusqueda()"
-            (input)="mostrarSugerenciasHistorial = true"
-            (keyup.enter)="page = 1; load()"
-            placeholder="Buscar por título, código, categoría, autor o palabras clave…"
-            autocomplete="off"
-          />
+  <section class="panel-block">
+    <div class="panel-head">
+      <div>
+        <h3>Consulta de {{ vistaActual === 'documentos' ? 'documentos' : 'expedientes' }}</h3>
+        <p class="muted" *ngIf="vistaActual === 'documentos'">
+          Filtre por código, nombre, categoría y rango de fechas para ubicar documentos más rápido.
+        </p>
+        <p class="muted" *ngIf="vistaActual === 'expedientes'">
+          Filtre por código, nombre, serie, subserie y documentos elegibles para ubicar expedientes.
+        </p>
+      </div>
+    </div>
 
-          <div
-            class="search-history-dropdown"
-            *ngIf="mostrarSugerenciasHistorial && historialVisible.length > 0"
-          >
-            <button
-              type="button"
-              class="search-history-item"
-              *ngFor="let item of historialVisible"
-              (mousedown)="seleccionarSugerenciaHistorial(item)"
-            >
-              <span class="search-history-text">{{ item.texto_busqueda }}</span>
-              <small class="search-history-date">{{ formatDateTime(item.fecha_consulta) }}</small>
-            </button>
+    <section class="panel filtros" *ngIf="vistaActual === 'documentos'">
+      <div class="field">
+        <label>Código</label>
+        <input
+          type="search"
+          [(ngModel)]="codigoDocumentoFiltro"
+          placeholder="Ej. OFI_MNCR-DAF-AC-15-2026"
+          (keyup.enter)="aplicarFiltrosConsulta()"
+        />
+      </div>
 
-            <div class="search-history-footer">
-              <button
-                type="button"
-                class="search-history-clear"
-                (mousedown)="limpiarHistorialBusquedas()"
-              >
-                Limpiar historial
-              </button>
-            </div>
-          </div>
-        </div>
+      <div class="field grow">
+        <label>Nombre del documento</label>
+        <input
+          type="search"
+          [(ngModel)]="nombreDocumentoFiltro"
+          placeholder="Título o parte del nombre"
+          (keyup.enter)="aplicarFiltrosConsulta()"
+        />
+      </div>
 
-        <button type="button" class="btn primary btn-buscar" (click)="page = 1; load()">
+      <div class="field">
+        <label>Categoría</label>
+        <select [(ngModel)]="categoriaId">
+          <option value="">Todas</option>
+          <option *ngFor="let c of filtros?.categorias" [value]="c.id">
+            {{ c.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="dateFrom" />
+      </div>
+
+      <div class="field">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="dateTo" />
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn primary"
+          (click)="aplicarFiltrosConsulta()"
+        >
           Buscar
         </button>
       </div>
-    </div>
 
-    <div class="toolbar-divider" role="presentation"></div>
-
-    <div class="toolbar-filters">
-      <div class="filter-grid">
-        <div class="field">
-          <label for="cat-externo">Categoría</label>
-          <select
-            id="cat-externo"
-            [(ngModel)]="categoriaId"
-            (change)="page = 1; load()"
-          >
-            <option value="">Todas</option>
-            <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="desde-externo">Desde</label>
-          <input
-            id="desde-externo"
-            type="date"
-            [(ngModel)]="dateFrom"
-            (change)="page = 1; load()"
-          />
-        </div>
-        <div class="field">
-          <label for="hasta-externo">Hasta</label>
-          <input
-            id="hasta-externo"
-            type="date"
-            [(ngModel)]="dateTo"
-            (change)="page = 1; load()"
-          />
-        </div>
+      <div class="actions">
+        <button
+          type="button"
+          class="btn ghost"
+          (click)="limpiarFiltrosConsulta()"
+        >
+          Limpiar filtros
+        </button>
       </div>
-      <div class="toolbar-side">
-        <button type="button" class="btn ghost btn-panel" (click)="volver()">Regresar</button>
-      </div>
-    </div>
 
-    <p class="toolbar-warn" *ngIf="filtersError" role="status">{{ filtersError }}</p>
-    <p class="toolbar-error" *ngIf="errorMsg" role="alert">{{ errorMsg }}</p>
+      <div class="actions">
+        <button type="button" class="btn ghost" (click)="volver()">
+          Regresar
+        </button>
+      </div>
+    </section>
+
+    <section class="panel filtros" *ngIf="vistaActual === 'expedientes'">
+      <div class="field">
+        <label>Código</label>
+        <input
+          type="search"
+          [(ngModel)]="codigoExpedienteFiltro"
+          placeholder="Ej. expediente_prueba1"
+          (keyup.enter)="aplicarFiltrosConsulta()"
+        />
+      </div>
+
+      <div class="field grow">
+        <label>Nombre del expediente</label>
+        <input
+          type="search"
+          [(ngModel)]="nombreExpedienteFiltro"
+          placeholder="Nombre o parte del nombre"
+          (keyup.enter)="aplicarFiltrosConsulta()"
+        />
+      </div>
+
+      <div class="field">
+        <label>Serie</label>
+        <select [(ngModel)]="serieId" (ngModelChange)="subserieId = ''">
+          <option value="">Todas</option>
+          <option *ngFor="let s of filtros?.series" [value]="s.id">
+            {{ s.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Subserie</label>
+        <select [(ngModel)]="subserieId">
+          <option value="">Todas</option>
+          <option *ngFor="let ss of subseriesFiltradas" [value]="ss.id">
+            {{ ss.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Documentos elegibles</label>
+        <select [(ngModel)]="soloConElegiblesFiltro">
+          <option value="">Todos</option>
+          <option value="1">Solo con documentos elegibles</option>
+        </select>
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn primary"
+          (click)="aplicarFiltrosConsulta()"
+        >
+          Buscar
+        </button>
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn ghost"
+          (click)="limpiarFiltrosConsulta()"
+        >
+          Limpiar filtros
+        </button>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn ghost" (click)="volver()">
+          Regresar
+        </button>
+      </div>
+    </section>
+
+    <p class="toolbar-warn" *ngIf="filtersError">{{ filtersError }}</p>
+    <p class="toolbar-error" *ngIf="errorMsg">{{ errorMsg }}</p>
   </section>
 
   <section
