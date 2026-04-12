@@ -35,6 +35,11 @@ function humanSize(bytes: number | null): string {
   return `${v >= 10 ? v.toFixed(0) : v.toFixed(1)} ${units[i]}`;
 }
 
+type DocumentTypeOption = {
+  value: string;
+  code: string;
+};
+
 @Component({
   selector: 'app-document-metadata-dialog',
   standalone: true,
@@ -66,6 +71,27 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     { value: 'RESTRICTED', label: 'Restringido' },
   ];
 
+  readonly documentTypeOptions: DocumentTypeOption[] = [
+    { value: 'Acta', code: 'ACT' },
+    { value: 'Bitácora', code: 'BIT' },
+    { value: 'Certificación', code: 'CER' },
+    { value: 'Circular', code: 'CIR' },
+    { value: 'Constancia', code: 'CON' },
+    { value: 'Contrato', code: 'CONT' },
+    { value: 'Convenio', code: 'CONV' },
+    { value: 'Estudio', code: 'EST' },
+    { value: 'Ficha técnica', code: 'FIC' },
+    { value: 'Informe', code: 'INF' },
+    { value: 'Memorando', code: 'MEM' },
+    { value: 'Minuta de reunión', code: 'MIN' },
+    { value: 'Oficio', code: 'OFI' },
+    { value: 'Resolución', code: 'RES' },
+    { value: 'Solicitud', code: 'SOL' },
+    { value: 'Proyectos', code: 'PRO' },
+    { value: 'Controles', code: 'CONTR' },
+    { value: 'Planes', code: 'PLAN' },
+  ];
+
   constructor(
     private fb: FormBuilder,
     private docs: DocumentService,
@@ -73,7 +99,7 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      documentType: ['', [Validators.required, Validators.maxLength(150)]],
+      documentType: ['', [Validators.required]],
       title: ['', [Validators.required, Validators.maxLength(255)]],
       keywords: ['', [Validators.maxLength(2000)]],
       accessLevel: ['INTERNAL', [Validators.required]],
@@ -86,6 +112,10 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     if (this.open) this.load();
   }
 
+  private isValidDocumentType(value: string | null | undefined): boolean {
+    return this.documentTypeOptions.some((item) => item.value === value);
+  }
+
   load(): void {
     if (!this.documentId) return;
 
@@ -95,12 +125,18 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     this.docs.getMetadata(this.documentId).subscribe({
       next: (m) => {
         this.meta = m;
+
+        const currentType = this.isValidDocumentType(m.manual.documentType)
+          ? m.manual.documentType
+          : '';
+
         this.form.reset({
-          documentType: m.manual.documentType || '',
+          documentType: currentType,
           title: m.manual.title || '',
           keywords: toCsv(m.manual.keywords),
           accessLevel: m.manual.accessLevel || 'INTERNAL',
         });
+
         this.loading = false;
       },
       error: (e) => {
@@ -122,9 +158,7 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     const v = this.form.value;
 
     const payload = {
-      documentType: String(v.documentType || '')
-        .replace(/\s+/g, ' ')
-        .trim(),
+      documentType: String(v.documentType || '').trim(),
       title: String(v.title || '')
         .replace(/\s+/g, ' ')
         .trim(),
