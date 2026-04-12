@@ -1,0 +1,144 @@
+<div class="sa-backdrop" *ngIf="open" (click)="close()"></div>
+
+<div
+  class="sa-modal"
+  *ngIf="open"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="saExpTitle"
+>
+  <header class="sa-header">
+    <div>
+      <h3 id="saExpTitle">Solicitud de acceso al expediente</h3>
+      <p class="sa-header__text">
+        Revise los datos del expediente y complete la justificación.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="sa-close"
+      (click)="close()"
+      aria-label="Cerrar"
+    >
+      ×
+    </button>
+  </header>
+
+  <section class="sa-body">
+    <section class="sa-section">
+      <div class="sa-section__head">
+        <h4>Datos automáticos de la solicitud</h4>
+        <span class="badge">Solo lectura</span>
+      </div>
+
+      <div class="sa-grid">
+        <div class="sa-card-field">
+          <label>ID expediente</label>
+          <input class="ro" [value]="expediente?.id ?? '—'" readonly />
+        </div>
+
+        <div class="sa-card-field">
+          <label>Código</label>
+          <input class="ro" [value]="expediente?.codigo ?? '—'" readonly />
+        </div>
+
+        <div class="sa-card-field sa-card-field--full">
+          <label>Nombre del expediente</label>
+          <input class="ro" [value]="expediente?.nombre ?? '—'" readonly />
+        </div>
+
+        <div class="sa-card-field">
+          <label>Serie</label>
+          <input class="ro" [value]="expediente?.serie_nombre ?? '—'" readonly />
+        </div>
+
+        <div class="sa-card-field">
+          <label>Subserie</label>
+          <input class="ro" [value]="expediente?.subserie_nombre ?? '—'" readonly />
+        </div>
+
+        <div class="sa-card-field">
+          <label>Estado del expediente</label>
+          <input class="ro" [value]="expediente?.estado ?? '—'" readonly />
+        </div>
+
+        <div class="sa-card-field">
+          <label>Documentos elegibles</label>
+          <input
+            class="ro"
+            [value]="expediente?.total_documentos_elegibles ?? '—'"
+            readonly
+          />
+        </div>
+
+        <div class="sa-card-field">
+          <label>Usuario solicitante</label>
+          <input class="ro" [value]="usuarioNombre || 'Usuario autenticado'" readonly />
+        </div>
+
+        <div class="sa-card-field">
+          <label>ID usuario solicitante</label>
+          <input class="ro" [value]="usuarioSolicitanteId ?? 'Automático'" readonly />
+        </div>
+
+        <div class="sa-card-field">
+          <label>Estado de la solicitud</label>
+          <input class="ro" value="PENDIENTE" readonly />
+        </div>
+      </div>
+    </section>
+
+    <section class="sa-section">
+      <div class="sa-section__head">
+        <h4>Justificación</h4>
+        <span class="badge badge--edit">Editable</span>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="sa-form-grid">
+          <div class="form-field form-field--full">
+            <label>
+              Motivo de la solicitud <span class="req">*</span>
+            </label>
+            <textarea
+              formControlName="justificacion"
+              rows="6"
+              placeholder="Explique por qué necesita acceso a este expediente."
+            ></textarea>
+
+            <small
+              class="err"
+              *ngIf="f['justificacion'].touched && f['justificacion'].invalid"
+            >
+              La justificación es obligatoria. Máx. 1000 caracteres.
+            </small>
+
+            <small class="hint">
+              Si la solicitud es aprobada, se habilitará acceso dinámico únicamente a
+              los documentos del expediente con confidencialidad pública y estado
+              archivado o conservación.
+            </small>
+          </div>
+        </div>
+
+        <div *ngIf="error" class="sa-error">{{ error }}</div>
+        <div *ngIf="success" class="sa-success">{{ success }}</div>
+
+        <div class="sa-footer">
+          <button type="button" class="btn btn--ghost" (click)="close()">
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn--primary"
+            [disabled]="saving || form.invalid"
+          >
+            {{ saving ? 'Enviando…' : 'Enviar solicitud' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </section>
+</div>

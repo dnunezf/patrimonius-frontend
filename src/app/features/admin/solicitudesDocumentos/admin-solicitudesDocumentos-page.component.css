@@ -311,3 +311,18 @@ tbody td {
     grid-template-columns: 1fr;
   }
 }
+.toolbar--sections {
+  grid-template-columns: 1fr;
+}
+
+.section-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-switch .btn-detail.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}

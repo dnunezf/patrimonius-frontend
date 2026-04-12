@@ -1,0 +1,160 @@
+<div class="page">
+  <section class="banner">
+    <h2>Indices electrónicos</h2>
+    <p>
+      Consulte los índices generados por expediente y descargue sus archivos asociados.
+    </p>
+
+    <div class="banner-meta">
+      <span class="pill ok">{{ indices.length }} índices</span>
+    </div>
+  </section>
+
+  <section class="panel-block">
+    <div class="panel-head">
+      <div>
+        <h3>Consulta de indices electrónicos</h3>
+        <p class="muted">
+          Filtre por ID, expediente, código, hash o fecha para ubicar un índice específico.
+        </p>
+      </div>
+    </div>
+
+    <section class="panel filtros">
+      <div class="field">
+        <label>ID del índice</label>
+        <input
+          type="number"
+          [(ngModel)]="filtroId"
+          placeholder="Ej. 33"
+        />
+      </div>
+
+      <div class="field">
+        <label>Expediente</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroExpediente"
+          placeholder="Nombre del expediente"
+        />
+      </div>
+
+      <div class="field">
+        <label>Código de expediente</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroCodigo"
+        />
+      </div>
+
+      <div class="field grow">
+        <label>Hash</label>
+        <input
+          type="search"
+          [(ngModel)]="filtroHash"
+          placeholder="Fragmento del hash"
+        />
+      </div>
+
+      <div class="field">
+        <label>Desde</label>
+        <input
+          type="date"
+          [(ngModel)]="filtroFechaDesde"
+        />
+      </div>
+
+      <div class="field">
+        <label>Hasta</label>
+        <input
+          type="date"
+          [(ngModel)]="filtroFechaHasta"
+        />
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn primary"
+          (click)="aplicarFiltroIndices()"
+        >
+          Buscar
+        </button>
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn ghost"
+          (click)="limpiarFiltros()"
+        >
+          Limpiar Filtros
+        </button>
+      </div>
+    </section>
+
+    <p class="toolbar-error" *ngIf="errorIndices">{{ errorIndices }}</p>
+    <div class="loading" *ngIf="loadingIndices">Cargando índices...</div>
+
+    <div class="panel-head" *ngIf="!loadingIndices">
+      <div>
+        <h3>Resultados</h3>
+        <p class="muted">
+          {{ filteredIndices.length }} índice(s) encontrados.
+        </p>
+      </div>
+    </div>
+
+    <div class="table-scroll" *ngIf="!loadingIndices">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Expediente</th>
+          <th>Fecha</th>
+          <th>Hash</th>
+          <th>Firma</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let indice of filteredIndices">
+          <td class="mono">{{ indice.id }}</td>
+          <td>
+            <div class="doc-title">{{ indice.expediente_nombre || '—' }}</div>
+            <div class="muted small">{{ indice.expediente_codigo || '—' }}</div>
+          </td>
+          <td>{{ formatDate(indice.fecha) }}</td>
+          <td class="mono" [title]="indice.hash">{{ shortHash(indice.hash) }}</td>
+          <td>
+            <span class="pill" *ngIf="!indice.firma_id">Sin firma</span>
+            <span class="pill ok" *ngIf="indice.firma_id">
+                Firma #{{ indice.firma_id }}
+              </span>
+          </td>
+          <td class="actions-cell">
+            <button
+              class="btn sm ghost"
+              [disabled]="!indice.json_path"
+              (click)="descargarArchivo(indice.json_path)"
+            >
+              JSON
+            </button>
+            <button
+              class="btn sm outline"
+              [disabled]="!indice.acta_pdf_path"
+              (click)="verPdf(indice.acta_pdf_path)"
+            >
+              Ver PDF
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="empty" *ngIf="!loadingIndices && filteredIndices.length === 0">
+      No hay índices registrados con los filtros seleccionados.
+    </p>
+  </section>
+</div>

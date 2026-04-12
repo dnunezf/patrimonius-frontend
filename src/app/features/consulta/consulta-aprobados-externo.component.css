@@ -765,3 +765,53 @@
   white-space: normal;
   vertical-align: top;
 }
+.consulta-view-switch {
+  max-width: 1320px;
+  margin: 0 auto 1.1rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+.consulta-view-switch__panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+}
+
+.consulta-view-switch__head h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+}
+
+.consulta-view-switch__head .muted {
+  margin: 0;
+}
+
+.consulta-view-switch__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.consulta-expediente-docs-modal {
+  width: min(1100px, 96vw);
+  max-height: 90vh;
+}
+
+.consulta-expediente-docs-modal {
+  z-index: 1200;
+}
+
+.consulta-preview-modal,
+.consulta-preview-modal--doc {
+  z-index: 1300;
+}

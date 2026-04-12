@@ -36,11 +36,32 @@ export type ConsultaSearchResponse = {
   page: number;
   pageSize: number;
   viewer: 'interno' | 'externo';
-  /** Consulta externa: filas con permiso de descarga (VIEW aprobado). */
   totalDescargables?: number;
-  /** Unidad con la que filtra el backend (interno no administrador). */
   filtroUnidadUsuario?: number | null;
   aplicaFiltroUnidad?: boolean;
+};
+
+export type ConsultaExpedienteRow = {
+  id: number;
+  codigo: string;
+  nombre: string;
+  estado?: string | null;
+  unidad_nombre?: string | null;
+  serie_nombre?: string | null;
+  subserie_nombre?: string | null;
+  total_documentos?: number;
+  total_documentos_elegibles?: number;
+  canRequestAccess?: boolean;
+  has_approved_access?: boolean;
+  has_pending_request?: boolean;
+};
+
+export type ConsultaExpedienteSearchResponse = {
+  items: ConsultaExpedienteRow[];
+  totalItems: number;
+  totalPages: number;
+  page: number;
+  pageSize: number;
 };
 
 export type ConsultaSearchQuery = {
@@ -56,7 +77,6 @@ export type ConsultaSearchQuery = {
   expedienteId?: number | string;
   dateFrom?: string;
   dateTo?: string;
-  /** Solo panel externo: fuerza catálogo + permisos por solicitud (multi-rol con USUARIO_EXTERNO). */
   panelExterno?: string | boolean;
 };
 
@@ -64,10 +84,14 @@ export type ConsultaSearchQuery = {
 export class ConsultaAprobadosApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/documents`;
+  private readonly expedientesBase = `${environment.apiUrl}/api/expedientes`;
 
-  /**
-   * @param panelExterno Si true, filtros del catálogo completo (panel consulta externa / HU-024).
-   */
+  getDocumentosAccesoExpediente(expedienteId: number) {
+    return this.http.get<ConsultaDocumentoRow[]>(
+      `${this.expedientesBase}/${expedienteId}/documentos-acceso`,
+    );
+  }
+
   getFilterOptions(panelExterno = false): Observable<ConsultaFiltrosOpciones> {
     let params = new HttpParams();
     if (panelExterno) {
@@ -95,10 +119,6 @@ export class ConsultaAprobadosApiService {
     );
   }
 
-  /**
-   * Misma API que interno (`/documents/search-approved`): el backend aplica HU-025/HU-024
-   * (catálogo completo aprobado/archivado firmado para usuario externo; permisos VIEW por solicitud).
-   */
   searchExterno(q: ConsultaSearchQuery): Observable<ConsultaSearchResponse> {
     let params = new HttpParams().set('panelExterno', '1');
     const entries = Object.entries(q).filter(
@@ -119,9 +139,6 @@ export class ConsultaAprobadosApiService {
     );
   }
 
-  /**
-   * Vista previa HU-025 (`assertCanAccess` + bitácora). Usa `/documents/:id/preview`.
-   */
   getPreview(documentoId: number): Observable<{
     documento_id: number;
     titulo: string;
@@ -146,23 +163,16 @@ export class ConsultaAprobadosApiService {
     });
   }
 
-  /**
-   * HU-025 / HU-027: misma ruta que interno — `GET /documents/:id/download`
-   * (assertCanAccess + bitácora DESCARGA; permiso VIEW para externos).
-   * No usar `/documentos/.../firma/descargar/pdf` aquí: esa ruta no registra consulta.
-   */
   download(documentoId: number): Observable<Blob> {
     return this.downloadConsulta(documentoId);
   }
 
-  /**
-   * HU-025: descarga alineada con la búsqueda (`assertCanAccess` + bitácora).
-   */
   downloadConsulta(documentoId: number): Observable<Blob> {
     return this.http.get(`${this.base}/${documentoId}/download`, {
       responseType: 'blob',
     });
   }
+
   createSolicitudAcceso(
     documentoId: number,
     payload: { justificacion: string },
@@ -172,6 +182,7 @@ export class ConsultaAprobadosApiService {
       payload,
     );
   }
+
   listSolicitudesAcceso() {
     return this.http.get<any[]>(`${environment.apiUrl}/solicitudes-acceso`);
   }
@@ -183,6 +194,55 @@ export class ConsultaAprobadosApiService {
     return this.http.patch(
       `${environment.apiUrl}/solicitudes-acceso/${solicitudId}/resolver`,
       payload
+    );
+  }
+
+  searchExpedientesExternos(q: ConsultaSearchQuery): Observable<ConsultaExpedienteSearchResponse> {
+    let params = new HttpParams().set('panelExterno', '1');
+    const entries = Object.entries(q).filter(
+      ([k, v]) =>
+        k !== 'panelExterno' &&
+        v !== undefined &&
+        v !== null &&
+        String(v).trim() !== '',
+    );
+
+    for (const [k, v] of entries) {
+      params = params.set(k, String(v));
+    }
+
+    return this.http.get<ConsultaExpedienteSearchResponse>(
+      `${this.expedientesBase}/search-access`,
+      { params },
+    );
+  }
+
+  createSolicitudAccesoExpediente(
+    expedienteId: number,
+    payload: { justificacion: string },
+  ) {
+    return this.http.post(
+      `${environment.apiUrl}/expedientes/${expedienteId}/solicitudes-acceso`,
+      payload,
+    );
+  }
+
+  listSolicitudesAccesoExpediente() {
+    return this.http.get<any[]>(
+      `${environment.apiUrl}/solicitudes-acceso-expediente`,
+    );
+  }
+
+  resolverSolicitudAccesoExpediente(
+    solicitudId: number,
+    payload: {
+      estado_solicitud: 'APROBADA' | 'RECHAZADA';
+      motivo_resolucion: string;
+    },
+  ) {
+    return this.http.patch(
+      `${environment.apiUrl}/solicitudes-acceso-expediente/${solicitudId}/resolver`,
+      payload,
     );
   }
 }

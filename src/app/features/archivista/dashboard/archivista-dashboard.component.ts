@@ -49,7 +49,7 @@ export class ArchivistaDashboardComponent {
       description:
         'Modulo de visualización para la clasificación de documentos',
       badge: '1 pendientes',
-      features: ['Crear Series y Subseries', 'Muestra la lista de Clasificaciones [Serie/Subserie/Expediente] existentes'],
+      features: ['Crear Series y Subseries', 'Muestra la lista de Clasificaciones [Serie/Subserie/Expediente] existentes', 'Permite el cierre de expedientes','Lista de Índices Electrónicos'],
       icon: 'folder-open',
       iconClass: 'soft-blue',
       link: '/archivista/clasificacion',

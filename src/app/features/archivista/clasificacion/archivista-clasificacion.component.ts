@@ -197,6 +197,9 @@ export class ArchivistaClasificacionComponent implements OnInit {
   crearSubserie(): void {
     this.router.navigate(['/archivista/crear-subserie']);
   }
+  verIndices(): void {
+    this.router.navigate(['/archivista/indices']);
+  }
 
   verSerie(serieId: number): void {
     this.router.navigate([`/archivista/serie/${serieId}`]);

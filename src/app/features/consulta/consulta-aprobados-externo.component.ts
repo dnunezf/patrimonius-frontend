@@ -11,10 +11,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { SolicitudAccesoDialogComponent } from './solicitud-acceso-dialog-component';
+import { SolicitudAccesoExpedienteDialogComponent } from './solicitud-acceso-expediente-dialog-component';
 import {
   ConsultaAprobadosApiService,
   ConsultaDocumentoRow,
   ConsultaFiltrosOpciones,
+  ConsultaExpedienteRow,
 } from '../../../core/services/consulta-aprobados-api.service';
 import { onConsultaPreviewLinkClick } from './consulta-preview-link.util';
 
@@ -22,7 +24,7 @@ import { onConsultaPreviewLinkClick } from './consulta-preview-link.util';
 @Component({
   selector: 'app-consulta-aprobados-externo',
   standalone: true,
-  imports: [CommonModule, FormsModule, SolicitudAccesoDialogComponent],
+  imports: [CommonModule, FormsModule, SolicitudAccesoDialogComponent, SolicitudAccesoExpedienteDialogComponent],
   templateUrl: './consulta-aprobados-externo.component.html',
   styleUrls: ['./consulta-aprobados-externo.component.css'],
 })
@@ -70,6 +72,23 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   solicitudOpen = false;
   selectedDocumento: ConsultaDocumentoRow | null = null;
 
+  vistaActual: 'documentos' | 'expedientes' = 'documentos';
+
+  expedientesRows: ConsultaExpedienteRow[] = [];
+  totalExpedientes = 0;
+  totalExpedientesPages = 1;
+  expedientePage = 1;
+  expedientePageSize = 10;
+
+  solicitudExpedienteOpen = false;
+  selectedExpediente: ConsultaExpedienteRow | null = null;
+
+  documentosExpedienteOpen = false;
+  documentosExpedienteLoading = false;
+  documentosExpedienteError = '';
+  documentosExpedienteRows: ConsultaDocumentoRow[] = [];
+  selectedExpedienteDocs: ConsultaExpedienteRow | null = null;
+
   /** Modal de error al fallar la descarga (sustituye alert nativo). */
   downloadErrorOpen = false;
   downloadErrorTitle = 'No se pudo descargar';
@@ -103,6 +122,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     return row.canDownload === true;
   }
 
+
   ngOnInit(): void {
     this.api.getFilterOptions(true).subscribe({
       next: (f) => {
@@ -119,6 +139,10 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   }
 
   load(): void {
+    if (this.vistaActual === 'expedientes') {
+      this.loadExpedientes();
+      return;
+    }
     this.loading = true;
     this.errorMsg = '';
 
@@ -151,16 +175,32 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   }
 
   prevPage(): void {
-    if (this.page > 1) {
-      this.page--;
-      this.load();
+    if (this.vistaActual === 'documentos') {
+      if (this.page > 1) {
+        this.page--;
+        this.load();
+      }
+      return;
+    }
+
+    if (this.expedientePage > 1) {
+      this.expedientePage--;
+      this.loadExpedientes();
     }
   }
 
   nextPage(): void {
-    if (this.page < this.totalPages) {
-      this.page++;
-      this.load();
+    if (this.vistaActual === 'documentos') {
+      if (this.page < this.totalPages) {
+        this.page++;
+        this.load();
+      }
+      return;
+    }
+
+    if (this.expedientePage < this.totalExpedientesPages) {
+      this.expedientePage++;
+      this.loadExpedientes();
     }
   }
 
@@ -438,5 +478,115 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
 
   volver(): void {
     this.router.navigate(['/dashboard']);
+  }
+  loadExpedientes(): void {
+    this.loading = true;
+    this.errorMsg = '';
+
+    this.api
+      .searchExpedientesExternos({
+        q: this.q.trim() || undefined,
+        page: this.expedientePage,
+        pageSize: this.expedientePageSize,
+        sortBy: 'nombre',
+        sortDir: 'asc',
+      })
+      .subscribe({
+        next: (res) => {
+          this.expedientesRows = res.items ?? [];
+          this.totalExpedientes = res.totalItems ?? 0;
+          this.totalExpedientesPages = res.totalPages ?? 1;
+          this.expedientePage = res.page ?? 1;
+          this.loading = false;
+        },
+        error: (e) => {
+          this.loading = false;
+          this.errorMsg =
+            e?.error?.message || 'Error al consultar expedientes disponibles.';
+        },
+      });
+  }
+  cambiarVista(vista: 'documentos' | 'expedientes'): void {
+    if (this.vistaActual === vista) return;
+
+    this.vistaActual = vista;
+    this.errorMsg = '';
+
+    if (vista === 'documentos') {
+      this.page = 1;
+      this.load();
+      return;
+    }
+
+    this.expedientePage = 1;
+    this.loadExpedientes();
+  }
+  abrirSolicitudExpediente(row: ConsultaExpedienteRow): void {
+    this.selectedExpediente = row;
+    this.solicitudExpedienteOpen = true;
+  }
+
+  cerrarSolicitudExpediente(): void {
+    this.solicitudExpedienteOpen = false;
+    this.selectedExpediente = null;
+  }
+
+  solicitudExpedienteCreada(): void {
+    this.cerrarSolicitudExpediente();
+  }
+  totalElegiblesExpediente(row: ConsultaExpedienteRow): number | string {
+    return row.total_documentos_elegibles ?? '—';
+  }
+  get expedienteRangeStart(): number {
+    if (this.totalExpedientes === 0) return 0;
+    return ((this.expedientePage - 1) * this.expedientePageSize) + 1;
+  }
+
+  get expedienteRangeEnd(): number {
+    return Math.min(
+      this.expedientePage * this.expedientePageSize,
+      this.totalExpedientes,
+    );
+  }
+  abrirDocumentosExpediente(row: ConsultaExpedienteRow): void {
+    this.selectedExpedienteDocs = row;
+    this.documentosExpedienteOpen = true;
+    this.documentosExpedienteLoading = true;
+    this.documentosExpedienteError = '';
+    this.documentosExpedienteRows = [];
+
+    this.api.getDocumentosAccesoExpediente(row.id).subscribe({
+      next: (rows: ConsultaDocumentoRow[]) => {
+        this.documentosExpedienteRows = (rows ?? []).map((doc) => ({
+          ...doc,
+          canView: true,
+          canPreview: true,
+          canDownload: true,
+        }));
+        this.documentosExpedienteLoading = false;
+      },
+      error: (e: any) => {
+        this.documentosExpedienteLoading = false;
+        this.documentosExpedienteError =
+          e?.error?.message || 'No se pudieron cargar los documentos del expediente.';
+      },
+    });
+  }
+
+  cerrarDocumentosExpediente(): void {
+    this.documentosExpedienteOpen = false;
+    this.documentosExpedienteLoading = false;
+    this.documentosExpedienteError = '';
+    this.documentosExpedienteRows = [];
+    this.selectedExpedienteDocs = null;
+  }
+
+  verDesdeExpediente(row: ConsultaDocumentoRow): void {
+    this.cerrarDocumentosExpediente();
+    this.ver(row);
+  }
+
+  descargarDesdeExpediente(row: ConsultaDocumentoRow): void {
+    this.descargar(row);
   }
 }

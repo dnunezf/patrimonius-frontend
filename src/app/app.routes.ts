@@ -51,6 +51,14 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'archivista/indices',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/archivista/indices/archivista-indices.component').then(
+        (m) => m.ArchivistaIndicesComponent,
+      ),
+  },
+  {
     path: 'archivista/gestion-plazos',
     component: GestionPlazosComponent,
     canActivate: [AuthGuard],

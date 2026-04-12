@@ -12,6 +12,31 @@
     </p>
   </header>
 
+  <section class="toolbar toolbar--sections">
+    <div class="field">
+      <label>Sección</label>
+      <div class="section-switch">
+        <button
+          type="button"
+          class="btn-detail"
+          [class.active]="seccionActual === 'documentos'"
+          (click)="cambiarSeccion('documentos')"
+        >
+          Solicitudes de documentos
+        </button>
+
+        <button
+          type="button"
+          class="btn-detail"
+          [class.active]="seccionActual === 'expedientes'"
+          (click)="cambiarSeccion('expedientes')"
+        >
+          Solicitudes de expedientes
+        </button>
+      </div>
+    </div>
+  </section>
+
   <section class="toolbar">
     <div class="field">
       <label for="textoFiltro">Buscar</label>
@@ -19,7 +44,7 @@
         id="textoFiltro"
         type="text"
         [(ngModel)]="textoFiltro"
-        (ngModelChange)="applyFilters()"
+        (ngModelChange)="onFiltersChange()"
         placeholder="Título, código, solicitante, justificación..."
       />
     </div>
@@ -29,7 +54,7 @@
       <select
         id="estadoFiltro"
         [(ngModel)]="estadoFiltro"
-        (ngModelChange)="applyFilters()"
+        (ngModelChange)="onFiltersChange()"
       >
         <option value="">Todos</option>
         <option value="PENDIENTE">Pendiente</option>
@@ -42,7 +67,10 @@
   <div class="loading" *ngIf="loading">Cargando solicitudes…</div>
   <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
 
-  <section class="table-card" *ngIf="!loading && !errorMsg">
+  <section
+    class="table-card"
+    *ngIf="!loading && !errorMsg && seccionActual === 'documentos'"
+  >
     <div class="table-meta">
       <span>{{ filteredRows.length }} solicitudes</span>
     </div>
@@ -86,6 +114,66 @@
           <td>{{ formatDate(row.created_at) }}</td>
           <td>
             <button type="button" class="btn-detail" (click)="openDetalle(row)">
+              Ver detalle
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section
+    class="table-card"
+    *ngIf="!loading && !errorMsg && seccionActual === 'expedientes'"
+  >
+    <div class="table-meta">
+      <span>{{ filteredRowsExpedientes.length }} solicitudes</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Expediente</th>
+          <th>Solicitante</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Fecha solicitud</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngIf="filteredRowsExpedientes.length === 0">
+          <td colspan="7" class="empty">
+            No hay solicitudes de expediente registradas con los filtros actuales.
+          </td>
+        </tr>
+
+        <tr *ngFor="let row of filteredRowsExpedientes">
+          <td>#{{ row.id }}</td>
+          <td>
+            <div class="doc-cell">
+              <strong>{{ row.expediente_nombre || 'Expediente sin nombre' }}</strong>
+              <small>{{ row.expediente_codigo || 'Sin código' }}</small>
+            </div>
+          </td>
+          <td>{{ nombreSolicitante(row) }}</td>
+          <td>{{ row.solicitante_rol || '—' }}</td>
+          <td>
+              <span [class]="estadoClass(row.estado_solicitud)">
+                {{ row.estado_solicitud }}
+              </span>
+          </td>
+          <td>{{ formatDate(row.created_at) }}</td>
+          <td>
+            <button
+              type="button"
+              class="btn-detail"
+              (click)="openDetalleExpediente(row)"
+            >
               Ver detalle
             </button>
           </td>
@@ -181,6 +269,121 @@
                 (click)="resolver('APROBADA')"
               >
                 {{ resolving ? 'Procesando…' : 'Aprobar' }}
+              </button>
+            </div>
+          </article>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="overlay"
+    *ngIf="detalleExpedienteOpen"
+    (click)="closeDetalleExpediente()"
+  >
+    <div class="modal" (click)="$event.stopPropagation()" *ngIf="selectedExpediente as s">
+      <header class="modal-header">
+        <div>
+          <h3>Solicitud de expediente #{{ s.id }}</h3>
+          <p>Revisión administrativa de acceso a expediente</p>
+        </div>
+
+        <button
+          type="button"
+          class="btn-close"
+          (click)="closeDetalleExpediente()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <section class="detail-grid">
+          <article class="detail-card">
+            <h4>Expediente</h4>
+            <p><strong>Nombre:</strong> {{ s.expediente_nombre || '—' }}</p>
+            <p><strong>Código:</strong> {{ s.expediente_codigo || '—' }}</p>
+            <p><strong>ID expediente:</strong> {{ s.expediente_id }}</p>
+            <p><strong>Estado expediente:</strong> {{ s.expediente_estado || '—' }}</p>
+            <p><strong>Serie:</strong> {{ s.serie_nombre || '—' }}</p>
+            <p><strong>Subserie:</strong> {{ s.subserie_nombre || '—' }}</p>
+          </article>
+
+          <article class="detail-card">
+            <h4>Solicitante</h4>
+            <p><strong>Nombre:</strong> {{ nombreSolicitante(s) }}</p>
+            <p><strong>Rol:</strong> {{ s.solicitante_rol || '—' }}</p>
+            <p><strong>ID usuario:</strong> {{ s.usuario_solicitante_id }}</p>
+          </article>
+
+          <article class="detail-card">
+            <h4>Solicitud</h4>
+            <p><strong>Estado:</strong> {{ s.estado_solicitud }}</p>
+            <p><strong>Creada:</strong> {{ formatDate(s.created_at) }}</p>
+            <p><strong>Actualizada:</strong> {{ formatDate(s.updated_at) }}</p>
+            <p><strong>Administrador:</strong> {{ nombreAdmin(s) }}</p>
+          </article>
+
+          <article class="detail-card detail-card--full">
+            <h4>Justificación</h4>
+            <div class="text-box">{{ s.justificacion }}</div>
+          </article>
+
+          <article class="detail-card detail-card--full">
+            <h4>Alcance de la aprobación</h4>
+            <div class="text-box">
+              Si se aprueba esta solicitud, se concederá acceso dinámico únicamente a
+              documentos del expediente con confidencialidad PUBLIC y estado ARCHIVADO
+              o CONSERVACION.
+            </div>
+          </article>
+
+          <article
+            class="detail-card detail-card--full"
+            *ngIf="s.estado_solicitud !== 'PENDIENTE'"
+          >
+            <h4>Motivo de resolución</h4>
+            <div class="text-box">
+              {{ s.motivo_resolucion || 'Sin detalle registrado.' }}
+            </div>
+          </article>
+
+          <article
+            class="detail-card detail-card--full"
+            *ngIf="s.estado_solicitud === 'PENDIENTE'"
+          >
+            <h4>Resolver solicitud</h4>
+
+            <label class="label" for="motivoResolucionExpediente">
+              Motivo de resolución
+            </label>
+            <textarea
+              id="motivoResolucionExpediente"
+              [(ngModel)]="motivoResolucion"
+              rows="5"
+              placeholder="Indique por qué se aprueba o rechaza la solicitud."
+            ></textarea>
+
+            <div class="error small" *ngIf="accionError">{{ accionError }}</div>
+
+            <div class="actions">
+              <button
+                type="button"
+                class="btn reject"
+                (click)="resolverExpediente('RECHAZADA')"
+                [disabled]="resolving"
+              >
+                {{ resolving ? 'Procesando...' : 'Rechazar' }}
+              </button>
+
+              <button
+                type="button"
+                class="btn approve"
+                (click)="resolverExpediente('APROBADA')"
+                [disabled]="resolving"
+              >
+                {{ resolving ? 'Procesando...' : 'Aprobar' }}
               </button>
             </div>
           </article>

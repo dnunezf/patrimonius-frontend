@@ -16,6 +16,7 @@
   <section class="top-actions">
     <button class="btn primary" (click)="crearSerie()">Crear Serie</button>
     <button class="btn primary" (click)="crearSubserie()">Crear Subserie</button>
+    <button class="btn primary" (click)="verIndices()">Consultar índices</button>
   </section>
 
   <!-- SERIES -->
@@ -49,7 +50,6 @@
           <th>Código</th>
           <th>Serie</th>
           <th>Unidad</th>
-          <th>Acciones</th>
           <th>Eliminar</th>
         </tr>
         </thead>
@@ -58,9 +58,6 @@
           <td class="mono">{{ serie.codigo }}</td>
           <td>{{ serie.nombre }}</td>
           <td>{{ serie.unidad_nombre || '—' }}</td>
-          <td>
-            <button class="btn sm ghost" (click)="verSerie(serie.id)">Ver</button>
-          </td>
           <td>
             <button class="btn sm danger" (click)="eliminarSerie(serie.id, serie.nombre)">
               Eliminar
@@ -107,7 +104,6 @@
           <th>Código</th>
           <th>Subserie</th>
           <th>Serie</th>
-          <th>Acciones</th>
           <th>Eliminar</th>
         </tr>
         </thead>
@@ -116,9 +112,6 @@
           <td class="mono">{{ subserie.codigo }}</td>
           <td>{{ subserie.nombre }}</td>
           <td>{{ subserie.serie_nombre || '—' }}</td>
-          <td>
-            <button class="btn sm ghost" (click)="verSubserie(subserie.id)">Ver</button>
-          </td>
           <td>
             <button
               class="btn sm danger"

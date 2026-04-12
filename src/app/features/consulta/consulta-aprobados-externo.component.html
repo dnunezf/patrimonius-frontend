@@ -10,6 +10,38 @@
       <span class="hint">Acceso autorizado · Solo lectura</span>
     </div>
   </section>
+  <section class="consulta-view-switch" aria-label="Selector de vista">
+    <div class="panel consulta-view-switch__panel">
+      <div class="consulta-view-switch__head">
+        <h3>Modo de consulta</h3>
+        <p class="muted">
+          Cambie entre la consulta de documentos individuales y la consulta de expedientes.
+        </p>
+      </div>
+
+      <div class="consulta-view-switch__actions">
+        <button
+          type="button"
+          class="btn"
+          [class.primary]="vistaActual === 'documentos'"
+          [class.ghost]="vistaActual !== 'documentos'"
+          (click)="cambiarVista('documentos')"
+        >
+          Documentos
+        </button>
+
+        <button
+          type="button"
+          class="btn"
+          [class.primary]="vistaActual === 'expedientes'"
+          [class.ghost]="vistaActual !== 'expedientes'"
+          (click)="cambiarVista('expedientes')"
+        >
+          Expedientes
+        </button>
+      </div>
+    </div>
+  </section>
 
   <section class="consulta-toolbar" aria-label="Búsqueda y filtros">
     <div class="toolbar-search">
@@ -75,7 +107,10 @@
     <p class="toolbar-error" *ngIf="errorMsg" role="alert">{{ errorMsg }}</p>
   </section>
 
-  <section class="panel tabla" *ngIf="!loading">
+  <section
+    class="panel tabla"
+    *ngIf="!loading && vistaActual === 'documentos'"
+  >
     <div class="tabla-head">
       <div>
         <h3>Listado de documentos</h3>
@@ -162,6 +197,110 @@
       </button>
     </div>
   </section>
+  <section
+    class="panel tabla"
+    *ngIf="!loading && vistaActual === 'expedientes'"
+  >
+    <div class="tabla-head">
+      <div>
+        <h3>Listado de expedientes</h3>
+        <p class="muted">
+          Solicite acceso al expediente. Si se aprueba, se habilitará acceso dinámico
+          solo a documentos públicos en estado archivado o conservación.
+        </p>
+      </div>
+      <div class="tabla-meta muted" *ngIf="totalExpedientes > 0">
+        Registros
+        {{ expedienteRangeStart }}–{{ expedienteRangeEnd }}
+        de {{ totalExpedientes }} · {{ expedientePageSize }} por página
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre del expediente</th>
+          <th>Serie</th>
+          <th>Subserie</th>
+          <th>Documentos elegibles</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngIf="expedientesRows.length === 0">
+          <td colspan="6" class="loading">
+            No hay expedientes con los filtros actuales.
+          </td>
+        </tr>
+
+        <tr *ngFor="let row of expedientesRows">
+          <td class="mono">{{ row.codigo }}</td>
+          <td>
+            <div class="doc-title">{{ row.nombre }}</div>
+            <div class="muted small" *ngIf="row.unidad_nombre">
+              {{ row.unidad_nombre }}
+            </div>
+          </td>
+          <td>{{ row.serie_nombre || '—' }}</td>
+          <td>{{ row.subserie_nombre || '—' }}</td>
+          <td>{{ totalElegiblesExpediente(row) }}</td>
+          <td class="actions-cell">
+            <ng-container *ngIf="row.has_approved_access">
+              <div class="actions-stack">
+                <span class="pill ok sm">Acceso aprobado</span>
+                <button
+                  type="button"
+                  class="btn sm ghost"
+                  (click)="abrirDocumentosExpediente(row)"
+                  title="Ver documentos accesibles de este expediente"
+                >
+                  Ver documentos
+                </button>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="!row.has_approved_access && row.has_pending_request">
+              <span class="pill sm">Solicitud pendiente</span>
+            </ng-container>
+
+            <ng-container *ngIf="!row.has_approved_access && !row.has_pending_request">
+              <button
+                type="button"
+                class="btn sm outline"
+                (click)="abrirSolicitudExpediente(row)"
+                title="Solicitar acceso a este expediente"
+              >
+                Solicitar acceso
+              </button>
+            </ng-container>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager" *ngIf="totalExpedientesPages > 1">
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="prevPage()"
+        [disabled]="expedientePage <= 1"
+      >
+        Anterior
+      </button>
+      <span>Página {{ expedientePage }} / {{ totalExpedientesPages }}</span>
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextPage()"
+        [disabled]="expedientePage >= totalExpedientesPages"
+      >
+        Siguiente
+      </button>
+    </div>
+  </section>
 
   <div class="loading" *ngIf="loading">Cargando…</div>
 
@@ -232,6 +371,118 @@
     (closed)="cerrarSolicitud()"
     (created)="solicitudCreada()"
   ></app-solicitud-acceso-dialog>
+
+  <app-solicitud-acceso-expediente-dialog
+    [open]="solicitudExpedienteOpen"
+    [expediente]="selectedExpediente"
+    [usuarioSolicitanteId]="usuarioSolicitanteId"
+    [usuarioNombre]="usuarioSolicitanteNombre"
+    (closed)="cerrarSolicitudExpediente()"
+    (created)="solicitudExpedienteCreada()"
+  ></app-solicitud-acceso-expediente-dialog>
+
+  <div
+    class="overlay"
+    *ngIf="documentosExpedienteOpen"
+    (click)="cerrarDocumentosExpediente()"
+  >
+    <div
+      class="modal consulta-expediente-docs-modal"
+      (click)="$event.stopPropagation()"
+      *ngIf="selectedExpedienteDocs as exp"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="expediente-docs-title"
+    >
+      <header class="consulta-preview-header">
+        <div>
+          <h3 id="expediente-docs-title">Documentos del expediente</h3>
+          <p class="muted">
+            {{ exp.nombre }} · {{ exp.codigo }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="btn ghost"
+          (click)="cerrarDocumentosExpediente()"
+        >
+          Cerrar
+        </button>
+      </header>
+
+      <div class="consulta-preview-body">
+        <p class="consulta-preview-loading" *ngIf="documentosExpedienteLoading">
+          Cargando documentos…
+        </p>
+
+        <p class="toolbar-error" *ngIf="documentosExpedienteError">
+          {{ documentosExpedienteError }}
+        </p>
+
+        <div
+          class="table-scroll"
+          *ngIf="!documentosExpedienteLoading && !documentosExpedienteError"
+        >
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre del documento</th>
+              <th>Categoría</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr *ngIf="documentosExpedienteRows.length === 0">
+              <td colspan="6" class="loading">
+                Este expediente no tiene documentos accesibles en este momento.
+              </td>
+            </tr>
+
+            <tr *ngFor="let row of documentosExpedienteRows">
+              <td class="mono">{{ row.codigo }}</td>
+              <td>
+                <div class="doc-title">{{ row.titulo }}</div>
+                <div class="muted small" *ngIf="row.autor_nombre">
+                  {{ row.autor_nombre }}
+                </div>
+              </td>
+              <td>
+                <span class="cat-badge" [ngClass]="categoriaClass(row.categoria_nombre)">
+                  {{ row.categoria_nombre || '—' }}
+                </span>
+              </td>
+              <td>{{ formatDate(row.fecha_aprobacion) }}</td>
+              <td>
+                <span class="pill ok sm">{{ row.estado || '—' }}</span>
+              </td>
+              <td class="actions-cell">
+                <button
+                  type="button"
+                  class="btn sm ghost"
+                  (click)="verDesdeExpediente(row)"
+                >
+                  Vista previa
+                </button>
+                <button
+                  type="button"
+                  class="btn sm primary"
+                  (click)="descargarDesdeExpediente(row)"
+                >
+                  Descargar
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div
     class="overlay overlay--alert"
