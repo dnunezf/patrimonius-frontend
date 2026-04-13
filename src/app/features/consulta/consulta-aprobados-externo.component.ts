@@ -103,6 +103,9 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   subserieId = '';
   soloConElegiblesFiltro = '';
 
+  /** Descarga ZIP del expediente (varios PDF). */
+  zipDownloading = false;
+
   /** Modal de error al fallar la descarga (sustituye alert nativo). */
   downloadErrorOpen = false;
   downloadErrorTitle = 'No se pudo descargar';
@@ -725,7 +728,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.documentosExpedienteError = '';
     this.documentosExpedienteRows = [];
 
-    this.api.getDocumentosAccesoExpediente(row.id).subscribe({
+    this.api.getDocumentosAccesoExpediente(row.id, true).subscribe({
       next: (rows: ConsultaDocumentoRow[]) => {
         this.documentosExpedienteRows = (rows ?? []).map((doc) => ({
           ...doc,
@@ -758,5 +761,25 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
 
   descargarDesdeExpediente(row: ConsultaDocumentoRow): void {
     this.descargar(row);
+  }
+
+  descargarZipExpediente(row: ConsultaExpedienteRow): void {
+    if (this.zipDownloading) return;
+    this.zipDownloading = true;
+    this.api.downloadExpedienteZip(row.id, true).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${row.codigo || 'expediente'}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.zipDownloading = false;
+      },
+      error: (err: unknown) => {
+        this.zipDownloading = false;
+        void this.handleDownloadHttpError(err);
+      },
+    });
   }
 }

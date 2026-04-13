@@ -48,6 +48,7 @@ export type ConsultaExpedienteRow = {
   codigo: string;
   nombre: string;
   estado?: string | null;
+  fecha_creacion?: string | null;
   unidad_nombre?: string | null;
   serie_nombre?: string | null;
   subserie_nombre?: string | null;
@@ -101,9 +102,15 @@ export class ConsultaAprobadosApiService {
   private readonly base = `${environment.apiUrl}/documents`;
   private readonly expedientesBase = `${environment.apiUrl}/api/expedientes`;
 
-  getDocumentosAccesoExpediente(expedienteId: number) {
+  /** Si `panelExterno` es true, lista documentos con reglas de permiso en expediente (HU-024). */
+  getDocumentosAccesoExpediente(expedienteId: number, panelExterno = false) {
+    let params = new HttpParams();
+    if (panelExterno) {
+      params = params.set('panelExterno', '1');
+    }
     return this.http.get<ConsultaDocumentoRow[]>(
       `${this.expedientesBase}/${expedienteId}/documentos-acceso`,
+      { params },
     );
   }
 
@@ -248,6 +255,21 @@ export class ConsultaAprobadosApiService {
     );
   }
 
+  /**
+   * ZIP con los PDF del expediente (misma lista que documentos-acceso).
+   * `panelExterno`: true = solo documentos con permiso externo en el expediente.
+   */
+  downloadExpedienteZip(expedienteId: number, panelExterno = false): Observable<Blob> {
+    let params = new HttpParams();
+    if (panelExterno) {
+      params = params.set('panelExterno', '1');
+    }
+    return this.http.get(`${this.expedientesBase}/${expedienteId}/download-zip`, {
+      params,
+      responseType: 'blob',
+    });
+  }
+
   searchExpedientesExternos(q: ConsultaSearchQuery): Observable<ConsultaExpedienteSearchResponse> {
     let params = new HttpParams().set('panelExterno', '1');
     const entries = Object.entries(q).filter(
@@ -256,6 +278,23 @@ export class ConsultaAprobadosApiService {
         v !== undefined &&
         v !== null &&
         String(v).trim() !== '',
+    );
+
+    for (const [k, v] of entries) {
+      params = params.set(k, String(v));
+    }
+
+    return this.http.get<ConsultaExpedienteSearchResponse>(
+      `${this.expedientesBase}/search-access`,
+      { params },
+    );
+  }
+
+  /** Búsqueda de expedientes con reglas de consulta interna (unidad / master). */
+  searchExpedientesInternos(q: ConsultaSearchQuery): Observable<ConsultaExpedienteSearchResponse> {
+    let params = new HttpParams();
+    const entries = Object.entries(q).filter(
+      ([, v]) => v !== undefined && v !== null && String(v).trim() !== '',
     );
 
     for (const [k, v] of entries) {

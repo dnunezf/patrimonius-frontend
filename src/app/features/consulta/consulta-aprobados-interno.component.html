@@ -1,128 +1,225 @@
-<div class="consulta-page">
+<div class="consulta-page ext-page">
   <header class="consulta-header">
     <div>
       <h1>Consulta general de documentos aprobados o archivados</h1>
       <p class="sub">
-        Aquí puede <strong>buscar</strong> y <strong>filtrar</strong> documentos en estado
-        <strong>aprobado</strong> o <strong>archivado</strong> que correspondan a su unidad organizacional y a los
-        permisos de acceso que tenga asignados.
+        Busque y filtre documentos o expedientes en estado <strong>aprobado</strong>,
+        <strong>archivado</strong> o <strong>conservación</strong> según su unidad y permisos internos.
       </p>
     </div>
-    <button type="button" class="btn ghost" (click)="volver()">Regresar</button>
+    <button type="button" class="btn ghost panel-block__back" (click)="volver()">Regresar</button>
   </header>
 
-  <section class="panel filtros">
-    <div class="field grow search-history-wrap">
-      <label>Palabra clave <span class="label-optional">(opcional)</span></label>
+  <section class="consulta-view-switch" aria-label="Selector de vista">
+    <div class="panel consulta-view-switch__panel">
+      <div class="consulta-view-switch__head">
+        <h3>Modo de consulta</h3>
+        <p class="muted">
+          Cambie entre la consulta de documentos individuales y la consulta de expedientes.
+        </p>
+      </div>
+      <div class="consulta-view-switch__actions">
+        <button
+          type="button"
+          class="btn"
+          [class.primary]="vistaActual === 'documentos'"
+          [class.ghost]="vistaActual !== 'documentos'"
+          (click)="cambiarVista('documentos')"
+        >
+          Documentos
+        </button>
+        <button
+          type="button"
+          class="btn"
+          [class.primary]="vistaActual === 'expedientes'"
+          [class.ghost]="vistaActual !== 'expedientes'"
+          (click)="cambiarVista('expedientes')"
+        >
+          Expedientes
+        </button>
+      </div>
+    </div>
+  </section>
 
-      <div class="search-history-box">
+  <section class="panel-block">
+    <header class="panel-block__head">
+      <div class="panel-block__head-text">
+        <h3>Consulta de {{ vistaActual === 'documentos' ? 'documentos' : 'expedientes' }}</h3>
+        <p class="muted" *ngIf="vistaActual === 'documentos'">
+          Filtre por código, nombre, categoría, serie, subserie, expediente y rango de fechas.
+        </p>
+        <p class="muted" *ngIf="vistaActual === 'expedientes'">
+          Filtre por código, nombre, serie, subserie y fecha de creación del expediente.
+        </p>
+      </div>
+    </header>
+
+    <section class="panel filtros filtros--int-doc" *ngIf="vistaActual === 'documentos'">
+      <div class="field">
+        <label>Código</label>
         <input
           type="search"
-          [(ngModel)]="q"
-          placeholder="Título, código, categoría, metadatos…"
-          (focus)="onFocusBusqueda()"
-          (blur)="onBlurBusqueda()"
-          (input)="mostrarSugerenciasHistorial = true"
-          (keyup.enter)="page = 1; load()"
+          [(ngModel)]="codigoDocumentoFiltro"
+          placeholder="Ej. OFI-DAF-AC-15-2026"
+          (keyup.enter)="aplicarFiltrosConsulta()"
         />
+      </div>
 
-        <div
-          class="search-history-dropdown"
-          *ngIf="mostrarSugerenciasHistorial && historialVisible.length > 0"
-        >
-          <button
-            type="button"
-            class="search-history-item"
-            *ngFor="let item of historialVisible"
-            (mousedown)="seleccionarSugerenciaHistorial(item)"
-            title="Volver a ejecutar esta búsqueda"
+      <div class="field field--span-2 search-history-wrap">
+        <label>Nombre / palabra clave <span class="label-optional">(opcional)</span></label>
+        <div class="search-history-box">
+          <input
+            type="search"
+            [(ngModel)]="nombreDocumentoFiltro"
+            placeholder="Título, metadatos…"
+            (focus)="onFocusBusqueda()"
+            (blur)="onBlurBusqueda()"
+            (input)="mostrarSugerenciasHistorial = true"
+            (keyup.enter)="aplicarFiltrosConsulta()"
+          />
+          <div
+            class="search-history-dropdown"
+            *ngIf="mostrarSugerenciasHistorial && historialVisible.length > 0"
           >
-            <span class="search-history-text">{{ item.texto_busqueda }}</span>
-            <small class="search-history-date">{{ formatDateTime(item.fecha_consulta) }}</small>
-          </button>
-
-          <div class="search-history-footer">
             <button
               type="button"
-              class="search-history-clear"
-              (mousedown)="limpiarHistorialBusquedas()"
+              class="search-history-item"
+              *ngFor="let item of historialVisible"
+              (mousedown)="seleccionarSugerenciaHistorial(item)"
+              title="Volver a ejecutar esta búsqueda"
             >
-              Limpiar historial
+              <span class="search-history-text">{{ item.texto_busqueda }}</span>
+              <small class="search-history-date">{{ formatDateTime(item.fecha_consulta) }}</small>
             </button>
+            <div class="search-history-footer">
+              <button
+                type="button"
+                class="search-history-clear"
+                (mousedown)="limpiarHistorialBusquedas()"
+              >
+                Limpiar historial
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <p class="field-hint keyword-active" *ngIf="q?.trim()">
-        Solo se muestran documentos que contengan «<strong>{{ q.trim() }}</strong>» en título, código,
-        categoría, texto del documento (HTML) o metadatos. Déjelo vacío para ver todos los permitidos
-        según su unidad.
-        <button type="button" class="link-clear" (click)="q = ''; page = 1; load()">
-          Quitar filtro de texto
-        </button>
-      </p>
-    </div>
+      <div class="field">
+        <label>Categoría</label>
+        <select [(ngModel)]="categoriaId">
+          <option value="">Todas</option>
+          <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
+        </select>
+      </div>
 
-    <div class="field">
-      <label>Categoría</label>
-      <select [(ngModel)]="categoriaId">
-        <option value="">Todas</option>
-        <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
-      </select>
-    </div>
+      <div class="field">
+        <label>Serie</label>
+        <select [(ngModel)]="serieId" (ngModelChange)="subserieId = ''">
+          <option value="">Todas</option>
+          <option *ngFor="let s of filtros?.series" [value]="s.id">{{ s.nombre }}</option>
+        </select>
+      </div>
 
-    <div class="field">
-      <label>Serie</label>
-      <select [(ngModel)]="serieId" (ngModelChange)="subserieId = ''">
-        <option value="">Todas</option>
-        <option *ngFor="let s of filtros?.series" [value]="s.id">{{ s.nombre }}</option>
-      </select>
-    </div>
+      <div class="field">
+        <label>Subserie</label>
+        <select [(ngModel)]="subserieId">
+          <option value="">Todas</option>
+          <option *ngFor="let ss of subseriesFiltradas" [value]="ss.id">{{ ss.nombre }}</option>
+        </select>
+      </div>
 
-    <div class="field">
-      <label>Subserie</label>
-      <select [(ngModel)]="subserieId">
-        <option value="">Todas</option>
-        <option *ngFor="let ss of subseriesFiltradas" [value]="ss.id">{{ ss.nombre }}</option>
-      </select>
-    </div>
+      <div class="field">
+        <label>Expediente (id)</label>
+        <input type="number" [(ngModel)]="expedienteId" placeholder="Opcional" />
+      </div>
 
-    <div class="field">
-      <label>Expediente (id)</label>
-      <input type="number" [(ngModel)]="expedienteId" placeholder="Opcional" />
-    </div>
+      <div class="filtros__date-range" aria-label="Rango de fechas">
+        <div class="field">
+          <label>Desde</label>
+          <input type="date" [(ngModel)]="dateFrom" />
+        </div>
+        <div class="field">
+          <label>Hasta</label>
+          <input type="date" [(ngModel)]="dateTo" />
+        </div>
+      </div>
 
-    <div class="field">
-      <label>Desde</label>
-      <input type="date" [(ngModel)]="dateFrom" />
-    </div>
+      <div class="filtros__actions">
+        <button type="button" class="btn primary" (click)="aplicarFiltrosConsulta()">Buscar</button>
+        <button type="button" class="btn ghost" (click)="limpiarFiltrosConsulta()">Limpiar filtros</button>
+      </div>
+    </section>
 
-    <div class="field">
-      <label>Hasta</label>
-      <input type="date" [(ngModel)]="dateTo" />
-    </div>
+    <section class="panel filtros filtros--int-exp" *ngIf="vistaActual === 'expedientes'">
+      <div class="field">
+        <label>Código</label>
+        <input
+          type="search"
+          [(ngModel)]="codigoExpedienteFiltro"
+          placeholder="Ej. expediente_prueba1"
+          (keyup.enter)="aplicarFiltrosConsulta()"
+        />
+      </div>
 
-    <div class="actions">
-      <button type="button" class="btn primary" (click)="page = 1; load()">Buscar</button>
-    </div>
+      <div class="field field--span-2">
+        <label>Nombre del expediente</label>
+        <input
+          type="search"
+          [(ngModel)]="nombreExpedienteFiltro"
+          placeholder="Nombre o parte del nombre"
+          (keyup.enter)="aplicarFiltrosConsulta()"
+        />
+      </div>
+
+      <div class="field">
+        <label>Serie</label>
+        <select [(ngModel)]="serieIdExp" (ngModelChange)="subserieIdExp = ''">
+          <option value="">Todas</option>
+          <option *ngFor="let s of filtros?.series" [value]="s.id">{{ s.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Subserie</label>
+        <select [(ngModel)]="subserieIdExp">
+          <option value="">Todas</option>
+          <option *ngFor="let ss of subseriesFiltradasExp" [value]="ss.id">{{ ss.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Fecha desde</label>
+        <input type="date" [(ngModel)]="expedienteDateFrom" />
+      </div>
+
+      <div class="field">
+        <label>Fecha hasta</label>
+        <input type="date" [(ngModel)]="expedienteDateTo" />
+      </div>
+
+      <div class="filtros__actions filtros__actions--int-exp">
+        <button type="button" class="btn primary" (click)="aplicarFiltrosConsulta()">Buscar</button>
+        <button type="button" class="btn ghost" (click)="limpiarFiltrosConsulta()">Limpiar filtros</button>
+      </div>
+    </section>
+
+    <p class="toolbar-error" *ngIf="errorMsg">{{ errorMsg }}</p>
   </section>
 
-  <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
-
-  <p class="consulta-hint" *ngIf="aplicaFiltroUnidad && filtroUnidadUsuario != null && !loading">
-    Solo se listan documentos en estado <strong>aprobado</strong> o <strong>archivado</strong> cuya
-    <strong>unidad organizacional</strong> coincide con la suya
-    <span class="mono">(unidad_id = {{ filtroUnidadUsuario }})</span>, y según nivel de confidencialidad.
+  <p class="consulta-hint" *ngIf="aplicaFiltroUnidad && filtroUnidadUsuario != null && !loading && vistaActual === 'documentos'">
+    Solo se listan documentos en estado <strong>aprobado</strong>, <strong>archivado</strong> o
+    <strong>conservación</strong> cuya <strong>unidad organizacional</strong> coincide con la suya
+    <span class="mono">(unidad_id = {{ filtroUnidadUsuario }})</span>, según confidencialidad.
   </p>
 
-  <section class="panel tabla-wrap" *ngIf="!loading">
+  <section class="panel tabla tabla-wrap" *ngIf="!loading && vistaActual === 'documentos'">
     <div class="tabla-head">
-      <h2>Resultados</h2>
-      <div class="tabla-meta">
-        <span class="muted">{{ totalItems }} documento(s)</span>
-        <span class="muted" *ngIf="totalItems > 0">
-          · Registros {{ rangeStart }}–{{ rangeEnd }} de {{ totalItems }}
-        </span>
+      <div>
+        <h2>Resultados</h2>
+        <p class="muted">Vista previa y descarga según sus permisos internos.</p>
+      </div>
+      <div class="tabla-meta muted" *ngIf="totalItems > 0">
+        Registros {{ rangeStart }}–{{ rangeEnd }} de {{ totalItems }} · {{ pageSize }} por página
       </div>
     </div>
 
@@ -144,7 +241,7 @@
         <tr *ngFor="let row of rows">
           <td class="mono">{{ row.codigo }}</td>
           <td>
-            <div class="title">{{ row.titulo }}</div>
+            <div class="title doc-title">{{ row.titulo }}</div>
             <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
           </td>
           <td>{{ row.categoria_nombre || '—' }}</td>
@@ -155,37 +252,15 @@
           </td>
           <td>{{ formatDate(row.fecha_aprobacion) }}</td>
           <td>
-            <span class="badge ok">{{ row.estadoEtiqueta || row.estado }}</span>
+            <span class="pill ok sm">{{ row.estadoEtiqueta || row.estado }}</span>
           </td>
           <td class="actions-cell">
             <ng-container *ngIf="tieneAccesoAlDocumento(row)">
-              <button
-                type="button"
-                class="btn sm ghost"
-                (click)="ver(row)"
-                title="Vista previa del documento (solo lectura, sin descargar)"
-              >
-                Vista previa
-              </button>
-              <button
-                type="button"
-                class="btn sm primary"
-                (click)="descargar(row)"
-                title="Descargar documento"
-              >
-                Descargar
-              </button>
+              <button type="button" class="btn sm ghost" (click)="ver(row)">Vista previa</button>
+              <button type="button" class="btn sm primary" (click)="descargar(row)">Descargar</button>
             </ng-container>
-
             <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
-              <button
-                type="button"
-                class="btn sm outline"
-                (click)="abrirSolicitud(row)"
-                title="Solicitar acceso a este documento archivado"
-              >
-                Solicitar acceso
-              </button>
+              <button type="button" class="btn sm outline" (click)="abrirSolicitud(row)">Solicitar acceso</button>
             </ng-container>
           </td>
         </tr>
@@ -194,29 +269,93 @@
     </div>
 
     <div class="empty-hint" *ngIf="totalItems === 0">
-      <p>
-        No hay documentos que cumplan las reglas. Compruebe en la base de datos que exista al menos un
-        <span class="mono">Documento</span> con
-        <span class="mono">estado</span> en <strong>APROBADO</strong> o <strong>ARCHIVADO</strong>, con
-        <span class="mono">unidad_id</span> igual al de su usuario
-        <ng-container *ngIf="aplicaFiltroUnidad && filtroUnidadUsuario != null">
-          (<strong>{{ filtroUnidadUsuario }}</strong>)</ng-container
-        >, y confidencialidad <strong>PUBLIC</strong> o <strong>INTERNAL</strong> (para
-        <strong>HIGH</strong>/<strong>RESTRICTED</strong> hace falta permiso explícito en listas del
-        documento).
-      </p>
+      <p>No hay documentos que cumplan los filtros actuales.</p>
     </div>
 
     <div class="pager" *ngIf="totalItems > 0 && totalPages > 1">
-      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="page <= 1">
+      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="page <= 1">Anterior</button>
+      <span>Página {{ page }} / {{ totalPages }}</span>
+      <button type="button" class="btn ghost" (click)="nextPage()" [disabled]="page >= totalPages">
+        Siguiente
+      </button>
+    </div>
+  </section>
+
+  <section class="panel tabla tabla-wrap" *ngIf="!loading && vistaActual === 'expedientes'">
+    <div class="tabla-head">
+      <div>
+        <h2>Listado de expedientes</h2>
+        <p class="muted">Consulte documentos o descargue un ZIP con los PDF permitidos para su unidad.</p>
+      </div>
+      <div class="tabla-meta muted" *ngIf="totalExpedientes > 0">
+        Registros {{ expedienteRangeStart }}–{{ expedienteRangeEnd }} de {{ totalExpedientes }} ·
+        {{ expedientePageSize }} por página
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre del expediente</th>
+          <th>Serie</th>
+          <th>Subserie</th>
+          <th>Documentos</th>
+          <th>Fecha creación</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngIf="expedientesRows.length === 0">
+          <td colspan="7" class="loading muted">No hay expedientes con los filtros actuales.</td>
+        </tr>
+        <tr *ngFor="let row of expedientesRows">
+          <td class="mono">{{ row.codigo }}</td>
+          <td>
+            <div class="doc-title">{{ row.nombre }}</div>
+            <div class="muted small" *ngIf="row.unidad_nombre">{{ row.unidad_nombre }}</div>
+          </td>
+          <td>{{ row.serie_nombre || '—' }}</td>
+          <td>{{ row.subserie_nombre || '—' }}</td>
+          <td>{{ row.total_documentos ?? '—' }}</td>
+          <td>{{ formatDate(row.fecha_creacion) }}</td>
+          <td class="actions-cell">
+            <div class="actions-stack">
+              <button
+                type="button"
+                class="btn sm ghost"
+                (click)="abrirDocumentosExpediente(row)"
+                title="Ver documentos del expediente"
+              >
+                Ver documentos
+              </button>
+              <button
+                type="button"
+                class="btn sm primary"
+                (click)="descargarZipExpediente(row)"
+                [disabled]="zipDownloading"
+                title="Descargar todos los documentos en ZIP"
+              >
+                Descargar ZIP
+              </button>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager" *ngIf="totalExpedientesPages > 1">
+      <button type="button" class="btn ghost" (click)="prevPage()" [disabled]="expedientePage <= 1">
         Anterior
       </button>
-      <span>Página {{ page }} / {{ totalPages }}</span>
+      <span>Página {{ expedientePage }} / {{ totalExpedientesPages }}</span>
       <button
         type="button"
         class="btn ghost"
         (click)="nextPage()"
-        [disabled]="page >= totalPages"
+        [disabled]="expedientePage >= totalExpedientesPages"
       >
         Siguiente
       </button>
@@ -224,6 +363,70 @@
   </section>
 
   <div class="loading" *ngIf="loading">Cargando…</div>
+
+  <div class="overlay" *ngIf="documentosExpedienteOpen" (click)="cerrarDocumentosExpediente()">
+    <div
+      class="modal consulta-expediente-docs-modal"
+      (click)="$event.stopPropagation()"
+      *ngIf="selectedExpedienteDocs as exp"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="expediente-docs-int-title"
+    >
+      <header class="consulta-preview-header">
+        <div>
+          <h3 id="expediente-docs-int-title">Documentos del expediente</h3>
+          <p class="muted">{{ exp.nombre }} · {{ exp.codigo }}</p>
+        </div>
+        <button type="button" class="btn ghost" (click)="cerrarDocumentosExpediente()">Cerrar</button>
+      </header>
+      <div class="consulta-preview-body">
+        <p class="consulta-preview-loading" *ngIf="documentosExpedienteLoading">Cargando documentos…</p>
+        <p class="toolbar-error" *ngIf="documentosExpedienteError">{{ documentosExpedienteError }}</p>
+        <div class="table-scroll" *ngIf="!documentosExpedienteLoading && !documentosExpedienteError">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre del documento</th>
+              <th>Categoría</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngIf="documentosExpedienteRows.length === 0">
+              <td colspan="6" class="loading">No hay documentos visibles en este expediente.</td>
+            </tr>
+            <tr *ngFor="let row of documentosExpedienteRows">
+              <td class="mono">{{ row.codigo }}</td>
+              <td>
+                <div class="doc-title">{{ row.titulo }}</div>
+                <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
+              </td>
+              <td>
+                <span class="cat-badge" [ngClass]="categoriaClass(row.categoria_nombre)">
+                  {{ row.categoria_nombre || '—' }}
+                </span>
+              </td>
+              <td>{{ formatDate(row.fecha_aprobacion) }}</td>
+              <td>
+                <span class="pill ok sm">{{ row.estado || '—' }}</span>
+              </td>
+              <td class="actions-cell">
+                <button type="button" class="btn sm ghost" (click)="verDesdeExpediente(row)">Vista previa</button>
+                <button type="button" class="btn sm primary" (click)="descargarDesdeExpediente(row)">
+                  Descargar
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="overlay consulta-preview-overlay" *ngIf="previewOpen" (click)="cerrarPreview()">
     <div

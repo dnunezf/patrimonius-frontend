@@ -13,6 +13,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {
   ConsultaAprobadosApiService,
   ConsultaDocumentoRow,
+  ConsultaExpedienteRow,
   ConsultaFiltrosOpciones,
   HistorialBusquedaRow,
 } from '../../../core/services/consulta-aprobados-api.service';
@@ -49,13 +50,36 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public loading = false;
   public errorMsg = '';
 
-  public q = '';
+  public vistaActual: 'documentos' | 'expedientes' = 'documentos';
+
+  public codigoDocumentoFiltro = '';
+  public nombreDocumentoFiltro = '';
   public categoriaId: string = '';
   public serieId: string = '';
   public subserieId: string = '';
   public expedienteId: string = '';
   public dateFrom = '';
   public dateTo = '';
+
+  public codigoExpedienteFiltro = '';
+  public nombreExpedienteFiltro = '';
+  public serieIdExp = '';
+  public subserieIdExp = '';
+  public expedienteDateFrom = '';
+  public expedienteDateTo = '';
+
+  public expedientesRows: ConsultaExpedienteRow[] = [];
+  public totalExpedientes = 0;
+  public totalExpedientesPages = 1;
+  public expedientePage = 1;
+  public expedientePageSize = 10;
+
+  public documentosExpedienteOpen = false;
+  public documentosExpedienteLoading = false;
+  public documentosExpedienteError = '';
+  public documentosExpedienteRows: ConsultaDocumentoRow[] = [];
+  public selectedExpedienteDocs: ConsultaExpedienteRow | null = null;
+  public zipDownloading = false;
 
   public sortBy = 'fecha_aprobacion';
   public sortDir: 'asc' | 'desc' = 'desc';
@@ -104,13 +128,29 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     return list.filter((s) => Number(s.serie_id) === sid);
   }
 
+  public get subseriesFiltradasExp() {
+    const list = this.filtros?.subseries ?? [];
+    const sid = Number(this.serieIdExp);
+    if (!Number.isFinite(sid) || sid <= 0) return list;
+    return list.filter((s) => Number(s.serie_id) === sid);
+  }
+
   public load(): void {
+    if (this.vistaActual === 'expedientes') {
+      this.loadExpedientes();
+      return;
+    }
+
     this.loading = true;
     this.errorMsg = '';
 
+    const qCompuesta = [this.codigoDocumentoFiltro.trim(), this.nombreDocumentoFiltro.trim()]
+      .filter(Boolean)
+      .join(' ');
+
     this.api
       .searchInterno({
-        q: this.q.trim() || undefined,
+        q: qCompuesta || undefined,
         page: this.page,
         pageSize: this.pageSize,
         sortBy: this.sortBy,
@@ -143,6 +183,168 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
             e?.error?.message || 'Error al consultar documentos aprobados.';
         },
       });
+  }
+
+  public loadExpedientes(): void {
+    this.loading = true;
+    this.errorMsg = '';
+
+    const qCompuesta = [this.codigoExpedienteFiltro.trim(), this.nombreExpedienteFiltro.trim()]
+      .filter(Boolean)
+      .join(' ');
+
+    this.api
+      .searchExpedientesInternos({
+        q: qCompuesta || undefined,
+        page: this.expedientePage,
+        pageSize: this.expedientePageSize,
+        sortBy: 'nombre',
+        sortDir: 'asc',
+        serieId: this.serieIdExp || undefined,
+        subserieId: this.subserieIdExp || undefined,
+        dateFrom: this.expedienteDateFrom || undefined,
+        dateTo: this.expedienteDateTo || undefined,
+      })
+      .subscribe({
+        next: (res) => {
+          this.expedientesRows = res.items ?? [];
+          this.totalExpedientes = res.totalItems ?? 0;
+          this.totalExpedientesPages = res.totalPages ?? 1;
+          this.expedientePage = res.page ?? 1;
+          this.loading = false;
+          this.cargarHistorialBusquedas();
+        },
+        error: (e) => {
+          this.loading = false;
+          this.errorMsg =
+            e?.error?.message || 'Error al consultar expedientes.';
+        },
+      });
+  }
+
+  public cambiarVista(vista: 'documentos' | 'expedientes'): void {
+    if (this.vistaActual === vista) return;
+    this.vistaActual = vista;
+    this.errorMsg = '';
+    if (vista === 'documentos') {
+      this.page = 1;
+      this.load();
+      return;
+    }
+    this.expedientePage = 1;
+    this.loadExpedientes();
+  }
+
+  public aplicarFiltrosConsulta(): void {
+    this.page = 1;
+    this.expedientePage = 1;
+    this.load();
+  }
+
+  public limpiarFiltrosConsulta(): void {
+    this.codigoDocumentoFiltro = '';
+    this.nombreDocumentoFiltro = '';
+    this.categoriaId = '';
+    this.serieId = '';
+    this.subserieId = '';
+    this.expedienteId = '';
+    this.dateFrom = '';
+    this.dateTo = '';
+
+    this.codigoExpedienteFiltro = '';
+    this.nombreExpedienteFiltro = '';
+    this.serieIdExp = '';
+    this.subserieIdExp = '';
+    this.expedienteDateFrom = '';
+    this.expedienteDateTo = '';
+
+    this.page = 1;
+    this.expedientePage = 1;
+    this.load();
+  }
+
+  public categoriaClass(nombre: string | null | undefined): string {
+    const n = String(nombre || '').toLowerCase();
+    if (n.includes('informe')) return 'cat-blue';
+    if (n.includes('protocolo')) return 'cat-green';
+    if (n.includes('catálogo') || n.includes('catalogo')) return 'cat-cyan';
+    if (n.includes('inventario')) return 'cat-amber';
+    if (n.includes('estudio') || n.includes('técnico')) return 'cat-orange';
+    return 'cat-neutral';
+  }
+
+  public abrirDocumentosExpediente(row: ConsultaExpedienteRow): void {
+    this.selectedExpedienteDocs = row;
+    this.documentosExpedienteOpen = true;
+    this.documentosExpedienteLoading = true;
+    this.documentosExpedienteError = '';
+    this.documentosExpedienteRows = [];
+
+    this.api.getDocumentosAccesoExpediente(row.id, false).subscribe({
+      next: (rows: ConsultaDocumentoRow[]) => {
+        this.documentosExpedienteRows = (rows ?? []).map((doc) => ({
+          ...doc,
+          canView: true,
+          canPreview: true,
+          canDownload: true,
+        }));
+        this.documentosExpedienteLoading = false;
+      },
+      error: (e: { error?: { message?: string } }) => {
+        this.documentosExpedienteLoading = false;
+        this.documentosExpedienteError =
+          e?.error?.message || 'No se pudieron cargar los documentos del expediente.';
+      },
+    });
+  }
+
+  public cerrarDocumentosExpediente(): void {
+    this.documentosExpedienteOpen = false;
+    this.documentosExpedienteLoading = false;
+    this.documentosExpedienteError = '';
+    this.documentosExpedienteRows = [];
+    this.selectedExpedienteDocs = null;
+  }
+
+  public verDesdeExpediente(row: ConsultaDocumentoRow): void {
+    this.cerrarDocumentosExpediente();
+    this.ver(row);
+  }
+
+  public descargarDesdeExpediente(row: ConsultaDocumentoRow): void {
+    this.descargar(row);
+  }
+
+  public descargarZipExpediente(row: ConsultaExpedienteRow): void {
+    if (this.zipDownloading) return;
+    this.zipDownloading = true;
+    this.api.downloadExpedienteZip(row.id, false).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${row.codigo || 'expediente'}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.zipDownloading = false;
+      },
+      error: (err: unknown) => {
+        this.zipDownloading = false;
+        void this.handleDownloadHttpError(err);
+      },
+    });
+  }
+
+  public get expedienteRangeStart(): number {
+    if (this.totalExpedientes === 0) return 0;
+    return (this.expedientePage - 1) * this.expedientePageSize + 1;
+  }
+
+  public get expedienteRangeEnd(): number {
+    return Math.min(
+      this.expedientePage * this.expedientePageSize,
+      this.totalExpedientes,
+    );
   }
 
   /** ===== NUEVO ===== */
@@ -178,13 +380,21 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public usarBusquedaHistorial(item: HistorialBusquedaRow): void {
     const filtros = item.filtros || {};
 
-    this.q = item.texto_busqueda || '';
+    this.nombreDocumentoFiltro = item.texto_busqueda || '';
+    this.codigoDocumentoFiltro = filtros['codigo'] ? String(filtros['codigo']) : '';
     this.categoriaId = filtros['categoriaId'] ? String(filtros['categoriaId']) : '';
     this.serieId = filtros['serieId'] ? String(filtros['serieId']) : '';
     this.subserieId = filtros['subserieId'] ? String(filtros['subserieId']) : '';
     this.expedienteId = filtros['expedienteId'] ? String(filtros['expedienteId']) : '';
     this.dateFrom = filtros['dateFrom'] || '';
     this.dateTo = filtros['dateTo'] || '';
+
+    this.codigoExpedienteFiltro = filtros['codigoExpediente'] ? String(filtros['codigoExpediente']) : '';
+    this.nombreExpedienteFiltro = filtros['nombreExpediente'] ? String(filtros['nombreExpediente']) : '';
+    this.serieIdExp = filtros['serieIdExp'] ? String(filtros['serieIdExp']) : '';
+    this.subserieIdExp = filtros['subserieIdExp'] ? String(filtros['subserieIdExp']) : '';
+    this.expedienteDateFrom = filtros['expedienteDateFrom'] || '';
+    this.expedienteDateTo = filtros['expedienteDateTo'] || '';
 
     if (filtros['sortBy']) {
       this.sortBy = String(filtros['sortBy']);
@@ -194,6 +404,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     }
 
     this.page = 1;
+    this.expedientePage = 1;
     this.load();
   }
 
@@ -229,6 +440,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   }
 
   public onSort(col: string): void {
+    if (this.vistaActual !== 'documentos') return;
     if (this.sortBy === col) {
       this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
     } else {
@@ -240,16 +452,30 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   }
 
   public prevPage(): void {
-    if (this.page > 1) {
-      this.page--;
-      this.load();
+    if (this.vistaActual === 'documentos') {
+      if (this.page > 1) {
+        this.page--;
+        this.load();
+      }
+      return;
+    }
+    if (this.expedientePage > 1) {
+      this.expedientePage--;
+      this.loadExpedientes();
     }
   }
 
   public nextPage(): void {
-    if (this.page < this.totalPages) {
-      this.page++;
-      this.load();
+    if (this.vistaActual === 'documentos') {
+      if (this.page < this.totalPages) {
+        this.page++;
+        this.load();
+      }
+      return;
+    }
+    if (this.expedientePage < this.totalExpedientesPages) {
+      this.expedientePage++;
+      this.loadExpedientes();
     }
   }
 
@@ -497,7 +723,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   }
 
   public get historialVisible(): HistorialBusquedaRow[] {
-    const texto = this.q.trim().toLowerCase();
+    const texto = this.nombreDocumentoFiltro.trim().toLowerCase();
 
     const base = (this.historialBusquedas || []).filter(
       (item) => !!String(item.texto_busqueda || '').trim(),

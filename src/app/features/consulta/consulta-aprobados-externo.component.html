@@ -45,8 +45,8 @@
   </section>
 
   <section class="panel-block">
-    <div class="panel-head">
-      <div>
+    <header class="panel-block__head">
+      <div class="panel-block__head-text">
         <h3>Consulta de {{ vistaActual === 'documentos' ? 'documentos' : 'expedientes' }}</h3>
         <p class="muted" *ngIf="vistaActual === 'documentos'">
           Filtre por código, nombre, categoría y rango de fechas para ubicar documentos más rápido.
@@ -55,9 +55,10 @@
           Filtre por código, nombre, serie, subserie y documentos elegibles para ubicar expedientes.
         </p>
       </div>
-    </div>
+      <button type="button" class="btn ghost panel-block__back" (click)="volver()">Regresar</button>
+    </header>
 
-    <section class="panel filtros" *ngIf="vistaActual === 'documentos'">
+    <section class="panel filtros filtros--ext-doc" *ngIf="vistaActual === 'documentos'">
       <div class="field">
         <label>Código</label>
         <input
@@ -68,7 +69,7 @@
         />
       </div>
 
-      <div class="field grow">
+      <div class="field field--span-2">
         <label>Nombre del documento</label>
         <input
           type="search"
@@ -88,44 +89,24 @@
         </select>
       </div>
 
-      <div class="field">
-        <label>Desde</label>
-        <input type="date" [(ngModel)]="dateFrom" />
+      <div class="filtros__date-range" aria-label="Rango de fechas">
+        <div class="field">
+          <label>Desde</label>
+          <input type="date" [(ngModel)]="dateFrom" />
+        </div>
+        <div class="field">
+          <label>Hasta</label>
+          <input type="date" [(ngModel)]="dateTo" />
+        </div>
       </div>
 
-      <div class="field">
-        <label>Hasta</label>
-        <input type="date" [(ngModel)]="dateTo" />
-      </div>
-
-      <div class="actions">
-        <button
-          type="button"
-          class="btn primary"
-          (click)="aplicarFiltrosConsulta()"
-        >
-          Buscar
-        </button>
-      </div>
-
-      <div class="actions">
-        <button
-          type="button"
-          class="btn ghost"
-          (click)="limpiarFiltrosConsulta()"
-        >
-          Limpiar filtros
-        </button>
-      </div>
-
-      <div class="actions">
-        <button type="button" class="btn ghost" (click)="volver()">
-          Regresar
-        </button>
+      <div class="filtros__actions">
+        <button type="button" class="btn primary" (click)="aplicarFiltrosConsulta()">Buscar</button>
+        <button type="button" class="btn ghost" (click)="limpiarFiltrosConsulta()">Limpiar filtros</button>
       </div>
     </section>
 
-    <section class="panel filtros" *ngIf="vistaActual === 'expedientes'">
+    <section class="panel filtros filtros--ext-exp" *ngIf="vistaActual === 'expedientes'">
       <div class="field">
         <label>Código</label>
         <input
@@ -136,7 +117,7 @@
         />
       </div>
 
-      <div class="field grow">
+      <div class="field field--span-2">
         <label>Nombre del expediente</label>
         <input
           type="search"
@@ -174,30 +155,9 @@
         </select>
       </div>
 
-      <div class="actions">
-        <button
-          type="button"
-          class="btn primary"
-          (click)="aplicarFiltrosConsulta()"
-        >
-          Buscar
-        </button>
-      </div>
-
-      <div class="actions">
-        <button
-          type="button"
-          class="btn ghost"
-          (click)="limpiarFiltrosConsulta()"
-        >
-          Limpiar filtros
-        </button>
-      </div>
-
-      <div class="actions">
-        <button type="button" class="btn ghost" (click)="volver()">
-          Regresar
-        </button>
+      <div class="filtros__actions filtros__actions--exp">
+        <button type="button" class="btn primary" (click)="aplicarFiltrosConsulta()">Buscar</button>
+        <button type="button" class="btn ghost" (click)="limpiarFiltrosConsulta()">Limpiar filtros</button>
       </div>
     </section>
 
@@ -355,6 +315,15 @@
                   title="Ver documentos accesibles de este expediente"
                 >
                   Ver documentos
+                </button>
+                <button
+                  type="button"
+                  class="btn sm primary"
+                  (click)="descargarZipExpediente(row)"
+                  [disabled]="zipDownloading"
+                  title="Descargar todos los documentos del expediente en un archivo ZIP"
+                >
+                  Descargar ZIP
                 </button>
               </div>
             </ng-container>
