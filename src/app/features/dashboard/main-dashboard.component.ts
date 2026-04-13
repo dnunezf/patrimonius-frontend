@@ -100,7 +100,7 @@ export class MainDashboardComponent {
 
   private readonly CONSERVATION_INTAKE_CARD: DashboardCard = {
     featureKey: 'CONSERVACION_INGRESO',
-    title: 'Ingreso a Conservación',
+    title: 'Gestión Documental',
     subtitle: 'Registro archivístico de documentos finales',
     icon: 'assets/icons/archive.png',
     cssClass: 'archivista',

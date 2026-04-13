@@ -1,5 +1,5 @@
 <header class="page-header">
-  <h1>Ingreso a conservación</h1>
+  <h1>Gestión Documental</h1>
   <p class="sub">
     Seleccione un documento final y complete su registro archivístico de
     conservación.
@@ -69,6 +69,21 @@
           </button>
         </div>
       </form>
+
+      <div class="list-toolbar">
+        <div>
+          <strong>{{ totalCandidates() }}</strong>
+          documentos pendientes
+        </div>
+
+        <span *ngIf="selected(); else noSelection">
+          {{ workloadText() }}
+        </span>
+
+        <ng-template #noSelection>
+          <span>Seleccione un documento</span>
+        </ng-template>
+      </div>
 
       <div class="table" *ngIf="candidates().length; else noCandidates">
         <div class="thead">

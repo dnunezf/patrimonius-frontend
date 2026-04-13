@@ -92,6 +92,26 @@ export class ConservationIntakePageComponent {
   readonly duplicateState =
     signal<EligibilityState['duplicateChecked']>('NOT_CHECKED');
 
+  readonly totalCandidates = computed(() => this.candidates().length);
+
+  readonly selectedCandidatePosition = computed(() => {
+    const current = this.selected();
+    if (!current) return 0;
+
+    const index = this.candidates().findIndex((item) => item.id === current.id);
+    return index >= 0 ? index + 1 : 0;
+  });
+
+  readonly workloadText = computed(() => {
+    const total = this.totalCandidates();
+    const position = this.selectedCandidatePosition();
+
+    if (!total) return '0 documentos pendientes';
+    if (!position) return `${total} documentos pendientes`;
+
+    return `${position} de ${total} documentos`;
+  });
+
   readonly procedureOptions: Array<{
     value: ProcedureType;
     label: string;
@@ -342,10 +362,6 @@ export class ConservationIntakePageComponent {
       });
   }
 
-  /**
-   * Recomputes the final reference-code preview whenever the selected document
-   * changes its relevant metadata in the form.
-   */
   private setupReferenceCodePreview(): void {
     this.archivalForm
       .get('producingUnit')
