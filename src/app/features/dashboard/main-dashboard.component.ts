@@ -92,7 +92,7 @@ export class MainDashboardComponent {
     icon: 'assets/icons/upload.png',
     cssClass: 'upload',
     bullets: [
-      'Carga por carpeta o CSV',
+      'Carga por lote de documentos',
       'Validación de duplicados',
       'Registro en bitácora',
     ],
