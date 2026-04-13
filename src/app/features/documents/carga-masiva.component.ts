@@ -11,19 +11,18 @@ import {
   ExpedienteOption,
   NivelAccesoOption,
 } from '../../../core/services/document.service';
+import { environment } from '../../../environments/environment';
 
 type DocumentOrigin = 'ESCANEADO' | 'ELECTRONICO';
 type UploadMode = 'FILES' | 'FOLDER';
 
 type PerDocumentMetadata = {
-  // Automáticos
   codigoReferencia: string;
   tamanoBytes: number;
   formato: string;
   fechaInicio: string;
   fechaCaducidad: string;
 
-  // Manuales
   unidadProductoraId: number | null;
   tituloDocumento: string;
   palabrasClave: string;
@@ -75,7 +74,7 @@ export class CargaMasivaPageComponent implements OnInit {
   series: SerieOption[] = [];
   nivelesAcceso: NivelAccesoOption[] = [];
 
-  private readonly API_URL = 'http://localhost:3000/documentos/carga-masiva/pdf';
+  private readonly API_URL = `${environment.api}/documentos/carga-masiva/pdf`;
 
   constructor(private router: Router) {}
 
@@ -120,25 +119,18 @@ export class CargaMasivaPageComponent implements OnInit {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  private generateReferenceCode(index: number): string {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mi = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    return `REF-MNCR-${yyyy}${mm}${dd}-${hh}${mi}${ss}-${index + 1}`;
-  }
-
   private computeFechaCaducidad(fechaInicio: string, plazo: number | null): string {
-    const base = new Date(fechaInicio);
-    const years = Number(plazo || 0);
-    const out = new Date(base);
-    out.setFullYear(out.getFullYear() + years);
+    if (!fechaInicio || plazo == null || plazo <= 0) return '';
+
+    const [year, month, day] = fechaInicio.split('-').map(Number);
+    const out = new Date(year, month - 1, day);
+
+    out.setFullYear(out.getFullYear() + Number(plazo));
+
     const yyyy = out.getFullYear();
     const mm = String(out.getMonth() + 1).padStart(2, '0');
     const dd = String(out.getDate()).padStart(2, '0');
+
     return `${yyyy}-${mm}-${dd}`;
   }
 
@@ -289,15 +281,13 @@ export class CargaMasivaPageComponent implements OnInit {
 
   private createDefaultMetadata(file: File, index = 0): PerDocumentMetadata {
     const fechaInicio = this.getToday();
-    const plazo = null;
 
     return {
-      codigoReferencia: this.generateReferenceCode(index),
+      codigoReferencia: this.buildReferenceSuggestion(file.name),
       tamanoBytes: file.size,
       formato: 'PDF',
       fechaInicio,
-      fechaCaducidad: this.computeFechaCaducidad(fechaInicio, plazo),
-
+      fechaCaducidad: '',
       unidadProductoraId: null,
       tituloDocumento: file.name.replace(/\.pdf$/i, ''),
       palabrasClave: '',
@@ -332,10 +322,19 @@ export class CargaMasivaPageComponent implements OnInit {
     this.documentEntries.forEach((entry) => {
       entry.metadata.tamanoBytes = entry.file.size;
       entry.metadata.formato = 'PDF';
-      entry.metadata.fechaCaducidad = this.computeFechaCaducidad(
-        entry.metadata.fechaInicio,
-        entry.metadata.plazoConservacionAnios
-      );
+
+      if (
+        entry.metadata.fechaInicio &&
+        entry.metadata.plazoConservacionAnios != null &&
+        entry.metadata.plazoConservacionAnios > 0
+      ) {
+        entry.metadata.fechaCaducidad = this.computeFechaCaducidad(
+          entry.metadata.fechaInicio,
+          entry.metadata.plazoConservacionAnios
+        );
+      } else {
+        entry.metadata.fechaCaducidad = '';
+      }
     });
   }
 
@@ -358,10 +357,12 @@ export class CargaMasivaPageComponent implements OnInit {
     return this.documentEntries.some((entry) => {
       const m = entry.metadata;
       return (
+        !m.codigoReferencia.trim() ||
         !m.unidadProductoraId ||
         !m.tituloDocumento.trim() ||
         !m.nivelAcceso ||
         !m.serieId ||
+        !m.subserieId ||
         !m.expedienteId
       );
     });
@@ -505,8 +506,12 @@ export class CargaMasivaPageComponent implements OnInit {
       });
   }
 
+  private buildReferenceSuggestion(fileName: string): string {
+    return (fileName || '').replace(/\.pdf$/i, '').trim();
+  }
+
   private buildMetadataPorDocumento(): Array<Record<string, unknown>> {
-    return this.documentEntries.map((entry) => {
+    return this.documentEntries.map((entry, index) => {
       const perFile = entry.metadata;
 
       const palabrasClave = perFile.palabrasClave
@@ -520,8 +525,10 @@ export class CargaMasivaPageComponent implements OnInit {
         .filter(Boolean);
 
       const metadataDocumento: Record<string, unknown> = {
+        index,
         archivo: entry.file.name,
 
+        codigoReferencia: perFile.codigoReferencia.trim(),
         unidadProductoraId: perFile.unidadProductoraId,
         tituloDocumento: perFile.tituloDocumento.trim(),
         nivelAcceso: perFile.nivelAcceso,
@@ -530,7 +537,6 @@ export class CargaMasivaPageComponent implements OnInit {
         expedienteId: perFile.expedienteId,
         plazoConservacionAnios: perFile.plazoConservacionAnios,
 
-        codigoReferencia: perFile.codigoReferencia,
         tamanoBytes: perFile.tamanoBytes,
         formato: perFile.formato,
         fechaInicio: perFile.fechaInicio,
