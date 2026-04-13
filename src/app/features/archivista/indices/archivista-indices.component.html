@@ -10,6 +10,10 @@
     </div>
   </section>
 
+  <section class="top-actions">
+    <button class="btn ghost" (click)="volverClasificacion()">Regresar</button>
+  </section>
+
   <section class="panel-block">
     <div class="panel-head">
       <div>
@@ -44,6 +48,7 @@
         <input
           type="search"
           [(ngModel)]="filtroCodigo"
+          placeholder="EXP-..."
         />
       </div>
 
@@ -88,7 +93,7 @@
           class="btn ghost"
           (click)="limpiarFiltros()"
         >
-          Limpiar Filtros
+          Limpiar filtros
         </button>
       </div>
     </section>
@@ -113,12 +118,11 @@
           <th>Expediente</th>
           <th>Fecha</th>
           <th>Hash</th>
-          <th>Firma</th>
           <th>Acciones</th>
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let indice of filteredIndices">
+        <tr *ngFor="let indice of pagedIndices">
           <td class="mono">{{ indice.id }}</td>
           <td>
             <div class="doc-title">{{ indice.expediente_nombre || '—' }}</div>
@@ -126,12 +130,6 @@
           </td>
           <td>{{ formatDate(indice.fecha) }}</td>
           <td class="mono" [title]="indice.hash">{{ shortHash(indice.hash) }}</td>
-          <td>
-            <span class="pill" *ngIf="!indice.firma_id">Sin firma</span>
-            <span class="pill ok" *ngIf="indice.firma_id">
-                Firma #{{ indice.firma_id }}
-              </span>
-          </td>
           <td class="actions-cell">
             <button
               class="btn sm ghost"
@@ -140,6 +138,7 @@
             >
               JSON
             </button>
+
             <button
               class="btn sm outline"
               [disabled]="!indice.acta_pdf_path"
@@ -151,6 +150,32 @@
         </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="pager" *ngIf="!loadingIndices && filteredIndices.length > 0">
+      <span class="muted">
+        Registros {{ indicesRangeStart }}–{{ indicesRangeEnd }} de {{ filteredIndices.length }}
+      </span>
+
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="prevIndicesPage()"
+        [disabled]="indicesPage <= 1"
+      >
+        Anterior
+      </button>
+
+      <span class="muted">Página {{ indicesPage }} / {{ totalIndicesPages }}</span>
+
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextIndicesPage()"
+        [disabled]="indicesPage >= totalIndicesPages"
+      >
+        Siguiente
+      </button>
     </div>
 
     <p class="empty" *ngIf="!loadingIndices && filteredIndices.length === 0">

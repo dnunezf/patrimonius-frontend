@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 interface IndiceRow {
   id: number;
@@ -28,6 +29,9 @@ export class ArchivistaIndicesComponent implements OnInit {
 
   indices: IndiceRow[] = [];
   filteredIndices: IndiceRow[] = [];
+  pagedIndices: IndiceRow[] = [];
+  indicesPage = 1;
+  indicesPageSize = 5;
 
   filtroId = '';
   filtroExpediente = '';
@@ -38,7 +42,10 @@ export class ArchivistaIndicesComponent implements OnInit {
   loadingIndices = false;
   errorIndices = '';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.cargarIndices();
@@ -105,6 +112,8 @@ export class ArchivistaIndicesComponent implements OnInit {
         matchFechaHasta
       );
     });
+    this.indicesPage = 1;
+    this.repaginarIndices();
   }
   limpiarFiltros(): void {
     this.filtroId = '';
@@ -113,6 +122,7 @@ export class ArchivistaIndicesComponent implements OnInit {
     this.filtroHash = '';
     this.filtroFechaDesde = '';
     this.filtroFechaHasta = '';
+    this.indicesPage = 1;
     this.aplicarFiltroIndices();
   }
 
@@ -150,5 +160,45 @@ export class ArchivistaIndicesComponent implements OnInit {
     if (!relativePath) return;
     const url = `${this.apiUrl}/${relativePath}`;
     window.open(url, '_blank');
+  }
+
+  get totalIndicesPages(): number {
+    return Math.max(1, Math.ceil(this.filteredIndices.length / this.indicesPageSize));
+  }
+
+  get indicesRangeStart(): number {
+    if (this.filteredIndices.length === 0) return 0;
+    return (this.indicesPage - 1) * this.indicesPageSize + 1;
+  }
+
+  get indicesRangeEnd(): number {
+    return Math.min(this.indicesPage * this.indicesPageSize, this.filteredIndices.length);
+  }
+
+  private repaginarIndices(): void {
+    if (this.indicesPage > this.totalIndicesPages) {
+      this.indicesPage = this.totalIndicesPages;
+    }
+
+    const start = (this.indicesPage - 1) * this.indicesPageSize;
+    this.pagedIndices = this.filteredIndices.slice(start, start + this.indicesPageSize);
+  }
+
+  prevIndicesPage(): void {
+    if (this.indicesPage > 1) {
+      this.indicesPage--;
+      this.repaginarIndices();
+    }
+  }
+
+  nextIndicesPage(): void {
+    if (this.indicesPage < this.totalIndicesPages) {
+      this.indicesPage++;
+      this.repaginarIndices();
+    }
+  }
+
+  volverClasificacion(): void {
+    this.router.navigate(['/archivista/clasificacion']);
   }
 }
