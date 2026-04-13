@@ -408,3 +408,27 @@
     grid-column: span 1;
   }
 }
+
+.app-toast {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  padding: 0.65rem 1.15rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  max-width: min(92vw, 440px);
+  text-align: center;
+}
+
+.app-toast--error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -23,7 +23,7 @@ interface IndiceRow {
   templateUrl: './archivista-indices.component.html',
   styleUrls: ['./archivista-indices.component.css'],
 })
-export class ArchivistaIndicesComponent implements OnInit {
+export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
   private readonly apiUrl = 'http://localhost:3000';
 
   indices: IndiceRow[] = [];
@@ -38,7 +38,19 @@ export class ArchivistaIndicesComponent implements OnInit {
   loadingIndices = false;
   errorIndices = '';
 
+  toastVisible = false;
+  toastMessage = '';
+  toastKind: 'success' | 'error' = 'success';
+  private toastClearId: ReturnType<typeof setTimeout> | null = null;
+
   constructor(private http: HttpClient) {}
+
+  ngOnDestroy(): void {
+    if (this.toastClearId) {
+      clearTimeout(this.toastClearId);
+      this.toastClearId = null;
+    }
+  }
 
   ngOnInit(): void {
     this.cargarIndices();
@@ -144,11 +156,27 @@ export class ArchivistaIndicesComponent implements OnInit {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    this.showToast('Descarga iniciada.', 'success');
   }
 
   verPdf(relativePath?: string | null): void {
     if (!relativePath) return;
     const url = `${this.apiUrl}/${relativePath}`;
     window.open(url, '_blank');
+    this.showToast('Abriendo PDF en una nueva pestaña.', 'success');
+  }
+
+  private showToast(message: string, kind: 'success' | 'error'): void {
+    if (this.toastClearId) {
+      clearTimeout(this.toastClearId);
+      this.toastClearId = null;
+    }
+    this.toastMessage = message;
+    this.toastKind = kind;
+    this.toastVisible = true;
+    this.toastClearId = setTimeout(() => {
+      this.toastVisible = false;
+      this.toastClearId = null;
+    }, 3800);
   }
 }

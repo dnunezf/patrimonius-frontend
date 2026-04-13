@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -54,7 +54,7 @@ interface ExpedienteDocumentoRow {
   standalone: true,
   imports: [FormsModule, CommonModule, ExpedienteDocumentosDialogComponent],
 })
-export class ArchivistaClasificacionComponent implements OnInit {
+export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   private readonly apiUrl = 'http://localhost:3000';
 
   series: SerieRow[] = [];
@@ -106,10 +106,29 @@ export class ArchivistaClasificacionComponent implements OnInit {
   expedientesPageSize = 5;
   pagedExpedientes: ExpedienteRow[] = [];
 
+  /** Diálogo de confirmación (sustituye window.confirm) */
+  confirmDialogOpen = false;
+  confirmDialogTitle = '';
+  confirmDialogMessage = '';
+  private pendingConfirmAction: (() => void) | null = null;
+
+  /** Toast in-app (sustituye alert) */
+  toastVisible = false;
+  toastMessage = '';
+  toastKind: 'success' | 'error' = 'success';
+  private toastClearId: ReturnType<typeof setTimeout> | null = null;
+
   constructor(
     private router: Router,
     private http: HttpClient,
   ) {}
+
+  ngOnDestroy(): void {
+    if (this.toastClearId) {
+      clearTimeout(this.toastClearId);
+      this.toastClearId = null;
+    }
+  }
 
   ngOnInit(): void {
     this.cargarSeries();
@@ -296,104 +315,151 @@ export class ArchivistaClasificacionComponent implements OnInit {
     this.router.navigate([`/archivista/subserie/${subserieId}`]);
   }
 
-  eliminarSerie(id: number, nombre: string): void {
-    const confirmado = window.confirm(`¿Seguro que quieres eliminar la serie "${nombre}"?`);
-    if (!confirmado) return;
+  private openConfirm(title: string, message: string, onConfirm: () => void): void {
+    this.confirmDialogTitle = title;
+    this.confirmDialogMessage = message;
+    this.pendingConfirmAction = onConfirm;
+    this.confirmDialogOpen = true;
+  }
 
-    this.http.delete(`${this.apiUrl}/api/series/${id}`).subscribe({
-      next: () => {
-        this.series = this.series.filter((s) => s.id !== id);
-        this.aplicarFiltroSeries();
-        alert('Serie eliminada correctamente');
+  confirmDialogAccept(): void {
+    const fn = this.pendingConfirmAction;
+    this.closeConfirmDialog();
+    fn?.();
+  }
+
+  confirmDialogCancel(): void {
+    this.closeConfirmDialog();
+  }
+
+  private closeConfirmDialog(): void {
+    this.confirmDialogOpen = false;
+    this.pendingConfirmAction = null;
+  }
+
+  private showToast(message: string, kind: 'success' | 'error'): void {
+    if (this.toastClearId) {
+      clearTimeout(this.toastClearId);
+      this.toastClearId = null;
+    }
+    this.toastMessage = message;
+    this.toastKind = kind;
+    this.toastVisible = true;
+    this.toastClearId = setTimeout(() => {
+      this.toastVisible = false;
+      this.toastClearId = null;
+    }, 4200);
+  }
+
+  eliminarSerie(id: number, nombre: string): void {
+    this.openConfirm(
+      'Eliminar serie',
+      `¿Seguro que quieres eliminar la serie "${nombre}"?`,
+      () => {
+        this.http.delete(`${this.apiUrl}/api/series/${id}`).subscribe({
+          next: () => {
+            this.series = this.series.filter((s) => s.id !== id);
+            this.aplicarFiltroSeries();
+            this.showToast('Serie eliminada correctamente', 'success');
+          },
+          error: (error) => {
+            const mensaje =
+              error?.error?.error ||
+              error?.error?.message ||
+              'No se pudo eliminar la serie';
+            this.showToast(mensaje, 'error');
+            console.error('Error al eliminar serie:', error);
+          },
+        });
       },
-      error: (error) => {
-        const mensaje =
-          error?.error?.error ||
-          error?.error?.message ||
-          'No se pudo eliminar la serie';
-        alert(mensaje);
-        console.error('Error al eliminar serie:', error);
-      },
-    });
+    );
   }
 
   eliminarSubserie(id: number, nombre: string): void {
-    const confirmado = window.confirm(`¿Seguro que quieres eliminar la subserie "${nombre}"?`);
-    if (!confirmado) return;
-
-    this.http.delete(`${this.apiUrl}/subseries/${id}`).subscribe({
-      next: () => {
-        this.subseries = this.subseries.filter((s) => s.id !== id);
-        this.aplicarFiltroSubseries();
-        alert('Subserie eliminada correctamente');
+    this.openConfirm(
+      'Eliminar subserie',
+      `¿Seguro que quieres eliminar la subserie "${nombre}"?`,
+      () => {
+        this.http.delete(`${this.apiUrl}/subseries/${id}`).subscribe({
+          next: () => {
+            this.subseries = this.subseries.filter((s) => s.id !== id);
+            this.aplicarFiltroSubseries();
+            this.showToast('Subserie eliminada correctamente', 'success');
+          },
+          error: (error) => {
+            const mensaje =
+              error?.error?.error ||
+              error?.error?.message ||
+              'No se pudo eliminar la subserie';
+            this.showToast(mensaje, 'error');
+            console.error('Error al eliminar subserie:', error);
+          },
+        });
       },
-      error: (error) => {
-        const mensaje =
-          error?.error?.error ||
-          error?.error?.message ||
-          'No se pudo eliminar la subserie';
-        alert(mensaje);
-        console.error('Error al eliminar subserie:', error);
-      },
-    });
+    );
   }
 
   cerrarExpediente(expediente: ExpedienteRow): void {
     if (expediente.estado !== 'ACTIVO') return;
 
-    const confirmado = window.confirm(
-      `¿Deseas cerrar el expediente "${expediente.nombre}" y generar su índice electrónico?`
+    this.openConfirm(
+      'Cerrar expediente',
+      `¿Deseas cerrar el expediente "${expediente.nombre}" y generar su índice electrónico?`,
+      () => {
+        this.http
+          .post(`${this.apiUrl}/indices/cerrar-expediente/${expediente.id}`, {})
+          .subscribe({
+            next: () => {
+              this.showToast(
+                'Expediente cerrado e índice electrónico generado correctamente.',
+                'success',
+              );
+              this.cargarExpedientes();
+            },
+            error: (error) => {
+              const mensaje =
+                error?.error?.message ||
+                'No se pudo cerrar el expediente ni generar el índice.';
+              this.showToast(mensaje, 'error');
+              console.error('Error al cerrar expediente:', error);
+            },
+          });
+      },
     );
-    if (!confirmado) return;
-
-    this.http
-      .post(`${this.apiUrl}/indices/cerrar-expediente/${expediente.id}`, {})
-      .subscribe({
-        next: () => {
-          alert('Expediente cerrado e índice electrónico generado correctamente.');
-          this.cargarExpedientes();
-        },
-        error: (error) => {
-          const mensaje =
-            error?.error?.message ||
-            'No se pudo cerrar el expediente ni generar el índice.';
-          alert(mensaje);
-          console.error('Error al cerrar expediente:', error);
-        },
-      });
   }
 
   abrirExpediente(expediente: ExpedienteRow): void {
     if (expediente.estado !== 'CERRADO') return;
 
-    const confirmado = window.confirm(
-      `¿Deseas reabrir el expediente "${expediente.nombre}"?`
+    this.openConfirm(
+      'Reabrir expediente',
+      `¿Deseas reabrir el expediente "${expediente.nombre}"?`,
+      () => {
+        this.http
+          .put(`${this.apiUrl}/api/admin/expedientes/${expediente.id}`, {
+            codigo: expediente.codigo,
+            nombre: expediente.nombre,
+            descripcion: expediente.descripcion ?? null,
+            unidad_id: expediente.unidad_id,
+            serie_id: expediente.serie_id,
+            subserie_id: expediente.subserie_id ?? null,
+            estado: 'ACTIVO',
+            fecha_cierre: null,
+          })
+          .subscribe({
+            next: () => {
+              this.showToast('Expediente reabierto correctamente.', 'success');
+              this.cargarExpedientes();
+            },
+            error: (error) => {
+              const mensaje =
+                error?.error?.message || 'No se pudo reabrir el expediente.';
+              this.showToast(mensaje, 'error');
+              console.error('Error al abrir expediente:', error);
+            },
+          });
+      },
     );
-    if (!confirmado) return;
-
-    this.http
-      .put(`${this.apiUrl}/api/admin/expedientes/${expediente.id}`, {
-        codigo: expediente.codigo,
-        nombre: expediente.nombre,
-        descripcion: expediente.descripcion ?? null,
-        unidad_id: expediente.unidad_id,
-        serie_id: expediente.serie_id,
-        subserie_id: expediente.subserie_id ?? null,
-        estado: 'ACTIVO',
-        fecha_cierre: null,
-      })
-      .subscribe({
-        next: () => {
-          alert('Expediente reabierto correctamente.');
-          this.cargarExpedientes();
-        },
-        error: (error) => {
-          const mensaje =
-            error?.error?.message || 'No se pudo reabrir el expediente.';
-          alert(mensaje);
-          console.error('Error al abrir expediente:', error);
-        },
-      });
   }
 
   estadoClass(estado: string | null | undefined): string {

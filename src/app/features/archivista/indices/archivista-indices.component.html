@@ -157,4 +157,14 @@
       No hay índices registrados con los filtros seleccionados.
     </p>
   </section>
+
+  <div
+    class="app-toast"
+    *ngIf="toastVisible"
+    [class.app-toast--error]="toastKind === 'error'"
+    role="status"
+    aria-live="polite"
+  >
+    {{ toastMessage }}
+  </div>
 </div>
