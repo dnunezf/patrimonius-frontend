@@ -437,4 +437,40 @@
     [errorMsg]="expedienteDocsError"
     (closed)="cerrarDocumentosExpediente()"
   ></app-expediente-documentos-dialog>
+
+  <!-- Confirmación in-app (reemplaza window.confirm del navegador) -->
+  <div
+    class="ui-overlay"
+    *ngIf="confirmDialogOpen"
+    (click)="confirmDialogCancel()"
+    role="presentation"
+  >
+    <div class="ui-modal ui-modal--confirm" (click)="$event.stopPropagation()">
+      <header class="ui-modal__head">
+        <h3>{{ confirmDialogTitle }}</h3>
+      </header>
+      <div class="ui-modal__body">
+        <p class="ui-modal__text">{{ confirmDialogMessage }}</p>
+        <div class="ui-modal__actions">
+          <button type="button" class="btn ghost" (click)="confirmDialogCancel()">
+            Cancelar
+          </button>
+          <button type="button" class="btn primary" (click)="confirmDialogAccept()">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avisos in-app (reemplaza alert del navegador) -->
+  <div
+    class="app-toast"
+    *ngIf="toastVisible"
+    [class.app-toast--error]="toastKind === 'error'"
+    role="status"
+    aria-live="polite"
+  >
+    {{ toastMessage }}
+  </div>
 </div>
