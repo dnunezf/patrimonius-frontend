@@ -585,34 +585,39 @@ button:disabled, .btn:disabled{
   inset: 44px 0 0 0;
   pointer-events: none;
   z-index: 4;
+  overflow: hidden;
 }
 
 .page-break-marker {
   position: absolute;
   left: 0;
   right: 0;
-  height: 16px;
-  border-top: 2px dashed #64748b;
-  border-bottom: 2px dashed #64748b;
+  height: 34px;
+  border-top: 4px dashed #1e3a8a;
+  border-bottom: 4px dashed #1e3a8a;
   background: linear-gradient(
     to bottom,
-    rgba(148, 163, 184, 0.22),
-    rgba(148, 163, 184, 0.12)
+    rgba(37, 99, 235, 0.3),
+    rgba(96, 165, 250, 0.22)
   );
   opacity: 1;
+  box-shadow:
+    0 0 0 1px rgba(30, 58, 138, 0.28),
+    0 0 12px rgba(30, 64, 175, 0.25);
+  transition: top .06s linear;
 }
 
 .page-break-label {
   position: absolute;
   right: 8px;
-  top: -10px;
-  font-size: 11px;
+  top: -12px;
+  font-size: 12px;
   color: #1e3a8a;
-  background: #eef2ff;
-  border: 1px solid #93c5fd;
+  background: #bfdbfe;
+  border: 1px solid #3b82f6;
   border-radius: 10px;
-  padding: 1px 8px;
-  font-weight: 700;
+  padding: 3px 10px;
+  font-weight: 800;
 }
 
 .page-break-label--left {
@@ -624,15 +629,17 @@ button:disabled, .btn:disabled{
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: -8px;
+  top: -13px;
   font-size: 12px;
-  letter-spacing: 3px;
-  color: #475569;
-  font-weight: 700;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 0 8px;
+  letter-spacing: 1px;
+  color: #082f6b;
+  font-weight: 900;
+  text-transform: uppercase;
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+  border-radius: 999px;
+  padding: 3px 12px;
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.25);
 }
 
 .sheet.sheet--word .word-fixed-header,
@@ -828,7 +835,20 @@ button:disabled, .btn:disabled{
   display: flex;
   gap: 8px;
   justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
   border-bottom: 1px solid #dbe5ff;
   padding-bottom: 8px;
   margin-bottom: 4px;
+}
+
+.page-current-indicator {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1e3a8a;
+  background: #dbeafe;
+  border: 1px solid #60a5fa;
+  border-radius: 999px;
+  padding: 4px 12px;
 }

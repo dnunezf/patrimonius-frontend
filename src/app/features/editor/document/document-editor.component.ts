@@ -95,6 +95,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   readonly pageVisualHeightPx = 1122;
   readonly pageGapPx = 0;
   currentVisualPage = 1;
+  currentEditorScrollTop = 0;
   private onEditorScroll = () => this.updateCurrentPageFromScroll();
   imageSizeByTarget: Record<
     'headerFirst' | 'headerDefault' | 'footerFirst' | 'footerDefault',
@@ -948,7 +949,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   getPageMarkerTop(pageNumber: number): number {
     if (pageNumber <= 1) return 0;
     const idx = pageNumber - 1;
-    return idx * this.pageVisualHeightPx + (idx - 1) * this.pageGapPx;
+    const absoluteTop = idx * this.pageVisualHeightPx + (idx - 1) * this.pageGapPx;
+    return absoluteTop - this.currentEditorScrollTop;
   }
 
   private updateCurrentPageFromSelection(): void {
@@ -962,13 +964,16 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const y = Math.max(0, Number(bounds?.top || 0));
     const page = Math.max(1, Math.floor(y / this.pageVisualHeightPx) + 1);
     this.currentVisualPage = Math.min(page, this.estimatedPages);
+    this.cdr.detectChanges();
   }
 
   private updateCurrentPageFromScroll(): void {
     if (!this.quill?.root) return;
     const top = Math.max(0, Number(this.quill.root.scrollTop || 0));
+    this.currentEditorScrollTop = top;
     const page = Math.max(1, Math.floor(top / this.pageVisualHeightPx) + 1);
     this.currentVisualPage = Math.min(page, this.estimatedPages);
+    this.cdr.detectChanges();
   }
 
   private applyImageSizeToTarget(

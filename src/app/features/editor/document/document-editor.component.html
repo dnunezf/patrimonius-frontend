@@ -187,6 +187,9 @@
         <button type="button" class="btn-secondary" (click)="togglePageLayoutPanel()">
           {{ showPageLayoutPanel ? 'Ocultar encabezado/pie' : 'Encabezado y pie' }}
         </button>
+        <span class="page-current-indicator">
+          Página actual: {{ currentVisualPage }} de {{ estimatedPages }}
+        </span>
       </div>
 
       <div
@@ -209,9 +212,9 @@
             *ngFor="let p of pageBreakNumbers"
             [style.top.px]="getPageMarkerTop(p)"
           >
-            <span class="page-break-label page-break-label--left">Fin pagina {{ p - 1 }}</span>
-            <span class="page-break-dashes" aria-hidden="true">---</span>
-            <span class="page-break-label">Inicio pagina {{ p }}</span>
+            <span class="page-break-label page-break-label--left">Fin página {{ p - 1 }}</span>
+            <span class="page-break-dashes" aria-hidden="true">SALTO DE PÁGINA</span>
+            <span class="page-break-label">Inicio página {{ p }}</span>
           </div>
         </div>
       </div>
