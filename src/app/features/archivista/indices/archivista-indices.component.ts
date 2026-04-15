@@ -1,8 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs/operators';
+
+import { environment } from '../../../../environments/environment';
 
 interface IndiceRow {
   id: number;
@@ -25,7 +28,7 @@ interface IndiceRow {
   styleUrls: ['./archivista-indices.component.css'],
 })
 export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
-  private readonly apiUrl = 'http://localhost:3000';
+  private readonly apiBase = (environment.apiUrl || environment.api || '').replace(/\/$/, '');
 
   indices: IndiceRow[] = [];
   filteredIndices: IndiceRow[] = [];
@@ -47,6 +50,10 @@ export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
   toastKind: 'success' | 'error' = 'success';
   private toastClearId: ReturnType<typeof setTimeout> | null = null;
 
+  /** ej. "json:12" | "pdf:12" — descarga/stream en curso por id de índice. */
+  cargaArchivoKey: string | null = null;
+  private revokeTimers: ReturnType<typeof setTimeout>[] = [];
+
   constructor(
     private http: HttpClient,
     private router: Router,
@@ -57,6 +64,10 @@ export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
       clearTimeout(this.toastClearId);
       this.toastClearId = null;
     }
+    for (const t of this.revokeTimers) {
+      clearTimeout(t);
+    }
+    this.revokeTimers = [];
   }
 
   ngOnInit(): void {
@@ -67,7 +78,7 @@ export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
     this.loadingIndices = true;
     this.errorIndices = '';
 
-    this.http.get<IndiceRow[]>(`${this.apiUrl}/indices`).subscribe({
+    this.http.get<IndiceRow[]>(`${this.apiBase}/indices`).subscribe({
       next: (response) => {
         this.indices = response ?? [];
         this.aplicarFiltroIndices();
@@ -155,25 +166,159 @@ export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
     return `${hash.slice(0, 12)}...${hash.slice(-6)}`;
   }
 
-  descargarArchivo(relativePath?: string | null): void {
-    if (!relativePath) return;
+  /**
+   * Descarga JSON vía API autenticada (`GET /indices/archivo/:id/json`), no por URL estática /uploads.
+   */
+  descargarJson(indice: IndiceRow): void {
+    if (!indice.json_path) return;
 
-    const url = `${this.apiUrl}/${relativePath}`;
+    const url = `${this.apiBase}/indices/archivo/${indice.id}/json`;
+    const key = `json:${indice.id}`;
+    this.cargaArchivoKey = key;
+    this.http
+      .get(url, { responseType: 'blob' })
+      .pipe(finalize(() => (this.cargaArchivoKey = null)))
+      .subscribe({
+        next: (blob) => {
+          const fileName =
+            indice.json_path?.split('/').pop() || `indice-${indice.id}.json`;
+          this.triggerBlobDownload(blob, fileName);
+          this.showToast('Descarga iniciada.', 'success');
+        },
+        error: (err) => {
+          this.showBlobHttpErrorToast(err, this.msgDescargaError.bind(this));
+        },
+      });
+  }
+
+  /**
+   * Abre el PDF vía API (`GET /indices/archivo/:id/pdf`) + blob; JWT por interceptor.
+   */
+  verPdf(indice: IndiceRow): void {
+    if (!indice.acta_pdf_path) return;
+
+    const preview = window.open('', '_blank');
+    if (!preview) {
+      this.showToast(
+        'El navegador bloqueó la ventana emergente. Permita ventanas para este sitio e intente de nuevo.',
+        'error',
+      );
+      return;
+    }
+
+    const url = `${this.apiBase}/indices/archivo/${indice.id}/pdf`;
+    const key = `pdf:${indice.id}`;
+    this.cargaArchivoKey = key;
+    this.http
+      .get(url, { responseType: 'blob' })
+      .pipe(finalize(() => (this.cargaArchivoKey = null)))
+      .subscribe({
+        next: (blob) => {
+          if (this.blobLooksLikeJsonError(blob)) {
+            preview.close();
+            this.showToast(
+              'El servidor devolvió un error en lugar del PDF. Compruebe que el archivo exista en el servidor.',
+              'error',
+            );
+            return;
+          }
+          const objectUrl = URL.createObjectURL(blob);
+          preview.location.href = objectUrl;
+          const t = setTimeout(() => {
+            URL.revokeObjectURL(objectUrl);
+            this.revokeTimers = this.revokeTimers.filter((x) => x !== t);
+          }, 120_000);
+          this.revokeTimers.push(t);
+          this.showToast('Abriendo PDF en una nueva pestaña.', 'success');
+        },
+        error: (err) => {
+          try {
+            preview.close();
+          } catch {
+            /* noop */
+          }
+          this.showBlobHttpErrorToast(err, this.msgPdfError.bind(this));
+        },
+      });
+  }
+
+  archivoLoading(indice: IndiceRow, kind: 'json' | 'pdf'): boolean {
+    return this.cargaArchivoKey === `${kind}:${indice.id}`;
+  }
+
+  /** Si el servidor respondió JSON (p. ej. error) en cuerpo 200 con tipo application/json */
+  private blobLooksLikeJsonError(blob: Blob): boolean {
+    const t = (blob.type || '').toLowerCase();
+    return t.includes('json');
+  }
+
+  private msgPdfError(err: unknown): string {
+    return this.formatHttpBlobError(err, 'No se pudo abrir el PDF');
+  }
+
+  private msgDescargaError(err: unknown): string {
+    return this.formatHttpBlobError(err, 'No se pudo descargar el archivo');
+  }
+
+  /**
+   * Con `responseType: 'blob'`, los errores JSON del API llegan como Blob en `error.error`.
+   * Intentamos leer `message` del JSON para mostrar el motivo real (p. ej. archivo inexistente).
+   */
+  private showBlobHttpErrorToast(
+    err: unknown,
+    fallback: (e: unknown) => string,
+  ): void {
+    if (err instanceof HttpErrorResponse && err.error instanceof Blob) {
+      err.error
+        .text()
+        .then((text) => {
+          try {
+            const j = JSON.parse(text) as { message?: string };
+            if (j?.message && typeof j.message === 'string') {
+              this.showToast(j.message, 'error');
+              return;
+            }
+          } catch {
+            /* noop */
+          }
+          this.showToast(fallback(err), 'error');
+        })
+        .catch(() => this.showToast(fallback(err), 'error'));
+      return;
+    }
+    this.showToast(fallback(err), 'error');
+  }
+
+  private formatHttpBlobError(err: unknown, base: string): string {
+    if (err instanceof HttpErrorResponse) {
+      if (err.status === 401 || err.status === 403) {
+        return `${base}: sesión o permisos (${err.status}). Vuelva a iniciar sesión.`;
+      }
+      if (err.status === 404) {
+        return `${base}: el archivo no está en el servidor (404).`;
+      }
+      if (err.status === 0) {
+        return `${base}: no hay conexión con el API o CORS bloqueó la petición.`;
+      }
+      return `${base} (código ${err.status}).`;
+    }
+    return base + '.';
+  }
+
+  private triggerBlobDownload(blob: Blob, fileName: string): void {
+    const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = relativePath.split('/').pop() || 'archivo';
-    a.target = '_blank';
+    a.href = objectUrl;
+    a.download = fileName;
+    a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    this.showToast('Descarga iniciada.', 'success');
-  }
-
-  verPdf(relativePath?: string | null): void {
-    if (!relativePath) return;
-    const url = `${this.apiUrl}/${relativePath}`;
-    window.open(url, '_blank');
-    this.showToast('Abriendo PDF en una nueva pestaña.', 'success');
+    const t = setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+      this.revokeTimers = this.revokeTimers.filter((x) => x !== t);
+    }, 30_000);
+    this.revokeTimers.push(t);
   }
 
   private showToast(message: string, kind: 'success' | 'error'): void {
