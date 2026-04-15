@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuditService, SecurityDetail, SecurityItem } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 import { SecurityDetailModalComponent } from './security-detail-modal/security-detail-modal.component';
+import { BITACORA_FILTER_TYPING_DEBOUNCE_MS } from '../bitacora-list-filter.util';
 
 @Component({
   selector: 'app-security-log',
@@ -13,7 +14,7 @@ import { SecurityDetailModalComponent } from './security-detail-modal/security-d
   templateUrl: './security-log.component.html',
   styleUrls: ['./security-log.component.css'],
 })
-export class SecurityLogComponent implements OnInit {
+export class SecurityLogComponent implements OnInit, OnDestroy {
   users: string[] = ['Todos los usuarios'];
   actions: string[] = ['Todas las acciones'];
 
@@ -42,12 +43,39 @@ export class SecurityLogComponent implements OnInit {
   detailError: string | null = null;
   detail: SecurityDetail | null = null;
 
+  private filterApplyTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(private audit: AuditService, private adminUsers: AdminUsersService) {}
 
   ngOnInit() {
     this.loadUsers();
     this.loadActions();
     this.fetch();
+  }
+
+  ngOnDestroy(): void {
+    this.clearFilterApplyDebounce();
+  }
+
+  private clearFilterApplyDebounce(): void {
+    if (this.filterApplyTimer) {
+      clearTimeout(this.filterApplyTimer);
+      this.filterApplyTimer = null;
+    }
+  }
+
+  scheduleFilterApply(immediate: boolean): void {
+    this.clearFilterApplyDebounce();
+    const run = () => {
+      this.filterApplyTimer = null;
+      this.page = 1;
+      this.fetch();
+    };
+    if (immediate) {
+      run();
+    } else {
+      this.filterApplyTimer = setTimeout(run, BITACORA_FILTER_TYPING_DEBOUNCE_MS);
+    }
   }
 
   private buildQuery() {
@@ -92,15 +120,16 @@ export class SecurityLogComponent implements OnInit {
   limitSearchWords(value: string): void {
     if (!value) {
       this.filters.q = '';
+      this.scheduleFilterApply(false);
       return;
     }
     const words = value.trim().split(/\s+/);
     this.filters.q = words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+    this.scheduleFilterApply(false);
   }
 
-  applyFilters() { this.page = 1; this.fetch(); }
-
   clearFilters() {
+    this.clearFilterApplyDebounce();
     this.filters = {
       q: '',
       user: 'Todos los usuarios',
@@ -111,8 +140,21 @@ export class SecurityLogComponent implements OnInit {
     this.fetch();
   }
 
-  goPrev() { if (this.page > 1) { this.page--; this.fetch(); } }
-  goNext() { if (this.page < this.totalPages) { this.page++; this.fetch(); } }
+  goPrev() {
+    this.clearFilterApplyDebounce();
+    if (this.page > 1) {
+      this.page--;
+      this.fetch();
+    }
+  }
+
+  goNext() {
+    this.clearFilterApplyDebounce();
+    if (this.page < this.totalPages) {
+      this.page++;
+      this.fetch();
+    }
+  }
 
   private loadUsers() {
     this.adminUsers.listEmails().subscribe({

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { AuditService, AuditItem, AuditDetail } from '../../../../core/services/
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 import { DocumentCycleDetailModalComponent } from './document-cycle-detail-modal/document-cycle-detail-modal.component';
 import { catchError, forkJoin, of } from 'rxjs';
+import { BITACORA_FILTER_TYPING_DEBOUNCE_MS } from '../bitacora-list-filter.util';
 
 type ResultType = 'Permitido' | 'Denegado';
 
@@ -18,7 +19,7 @@ type ResultType = 'Permitido' | 'Denegado';
 })
 
 
-export class DocumentCycleLogComponent implements OnInit {
+export class DocumentCycleLogComponent implements OnInit, OnDestroy {
 
   // Backend-fed combos
   users: string[] = ['Todos los usuarios'];
@@ -54,7 +55,7 @@ export class DocumentCycleLogComponent implements OnInit {
   detailError: string | null = null;
   detail: AuditDetail | null = null;
 
-
+  private filterApplyTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private audit: AuditService,
@@ -67,7 +68,31 @@ export class DocumentCycleLogComponent implements OnInit {
     this.fetch();
   }
 
+  ngOnDestroy(): void {
+    this.clearFilterApplyDebounce();
+  }
 
+  private clearFilterApplyDebounce(): void {
+    if (this.filterApplyTimer) {
+      clearTimeout(this.filterApplyTimer);
+      this.filterApplyTimer = null;
+    }
+  }
+
+  /** Filtros desplegables / fechas: aplicar al instante. Texto: usar `scheduleFilterApplyDebounced`. */
+  scheduleFilterApply(immediate: boolean): void {
+    this.clearFilterApplyDebounce();
+    const run = () => {
+      this.filterApplyTimer = null;
+      this.page = 1;
+      this.fetch();
+    };
+    if (immediate) {
+      run();
+    } else {
+      this.filterApplyTimer = setTimeout(run, BITACORA_FILTER_TYPING_DEBOUNCE_MS);
+    }
+  }
 
   // Build query params for backend
   private buildQuery() {
@@ -109,12 +134,8 @@ export class DocumentCycleLogComponent implements OnInit {
     });
   }
 
-  applyFilters() {
-    this.page = 1;
-    this.fetch();
-  }
-
   clearFilters() {
+    this.clearFilterApplyDebounce();
     this.filters = {
       q: '',
       user: 'Todos los usuarios',
@@ -126,8 +147,21 @@ export class DocumentCycleLogComponent implements OnInit {
     this.fetch();
   }
 
-  goPrev() { if (this.page > 1) { this.page--; this.fetch(); } }
-  goNext() { if (this.page < this.totalPages) { this.page++; this.fetch(); } }
+  goPrev() {
+    this.clearFilterApplyDebounce();
+    if (this.page > 1) {
+      this.page--;
+      this.fetch();
+    }
+  }
+
+  goNext() {
+    this.clearFilterApplyDebounce();
+    if (this.page < this.totalPages) {
+      this.page++;
+      this.fetch();
+    }
+  }
 
   // Export with current filters using detail payload per event.
   export(format: 'csv' | 'xml') {
@@ -270,12 +304,14 @@ ${rows.map(e => `  <evento>
     if (!value) {
       if (field === 'q') this.filters.q = '';
       else this.filters.document = '';
+      this.scheduleFilterApply(false);
       return;
     }
     const words = value.trim().split(/\s+/);
     const limited = words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
     if (field === 'q') this.filters.q = limited;
     else this.filters.document = limited;
+    this.scheduleFilterApply(false);
   }
 
 
