@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { AsignarPlazoDialogComponent } from './asignar-plazo-dialog.component';
 import { DocumentoPlazoRow, DocumentService } from '../../../../core/services/document.service';
@@ -24,7 +25,14 @@ export class GestionPlazosComponent implements OnInit {
   asignarOpen = false;
   selectedDocumento: DocumentoPlazoRow | null = null;
 
-  constructor(private readonly documentService: DocumentService) {}
+  constructor(
+    private readonly documentService: DocumentService,
+    private readonly router: Router,
+  ) {}
+
+  volverDashboard(): void {
+    this.router.navigate(['/archivista/dashboard']);
+  }
 
   ngOnInit(): void {
     this.cargarPlazos();

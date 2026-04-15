@@ -1,20 +1,26 @@
 <div class="page">
   <section class="banner">
-    <h2>Clasificación archivística</h2>
-    <p>
-      Gestione series, subseries y expedientes archivísticos. Desde esta pantalla también
-      puede cerrar expedientes existentes para generar su índice electrónico.
-    </p>
+    <header class="banner-head">
+      <div>
+        <h2>Clasificación archivística</h2>
+        <p>
+          Gestione series, subseries y expedientes archivísticos. Desde esta pantalla también
+          puede cerrar expedientes existentes para generar su índice electrónico.
+        </p>
 
-    <div class="banner-meta">
-      <span class="pill ok">{{ series.length }} series</span>
-      <span class="pill info">{{ subseries.length }} subseries</span>
-      <span class="pill warn">{{ expedientes.length }} expedientes</span>
-    </div>
+        <div class="banner-meta">
+          <span class="pill ok">{{ series.length }} series</span>
+          <span class="pill info">{{ subseries.length }} subseries</span>
+          <span class="pill warn">{{ expedientes.length }} expedientes</span>
+        </div>
+      </div>
+      <button type="button" class="btn ghost page-regresar" (click)="volverDashboard()">
+        Regresar
+      </button>
+    </header>
   </section>
 
   <section class="top-actions">
-    <button class="btn ghost" (click)="volverDashboard()">Regresar</button>
     <button class="btn primary" (click)="crearSerie()">Crear Serie</button>
     <button class="btn primary" (click)="crearSubserie()">Crear Subserie</button>
     <button class="btn primary" (click)="verIndices()">Consultar índices</button>

@@ -10,10 +10,6 @@
     </div>
   </section>
 
-  <section class="top-actions">
-    <button class="btn ghost" (click)="volverClasificacion()">Regresar</button>
-  </section>
-
   <section class="panel-block">
     <div class="panel-head">
       <div>
@@ -22,6 +18,9 @@
           Filtre por ID, expediente, código, hash o fecha para ubicar un índice específico.
         </p>
       </div>
+      <button type="button" class="btn ghost page-regresar" (click)="volverClasificacion()">
+        Regresar
+      </button>
     </div>
 
     <section class="panel filtros">
