@@ -155,6 +155,19 @@
   height: 100%;
   overflow-y: auto;           /* ✅ scroll interno */
   padding: 18px 22px;
+  --word-page-height: 1122px;
+  --word-page-gap: 0px;
+  background-color: #fff;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      #ffffff 0,
+      #ffffff var(--word-page-height),
+      #e2e8f0 var(--word-page-height),
+      #e2e8f0 calc(var(--word-page-height) + var(--word-page-gap))
+    );
+  background-size: 100% calc(var(--word-page-height) + var(--word-page-gap));
+  background-attachment: local;
 }
 
 /* Toolbar de quill: que se vea más “Notion” */
@@ -516,4 +529,306 @@ button:disabled, .btn:disabled{
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+/* Encabezado/pie importados desde DOCX */
+:host ::ng-deep .ql-editor .docx-page-header,
+:host ::ng-deep .ql-editor .docx-page-footer {
+  color: #475569;
+  font-size: 12px;
+  border-color: #cbd5e1;
+}
+
+:host ::ng-deep .ql-editor .docx-page-header {
+  border-bottom: 1px solid #cbd5e1;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+}
+
+:host ::ng-deep .ql-editor .docx-page-footer {
+  border-top: 1px solid #cbd5e1;
+  margin-top: 16px;
+  padding-top: 8px;
+}
+
+:host ::ng-deep .ql-editor .docx-page-header p,
+:host ::ng-deep .ql-editor .docx-page-footer p {
+  margin: 0 0 4px;
+}
+
+/* Vista tipo Word con encabezado/pie fijos */
+.sheet.sheet--word {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet.sheet--word .quill-host {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editor-page-shell {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editor-page-shell .quill-host {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+}
+
+.page-break-overlay {
+  position: absolute;
+  inset: 44px 0 0 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.page-break-marker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  border-top: 2px dashed #64748b;
+  border-bottom: 2px dashed #64748b;
+  background: linear-gradient(
+    to bottom,
+    rgba(148, 163, 184, 0.22),
+    rgba(148, 163, 184, 0.12)
+  );
+  opacity: 1;
+}
+
+.page-break-label {
+  position: absolute;
+  right: 8px;
+  top: -10px;
+  font-size: 11px;
+  color: #1e3a8a;
+  background: #eef2ff;
+  border: 1px solid #93c5fd;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-weight: 700;
+}
+
+.page-break-label--left {
+  left: 8px;
+  right: auto;
+}
+
+.page-break-dashes {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -8px;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: #475569;
+  font-weight: 700;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 8px;
+}
+
+.sheet.sheet--word .word-fixed-header,
+.sheet.sheet--word .word-fixed-footer {
+  flex: 0 0 auto;
+  color: #475569;
+  font-size: 12px;
+  background: #fff;
+  overflow: auto;
+}
+
+.sheet.sheet--word .word-fixed-header {
+  border-bottom: 1px solid #cbd5e1;
+  padding: 4px 2px 8px;
+  max-height: 160px;
+}
+
+.sheet.sheet--word .word-fixed-footer {
+  border-top: 1px solid #cbd5e1;
+  padding: 8px 2px 4px;
+  max-height: 140px;
+}
+
+.sheet.sheet--word .word-fixed-header :is(p, div, span),
+.sheet.sheet--word .word-fixed-footer :is(p, div, span) {
+  margin: 0 0 4px;
+}
+
+.sheet.sheet--word .word-fixed-header img,
+.sheet.sheet--word .word-fixed-footer img {
+  max-height: 130px;
+  width: auto;
+  max-width: 100%;
+}
+
+:host ::ng-deep .layout-editor .hf-align-left,
+:host ::ng-deep .word-fixed-header .hf-align-left,
+:host ::ng-deep .word-fixed-footer .hf-align-left {
+  text-align: left;
+}
+
+:host ::ng-deep .layout-editor .hf-align-center,
+:host ::ng-deep .word-fixed-header .hf-align-center,
+:host ::ng-deep .word-fixed-footer .hf-align-center {
+  text-align: center;
+}
+
+:host ::ng-deep .layout-editor .hf-align-right,
+:host ::ng-deep .word-fixed-header .hf-align-right,
+:host ::ng-deep .word-fixed-footer .hf-align-right {
+  text-align: right;
+}
+
+/* Evitar que se duplique en el área editable */
+:host ::ng-deep .ql-editor .docx-page-header,
+:host ::ng-deep .ql-editor .docx-page-footer {
+  display: none;
+}
+
+/* Índice autogenerado */
+:host ::ng-deep .ql-editor .doc-auto-index {
+  border: 1px solid #dbe5ff;
+  background: #f8fbff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+:host ::ng-deep .ql-editor .doc-auto-index h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+:host ::ng-deep .ql-editor .doc-auto-index ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+:host ::ng-deep .ql-editor .doc-auto-index li {
+  margin: 4px 0;
+}
+
+:host ::ng-deep .ql-editor .doc-auto-index a {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-decoration: none;
+  color: #0f172a;
+}
+
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-num {
+  min-width: 42px;
+  font-weight: 700;
+}
+
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-title {
+  white-space: nowrap;
+}
+
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-dots {
+  flex: 1;
+  border-bottom: 1px dotted #64748b;
+  margin-bottom: 3px;
+}
+
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-level-1 { padding-left: 0; font-weight: 700; }
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-level-2 { padding-left: 14px; }
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-level-3 { padding-left: 28px; }
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-level-4 { padding-left: 42px; }
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-level-5 { padding-left: 56px; }
+:host ::ng-deep .ql-editor .doc-auto-index .doc-index-level-6 { padding-left: 70px; }
+
+/* Panel de configuración de encabezado/pie */
+.page-layout-panel {
+  background: #ffffff;
+  border: 1px solid #dbe5ff;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.layout-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 20px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.layout-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.layout-box h4 {
+  margin: 0 0 8px;
+}
+
+.layout-size-label {
+  display: block;
+  font-size: 12px;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.layout-actions-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.btn-secondary.mini {
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.layout-editor {
+  min-height: 86px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.word-fixed-header--first,
+.word-fixed-footer--first {
+  border-style: dashed;
+}
+
+.word-fixed-footer--autopage {
+  text-align: right;
+  font-weight: 700;
+}
+
+.doc-page-number-preview {
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.doc-structure-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  border-bottom: 1px solid #dbe5ff;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
 }

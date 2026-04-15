@@ -34,7 +34,7 @@
     <div class="filters-grid-4">
       <div class="input-group">
         <label>Autor</label>
-        <select [(ngModel)]="filters.author" name="filterAuthor">
+        <select [(ngModel)]="filters.author" (ngModelChange)="onFiltersChanged()" name="filterAuthor">
           <option value="Todos">Todos</option>
           <option *ngFor="let a of authors" [value]="a">{{ a }}</option>
         </select>
@@ -42,7 +42,7 @@
 
       <div class="input-group">
         <label>Estado</label>
-        <select [(ngModel)]="filters.status" name="filterStatus">
+        <select [(ngModel)]="filters.status" (ngModelChange)="onFiltersChanged()" name="filterStatus">
           <option value="Todos">Todos</option>
           <option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
         </select>
@@ -50,21 +50,18 @@
 
       <div class="input-group">
         <label>Desde</label>
-        <input type="date" [(ngModel)]="filters.dateFrom" name="dateFrom" />
+        <input type="date" [(ngModel)]="filters.dateFrom" (ngModelChange)="onFiltersChanged()" name="dateFrom" />
       </div>
 
       <div class="input-group">
         <label>Hasta</label>
-        <input type="date" [(ngModel)]="filters.dateTo" name="dateTo" />
+        <input type="date" [(ngModel)]="filters.dateTo" (ngModelChange)="onFiltersChanged()" name="dateTo" />
       </div>
     </div>
 
     <div class="row-actions">
       <button class="button-outline" type="button" (click)="clearFilters()">
         Limpiar
-      </button>
-      <button class="button-outline" type="button" (click)="applyFilters()">
-        Aplicar
       </button>
     </div>
   </div>

@@ -29,14 +29,12 @@ export class EditorDashboardComponent implements OnInit {
     dateTo: '',
   };
 
-  authors: string[] = ['Todos'];
+  authors: string[] = [];
   states = [
-    { value: 'Todos', label: 'Todos' },
     { value: 'CREACION', label: 'Creación' },
     { value: 'EDICION', label: 'Edición' },
     { value: 'FIRMA', label: 'Firma' },
     { value: 'FIRMA_PARCIAL', label: 'Firma parcial' },
-    { value: 'ARCHIVADO', label: 'Archivado' },
   ];
 
   allDocuments: VDocumentModel[] = [];
@@ -139,7 +137,7 @@ export class EditorDashboardComponent implements OnInit {
 
         const set = new Set<string>();
         for (const d of this.allDocuments) set.add(d.primer_usuario || 'No disponible');
-        this.authors = ['Todos', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+        this.authors = Array.from(set).sort((a, b) => a.localeCompare(b));
 
         this.page = 1;
         this.repage();
@@ -157,7 +155,7 @@ export class EditorDashboardComponent implements OnInit {
     this.repage();
   }
 
-  applyFilters(): void {
+  onFiltersChanged(): void {
     this.page = 1;
     this.repage();
   }

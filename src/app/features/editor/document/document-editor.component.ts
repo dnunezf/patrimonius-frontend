@@ -9,8 +9,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import Quill from 'quill';
-import * as mammoth from 'mammoth';
 import { interval, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -79,19 +79,40 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   selectedFirmantesList: UiUser[] = [];
 
   consultaExpedientesOpen = false;
+  showPageLayoutPanel = false;
+  useDifferentFirstPage = false;
+  autoPageNumberInFooter = false;
+  docxHeaderFirstHtml = '';
+  docxHeaderHtml = '';
+  docxFooterFirstHtml = '';
+  docxFooterHtml = '';
 
   private readonly clientId =
     (globalThis as any).crypto?.randomUUID?.() ?? this.fallbackUuid();
 
   private subs: Subscription[] = [];
   private commentsPollSub?: Subscription;
+  readonly pageVisualHeightPx = 1122;
+  readonly pageGapPx = 0;
+  currentVisualPage = 1;
+  private onEditorScroll = () => this.updateCurrentPageFromScroll();
+  imageSizeByTarget: Record<
+    'headerFirst' | 'headerDefault' | 'footerFirst' | 'footerDefault',
+    number
+  > = {
+    headerFirst: 120,
+    headerDefault: 120,
+    footerFirst: 90,
+    footerDefault: 90,
+  };
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private docs: DocumentService,
     private rt: RealtimeService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -125,8 +146,13 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           ts: Date.now(),
           from: this.clientId,
         });
+
+        this.updateCurrentPageFromSelection();
       });
     }
+
+    this.quill.on('selection-change', () => this.updateCurrentPageFromSelection());
+    this.quill.root.addEventListener('scroll', this.onEditorScroll);
 
     // 3) Load initial content and base version
     this.docs.getContenido(this.documentoId).subscribe({
@@ -370,6 +396,192 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
   onMetadataSaved(): void {}
 
+  togglePageLayoutPanel(): void {
+    this.showPageLayoutPanel = !this.showPageLayoutPanel;
+  }
+
+  onLayoutHtmlChange(
+    target:
+      | 'headerFirst'
+      | 'headerDefault'
+      | 'footerFirst'
+      | 'footerDefault',
+    event: Event
+  ): void {
+    const html = (event.target as HTMLElement).innerHTML || '';
+    if (target === 'headerFirst') this.docxHeaderFirstHtml = html;
+    if (target === 'headerDefault') this.docxHeaderHtml = html;
+    if (target === 'footerFirst') this.docxFooterFirstHtml = html;
+    if (target === 'footerDefault') this.docxFooterHtml = html;
+  }
+
+  onDifferentFirstPageToggle(): void {
+    if (!this.useDifferentFirstPage) {
+      this.docxHeaderFirstHtml = '';
+      this.docxFooterFirstHtml = '';
+    }
+  }
+
+  onAutoPageNumberToggle(): void {
+    this.docxFooterHtml = this.syncPageNumberToken(this.docxFooterHtml);
+    this.docxFooterFirstHtml = this.syncPageNumberToken(this.docxFooterFirstHtml);
+    if (!this.autoPageNumberInFooter) return;
+    this.docxFooterHtml = `${this.docxFooterHtml}<span class="doc-page-number-token" contenteditable="false"></span>`;
+    if (this.useDifferentFirstPage) {
+      this.docxFooterFirstHtml = `${this.docxFooterFirstHtml}<span class="doc-page-number-token" contenteditable="false"></span>`;
+    }
+  }
+
+  onHeaderFooterImageSelected(
+    target:
+      | 'headerFirst'
+      | 'headerDefault'
+      | 'footerFirst'
+      | 'footerDefault',
+    event: Event
+  ): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (!String(file.type || '').startsWith('image/')) {
+      this.error = 'Debe seleccionar una imagen válida.';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = String(reader.result || '');
+      const imgWidth = this.getImageWidthForTarget(target);
+      const imgTag = `<p class="hf-align-left"><img src="${src}" alt="imagen encabezado/pie" data-size-px="${imgWidth}" style="max-height:${imgWidth}px; width:auto; max-width:100%; height:auto; object-fit:contain;" /></p>`;
+
+      if (target === 'headerFirst') this.docxHeaderFirstHtml = `${this.docxHeaderFirstHtml}${imgTag}`;
+      if (target === 'headerDefault') this.docxHeaderHtml = `${this.docxHeaderHtml}${imgTag}`;
+      if (target === 'footerFirst') this.docxFooterFirstHtml = `${this.docxFooterFirstHtml}${imgTag}`;
+      if (target === 'footerDefault') this.docxFooterHtml = `${this.docxFooterHtml}${imgTag}`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  setHeaderFooterImageSize(
+    target:
+      | 'headerFirst'
+      | 'headerDefault'
+      | 'footerFirst'
+      | 'footerDefault',
+    event: Event
+  ): void {
+    const value = Number((event.target as HTMLInputElement).value || 60);
+    const px = Math.max(40, Math.min(320, value));
+    this.imageSizeByTarget[target] = px;
+    this.applyImageSizeToTarget(target, px);
+  }
+
+  setHeaderFooterImageSizePreset(
+    target: 'headerFirst' | 'headerDefault' | 'footerFirst' | 'footerDefault',
+    percent: 25 | 50 | 75 | 100
+  ): void {
+    const px = Math.round((percent / 100) * 320);
+    this.imageSizeByTarget[target] = px;
+    this.applyImageSizeToTarget(target, px);
+  }
+
+  setHeaderFooterImageAlign(
+    target: 'headerFirst' | 'headerDefault' | 'footerFirst' | 'footerDefault',
+    align: 'left' | 'center' | 'right'
+  ): void {
+    const applyAlign = (source: string) => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = String(source || '');
+      const paragraphs = Array.from(wrapper.querySelectorAll('p'));
+      for (const p of paragraphs) {
+        const hasImg = p.querySelector('img');
+        if (!hasImg) continue;
+        p.classList.remove('hf-align-left', 'hf-align-center', 'hf-align-right');
+        p.classList.add(
+          align === 'center'
+            ? 'hf-align-center'
+            : align === 'right'
+            ? 'hf-align-right'
+            : 'hf-align-left'
+        );
+      }
+      return wrapper.innerHTML;
+    };
+
+    if (target === 'headerFirst') this.docxHeaderFirstHtml = applyAlign(this.docxHeaderFirstHtml);
+    if (target === 'headerDefault') this.docxHeaderHtml = applyAlign(this.docxHeaderHtml);
+    if (target === 'footerFirst') this.docxFooterFirstHtml = applyAlign(this.docxFooterFirstHtml);
+    if (target === 'footerDefault') this.docxFooterHtml = applyAlign(this.docxFooterHtml);
+  }
+
+  createOrUpdateIndex(): void {
+    if (this.isReadOnly) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = this.quill.root.innerHTML;
+
+    wrapper.querySelector('.doc-auto-index')?.remove();
+
+    const headings = Array.from(wrapper.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+    if (!headings.length) {
+      this.info = '';
+      this.error = 'No hay encabezados en el documento para crear el índice.';
+      return;
+    }
+
+    const indexItems: Array<{ level: number; id: string; text: string; number: string }> = [];
+    const counters = [0, 0, 0, 0, 0, 0];
+    let seq = 1;
+    for (const heading of headings) {
+      const text = String(heading.textContent || '').trim();
+      if (!text) continue;
+
+      const level = Number((heading.tagName || 'H1').replace('H', '')) || 1;
+      const idx = Math.min(6, Math.max(1, level)) - 1;
+      counters[idx] += 1;
+      for (let i = idx + 1; i < counters.length; i++) counters[i] = 0;
+      const number = counters.slice(0, idx + 1).filter((n) => n > 0).join('.');
+      const id = `indice-seccion-${seq++}`;
+      heading.id = id;
+      indexItems.push({ level, id, text, number });
+    }
+
+    if (!indexItems.length) {
+      this.info = '';
+      this.error = 'No hay encabezados válidos para generar índice.';
+      return;
+    }
+
+    const indexHtml = `
+      <section class="doc-auto-index" contenteditable="false">
+        <h2>Índice</h2>
+        <ul>
+          ${indexItems
+            .map(
+              (item) =>
+                `<li class="doc-index-level-${Math.min(
+                  6,
+                  Math.max(1, item.level)
+                )}"><a href="#${item.id}"><span class="doc-index-num">${item.number}</span><span class="doc-index-title">${this.escapeHtml(
+                  item.text
+                )}</span><span class="doc-index-dots"></span></a></li>`
+            )
+            .join('')}
+        </ul>
+      </section>
+      <p><br></p>
+    `;
+
+    wrapper.insertAdjacentHTML('afterbegin', indexHtml);
+
+    this.quill.setContents([], 'silent');
+    this.quill.clipboard.dangerouslyPasteHTML(0, wrapper.innerHTML, 'api');
+    this.quill.setSelection(0, 0, 'silent');
+
+    this.error = '';
+    this.info = 'Índice generado correctamente.';
+    setTimeout(() => (this.info = ''), 3000);
+  }
+
   // Solicitar firma (Modal)
   openRequestSignatureModal(): void {
     if (this.isReadOnly) return;
@@ -528,12 +740,17 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const file = (evt.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
-    const buf = await file.arrayBuffer();
-    const res = await mammoth.convertToHtml({ arrayBuffer: buf });
-
-    this.pasteHtml(res.value || '');
-    const end = Math.max(0, this.quill.getLength() - 1);
-    this.quill.setSelection(end, 0, 'silent');
+    this.error = '';
+    this.docs.importDocx(file).subscribe({
+      next: (res) => {
+        this.pasteHtml(res?.html || '');
+        const end = Math.max(0, this.quill.getLength() - 1);
+        this.quill.setSelection(end, 0, 'silent');
+      },
+      error: (e) => {
+        this.error = e?.error?.message || 'No se pudo importar el DOCX.';
+      },
+    });
   }
 
   // Navegación / Destroy
@@ -544,6 +761,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopCommentsPolling();
     this.subs.forEach((s) => s.unsubscribe());
+    this.quill?.root?.removeEventListener('scroll', this.onEditorScroll);
 
     // solo cerrar session si estabas “editando”
     if (!this.isReadOnly) {
@@ -554,21 +772,62 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   // Helpers Quill
   private html(): string {
     // @ts-ignore
-    return (this.quill as any).getSemanticHTML?.() ?? this.quill.root.innerHTML;
+    const bodyHtml =
+      // @ts-ignore
+      (this.quill as any).getSemanticHTML?.() ?? this.quill.root.innerHTML;
+    const headerDefault = this.wrapLayoutSection(
+      this.docxHeaderHtml,
+      'docx-page-header',
+      false
+    );
+    const footerDefault = this.wrapLayoutSection(
+      this.syncPageNumberToken(this.docxFooterHtml),
+      'docx-page-footer',
+      this.autoPageNumberInFooter
+    );
+
+    const headerFirst = this.useDifferentFirstPage
+      ? this.wrapLayoutSection(this.docxHeaderFirstHtml, 'docx-page-header-first', false)
+      : '';
+    const footerFirst = this.useDifferentFirstPage
+      ? this.wrapLayoutSection(
+          this.syncPageNumberToken(this.docxFooterFirstHtml),
+          'docx-page-footer-first',
+          this.autoPageNumberInFooter
+        )
+      : '';
+
+    return `${headerFirst}${headerDefault}${bodyHtml || ''}${footerDefault}${footerFirst}`;
   }
 
   private pasteHtml(html: string): void {
+    const parts = this.splitHeaderFooterFromHtml(html);
+    this.useDifferentFirstPage = parts.hasDifferentFirstPage;
+    this.autoPageNumberInFooter = parts.autoPageNumberInFooter;
+    this.docxHeaderFirstHtml = parts.headerFirstHtml;
+    this.docxHeaderHtml = parts.headerHtml;
+    this.docxFooterFirstHtml = parts.footerFirstHtml;
+    this.docxFooterHtml = parts.footerHtml;
+
     this.quill.setContents([], 'silent');
-    this.quill.clipboard.dangerouslyPasteHTML(0, html, 'api');
+    this.quill.clipboard.dangerouslyPasteHTML(0, parts.bodyHtml, 'api');
   }
 
   private setHtmlPreservingCaretAndScroll(html: string): void {
+    const parts = this.splitHeaderFooterFromHtml(html);
+    this.useDifferentFirstPage = parts.hasDifferentFirstPage;
+    this.autoPageNumberInFooter = parts.autoPageNumberInFooter;
+    this.docxHeaderFirstHtml = parts.headerFirstHtml;
+    this.docxHeaderHtml = parts.headerHtml;
+    this.docxFooterFirstHtml = parts.footerFirstHtml;
+    this.docxFooterHtml = parts.footerHtml;
+
     const sel = this.quill.getSelection();
     const scroller = this.quill.root.parentElement!;
     const prevScrollTop = scroller.scrollTop;
 
     this.quill.setContents([], 'silent');
-    this.quill.clipboard.dangerouslyPasteHTML(0, html, 'api');
+    this.quill.clipboard.dangerouslyPasteHTML(0, parts.bodyHtml, 'api');
 
     if (sel) {
       const max = Math.max(0, this.quill.getLength() - 1);
@@ -578,6 +837,172 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     }
 
     scroller.scrollTop = prevScrollTop;
+  }
+
+  private splitHeaderFooterFromHtml(html: string): {
+    hasDifferentFirstPage: boolean;
+    autoPageNumberInFooter: boolean;
+    headerFirstHtml: string;
+    headerHtml: string;
+    bodyHtml: string;
+    footerFirstHtml: string;
+    footerHtml: string;
+  } {
+    const source = String(html || '');
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = source;
+
+    const headerFirstEl = wrapper.querySelector('.docx-page-header-first');
+    const headerEl = wrapper.querySelector('.docx-page-header');
+    const footerFirstEl = wrapper.querySelector('.docx-page-footer-first');
+    const footerEl = wrapper.querySelector('.docx-page-footer');
+
+    const headerFirstHtml = headerFirstEl ? headerFirstEl.innerHTML : '';
+    const headerHtml = headerEl ? headerEl.innerHTML : '';
+    const footerFirstHtml = footerFirstEl ? footerFirstEl.innerHTML : '';
+    const footerHtml = footerEl ? footerEl.innerHTML : '';
+
+    const autoPageNumberInFooter = Boolean(
+      wrapper.querySelector('.doc-page-number-token')
+    );
+
+    headerFirstEl?.remove();
+    headerEl?.remove();
+    footerFirstEl?.remove();
+    footerEl?.remove();
+
+    return {
+      hasDifferentFirstPage: Boolean(headerFirstHtml || footerFirstHtml),
+      autoPageNumberInFooter,
+      headerFirstHtml,
+      headerHtml,
+      bodyHtml: wrapper.innerHTML,
+      footerFirstHtml,
+      footerHtml,
+    };
+  }
+
+  private wrapLayoutSection(
+    content: string,
+    cssClass: string,
+    includeAutoPageToken: boolean
+  ): string {
+    const html = String(content || '').trim();
+    const token = includeAutoPageToken
+      ? '<span class="doc-page-number-token" contenteditable="false"></span>'
+      : '';
+    if (!html && !token) return '';
+    return `<div class="${cssClass}">${html}${token}</div>`;
+  }
+
+  private syncPageNumberToken(html: string): string {
+    const source = String(html || '');
+    return source.replace(
+      /<span class="doc-page-number-token"[^>]*><\/span>/g,
+      ''
+    );
+  }
+
+  getRenderedFooterPreviewHtml(sourceHtml: string, pageNumber: number): string {
+    const total = this.estimatedPages;
+    return String(sourceHtml || '').replace(
+      /<span class="doc-page-number-token"[^>]*><\/span>/g,
+      `<span class="doc-page-number-preview">Página ${pageNumber} de ${total}</span>`
+    );
+  }
+
+  trustHtml(html: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(String(html || ''));
+  }
+
+  get estimatedPages(): number {
+    if (!this.quill?.root) return 1;
+    const contentHeight = Number(this.quill.root.scrollHeight || 0);
+    return Math.max(1, Math.ceil(contentHeight / this.pageVisualHeightPx));
+  }
+
+  private getImageWidthForTarget(
+    target: 'headerFirst' | 'headerDefault' | 'footerFirst' | 'footerDefault'
+  ): number {
+    const getLastWidth = (html: string) => {
+      const matches = String(html || '').match(/max-height:\s*(\d+)px/g);
+      if (!matches?.length) return 60;
+      const last = matches[matches.length - 1].match(/(\d+)/);
+      return Number(last?.[1] || 60);
+    };
+
+    if (target === 'headerFirst') return getLastWidth(this.docxHeaderFirstHtml);
+    if (target === 'headerDefault') return getLastWidth(this.docxHeaderHtml);
+    if (target === 'footerFirst') return getLastWidth(this.docxFooterFirstHtml);
+    return getLastWidth(this.docxFooterHtml);
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.estimatedPages }, (_, i) => i + 1);
+  }
+
+  get pageBreakNumbers(): number[] {
+    return Array.from({ length: Math.max(0, this.estimatedPages - 1) }, (_, i) => i + 2);
+  }
+
+  getPageMarkerTop(pageNumber: number): number {
+    if (pageNumber <= 1) return 0;
+    const idx = pageNumber - 1;
+    return idx * this.pageVisualHeightPx + (idx - 1) * this.pageGapPx;
+  }
+
+  private updateCurrentPageFromSelection(): void {
+    if (!this.quill) return;
+    const sel = this.quill.getSelection();
+    if (!sel) {
+      this.updateCurrentPageFromScroll();
+      return;
+    }
+    const bounds = this.quill.getBounds(sel.index, sel.length || 0);
+    const y = Math.max(0, Number(bounds?.top || 0));
+    const page = Math.max(1, Math.floor(y / this.pageVisualHeightPx) + 1);
+    this.currentVisualPage = Math.min(page, this.estimatedPages);
+  }
+
+  private updateCurrentPageFromScroll(): void {
+    if (!this.quill?.root) return;
+    const top = Math.max(0, Number(this.quill.root.scrollTop || 0));
+    const page = Math.max(1, Math.floor(top / this.pageVisualHeightPx) + 1);
+    this.currentVisualPage = Math.min(page, this.estimatedPages);
+  }
+
+  private applyImageSizeToTarget(
+    target: 'headerFirst' | 'headerDefault' | 'footerFirst' | 'footerDefault',
+    px: number
+  ): void {
+    const resize = (source: string) => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = String(source || '');
+      const imgs = Array.from(wrapper.querySelectorAll('img'));
+      imgs.forEach((img) => {
+        img.setAttribute('data-size-px', String(px));
+        img.style.maxHeight = `${px}px`;
+        img.style.width = 'auto';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.objectFit = 'contain';
+      });
+      return wrapper.innerHTML;
+    };
+
+    if (target === 'headerFirst') this.docxHeaderFirstHtml = resize(this.docxHeaderFirstHtml);
+    if (target === 'headerDefault') this.docxHeaderHtml = resize(this.docxHeaderHtml);
+    if (target === 'footerFirst') this.docxFooterFirstHtml = resize(this.docxFooterFirstHtml);
+    if (target === 'footerDefault') this.docxFooterHtml = resize(this.docxFooterHtml);
+  }
+
+  private escapeHtml(value: string): string {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private fallbackUuid(): string {

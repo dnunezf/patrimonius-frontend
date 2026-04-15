@@ -61,8 +61,172 @@
       </div>
     </div>
 
-    <div class="sheet">
-      <div #editor class="quill-host"></div>
+    <div class="page-layout-panel" *ngIf="showPageLayoutPanel && !isReadOnly">
+      <label class="layout-toggle">
+        <input
+          type="checkbox"
+          [(ngModel)]="useDifferentFirstPage"
+          (change)="onDifferentFirstPageToggle()"
+        />
+        Primera página diferente
+      </label>
+
+      <label class="layout-toggle">
+        <input
+          type="checkbox"
+          [(ngModel)]="autoPageNumberInFooter"
+          (change)="onAutoPageNumberToggle()"
+        />
+        Número de página automático en pie
+      </label>
+
+      <div class="layout-grid">
+        <div class="layout-box" *ngIf="useDifferentFirstPage">
+          <h4>Encabezado primera página</h4>
+          <div
+            class="layout-editor"
+            contenteditable="true"
+            [innerHTML]="trustHtml(docxHeaderFirstHtml)"
+            (input)="onLayoutHtmlChange('headerFirst', $event)"
+          ></div>
+          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <input type="range" min="40" max="320" [value]="imageSizeByTarget.headerFirst" (input)="setHeaderFooterImageSize('headerFirst', $event)" />
+          <div class="layout-actions-row">
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerFirst', 25)">25%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerFirst', 50)">50%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerFirst', 75)">75%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerFirst', 100)">100%</button>
+          </div>
+          <div class="layout-actions-row">
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('headerFirst', 'left')">Izquierda</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('headerFirst', 'center')">Centrar</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('headerFirst', 'right')">Derecha</button>
+          </div>
+          <input type="file" accept="image/*" (change)="onHeaderFooterImageSelected('headerFirst', $event)" />
+        </div>
+
+        <div class="layout-box">
+          <h4>Encabezado resto de páginas</h4>
+          <div
+            class="layout-editor"
+            contenteditable="true"
+            [innerHTML]="trustHtml(docxHeaderHtml)"
+            (input)="onLayoutHtmlChange('headerDefault', $event)"
+          ></div>
+          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <input type="range" min="40" max="320" [value]="imageSizeByTarget.headerDefault" (input)="setHeaderFooterImageSize('headerDefault', $event)" />
+          <div class="layout-actions-row">
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerDefault', 25)">25%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerDefault', 50)">50%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerDefault', 75)">75%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerDefault', 100)">100%</button>
+          </div>
+          <div class="layout-actions-row">
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('headerDefault', 'left')">Izquierda</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('headerDefault', 'center')">Centrar</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('headerDefault', 'right')">Derecha</button>
+          </div>
+          <input type="file" accept="image/*" (change)="onHeaderFooterImageSelected('headerDefault', $event)" />
+        </div>
+
+        <div class="layout-box" *ngIf="useDifferentFirstPage">
+          <h4>Pie primera página</h4>
+          <div
+            class="layout-editor"
+            contenteditable="true"
+            [innerHTML]="trustHtml(docxFooterFirstHtml)"
+            (input)="onLayoutHtmlChange('footerFirst', $event)"
+          ></div>
+          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <input type="range" min="40" max="320" [value]="imageSizeByTarget.footerFirst" (input)="setHeaderFooterImageSize('footerFirst', $event)" />
+          <div class="layout-actions-row">
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerFirst', 25)">25%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerFirst', 50)">50%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerFirst', 75)">75%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerFirst', 100)">100%</button>
+          </div>
+          <div class="layout-actions-row">
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('footerFirst', 'left')">Izquierda</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('footerFirst', 'center')">Centrar</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('footerFirst', 'right')">Derecha</button>
+          </div>
+          <input type="file" accept="image/*" (change)="onHeaderFooterImageSelected('footerFirst', $event)" />
+        </div>
+
+        <div class="layout-box">
+          <h4>Pie resto de páginas</h4>
+          <div
+            class="layout-editor"
+            contenteditable="true"
+            [innerHTML]="trustHtml(docxFooterHtml)"
+            (input)="onLayoutHtmlChange('footerDefault', $event)"
+          ></div>
+          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <input type="range" min="40" max="320" [value]="imageSizeByTarget.footerDefault" (input)="setHeaderFooterImageSize('footerDefault', $event)" />
+          <div class="layout-actions-row">
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerDefault', 25)">25%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerDefault', 50)">50%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerDefault', 75)">75%</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerDefault', 100)">100%</button>
+          </div>
+          <div class="layout-actions-row">
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('footerDefault', 'left')">Izquierda</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('footerDefault', 'center')">Centrar</button>
+            <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageAlign('footerDefault', 'right')">Derecha</button>
+          </div>
+          <input type="file" accept="image/*" (change)="onHeaderFooterImageSelected('footerDefault', $event)" />
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet sheet--word">
+      <div class="doc-structure-actions" *ngIf="!isReadOnly">
+        <button type="button" class="btn-secondary" (click)="createOrUpdateIndex()">
+          Crear índice
+        </button>
+        <button type="button" class="btn-secondary" (click)="togglePageLayoutPanel()">
+          {{ showPageLayoutPanel ? 'Ocultar encabezado/pie' : 'Encabezado y pie' }}
+        </button>
+      </div>
+
+      <div
+        class="word-fixed-header word-fixed-header--first"
+        *ngIf="useDifferentFirstPage && currentVisualPage === 1 && docxHeaderFirstHtml"
+        [innerHTML]="trustHtml(docxHeaderFirstHtml)"
+      ></div>
+
+      <div
+        class="word-fixed-header"
+        *ngIf="(!useDifferentFirstPage || currentVisualPage > 1) && docxHeaderHtml"
+        [innerHTML]="trustHtml(docxHeaderHtml)"
+      ></div>
+
+      <div class="editor-page-shell">
+        <div #editor class="quill-host"></div>
+        <div class="page-break-overlay" aria-hidden="true">
+          <div
+            class="page-break-marker"
+            *ngFor="let p of pageBreakNumbers"
+            [style.top.px]="getPageMarkerTop(p)"
+          >
+            <span class="page-break-label page-break-label--left">Fin pagina {{ p - 1 }}</span>
+            <span class="page-break-dashes" aria-hidden="true">---</span>
+            <span class="page-break-label">Inicio pagina {{ p }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="word-fixed-footer"
+        *ngIf="(!useDifferentFirstPage || currentVisualPage > 1) && docxFooterHtml"
+        [innerHTML]="trustHtml(getRenderedFooterPreviewHtml(docxFooterHtml, currentVisualPage))"
+      ></div>
+
+      <div
+        class="word-fixed-footer word-fixed-footer--first"
+        *ngIf="useDifferentFirstPage && currentVisualPage === 1 && docxFooterFirstHtml"
+        [innerHTML]="trustHtml(getRenderedFooterPreviewHtml(docxFooterFirstHtml, 1))"
+      ></div>
     </div>
   </div>
 
