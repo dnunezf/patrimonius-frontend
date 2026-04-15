@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 
 import { Notificacion } from '../../shared/models/notificacion.model';
 import { NotificacionService } from '../../../core/services/notificacion.service';
@@ -20,8 +20,14 @@ export class NotificationsComponent implements OnInit {
 
   constructor(
     private notiSvc: NotificacionService,
-    private notiStore: NotificationsStore
+    private notiStore: NotificationsStore,
+    private location: Location,
   ) {}
+
+  /** Vuelve a la pantalla anterior (mismo patrón que consulta: Regresar). */
+  regresar(): void {
+    this.location.back();
+  }
 
   ngOnInit(): void {
     this.refresh();
@@ -93,6 +99,28 @@ export class NotificationsComponent implements OnInit {
     if (n.accion_requerida === 'ARCHIVAR') return 'ok';
     if (n.accion_requerida === 'ELIMINAR') return 'warn';
     return 'info';
+  }
+
+  /** Emoji visible en el cuadro izquierdo de cada tarjeta (vista «Ver todas»). */
+  emojiFor(n: Notificacion): string {
+    const t = n.tipo ?? '';
+    switch (t) {
+      case 'PLAZO_ASIGNADO':
+        return '⏱️';
+      case 'DOC_EDITADO':
+        return '✏️';
+      case 'DOC_FIRMA_SOLICITADA':
+        return '✍️';
+      case 'DOC_ARCHIVADO':
+        return '📦';
+      case 'DOC_ELIMINACION':
+        return '🗑️';
+      case 'DOC_FIRMA_INVALIDA':
+        return '⚠️';
+      default:
+        if (t.includes('DENEG') || t.includes('ACCESO')) return '🔒';
+        return '🔔';
+    }
   }
 
   markAsRead(n: Notificacion) {

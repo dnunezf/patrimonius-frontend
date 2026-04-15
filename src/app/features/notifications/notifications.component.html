@@ -1,8 +1,23 @@
+<div class="page notifications-page">
+  <header class="page__head">
+    <div>
+      <h1>Notificaciones</h1>
+      <p class="page__sub">
+        Avisos del sistema sobre plazos, firmas y cambios en documentos.
+      </p>
+    </div>
+    <div class="page__head-actions">
+      <button type="button" class="btn ghost" (click)="regresar()">Regresar</button>
+    </div>
+  </header>
+
 <!-- Si hay notificaciones -->
 <div *ngIf="items.length > 0; else emptyState">
   <div class="card" *ngFor="let n of items">
     <div class="left">
-      <div class="icon" [ngClass]="iconFor(n)"></div>
+      <div class="icon" [ngClass]="iconFor(n)" [attr.aria-hidden]="true">
+        <span class="icon__glyph">{{ emojiFor(n) }}</span>
+      </div>
     </div>
 
     <div class="body">
@@ -64,3 +79,5 @@
     <p>Cuando haya una nueva, te va a aparecer aquí.</p>
   </div>
 </ng-template>
+
+</div>

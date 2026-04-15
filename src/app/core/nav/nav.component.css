@@ -2,7 +2,7 @@
 /* Topbar (como la captura)      */
 /* ============================= */
 .topbar{
-  position: sticky; top: 0; z-index: 1000;
+  position: sticky; top: 0; z-index: 1050;
   display:flex; align-items:center; justify-content:space-between;
   padding: 10px 14px;
   background:#fff;
@@ -234,4 +234,158 @@
 
 .badge{
   white-space: nowrap;
+}
+
+/* Panel desplegable de notificaciones (🔔) */
+.notif-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.notif-backdrop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 72px;
+  z-index: 1040;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(420px, 70vh);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e6e8ec;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.notif-dropdown__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.notif-dropdown__title {
+  font-weight: 800;
+  font-size: 15px;
+  color: #1d2939;
+}
+
+.notif-dropdown__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e6e8ec;
+  background: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.notif-dropdown__close:hover {
+  background: #f3f5f7;
+}
+
+.notif-dropdown__state {
+  padding: 14px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.notif-dropdown__state--err {
+  color: var(--mncr-red-1795, #c33737);
+}
+
+.notif-dropdown__empty {
+  padding: 18px 14px;
+  text-align: center;
+  color: #667085;
+  font-size: 13px;
+}
+
+.notif-dropdown__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.notif-dropdown__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 12px;
+  border-bottom: 1px solid #f2f4f7;
+  font-size: 13px;
+}
+
+.notif-dropdown__item:last-child {
+  border-bottom: none;
+}
+
+.notif-dropdown__item-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.notif-dropdown__item-title {
+  font-weight: 800;
+  color: var(--mncr-brown, #3d2914);
+}
+
+.notif-dropdown__item-doc {
+  margin-top: 4px;
+  color: #344054;
+  word-break: break-word;
+}
+
+.notif-dropdown__item-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #98a2b3;
+}
+
+.notif-dropdown__read {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.notif-dropdown__read:hover {
+  background: #f3f5f7;
+}
+
+.notif-dropdown__footer {
+  display: block;
+  text-align: center;
+  padding: 10px 12px;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--mncr-blue-639, #0aa6c2);
+  text-decoration: none;
+  border-top: 1px solid #eef0f3;
+}
+
+.notif-dropdown__footer:hover {
+  text-decoration: underline;
 }

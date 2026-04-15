@@ -1,18 +1,14 @@
-/* Usa tus variables MNCR (pegá tu :root en styles.css global).
-   Aquí solo consumo las variables. */
+@import '../consulta/consulta-subpanel.css';
 
-.page { padding: 18px; }
-
-.head {
+.page__head-actions {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.title { margin: 0; font-size: 20px; color: var(--mncr-brown); }
-.subtitle { margin: 4px 0 0; color: var(--mncr-gray); font-size: 13px; }
+.notifications-page .page__head h1 {
+  color: var(--mncr-brown, #3d2914);
+}
 
 .badge-unread {
   background: rgba(0, 145, 205, 0.12);
@@ -42,10 +38,19 @@
 .left { display: flex; align-items: flex-start; justify-content: center; padding-top: 2px; }
 
 .icon {
-  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
   background: rgba(0, 145, 205, 0.12);
   border: 1px solid rgba(0, 145, 205, 0.25);
+}
+
+.icon__glyph {
+  font-size: 15px;
+  line-height: 1;
 }
 
 .icon.warn { background: rgba(195, 55, 55, 0.12); border-color: rgba(195, 55, 55, 0.25); }

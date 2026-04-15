@@ -1,9 +1,28 @@
-import { Component, Input, Output, EventEmitter, signal, computed, inject } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  signal,
+  computed,
+  inject,
+} from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+} from '@angular/router';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { EMPTY, fromEvent, interval, merge } from 'rxjs';
+import { filter, startWith, switchMap } from 'rxjs/operators';
+
 import { NavItem } from './nav.types';
 import { NotificationsStore } from '../../shared/state/notifications.store';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificacionService } from '../../../core/services/notificacion.service';
+import { Notificacion } from '../../shared/models/notificacion.model';
 
 @Component({
   selector: 'app-nav',
@@ -35,6 +54,42 @@ export class NavComponent {
   private readonly auth = inject(AuthService);
   private readonly store = inject(NotificationsStore);
   private readonly router = inject(Router);
+  private readonly notiSvc = inject(NotificacionService);
+
+  /** Panel desplegable del ícono 🔔 */
+  notifDropdownLoading = false;
+  notifDropdownError = '';
+  notifItems: Notificacion[] = [];
+
+  constructor() {
+    toObservable(this.auth.currentUser)
+      .pipe(
+        switchMap((user) => {
+          if (!user) {
+            this.store.setCount(0);
+            return EMPTY;
+          }
+          return merge(
+            interval(30000).pipe(startWith(0)),
+            fromEvent(document, 'visibilitychange').pipe(
+              filter(() => document.visibilityState === 'visible'),
+            ),
+          ).pipe(switchMap(() => this.notiSvc.unreadCount()));
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe({
+        next: (r) => this.store.setCount(r.unread ?? 0),
+        error: () => this.store.setCount(0),
+      });
+
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.close());
+  }
 
   private readonly currentUser = computed(() =>
     this.auth.currentUser?.() ??
@@ -131,8 +186,81 @@ export class NavComponent {
   };
 
   isOpen = signal(false);
-  toggle() { this.isOpen.update(v => !v); }
-  close() { this.isOpen.set(false); }
+
+  close() {
+    this.isOpen.set(false);
+  }
+
+  toggleNotifPanel(ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const opening = !this.isOpen();
+    this.isOpen.set(opening);
+    if (opening) {
+      this.loadNotifDropdown();
+    }
+  }
+
+  private loadNotifDropdown(): void {
+    this.notifDropdownLoading = true;
+    this.notifDropdownError = '';
+    this.notiSvc.unreadCount().subscribe({
+      next: (r) => this.store.setCount(r.unread ?? 0),
+      error: () => {},
+    });
+    this.notiSvc.listMine({ unreadOnly: true, limit: 40, offset: 0 }).subscribe({
+      next: (r) => {
+        this.notifItems = r.items ?? [];
+        this.notifDropdownLoading = false;
+      },
+      error: () => {
+        this.notifDropdownError = 'No se pudieron cargar las notificaciones.';
+        this.notifItems = [];
+        this.notifDropdownLoading = false;
+      },
+    });
+  }
+
+  isUnreadNotif(n: Notificacion): boolean {
+    return Number(n.leida) === 0;
+  }
+
+  formatNotifDate(raw: string): string {
+    if (!raw) return '';
+    return new Date(raw).toLocaleString('es-CR');
+  }
+
+  titleForNotif(tipo?: string): string {
+    switch (tipo) {
+      case 'PLAZO_ASIGNADO':
+        return 'Plazo asignado';
+      case 'DOC_EDITADO':
+        return 'Documento editado';
+      case 'DOC_FIRMA_SOLICITADA':
+        return 'Firma requerida';
+      case 'DOC_ARCHIVADO':
+        return 'Documento archivado';
+      case 'DOC_ELIMINACION':
+        return 'Documento en eliminación';
+      case 'DOC_FIRMA_INVALIDA':
+        return 'Firma digital inválida';
+      default:
+        return 'Notificación';
+    }
+  }
+
+  markNotifRead(n: Notificacion): void {
+    if (!this.isUnreadNotif(n)) return;
+    this.notiSvc.markRead(n.id).subscribe({
+      next: () => {
+        this.notifItems = this.notifItems.filter((x) => x.id !== n.id);
+        this.store.decrement();
+      },
+      error: () => {
+        this.notifDropdownError = 'No se pudo marcar como leída.';
+      },
+    });
+  }
 
   drawerOpen = signal(false);
   openDrawer() { this.drawerOpen.set(true); }

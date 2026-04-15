@@ -31,13 +31,71 @@
 
     <!-- Si SÍ está logueado -->
     <ng-container *ngIf="isLoggedIn()">
-      <button class="iconbtn"
-              type="button"
-              [routerLink]="notificationsLink()"
-              aria-label="Notificaciones">
-        🔔
-        <span *ngIf="noticeCount() > 0" class="badge">{{ badgeText() }}</span>
-      </button>
+      <div class="notif-wrap">
+        <button class="iconbtn"
+                type="button"
+                (click)="toggleNotifPanel($event)"
+                [attr.aria-expanded]="isOpen()"
+                aria-haspopup="true"
+                aria-label="Notificaciones">
+          🔔
+          <span *ngIf="noticeCount() > 0" class="badge">{{ badgeText() }}</span>
+        </button>
+
+        <div *ngIf="isOpen()"
+             class="notif-dropdown"
+             role="dialog"
+             aria-label="Notificaciones pendientes"
+             (click)="$event.stopPropagation()">
+          <div class="notif-dropdown__head">
+            <span class="notif-dropdown__title">Notificaciones</span>
+            <button type="button"
+                    class="notif-dropdown__close"
+                    (click)="close()"
+                    aria-label="Cerrar notificaciones">
+              ✕
+            </button>
+          </div>
+
+          <div *ngIf="notifDropdownLoading" class="notif-dropdown__state">Cargando…</div>
+          <div *ngIf="!notifDropdownLoading && notifDropdownError"
+               class="notif-dropdown__state notif-dropdown__state--err">
+            {{ notifDropdownError }}
+          </div>
+
+          <div *ngIf="!notifDropdownLoading && !notifDropdownError && notifItems.length === 0"
+               class="notif-dropdown__empty">
+            No hay notificaciones nuevas.
+          </div>
+
+          <ul *ngIf="!notifDropdownLoading && !notifDropdownError && notifItems.length > 0"
+              class="notif-dropdown__list">
+            <li *ngFor="let n of notifItems" class="notif-dropdown__item">
+              <div class="notif-dropdown__item-main">
+                <div class="notif-dropdown__item-title">
+                  {{ n.tipo === 'PLAZO_ASIGNADO' ? 'Plazo asignado' : titleForNotif(n.tipo) }}
+                </div>
+                <div class="notif-dropdown__item-doc" *ngIf="n.documento_titulo">
+                  «{{ n.documento_titulo }}»
+                </div>
+                <div class="notif-dropdown__item-meta">{{ formatNotifDate(n.fecha) }}</div>
+              </div>
+              <button *ngIf="isUnreadNotif(n)"
+                      type="button"
+                      class="notif-dropdown__read"
+                      (click)="markNotifRead(n)">
+                Leída
+              </button>
+            </li>
+          </ul>
+
+          <a class="notif-dropdown__footer"
+             [routerLink]="notificationsLink()"
+             (click)="close()">
+            Ver todas
+          </a>
+        </div>
+      </div>
 
       <span class="email">{{ userEmail() }}</span>
 
@@ -47,6 +105,12 @@
     </ng-container>
   </div>
 </header>
+
+<!-- Cerrar panel de notificaciones al tocar fuera (debajo de la barra) -->
+<div *ngIf="isLoggedIn() && isOpen()"
+     class="notif-backdrop"
+     (click)="close()"
+     aria-hidden="true"></div>
 
 <!-- Overlay y Drawer SOLO si está logueado -->
 <div *ngIf="isLoggedIn()"
