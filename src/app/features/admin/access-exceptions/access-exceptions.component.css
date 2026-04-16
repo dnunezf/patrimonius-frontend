@@ -128,6 +128,12 @@ textarea { resize: vertical; }
   outline-offset: 2px;
 }
 
+.permission-buttons button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ===== Primary action (keep simple, consistent) ===== */
 .btn-primary {
   margin-top: 10px;
@@ -212,6 +218,7 @@ textarea { resize: vertical; }
 
 /* ===== Optional: error text minimal ===== */
 .error { color: #b91c1c; }
+.success { color: #15803d; font-weight: 600; }
 
 /* ===== Modal ===== */
 .modal-backdrop{

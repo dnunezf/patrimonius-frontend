@@ -49,7 +49,8 @@ export class AccessExceptionsComponent implements OnInit {
 
   // ====== Listado (paginación + filtros) ======
   page = 1;
-  pageSize = 3;
+  /** 5 filas por página: menos scroll; página 1 = los 5 más recientes (orden DESC en backend) */
+  pageSize = 5;
   totalItems = 0;
   totalPages = 1;
 
@@ -64,6 +65,9 @@ export class AccessExceptionsComponent implements OnInit {
   items: ExceptionRow[] = [];
   loading = false;
   error: string | null = null;
+  /** Validación del formulario izquierdo (no confundir con error del listado) */
+  formError: string | null = null;
+  applySuccess: string | null = null;
 
   constructor(
     private service: AccessExceptionService,
@@ -350,15 +354,81 @@ export class AccessExceptionsComponent implements OnInit {
   // =======================
   // Validación + permisos
   // =======================
+  /** Misma regla que backend: solo CREACION/EDICION permiten EDIT; FIRMA/FIRMA_PARCIAL para SIGN */
+  private docEstadoRaw(doc: any | null): string {
+    return String(doc?.estado ?? '').toUpperCase();
+  }
+
+  puedeEditarPorEstado(doc: any | null): boolean {
+    const s = this.docEstadoRaw(doc);
+    return s === 'CREACION' || s === 'EDICION';
+  }
+
+  puedeFirmarPorEstado(doc: any | null): boolean {
+    const s = this.docEstadoRaw(doc);
+    return s === 'FIRMA' || s === 'FIRMA_PARCIAL';
+  }
+
+  onDocumentForExceptionChange(): void {
+    if (!this.puedeEditarPorEstado(this.selectedDocument) && this.permissions.editar) {
+      this.permissions.editar = false;
+    }
+    if (!this.puedeFirmarPorEstado(this.selectedDocument) && this.permissions.firmar) {
+      this.permissions.firmar = false;
+    }
+  }
+
   isFormValid(): boolean {
     const hasPerms = this.permissions.visualizar || this.permissions.editar || this.permissions.firmar;
     const hasUser = !!this.selectedUser;
     const hasDoc = !!this.selectedDocument;
     const hasReason = this.reason.trim().length > 0;
-    return hasPerms && hasUser && hasDoc && hasReason;
+    if (!hasPerms || !hasUser || !hasDoc || !hasReason) {
+      return false;
+    }
+    if (this.permissions.editar && !this.puedeEditarPorEstado(this.selectedDocument)) {
+      return false;
+    }
+    if (this.permissions.firmar && !this.puedeFirmarPorEstado(this.selectedDocument)) {
+      return false;
+    }
+    return true;
+  }
+
+  /** Mensaje explícito para el usuario (p. ej. motivo obligatorio vacío) */
+  formValidationMessage(): string {
+    const parts: string[] = [];
+    if (!this.selectedUser) {
+      parts.push('seleccione un usuario');
+    }
+    if (!this.selectedDocument) {
+      parts.push('seleccione un documento');
+    }
+    if (!this.permissions.visualizar && !this.permissions.editar && !this.permissions.firmar) {
+      parts.push('elija al menos un permiso (Visualizar, Editar o Firmar)');
+    }
+    if (this.selectedDocument && this.permissions.editar && !this.puedeEditarPorEstado(this.selectedDocument)) {
+      parts.push('edición solo si el documento está en Creación o Edición');
+    }
+    if (this.selectedDocument && this.permissions.firmar && !this.puedeFirmarPorEstado(this.selectedDocument)) {
+      parts.push('firma solo si el documento está en Firma o Firma parcial');
+    }
+    if (!this.reason.trim()) {
+      parts.push('escriba el motivo de la excepción');
+    }
+    if (!parts.length) {
+      return '';
+    }
+    return 'Complete el formulario: ' + parts.join('; ') + '.';
   }
 
   togglePermission(p: 'visualizar' | 'editar' | 'firmar') {
+    if (p === 'editar' && !this.puedeEditarPorEstado(this.selectedDocument)) {
+      return;
+    }
+    if (p === 'firmar' && !this.puedeFirmarPorEstado(this.selectedDocument)) {
+      return;
+    }
     this.permissions[p] = !this.permissions[p];
   }
 
@@ -374,24 +444,49 @@ export class AccessExceptionsComponent implements OnInit {
   // CRUD
   // =======================
   applyException() {
-    if (!this.isFormValid()) return;
+    this.formError = null;
+    this.applySuccess = null;
+
+    if (!this.isFormValid()) {
+      this.formError = this.formValidationMessage();
+      return;
+    }
+
+    const docId = Number(this.selectedDocument!.id);
+    const userId = Number(this.selectedUser!.id);
+    if (!Number.isFinite(docId) || docId <= 0 || !Number.isFinite(userId) || userId <= 0) {
+      this.formError = 'Usuario o documento no válido; vuelva a seleccionar ambos.';
+      return;
+    }
 
     const payload = {
-      userId: this.selectedUser!.id,
-      documentId: this.selectedDocument!.id,
+      userId,
+      documentId: docId,
       permissions: this.selectedPermissionsApi(),
       reason: this.reason.trim()
     };
 
     this.service.applyException(payload).subscribe({
       next: () => {
+        this.formError = null;
+        this.error = null;
+        this.applySuccess =
+          'Excepción registrada correctamente. Actualizando el listado…';
         this.resetForm();
         this.page = 1;
+        // Quitar filtros de fecha del panel derecho para que la fila nueva no quede oculta
+        this.filters.dateFrom = '';
+        this.filters.dateTo = '';
         this.fetch();
+        setTimeout(() => {
+          this.applySuccess = null;
+        }, 6000);
       },
       error: (err) => {
         console.error('APPLY EXCEPTION ERROR =>', err);
-        this.error = err?.error?.message || `No se pudo aplicar la excepción (${err?.status})`;
+        this.formError =
+          err?.error?.message ||
+          `No se pudo aplicar la excepción (${err?.status ?? 'error'})`;
       }
     });
   }

@@ -264,6 +264,12 @@ h2 {
   color: var(--mncr-gray);
 }
 
+.badge-muted {
+  border-color: #78716c;
+  color: #57534e;
+  background: #f5f5f4;
+}
+
 .badge-green {
   border-color: #16a34a;
   color: #16a34a;

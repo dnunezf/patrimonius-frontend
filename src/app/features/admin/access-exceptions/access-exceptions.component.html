@@ -14,6 +14,9 @@
       <div class="card">
         <h2>Crear nueva excepción</h2>
 
+        <p *ngIf="formError" class="error" role="alert">{{ formError }}</p>
+        <p *ngIf="applySuccess" class="success" role="status">{{ applySuccess }}</p>
+
         <form (ngSubmit)="applyException()">
           <!-- Usuario -->
           <div class="input-group">
@@ -93,7 +96,12 @@
 
           <div class="input-group">
             <label for="documentSelect">Selecciona el documento</label>
-            <select id="documentSelect" [(ngModel)]="selectedDocument" name="document">
+            <select
+              id="documentSelect"
+              [(ngModel)]="selectedDocument"
+              (ngModelChange)="onDocumentForExceptionChange()"
+              name="document"
+            >
               <option [ngValue]="null" disabled>Seleccionar Documento...</option>
               <option *ngFor="let document of filteredDocuments" [ngValue]="document">
                 {{ document.titulo }} - {{ document.numero_serie }} - {{ document.formattedState }}
@@ -109,13 +117,28 @@
             <button type="button" (click)="togglePermission('visualizar')" [class.selected]="permissions.visualizar">
               Visualizar
             </button>
-            <button type="button" (click)="togglePermission('editar')" [class.selected]="permissions.editar">
+            <button
+              type="button"
+              (click)="togglePermission('editar')"
+              [class.selected]="permissions.editar"
+              [disabled]="!puedeEditarPorEstado(selectedDocument)"
+              [attr.title]="!puedeEditarPorEstado(selectedDocument) ? 'Solo en estados Creación o Edición' : null"
+            >
               Editar
             </button>
-            <button type="button" (click)="togglePermission('firmar')" [class.selected]="permissions.firmar">
+            <button
+              type="button"
+              (click)="togglePermission('firmar')"
+              [class.selected]="permissions.firmar"
+              [disabled]="!puedeFirmarPorEstado(selectedDocument)"
+              [attr.title]="!puedeFirmarPorEstado(selectedDocument) ? 'Solo en estados Firma o Firma parcial' : null"
+            >
               Firmar
             </button>
           </div>
+          <p class="filter-hint" *ngIf="selectedDocument">
+            Edición: solo Creación / Edición. Firma: solo Firma / Firma parcial. Visualizar: cualquier estado.
+          </p>
           </div>
 
           <!-- Motivo -->

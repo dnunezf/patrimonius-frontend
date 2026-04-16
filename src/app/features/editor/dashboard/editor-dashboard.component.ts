@@ -35,6 +35,7 @@ export class EditorDashboardComponent implements OnInit {
     { value: 'EDICION', label: 'Edición' },
     { value: 'FIRMA', label: 'Firma' },
     { value: 'FIRMA_PARCIAL', label: 'Firma parcial' },
+    { value: 'ARCHIVADO', label: 'Archivado' },
   ];
 
   allDocuments: VDocumentModel[] = [];

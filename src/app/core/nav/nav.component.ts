@@ -108,17 +108,17 @@ export class NavComponent {
 
     const roles = (u as any).roles;
     if (typeof roles === 'string' && roles.trim()) {
-      return [this.prettyRole(roles)];
+      return [this.roleDisplay(roles.trim())];
     }
 
     if (Array.isArray(roles) && roles.length) {
-      return roles.map((r: any) => this.prettyRole(String(r)));
+      return roles.map((r: any) => this.roleDisplay(String(r).trim()));
     }
 
     const names = [
       'Administrador',
       'Editor',
-      'Archivador',
+      'Archivista',
       'Usuario',
       'Usuario Externo'
     ];
@@ -145,8 +145,8 @@ export class NavComponent {
       ADMIN: 'Administrador',
       ADMINISTRADOR: 'Administrador',
       EDITOR: 'Editor',
-      ARCHIVADOR: 'Archivador',
-      ARCHIVISTA: 'Archivador',
+      ARCHIVADOR: 'Archivista',
+      ARCHIVISTA: 'Archivista',
       USUARIO: 'Usuario',
       USUARIO_EXTERNO: 'Usuario Externo',
     };
@@ -350,14 +350,18 @@ export class NavComponent {
 
   /**
    * HU-019 conservation intake action.
-   * Recommended visibility: ADMINISTRADOR and ARCHIVADOR.
+   * Recommended visibility: ADMINISTRADOR and rol archivo (ARCHIVADOR / ARCHIVISTA).
    */
   canSeeConservationIntake = (): boolean => {
     const roles = this.rolesList.map((role) =>
       role.trim().toUpperCase().replace(/\s+/g, '_')
     );
 
-    return roles.includes('ADMINISTRADOR') || roles.includes('ARCHIVADOR');
+    return (
+      roles.includes('ADMINISTRADOR') ||
+      roles.includes('ARCHIVADOR') ||
+      roles.includes('ARCHIVISTA')
+    );
   };
 
   conservationIntakeLink(): string {

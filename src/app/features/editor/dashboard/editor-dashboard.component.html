@@ -92,7 +92,8 @@
                 'badge-yellow': document.documento_estado === 'EDICION',
                 'badge-blue': document.documento_estado === 'FIRMA_PARCIAL',
                 'badge-gray': document.documento_estado === 'CREACION',
-                'badge-red': document.documento_estado === 'FIRMA'
+                'badge-red': document.documento_estado === 'FIRMA',
+                'badge-muted': document.documento_estado === 'ARCHIVADO'
               }"
             >
               {{ document.documento_estado | formatState }}
@@ -115,7 +116,7 @@
 
         <td>
           <button
-            *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
+            *ngIf="document.documento_estado === 'CREACION' || document.documento_estado === 'EDICION'"
             class="btn btn--gray"
             type="button"
             (click)="editarDocumento(document.id); $event.stopPropagation()"
@@ -124,6 +125,7 @@
           </button>
 
           <button
+            *ngIf="document.documento_estado === 'FIRMA' || document.documento_estado === 'FIRMA_PARCIAL'"
             class="btn btn--red"
             type="button"
             (click)="openSignModal(document.id); $event.stopPropagation()"
