@@ -9,6 +9,7 @@ export interface Serie {
   descripcion?: string | null;
   unidad_id: number;
   unidad_nombre?: string | null;
+  plazo_conservacion_anios?: number | null;
   activa?: number | boolean;
   created_at?: string;
   updated_at?: string;
@@ -19,6 +20,7 @@ export interface CreateSerieDto {
   nombre: string;
   descripcion?: string | null;
   unidad_id: number;
+  plazo_conservacion_anios: number;
   activa?: number | boolean;
 }
 
@@ -27,6 +29,7 @@ export interface UpdateSerieDto {
   nombre?: string;
   descripcion?: string | null;
   unidad_id?: number;
+  plazo_conservacion_anios?: number;
   activa?: number | boolean;
 }
 

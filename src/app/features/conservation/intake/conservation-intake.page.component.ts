@@ -25,7 +25,6 @@ import {
   FinalDocumentFlow,
   IntakePayload,
   ProcedureType,
-  RetentionRule,
 } from './models';
 
 function humanSize(bytes: number | null | undefined): string {
@@ -83,7 +82,6 @@ export class ConservationIntakePageComponent {
   readonly referenceCodeLoading = signal(false);
   readonly candidates = signal<CandidateDoc[]>([]);
   readonly selected = signal<CandidateDoc | null>(null);
-  readonly retentionRules = signal<RetentionRule[]>([]);
 
   readonly series = signal<ArchivalSeries[]>([]);
   readonly subseries = signal<ArchivalSubseries[]>([]);
@@ -153,11 +151,8 @@ export class ConservationIntakePageComponent {
     subserieId: [null as number | null],
     expedienteId: [null as number | null, [Validators.required]],
 
-    retentionRuleId: [null as number | null, [Validators.required]],
-    retentionStartDateISO: [
-      { value: '', disabled: true },
-      [Validators.required],
-    ],
+    retentionRuleId: [{ value: 0, disabled: true }],
+    retentionStartDateISO: [{ value: '', disabled: true }, [Validators.required]],
     retentionEndDateISO: [{ value: '', disabled: true }],
 
     recipientNameRole: [''],
@@ -244,8 +239,8 @@ export class ConservationIntakePageComponent {
       missing.push('Expediente');
     }
 
-    if (!this.archivalForm.get('retentionRuleId')?.value) {
-      missing.push('Regla de retención');
+    if (!this.archivalForm.getRawValue().retentionStartDateISO) {
+      missing.push('Fecha de inicio de vigencia');
     }
 
     if (!this.hasRequiredFlowData()) {
@@ -273,7 +268,6 @@ export class ConservationIntakePageComponent {
     this.setupRetentionPreview();
     this.setupClassificationReset();
     this.setupReferenceCodePreview();
-    this.loadRetentionRules();
     this.loadArchivalStructure();
     this.search();
   }
@@ -319,19 +313,19 @@ export class ConservationIntakePageComponent {
 
   private setupRetentionPreview(): void {
     this.archivalForm
-      .get('retentionRuleId')
+      .get('serieId')
       ?.valueChanges.pipe(
-        startWith(this.archivalForm.get('retentionRuleId')?.value),
-        takeUntilDestroyed(this.destroyRef),
-      )
+      startWith(this.archivalForm.get('serieId')?.value),
+      takeUntilDestroyed(this.destroyRef),
+    )
       .subscribe(() => this.refreshRetentionEndDate());
 
     this.archivalForm
       .get('retentionStartDateISO')
       ?.valueChanges.pipe(
-        startWith(this.archivalForm.get('retentionStartDateISO')?.value),
-        takeUntilDestroyed(this.destroyRef),
-      )
+      startWith(this.archivalForm.get('retentionStartDateISO')?.value),
+      takeUntilDestroyed(this.destroyRef),
+    )
       .subscribe(() => this.refreshRetentionEndDate());
   }
 
@@ -344,6 +338,8 @@ export class ConservationIntakePageComponent {
           {
             subserieId: null,
             expedienteId: null,
+            retentionStartDateISO: '',
+            retentionEndDateISO: '',
           },
           { emitEvent: false },
         );
@@ -356,9 +352,18 @@ export class ConservationIntakePageComponent {
         this.archivalForm.patchValue(
           {
             expedienteId: null,
+            retentionStartDateISO: '',
+            retentionEndDateISO: '',
           },
           { emitEvent: false },
         );
+      });
+
+    this.archivalForm
+      .get('expedienteId')
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.refreshRetentionStartDate();
       });
   }
 
@@ -446,8 +451,8 @@ export class ConservationIntakePageComponent {
         subserieId: null,
         expedienteId: null,
 
-        retentionRuleId: null,
-        retentionStartDateISO: new Date().toISOString().slice(0, 10),
+        retentionRuleId: 0,
+        retentionStartDateISO: '',
         retentionEndDateISO: '',
 
         recipientNameRole: '',
@@ -470,23 +475,6 @@ export class ConservationIntakePageComponent {
         officialCode: doc.officialCode,
       })
       .subscribe();
-  }
-
-  private loadRetentionRules(): void {
-    this.api.getRetentionRules().subscribe({
-      next: (rules) => this.retentionRules.set(rules),
-      error: (err) => {
-        if (err?.status === 401) {
-          this.toasts.error('La sesión expiró. Inicie sesión nuevamente.');
-          return;
-        }
-
-        this.toasts.error(
-          err?.error?.message ||
-            'No se pudieron cargar las reglas de retención.',
-        );
-      },
-    });
   }
 
   private loadArchivalStructure(): void {
@@ -547,7 +535,7 @@ export class ConservationIntakePageComponent {
           if (!silent) {
             this.toasts.error(
               err?.error?.message ||
-                'No se pudo generar el código de referencia final.',
+              'No se pudo generar el código de referencia final.',
             );
           }
         },
@@ -592,7 +580,7 @@ export class ConservationIntakePageComponent {
         this.duplicateState.set('NOT_CHECKED');
         this.toasts.error(
           err?.error?.message ||
-            'No se pudo verificar la duplicidad del código.',
+          'No se pudo verificar la duplicidad del código.',
         );
       },
     });
@@ -677,14 +665,34 @@ export class ConservationIntakePageComponent {
     return true;
   }
 
+  refreshRetentionStartDate(): void {
+    const expediente = this.selectedExpediente();
+    const selectedDoc = this.selected();
+
+    const startDate =
+      expediente?.latestDocumentDateISO ||
+      selectedDoc?.createdAtISO ||
+      '';
+
+    this.archivalForm.patchValue(
+      {
+        retentionStartDateISO: startDate ? String(startDate).slice(0, 10) : '',
+      },
+      { emitEvent: false },
+    );
+
+    this.refreshRetentionEndDate();
+  }
+
   refreshRetentionEndDate(): void {
-    const ruleId = Number(this.archivalForm.get('retentionRuleId')?.value || 0);
+    const serie = this.selectedSerie();
     const start = String(
       this.archivalForm.getRawValue().retentionStartDateISO || '',
     );
-    const rule = this.retentionRules().find((item) => item.id === ruleId);
 
-    if (!rule || !start) {
+    const years = Number((serie as any)?.plazo_conservacion_anios || 0);
+
+    if (!serie || !years || !start) {
       this.archivalForm.patchValue(
         { retentionEndDateISO: '' },
         { emitEvent: false },
@@ -693,7 +701,7 @@ export class ConservationIntakePageComponent {
     }
 
     const date = new Date(`${start}T00:00:00`);
-    date.setFullYear(date.getFullYear() + Number(rule.years || 0));
+    date.setFullYear(date.getFullYear() + years);
     this.archivalForm.patchValue(
       { retentionEndDateISO: date.toISOString().slice(0, 10) },
       { emitEvent: false },
@@ -701,20 +709,21 @@ export class ConservationIntakePageComponent {
   }
 
   retentionPreviewText(): string {
-    const ruleId = Number(this.archivalForm.get('retentionRuleId')?.value || 0);
+    const serie = this.selectedSerie();
     const start = String(
       this.archivalForm.getRawValue().retentionStartDateISO || '',
     );
     const end = String(
       this.archivalForm.getRawValue().retentionEndDateISO || '',
     );
-    const rule = this.retentionRules().find((item) => item.id === ruleId);
 
-    if (!rule || !start) {
-      return 'Seleccione una regla de retención para visualizar la vigencia.';
+    const years = Number((serie as any)?.plazo_conservacion_anios || 0);
+
+    if (!serie || !start || !years) {
+      return 'Seleccione una serie y un expediente para visualizar la vigencia.';
     }
 
-    return `Inicio: ${start} · Duración: ${rule.years} año(s) · Fin estimado: ${end || '—'}`;
+    return `Inicio: ${start} · Duración: ${years} año(s) · Fin estimado: ${end || '—'}`;
   }
 
   signersText(doc: CandidateDoc | null): string {
@@ -875,29 +884,29 @@ export class ConservationIntakePageComponent {
         label: this.buildClassificationLabel(),
       },
       retention: {
-        ruleId: Number(raw.retentionRuleId),
+        ruleId: 0,
         startDateISO: String(raw.retentionStartDateISO),
         trackingEnabled: true,
       },
       outgoing:
         documentFlow === 'PRODUCED_SENT'
           ? {
-              recipientNameRole: String(raw.recipientNameRole || '').trim(),
-              recipientInstitution: String(
-                raw.recipientInstitution || '',
-              ).trim(),
-              dispatchEmails: csvToUniqueArray(
-                String(raw.dispatchEmails || ''),
-              ).map((item) => item.toLowerCase()),
-            }
+            recipientNameRole: String(raw.recipientNameRole || '').trim(),
+            recipientInstitution: String(
+              raw.recipientInstitution || '',
+            ).trim(),
+            dispatchEmails: csvToUniqueArray(
+              String(raw.dispatchEmails || ''),
+            ).map((item) => item.toLowerCase()),
+          }
           : null,
       incoming:
         documentFlow === 'RECEIVED'
           ? {
-              senderNameRole: String(raw.senderNameRole || '').trim() || null,
-              senderInstitution:
-                String(raw.senderInstitution || '').trim() || null,
-            }
+            senderNameRole: String(raw.senderNameRole || '').trim() || null,
+            senderInstitution:
+              String(raw.senderInstitution || '').trim() || null,
+          }
           : null,
     };
 
@@ -924,8 +933,8 @@ export class ConservationIntakePageComponent {
             documentFlow: 'PRODUCED_SENT',
             accessLevel: 'INTERNAL',
             procedureType: null,
-            retentionRuleId: null,
-            retentionStartDateISO: new Date().toISOString().slice(0, 10),
+            retentionRuleId: 0,
+            retentionStartDateISO: '',
             retentionEndDateISO: '',
             serieId: null,
             subserieId: null,
@@ -977,7 +986,7 @@ export class ConservationIntakePageComponent {
 
         this.toasts.error(
           err?.error?.message ||
-            'No se pudo registrar el ingreso a conservación.',
+          'No se pudo registrar el ingreso a conservación.',
         );
       },
     });

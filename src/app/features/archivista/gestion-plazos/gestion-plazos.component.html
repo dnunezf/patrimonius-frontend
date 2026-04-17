@@ -3,7 +3,7 @@
     <header class="banner-head">
       <div>
         <h1>Gestión de Plazos de Conservación</h1>
-        <p>Consulta y asigna plazos de conservación a documentos archivados.</p>
+        <p>Consulta los documentos archivados que ya cuentan con plazo de conservación.</p>
       </div>
       <button type="button" class="btn ghost page-regresar" (click)="volverDashboard()">
         Regresar
@@ -64,14 +64,13 @@
           <th>Fecha inicio</th>
           <th>Fecha vencimiento</th>
           <th>Estado</th>
-          <th>Asignado por</th> <!-- Columna "Asignado por" -->
-          <th>Acciones</th>
+          <th>Asignado por</th>
         </tr>
         </thead>
 
         <tbody>
         <tr *ngIf="documentos.length === 0">
-          <td colspan="9" class="empty">
+          <td colspan="8" class="empty">
             No hay documentos con plazos para mostrar.
           </td>
         </tr>
@@ -80,46 +79,30 @@
           <td>{{ doc.id }}</td>
           <td>{{ doc.titulo }}</td>
           <td>{{ formatearPlazo(doc) }}</td>
-          <td>{{ doc.plazo_tipo || 'Sin asignar' }}</td>
+          <td>{{ doc.plazo_tipo || '—' }}</td>
           <td>
             {{
               doc.fecha_inicio_conservacion
                 ? (doc.fecha_inicio_conservacion | date:'yyyy-MM-dd')
-                : '-'
+                : '—'
             }}
           </td>
           <td>
             {{
               doc.fecha_vencimiento
                 ? (doc.fecha_vencimiento | date:'yyyy-MM-dd')
-                : '-'
+                : '—'
             }}
           </td>
           <td>
-              <span [class]="getEstadoClass(doc.estado_conservacion)">
-                {{ doc.estado_conservacion || 'SIN ESTADO' }}
-              </span>
+            <span [class]="getEstadoClass(doc.estado_conservacion)">
+              {{ doc.estado_conservacion || '—' }}
+            </span>
           </td>
-          <td>{{ doc.asignado_por_correo || 'No asignado' }}</td> <!-- Mostrar el correo de quien asignó -->
-          <td>
-            <button
-              class="btn sm primary"
-              type="button"
-              (click)="abrirAsignar(doc)"
-            >
-              {{ doc.plazo_valor ? 'Reasignar' : 'Asignar plazo' }}
-            </button>
-          </td>
+          <td>{{ doc.asignado_por_correo || '—' }}</td>
         </tr>
         </tbody>
       </table>
     </div>
   </div>
-
-  <app-asignar-plazo-dialog
-    [open]="asignarOpen"
-    [documento]="selectedDocumento"
-    (closed)="cerrarAsignar()"
-    (saved)="onSaved()"
-  ></app-asignar-plazo-dialog>
 </section>

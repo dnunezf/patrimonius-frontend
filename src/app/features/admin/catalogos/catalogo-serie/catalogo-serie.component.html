@@ -45,22 +45,35 @@
       </div>
 
       <div class="form-group">
+        <label>Plazo de conservación (años)</label>
+        <input
+          name="plazo_conservacion_anios"
+          [(ngModel)]="form.plazo_conservacion_anios"
+          type="number"
+          min="1"
+          placeholder="Ej: 15"
+        />
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
         <label>Estado</label>
         <select name="activa" [(ngModel)]="form.activa">
           <option [ngValue]="1">Activa</option>
           <option [ngValue]="0">Inactiva</option>
         </select>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label>Descripción</label>
-      <input
-        name="descripcion"
-        [(ngModel)]="form.descripcion"
-        type="text"
-        placeholder="Breve descripción de la serie"
-      />
+      <div class="form-group">
+        <label>Descripción</label>
+        <input
+          name="descripcion"
+          [(ngModel)]="form.descripcion"
+          type="text"
+          placeholder="Breve descripción de la serie"
+        />
+      </div>
     </div>
 
     <div class="form-actions">
@@ -68,7 +81,14 @@
         class="btn btn--primary"
         type="button"
         (click)="create()"
-        [disabled]="saving || !form.codigo || !form.nombre || !form.unidad_id"
+        [disabled]="
+          saving ||
+          !form.codigo ||
+          !form.nombre ||
+          !form.unidad_id ||
+          !form.plazo_conservacion_anios ||
+          form.plazo_conservacion_anios <= 0
+        "
       >
         {{ saving ? 'Guardando…' : 'Crear Serie' }}
       </button>
@@ -100,6 +120,7 @@
           <th>Código</th>
           <th>Nombre</th>
           <th>Unidad</th>
+          <th>Plazo (años)</th>
           <th>Estado</th>
           <th class="th-actions">Acciones</th>
         </tr>
@@ -110,6 +131,7 @@
           <td class="cell-strong">{{ s.codigo }}</td>
           <td>{{ s.nombre }}</td>
           <td class="cell-muted">{{ s.unidad_nombre || s.unidad_id }}</td>
+          <td>{{ s.plazo_conservacion_anios ?? '—' }}</td>
           <td>{{ +s.activa! === 1 ? 'Activa' : 'Inactiva' }}</td>
           <td class="actions">
             <button class="btn btn--ghost btn--sm" (click)="openEditModal(s)">Editar</button>
@@ -176,6 +198,14 @@
           {{ u.nombre }}
         </option>
       </select>
+
+      <label class="sys-modal__label">Plazo de conservación (años)</label>
+      <input
+        class="sys-modal__input"
+        type="number"
+        min="1"
+        [(ngModel)]="modalForm.plazo_conservacion_anios"
+      />
 
       <label class="sys-modal__label">Estado</label>
       <select class="sys-modal__input" [(ngModel)]="modalForm.activa">

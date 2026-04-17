@@ -53,6 +53,7 @@ export type ArchivalSeries = {
   code: string;
   name: string;
   unitId?: number | null;
+  plazo_conservacion_anios?: number | null;
 };
 
 export type ArchivalSubseries = {
@@ -69,6 +70,7 @@ export type ArchivalExpediente = {
   serieId: number;
   subserieId?: number | null;
   unitId?: number | null;
+  latestDocumentDateISO?: string | null;
 };
 
 export type IntakePayload = {

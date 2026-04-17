@@ -452,16 +452,12 @@
 
           <div class="grid2">
             <label>
-              Regla de retención *
-              <select formControlName="retentionRuleId">
-                <option [ngValue]="null">Seleccione…</option>
-                <option *ngFor="let r of retentionRules()" [ngValue]="r.id">
-                  {{ r.label }}
-                </option>
-              </select>
-              <div class="err" *ngIf="fieldErr('retentionRuleId')">
-                {{ fieldErr("retentionRuleId") }}
-              </div>
+              Plazo de conservación (años) *
+              <input
+                type="text"
+                [value]="selectedSerie()?.plazo_conservacion_anios ?? '—'"
+                readonly
+              />
             </label>
 
             <label>
@@ -538,7 +534,7 @@
           </div>
 
           <div class="blocked" *ngIf="!canSave()">
-            Complete el checklist, la clasificación archivística, la retención,
+            Complete el checklist, la clasificación archivística, la vigencia automática,
             la verificación de duplicidad y espere la generación del código
             final antes de guardar.
           </div>

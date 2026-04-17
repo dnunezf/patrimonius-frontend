@@ -29,6 +29,7 @@ export class CatalogoSerieComponent implements OnInit {
     nombre: '',
     descripcion: '',
     unidad_id: null as number | null,
+    plazo_conservacion_anios: null as number | null,
     activa: 1,
   };
 
@@ -52,6 +53,7 @@ export class CatalogoSerieComponent implements OnInit {
     nombre: '',
     descripcion: '',
     unidad_id: null as number | null,
+    plazo_conservacion_anios: null as number | null,
     activa: 1,
   };
 
@@ -129,8 +131,14 @@ export class CatalogoSerieComponent implements OnInit {
   }
 
   create() {
-    if (!this.form.codigo || !this.form.nombre || !this.form.unidad_id) {
-      alert('Código, nombre y unidad son obligatorios');
+    if (
+      !this.form.codigo ||
+      !this.form.nombre ||
+      !this.form.unidad_id ||
+      this.form.plazo_conservacion_anios == null ||
+      this.form.plazo_conservacion_anios <= 0
+    ) {
+      alert('Código, nombre, unidad y plazo de conservación en años son obligatorios');
       return;
     }
 
@@ -141,6 +149,7 @@ export class CatalogoSerieComponent implements OnInit {
       nombre: this.form.nombre.trim(),
       descripcion: this.form.descripcion?.trim() || null,
       unidad_id: Number(this.form.unidad_id),
+      plazo_conservacion_anios: Number(this.form.plazo_conservacion_anios),
       activa: this.form.activa,
     }).subscribe({
       next: () => {
@@ -150,6 +159,7 @@ export class CatalogoSerieComponent implements OnInit {
           nombre: '',
           descripcion: '',
           unidad_id: null,
+          plazo_conservacion_anios: null,
           activa: 1,
         };
         this.load();
@@ -177,6 +187,7 @@ export class CatalogoSerieComponent implements OnInit {
       nombre: serie.nombre ?? '',
       descripcion: serie.descripcion ?? '',
       unidad_id: serie.unidad_id ?? null,
+      plazo_conservacion_anios: serie.plazo_conservacion_anios ?? null,
       activa: Number(serie.activa ?? 1),
     };
 
@@ -204,8 +215,14 @@ export class CatalogoSerieComponent implements OnInit {
 
   confirmModal() {
     if (this.modalMode === 'edit' && this.pendingSerie) {
-      if (!this.modalForm.codigo || !this.modalForm.nombre || !this.modalForm.unidad_id) {
-        alert('Código, nombre y unidad son obligatorios');
+      if (
+        !this.modalForm.codigo ||
+        !this.modalForm.nombre ||
+        !this.modalForm.unidad_id ||
+        this.modalForm.plazo_conservacion_anios == null ||
+        this.modalForm.plazo_conservacion_anios <= 0
+      ) {
+        alert('Código, nombre, unidad y plazo de conservación en años son obligatorios');
         return;
       }
 
@@ -214,6 +231,7 @@ export class CatalogoSerieComponent implements OnInit {
         nombre: this.modalForm.nombre.trim(),
         descripcion: this.modalForm.descripcion?.trim() || null,
         unidad_id: Number(this.modalForm.unidad_id),
+        plazo_conservacion_anios: Number(this.modalForm.plazo_conservacion_anios),
         activa: this.modalForm.activa,
       }).subscribe({
         next: () => {

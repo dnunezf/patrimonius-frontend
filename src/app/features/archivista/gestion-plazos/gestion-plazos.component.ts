@@ -48,10 +48,9 @@ export class GestionPlazosComponent implements OnInit {
       plazo_tipo: this.filtroTipo || undefined
     }).subscribe({
       next: (data) => {
-        // Asegúrate de que 'asignado_por_correo' esté presente en los documentos
         this.documentos = data.map(doc => ({
           ...doc,
-          asignado_por_correo: doc.asignado_por_correo || 'No asignado' // Asignar un valor por defecto si no hay correo
+          asignado_por_correo: doc.asignado_por_correo || 'No asignado'
         }));
         this.loading = false;
       },
@@ -85,8 +84,8 @@ export class GestionPlazosComponent implements OnInit {
   }
 
   formatearPlazo(doc: DocumentoPlazoRow): string {
-    if (!doc.plazo_valor || !doc.plazo_unidad) {
-      return 'Sin asignar';
+    if (doc.plazo_valor == null || !doc.plazo_unidad) {
+      return '—';
     }
 
     return `${doc.plazo_valor} ${doc.plazo_unidad}`;

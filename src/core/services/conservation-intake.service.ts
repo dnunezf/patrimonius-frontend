@@ -118,6 +118,10 @@ export class ConservationIntakeService {
               : item.unitId != null
                 ? Number(item.unitId)
                 : null,
+          plazo_conservacion_anios:
+            item.plazo_conservacion_anios != null
+              ? Number(item.plazo_conservacion_anios)
+              : null,
         })),
       ),
     );
