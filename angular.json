@@ -14,9 +14,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
-            "polyfills": [
-              "zone.js"
-            ],
+            "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -30,13 +28,16 @@
                 "output": "/pdfjs"
               }
             ],
-            "styles": [
-              "src/styles.css",
-              "src/styles/global.css"
-            ]
+            "styles": ["src/styles.css", "src/styles/global.css"]
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -77,18 +78,10 @@
         "test": {
           "builder": "@angular/build:karma",
           "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ],
+            "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
-            "assets": [
-              "src/assets"
-            ],
-            "styles": [
-              "src/styles.css",
-              "src/assets/css/word-default.css"
-            ]
+            "assets": ["src/assets"],
+            "styles": ["src/styles.css", "src/assets/css/word-default.css"]
           }
         }
       }
