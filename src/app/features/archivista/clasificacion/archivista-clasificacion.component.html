@@ -342,6 +342,8 @@
           <th>Serie / Subserie</th>
           <th>Creación</th>
           <th>Cierre</th>
+          <th>Inicio vigencia</th>
+          <th>Vencimiento</th>
           <th>Estado</th>
           <th>Acciones</th>
         </tr>
@@ -362,6 +364,8 @@
           </td>
           <td>{{ formatDate(expediente.fecha_creacion) }}</td>
           <td>{{ formatDate(expediente.fecha_cierre) }}</td>
+          <td>{{ formatDate(expediente.fecha_inicio_vigencia) }}</td>
+          <td>{{ formatDate(expediente.fecha_vencimiento) }}</td>
           <td>
             <span [class]="estadoClass(expediente.estado)">{{ expediente.estado }}</span>
           </td>
