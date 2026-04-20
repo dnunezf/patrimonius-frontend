@@ -230,7 +230,15 @@ export class NavComponent {
     return new Date(raw).toLocaleString('es-CR');
   }
 
+  /** Misma convención que notificaciones del sistema (recordatorio archivista). */
+  isRevisionExpedientesActivosNotif(tipo?: string | null): boolean {
+    return !!tipo && tipo.startsWith('ARCHIVISTA_EXP_ACTIVOS_');
+  }
+
   titleForNotif(tipo?: string): string {
+    if (this.isRevisionExpedientesActivosNotif(tipo)) {
+      return 'Revisión de expedientes activos';
+    }
     switch (tipo) {
       case 'PLAZO_ASIGNADO':
         return 'Plazo asignado';

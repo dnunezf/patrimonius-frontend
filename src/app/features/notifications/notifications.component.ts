@@ -69,8 +69,16 @@ export class NotificationsComponent implements OnInit {
     return new Date(raw).toLocaleString('es-CR');
   }
 
+  /** Recordatorio semestral archivista / expedientes ACTIVO. */
+  isRevisionExpedientesActivos(tipo?: string | null): boolean {
+    return !!tipo && tipo.startsWith('ARCHIVISTA_EXP_ACTIVOS_');
+  }
+
   // Actualización del título según el tipo de notificación
   titleFor(tipo?: string) {
+    if (this.isRevisionExpedientesActivos(tipo)) {
+      return 'Revisión de expedientes activos';
+    }
     switch (tipo) {
       case 'PLAZO_ASIGNADO': return 'Plazo asignado';
       case 'DOC_EDITADO': return 'Documento editado';
@@ -118,6 +126,7 @@ export class NotificationsComponent implements OnInit {
       case 'DOC_FIRMA_INVALIDA':
         return '⚠️';
       default:
+        if (t.startsWith('ARCHIVISTA_EXP_ACTIVOS_')) return '📁';
         if (t.includes('DENEG') || t.includes('ACCESO')) return '🔒';
         return '🔔';
     }
