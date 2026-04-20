@@ -104,28 +104,28 @@
           <!-- Pagination -->
           <div class="pagination" *ngIf="totalItems >= 0">
             <div class="pagination__info">
-              Página <strong>{{ page ?? 1 }}</strong> de <strong>{{ totalPages }}</strong>
+              Página <strong>{{ page }}</strong> de <strong>{{ totalPages }}</strong>
               <span class="sep">•</span>
               Mostrando
-              <strong>{{ Math.min(10, totalItems - (((page ?? 1) - 1) * 10)) }}</strong>
+              <strong>{{ Math.min(10, totalItems - ((page - 1) * 10)) }}</strong>
               de <strong>{{ totalItems }}</strong>
             </div>
 
             <div class="pagination__controls">
-              <button class="btn btn--ghost btn--sm" [disabled]="(page ?? 1) <= 1" (click)="page = (page ?? 1) - 1">
+              <button class="btn btn--ghost btn--sm" [disabled]="page <= 1" (click)="page = page - 1">
                 ← Anterior
               </button>
 
               <button
                 class="btn btn--ghost btn--sm page-pill"
                 *ngFor="let _ of [].constructor(totalPages); let i = index"
-                [class.page-pill--active]="(page ?? 1) === (i + 1)"
+                [class.page-pill--active]="page === (i + 1)"
                 (click)="page = i + 1"
               >
                 {{ i + 1 }}
               </button>
 
-              <button class="btn btn--ghost btn--sm" [disabled]="(page ?? 1) >= totalPages" (click)="page = (page ?? 1) + 1">
+              <button class="btn btn--ghost btn--sm" [disabled]="page >= totalPages" (click)="page = page + 1">
                 Siguiente →
               </button>
             </div>

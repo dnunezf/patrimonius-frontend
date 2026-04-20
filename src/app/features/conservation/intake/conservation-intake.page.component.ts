@@ -1,5 +1,5 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { CommonModule, DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { CommonModule, NgClass, NgFor, NgIf } from '@angular/common';
 import {
   AbstractControl,
   FormBuilder,
@@ -67,7 +67,7 @@ function commaEmailsValidator(): ValidatorFn {
 @Component({
   selector: 'app-conservation-intake-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NgIf, NgFor, NgClass, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule, NgIf, NgFor, NgClass],
   templateUrl: './conservation-intake.page.component.html',
   styleUrls: ['./conservation-intake.page.component.css'],
 })
