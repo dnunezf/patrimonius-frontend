@@ -1,0 +1,203 @@
+<main class="container page">
+  <section class="section header">
+    <a routerLink="/logs" class="back-button">← Volver a Bitácoras</a>
+    <h1>Bitácora de expedientes</h1>
+  </section>
+
+  <section class="section card">
+    <div class="card__title">
+      <h2 class="h3">Filtros</h2>
+    </div>
+
+    <form class="form filters-grid" (ngSubmit)="$event.preventDefault()">
+      <div class="form__group">
+        <label class="form__label" for="q">Búsqueda</label>
+        <input
+          id="q"
+          class="form__control"
+          type="text"
+          [(ngModel)]="filters.q"
+          name="q"
+          (ngModelChange)="limitSearchWords($event)"
+          placeholder="Código, nombre expediente, usuario, evento… (máx. 5 palabras)"
+        />
+      </div>
+
+      <div class="form__group">
+        <label class="form__label" for="user">Usuario</label>
+        <select
+          id="user"
+          class="form__control"
+          [(ngModel)]="filters.user"
+          name="user"
+          (ngModelChange)="scheduleFilterApply(true)"
+        >
+          <option [ngValue]="'Todos los usuarios'">Todos los usuarios</option>
+          <option *ngFor="let u of users | slice: 1" [ngValue]="u">{{ u }}</option>
+        </select>
+      </div>
+
+      <div class="form__group">
+        <label class="form__label" for="evento">Tipo de evento</label>
+        <select
+          id="evento"
+          class="form__control"
+          [(ngModel)]="filters.evento"
+          name="evento"
+          (ngModelChange)="scheduleFilterApply(true)"
+        >
+          <option value="">Todos</option>
+          <option *ngFor="let ev of eventoOptions" [value]="ev">{{ ev }}</option>
+        </select>
+      </div>
+
+      <div class="form__group">
+        <label class="form__label" for="resultado">Resultado</label>
+        <select
+          id="resultado"
+          class="form__control"
+          [(ngModel)]="filters.resultado"
+          name="resultado"
+          (ngModelChange)="scheduleFilterApply(true)"
+        >
+          <option value="">Todos</option>
+          <option *ngFor="let r of resultadoOptions" [value]="r">{{ r }}</option>
+        </select>
+      </div>
+
+      <div class="form__group">
+        <label class="form__label" for="expedienteId">ID expediente</label>
+        <input
+          id="expedienteId"
+          class="form__control"
+          type="text"
+          inputmode="numeric"
+          [(ngModel)]="filters.expedienteId"
+          name="expedienteId"
+          (ngModelChange)="scheduleFilterApply(true)"
+          placeholder="Opcional"
+        />
+      </div>
+
+      <div class="form__group">
+        <label class="form__label" for="from">Desde</label>
+        <input
+          id="from"
+          class="form__control"
+          type="date"
+          [(ngModel)]="filters.from"
+          name="from"
+          (ngModelChange)="scheduleFilterApply(true)"
+        />
+      </div>
+
+      <div class="form__group">
+        <label class="form__label" for="to">Hasta</label>
+        <input
+          id="to"
+          class="form__control"
+          type="date"
+          [(ngModel)]="filters.to"
+          name="to"
+          (ngModelChange)="scheduleFilterApply(true)"
+        />
+      </div>
+
+      <div class="actions">
+        <button type="button" class="button-outline" (click)="clearFilters()">Limpiar filtros</button>
+        <button type="button" class="button-outline" (click)="export('csv')">Exportar CSV</button>
+        <button type="button" class="button-outline" (click)="export('xml')">Exportar XML</button>
+      </div>
+    </form>
+
+    <div *ngIf="loading" class="muted mt-8">Cargando eventos…</div>
+    <div *ngIf="error" class="form__error mt-8">{{ error }}</div>
+  </section>
+
+  <section class="section card">
+    <div class="card__title">
+      <h2 class="h3">Registro de eventos</h2>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Fecha y hora</th>
+            <th>Expediente</th>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Evento</th>
+            <th>Resultado</th>
+            <th>Estados</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of events">
+            <td>{{ e.fecha_hora || '—' }}</td>
+            <td>{{ e.expediente_codigo || '—' }}</td>
+            <td>{{ e.expediente_nombre || '—' }}</td>
+            <td>{{ e.usuario_email || '—' }}</td>
+            <td>{{ e.evento || '—' }}</td>
+            <td>{{ e.resultado || '—' }}</td>
+            <td>
+              <span class="nowrap">
+                <ng-container
+                  *ngIf="
+                    e.estado_anterior != null &&
+                    e.estado_nuevo != null &&
+                    e.estado_anterior !== e.estado_nuevo
+                  "
+                >
+                  {{ e.estado_anterior }} → {{ e.estado_nuevo }}
+                </ng-container>
+                <ng-container
+                  *ngIf="
+                    e.estado_anterior != null &&
+                    e.estado_nuevo != null &&
+                    e.estado_anterior === e.estado_nuevo
+                  "
+                >
+                  {{ e.estado_nuevo }}
+                </ng-container>
+                <ng-container
+                  *ngIf="
+                    (e.estado_anterior == null && e.estado_nuevo != null) ||
+                    (e.estado_anterior != null && e.estado_nuevo == null)
+                  "
+                >
+                  {{ e.estado_nuevo ?? e.estado_anterior }}
+                </ng-container>
+                <ng-container *ngIf="e.estado_anterior == null && e.estado_nuevo == null">
+                  {{ e.expediente_estado_actual || '—' }}
+                </ng-container>
+              </span>
+            </td>
+            <td>
+              <button type="button" class="button-outline button-sm" (click)="openDetail(e)">
+                Detalle
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager muted">
+      <button class="button-outline" [disabled]="page <= 1" (click)="goPrev()">« Anterior</button>
+      <span class="mx-8">Página {{ page }} de {{ totalPages }} ({{ totalItems }} registros)</span>
+      <button class="button-outline" [disabled]="page >= totalPages" (click)="goNext()">
+        Siguiente »
+      </button>
+    </div>
+  </section>
+</main>
+
+<app-expediente-bitacora-detail-modal
+  [open]="detailOpen"
+  [loading]="detailLoading"
+  [error]="detailError"
+  [detail]="detail"
+  (closed)="closeDetail()"
+/>
