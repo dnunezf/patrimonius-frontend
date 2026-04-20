@@ -6,27 +6,6 @@ import { Observable, map } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
-export interface DocumentoPlazoRow {
-  id: number;
-  titulo: string;
-  estado: string;
-  plazo_valor: number | null;
-  plazo_unidad: 'DIAS' | 'MESES' | 'ANIOS' | null;
-  plazo_tipo: 'ADMINISTRATIVO' | 'LEGAL' | 'HISTORICO' | null;
-  fecha_inicio_conservacion: string | null;
-  fecha_vencimiento: string | null;
-  estado_conservacion: 'VIGENTE' | 'PROXIMO_A_VENCER' | 'VENCIDO' | null;
-  plazo_asignado_por: number | null;
-  plazo_asignado_en: string | null;
-  asignado_por_correo?: string | null;
-}
-
-export interface AsignarPlazoBody {
-  plazo_valor: number;
-  plazo_unidad: 'DIAS' | 'MESES' | 'ANIOS';  // Asegúrate de que las unidades sean correctas
-  fecha_inicio_conservacion: string;
-  fecha_vencimiento: string;  // Necesario para calcular la fecha de vencimiento
-}
 /**
  * Generic document model used by legacy/general document screens.
  */
@@ -772,70 +751,6 @@ export class DocumentService {
   getNivelesAccesoCatalogo(): Observable<NivelAccesoOption[]> {
     return this.http.get<NivelAccesoOption[]>(
       `${this.api}/api/carga-masiva/catalogos/niveles-acceso`
-    );
-  }
-
-  // =========================================================
-  // Gestión de plazos de conservación
-  // =========================================================
-
-  listarPlazos(params?: {
-    estado_conservacion?: string;
-    plazo_tipo?: string;
-    texto?: string;
-  }): Observable<DocumentoPlazoRow[]> {
-    let httpParams = new HttpParams();
-
-    if (params?.estado_conservacion) {
-      httpParams = httpParams.set(
-        'estado_conservacion',
-        params.estado_conservacion
-      );
-    }
-
-    if (params?.plazo_tipo) {
-      httpParams = httpParams.set('plazo_tipo', params.plazo_tipo);
-    }
-
-    if (params?.texto) {
-      httpParams = httpParams.set('texto', params.texto);
-    }
-
-    return this.http.get<DocumentoPlazoRow[]>(
-      `${this.api}/gestion-plazos`,
-      { params: httpParams }
-    );
-  }
-
-  asignarPlazo(
-    documentoId: number,
-    body: AsignarPlazoBody
-  ): Observable<any> {
-    return this.http.post(
-      `${this.api}/gestion-plazos/${documentoId}/asignar`, // Asegúrate de que la ruta esté correcta
-      body
-    );
-  }
-
-  listarProximosAVencer(days = 30): Observable<DocumentoPlazoRow[]> {
-    const params = new HttpParams().set('days', days.toString());
-
-    return this.http.get<DocumentoPlazoRow[]>(
-      `${this.api}/gestion-plazos/proximos`,
-      { params }
-    );
-  }
-
-  listarVencidos(): Observable<DocumentoPlazoRow[]> {
-    return this.http.get<DocumentoPlazoRow[]>(
-      `${this.api}/gestion-plazos/vencidos`
-    );
-  }
-
-  revisarVencimientos(days = 30): Observable<any> {
-    return this.http.post(
-      `${this.api}/gestion-plazos/revisar-vencimientos`,
-      { days }
     );
   }
 }

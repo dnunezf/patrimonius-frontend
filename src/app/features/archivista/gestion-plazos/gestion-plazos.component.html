@@ -3,7 +3,9 @@
     <header class="banner-head">
       <div>
         <h1>Gestión de Plazos de Conservación</h1>
-        <p>Consulta los documentos archivados que ya cuentan con plazo de conservación.</p>
+        <p>
+          Expedientes en estado cerrado, transferido o eliminado. Use los filtros para acotar la búsqueda.
+        </p>
       </div>
       <button type="button" class="btn ghost page-regresar" (click)="volverDashboard()">
         Regresar
@@ -12,33 +14,108 @@
   </section>
 
   <div class="filters-card">
-    <div class="filters">
-      <input
-        type="text"
-        [(ngModel)]="filtroTexto"
-        placeholder="Buscar por título"
-      />
+    <header class="filters-head">
+      <div class="filters-head__text">
+        <div class="filters-head__title-row">
+          <span class="filters-head__funnel" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M4 5h16l-6.5 7.32V19l-3 1.5v-8.18L4 5z"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <h2 class="filters-head__title">Filtros de Búsqueda</h2>
+        </div>
+        <p class="filters-head__subtitle">
+          Filtre por estado del expediente, unidad, serie, subserie o texto
+        </p>
+      </div>
+    </header>
 
-      <select [(ngModel)]="filtroEstado">
-        <option value="">Todos los estados</option>
-        <option value="VIGENTE">Vigente</option>
-        <option value="PROXIMO_A_VENCER">Próximo a vencer</option>
-        <option value="VENCIDO">Vencido</option>
-      </select>
+    <div class="filters-fields">
+      <div class="field field-search">
+        <label for="gp-buscar">Buscar expediente</label>
+        <div class="input-with-icon">
+          <span class="input-with-icon__glyph" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M16 16l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input
+            id="gp-buscar"
+            type="text"
+            [(ngModel)]="filtroTexto"
+            (ngModelChange)="onFiltroTextoChange()"
+            placeholder="Código, nombre, unidad..."
+            autocomplete="off"
+          />
+        </div>
+      </div>
 
-      <select [(ngModel)]="filtroTipo">
-        <option value="">Todos los tipos</option>
-        <option value="ADMINISTRATIVO">Administrativo</option>
-        <option value="LEGAL">Legal</option>
-        <option value="HISTORICO">Histórico</option>
-      </select>
+      <div class="field">
+        <label for="gp-estado-exp">Estado</label>
+        <select
+          id="gp-estado-exp"
+          [(ngModel)]="filtroEstadoExpediente"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option [ngValue]="''">Todos los estados</option>
+          <option [ngValue]="'CERRADO'">Cerrado</option>
+          <option [ngValue]="'TRANSFERIDO'">Transferido</option>
+          <option [ngValue]="'ELIMINADO'">Eliminado</option>
+        </select>
+      </div>
 
-      <div class="actions">
-        <button class="btn secondary" type="button" (click)="limpiarFiltros()">
-          Limpiar
-        </button>
-        <button class="btn primary" type="button" (click)="cargarPlazos()">
-          Filtrar
+      <div class="field">
+        <label for="gp-unidad">Unidad organizacional</label>
+        <select
+          id="gp-unidad"
+          [(ngModel)]="filtroUnidadId"
+          (ngModelChange)="onUnidadChange($event)"
+        >
+          <option [ngValue]="null">Todas las unidades</option>
+          <option *ngFor="let u of unidades" [ngValue]="u.id">{{ u.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="gp-serie">Serie</label>
+        <select
+          id="gp-serie"
+          [(ngModel)]="filtroSerieId"
+          (ngModelChange)="onSerieChange($event)"
+        >
+          <option [ngValue]="null">Todas las series</option>
+          <option *ngFor="let s of seriesVisibles" [ngValue]="s.id">{{ s.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="gp-subserie">Subserie</label>
+        <select
+          id="gp-subserie"
+          [(ngModel)]="filtroSubserieId"
+          [disabled]="!filtroSerieId"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option [ngValue]="null">Todas las subseries</option>
+          <option *ngFor="let ss of subseries" [ngValue]="ss.id">{{ ss.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="field field--limpiar-col">
+        <span class="field__label-spacer" aria-hidden="true">&nbsp;</span>
+        <button
+          type="button"
+          class="btn outline btn-limpiar-filtros"
+          (click)="limpiarFiltros()"
+        >
+          <span class="btn-limpiar-filtros__icon" aria-hidden="true">↻</span>
+          Limpiar filtros
         </button>
       </div>
     </div>
@@ -46,63 +123,178 @@
 
   <div class="table-card">
     <div *ngIf="loading" class="state">
-      Cargando plazos...
+      Cargando expedientes...
     </div>
 
     <div *ngIf="!loading && error" class="state error">
       {{ error }}
     </div>
 
-    <div *ngIf="!loading && !error" class="table-wrapper">
+    <div *ngIf="!loading && !error" class="table-wrapper table-wrapper--desktop">
       <table class="data-table">
         <thead>
         <tr>
-          <th>ID</th>
-          <th>Título</th>
-          <th>Plazo</th>
-          <th>Tipo</th>
-          <th>Fecha inicio</th>
-          <th>Fecha vencimiento</th>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Unidad</th>
+          <th>Serie</th>
+          <th>Subserie</th>
           <th>Estado</th>
-          <th>Asignado por</th>
+          <th>Fecha cierre</th>
+          <th class="th-actions">Acciones</th>
         </tr>
         </thead>
 
         <tbody>
-        <tr *ngIf="documentos.length === 0">
+        <tr *ngIf="expedientesCargados.length === 0">
           <td colspan="8" class="empty">
-            No hay documentos con plazos para mostrar.
+            No hay expedientes para mostrar.
           </td>
         </tr>
 
-        <tr *ngFor="let doc of documentos">
-          <td>{{ doc.id }}</td>
-          <td>{{ doc.titulo }}</td>
-          <td>{{ formatearPlazo(doc) }}</td>
-          <td>{{ doc.plazo_tipo || '—' }}</td>
+        <tr *ngFor="let ex of expedientesPagina">
+          <td>{{ ex.codigo }}</td>
+          <td>{{ ex.nombre }}</td>
+          <td>{{ ex.unidad_nombre || '—' }}</td>
+          <td>{{ ex.serie_nombre || '—' }}</td>
+          <td>{{ ex.subserie_nombre || '—' }}</td>
           <td>
-            {{
-              doc.fecha_inicio_conservacion
-                ? (doc.fecha_inicio_conservacion | date:'yyyy-MM-dd')
-                : '—'
-            }}
-          </td>
-          <td>
-            {{
-              doc.fecha_vencimiento
-                ? (doc.fecha_vencimiento | date:'yyyy-MM-dd')
-                : '—'
-            }}
-          </td>
-          <td>
-            <span [class]="getEstadoClass(doc.estado_conservacion)">
-              {{ doc.estado_conservacion || '—' }}
+            <span [class]="getEstadoExpedienteClass(ex.estado)">
+              {{ ex.estado }}
             </span>
           </td>
-          <td>{{ doc.asignado_por_correo || '—' }}</td>
+          <td>
+            {{
+              ex.fecha_cierre
+                ? (ex.fecha_cierre | date:'yyyy-MM-dd')
+                : '—'
+            }}
+          </td>
+          <td class="td-actions">
+            <div class="td-actions-inner">
+              <button
+                type="button"
+                class="btn primary sm"
+                (click)="abrirDetalle(ex)"
+              >
+                Detalle
+              </button>
+              <button
+                type="button"
+                class="btn primary sm"
+                (click)="abrirDisposicion(ex)"
+              >
+                Disposición
+              </button>
+            </div>
+          </td>
         </tr>
         </tbody>
       </table>
     </div>
+
+    <!-- Listado en tarjetas (móvil; la tabla ancha se oculta vía CSS) -->
+    <div *ngIf="!loading && !error" class="expedientes-cards expedientes-cards--mobile" aria-label="Listado de expedientes">
+      <p *ngIf="expedientesCargados.length === 0" class="empty expedientes-cards__empty">
+        No hay expedientes para mostrar.
+      </p>
+
+      <article *ngFor="let ex of expedientesPagina" class="exp-card">
+        <div class="exp-card__head">
+          <div class="exp-card__title-block">
+            <span class="exp-card__code">{{ ex.codigo }}</span>
+            <h3 class="exp-card__name">{{ ex.nombre }}</h3>
+          </div>
+          <span [class]="getEstadoExpedienteClass(ex.estado) + ' exp-card__badge'">
+            {{ ex.estado }}
+          </span>
+        </div>
+        <dl class="exp-card__dl">
+          <div class="exp-card__row">
+            <dt>Unidad</dt>
+            <dd>{{ ex.unidad_nombre || '—' }}</dd>
+          </div>
+          <div class="exp-card__row">
+            <dt>Serie</dt>
+            <dd>{{ ex.serie_nombre || '—' }}</dd>
+          </div>
+          <div class="exp-card__row">
+            <dt>Subserie</dt>
+            <dd>{{ ex.subserie_nombre || '—' }}</dd>
+          </div>
+          <div class="exp-card__row">
+            <dt>Fecha cierre</dt>
+            <dd>
+              {{
+                ex.fecha_cierre
+                  ? (ex.fecha_cierre | date:'yyyy-MM-dd')
+                  : '—'
+              }}
+            </dd>
+          </div>
+        </dl>
+        <div class="exp-card__actions">
+          <button
+            type="button"
+            class="btn primary sm exp-card__btn"
+            (click)="abrirDetalle(ex)"
+          >
+            Detalle
+          </button>
+          <button
+            type="button"
+            class="btn primary sm exp-card__btn"
+            (click)="abrirDisposicion(ex)"
+          >
+          Iniciar disposición
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <nav
+      *ngIf="!loading && !error && expedientesCargados.length > 0"
+      class="pagination-bar"
+      aria-label="Paginación de expedientes"
+    >
+      <p class="pagination-bar__info">
+        Mostrando <strong>{{ rangoDesde }}</strong>–<strong>{{ rangoHasta }}</strong>
+        de <strong>{{ expedientesCargados.length }}</strong> expedientes
+      </p>
+      <div class="pagination-bar__controls">
+        <button
+          type="button"
+          class="pagination-bar__btn"
+          [disabled]="paginaActual <= 1"
+          (click)="irPagina(paginaActual - 1)"
+        >
+          Anterior
+        </button>
+        <span class="pagination-bar__page">
+          Página {{ paginaActual }} de {{ totalPaginas }}
+        </span>
+        <button
+          type="button"
+          class="pagination-bar__btn"
+          [disabled]="paginaActual >= totalPaginas"
+          (click)="irPagina(paginaActual + 1)"
+        >
+          Siguiente
+        </button>
+      </div>
+    </nav>
   </div>
+
+  <app-expediente-conservacion-detalle-dialog
+    [open]="detalleAbierto"
+    [expediente]="expedienteDetalle"
+    (closed)="cerrarDetalle()"
+  />
+
+  <app-disposicion-documental-dialog
+    [open]="disposicionAbierta"
+    [expediente]="expedienteDisposicion"
+    (closed)="cerrarDisposicion()"
+    (procesoIniciado)="onDisposicionIniciada($event)"
+  />
 </section>
