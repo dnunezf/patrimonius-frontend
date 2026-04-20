@@ -359,6 +359,10 @@
   box-shadow: 0 0 0 3px rgba(11,91,211,.10);
 }
 
+.field__input--uppercase{
+  text-transform: uppercase;
+}
+
 .field__static{
   width: 100%;
   border: 1px solid #e5e7eb;
@@ -525,6 +529,12 @@
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #991b1b;
+}
+
+.alert--warning{
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
 }
 
 .result-box{
@@ -753,6 +763,72 @@
   color: #f8fbff;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.limits-box{
+  border: 1px solid #e0e7ff;
+  background: #f8fbff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.limits-box__title{
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.limits-box__list{
+  margin: 0;
+  padding-left: 18px;
+  color: #475569;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.upload-progress{
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.upload-progress__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.upload-progress__bar{
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  overflow: hidden;
+}
+
+.upload-progress__fill{
+  height: 100%;
+  border-radius: 999px;
+  background: #0b5bd3;
+  transition: width .2s ease;
+}
+
+.upload-progress__meta{
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #475569;
 }
 
 @media (max-width: 1100px){

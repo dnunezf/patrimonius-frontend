@@ -18,6 +18,7 @@ import { AuthService } from '../../core/services/auth.service';
 
 type LoginResp = {
   token: string;
+  refreshToken?: string;
   user: {
     id: number;
     email: string;

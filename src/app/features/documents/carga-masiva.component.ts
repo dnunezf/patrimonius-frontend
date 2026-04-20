@@ -1,8 +1,20 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  HostListener,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpEvent,
+  HttpEventType,
+} from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { Subscription, interval } from 'rxjs';
 import {
   DocumentService,
   UnidadOption,
@@ -11,6 +23,7 @@ import {
   ExpedienteOption,
   NivelAccesoOption,
 } from '../../../core/services/document.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
 
 type DocumentOrigin = 'ESCANEADO' | 'ELECTRONICO';
@@ -50,9 +63,10 @@ type DocumentEntry = {
   templateUrl: './carga-masiva.component.html',
   styleUrls: ['./carga-masiva.component.css'],
 })
-export class CargaMasivaPageComponent implements OnInit {
+export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient);
   private documentService = inject(DocumentService);
+  private auth = inject(AuthService);
 
   currentStep = 1;
   selectedMetadataIndex = 0;
@@ -67,6 +81,7 @@ export class CargaMasivaPageComponent implements OnInit {
 
   errorMessage = '';
   uploadResult: any = null;
+  uploadProgress = 0;
 
   documentEntries: DocumentEntry[] = [];
 
@@ -74,12 +89,90 @@ export class CargaMasivaPageComponent implements OnInit {
   series: SerieOption[] = [];
   nivelesAcceso: NivelAccesoOption[] = [];
 
+  uploadStartedAt: number | null = null;
+  elapsedUploadSeconds = 0;
+
+  private keepAliveSub: Subscription | null = null;
+  private elapsedTimerSub: Subscription | null = null;
+
   private readonly API_URL = `${environment.api}/documentos/carga-masiva/pdf`;
+
+  readonly maxFileSizeMb = 150;
+  readonly maxFilesPerBatch = 100;
+  readonly maxTotalBatchMb = 1024;
+  readonly maxCodigoReferenciaLength = 60;
+  readonly maxTituloDocumentoLength = 255;
 
   constructor(private router: Router) {}
 
   ngOnInit(): void {
     this.loadCatalogos();
+  }
+
+  ngOnDestroy(): void {
+    this.stopUploadProtection();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  handleBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!this.isUploading) return;
+
+    event.preventDefault();
+    event.returnValue = '';
+  }
+
+  private startUploadProtection(): void {
+    this.auth.setLongRunningProcess(true);
+    this.stopUploadProtection();
+
+    this.uploadStartedAt = Date.now();
+    this.elapsedUploadSeconds = 0;
+
+    this.elapsedTimerSub = interval(1000).subscribe(() => {
+      if (!this.uploadStartedAt) return;
+      this.elapsedUploadSeconds = Math.floor(
+        (Date.now() - this.uploadStartedAt) / 1000,
+      );
+    });
+
+    this.keepAliveSub = interval(60 * 1000).subscribe(() => {
+      if (!this.isUploading) return;
+
+      this.auth.refreshSession().subscribe({
+        next: (resp) => {
+          this.auth.setSessionSilently(resp);
+        },
+        error: () => {
+          // No hacemos logout aquí.
+          // Si luego una petición falla por auth, el interceptor se encarga.
+        },
+      });
+    });
+  }
+
+  private stopUploadProtection(): void {
+    this.auth.setLongRunningProcess(false);
+    this.keepAliveSub?.unsubscribe();
+    this.keepAliveSub = null;
+
+    this.elapsedTimerSub?.unsubscribe();
+    this.elapsedTimerSub = null;
+
+    this.uploadStartedAt = null;
+    this.elapsedUploadSeconds = 0;
+  }
+
+  get elapsedUploadLabel(): string {
+    const total = this.elapsedUploadSeconds;
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+
+    return `${hh}:${mm}:${ss}`;
   }
 
   private loadCatalogos(): void {
@@ -119,7 +212,10 @@ export class CargaMasivaPageComponent implements OnInit {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  private computeFechaCaducidad(fechaInicio: string, plazo: number | null): string {
+  private computeFechaCaducidad(
+    fechaInicio: string,
+    plazo: number | null,
+  ): string {
     if (!fechaInicio || plazo == null || plazo <= 0) return '';
 
     const [year, month, day] = fechaInicio.split('-').map(Number);
@@ -134,6 +230,34 @@ export class CargaMasivaPageComponent implements OnInit {
     return `${yyyy}-${mm}-${dd}`;
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onCodigoReferenciaInput(entry: DocumentEntry): void {
+    entry.metadata.codigoReferencia = this.toUpperValue(
+      entry.metadata.codigoReferencia,
+    );
+  }
+
+  onTituloDocumentoInput(entry: DocumentEntry): void {
+    entry.metadata.tituloDocumento = this.toUpperValue(
+      entry.metadata.tituloDocumento,
+    );
+  }
+
+  onPalabrasClaveInput(entry: DocumentEntry): void {
+    entry.metadata.palabrasClave = this.toUpperValue(
+      entry.metadata.palabrasClave,
+    );
+  }
+
+  onNombreProductoresInput(entry: DocumentEntry): void {
+    entry.metadata.nombreProductores = this.toUpperValue(
+      entry.metadata.nombreProductores,
+    );
+  }
+
   formatTamano(bytes: number): string {
     if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
 
@@ -143,7 +267,28 @@ export class CargaMasivaPageComponent implements OnInit {
     }
 
     const mb = kb / 1024;
-    return `${mb.toFixed(2)} MB`;
+    if (mb < 1024) {
+      return `${mb.toFixed(2)} MB`;
+    }
+
+    const gb = mb / 1024;
+    return `${gb.toFixed(2)} GB`;
+  }
+
+  get totalSelectedBytes(): number {
+    return this.selectedFiles.reduce((sum, file) => sum + (file.size || 0), 0);
+  }
+
+  get totalSelectedSizeLabel(): string {
+    return this.formatTamano(this.totalSelectedBytes);
+  }
+
+  get totalSelectedMb(): number {
+    return this.totalSelectedBytes / (1024 * 1024);
+  }
+
+  get exceedsTotalBatchLimit(): boolean {
+    return this.totalSelectedMb > this.maxTotalBatchMb;
   }
 
   onClose(): void {
@@ -171,6 +316,8 @@ export class CargaMasivaPageComponent implements OnInit {
     this.hasTriedUpload = false;
     this.currentStep = 1;
     this.selectedMetadataIndex = 0;
+    this.uploadProgress = 0;
+    this.stopUploadProtection();
   }
 
   goToStep(step: number): void {
@@ -180,10 +327,12 @@ export class CargaMasivaPageComponent implements OnInit {
   }
 
   nextStep(): void {
-    if (!this.selectedFiles.length) {
-      this.errorMessage = 'Debes seleccionar al menos un archivo PDF.';
+    const validationError = this.validateBatchBeforeContinuing();
+    if (validationError) {
+      this.errorMessage = validationError;
       return;
     }
+
     this.errorMessage = '';
     this.currentStep = 2;
   }
@@ -225,8 +374,37 @@ export class CargaMasivaPageComponent implements OnInit {
   }
 
   addFiles(files: File[]): void {
-    const onlyPdf = files.filter((f) => f.name.toLowerCase().endsWith('.pdf'));
-    const merged = [...this.selectedFiles, ...onlyPdf];
+    const errors: string[] = [];
+
+    const onlyPdf = files.filter((f) => {
+      const isPdf =
+        f.name.toLowerCase().endsWith('.pdf') ||
+        f.type.toLowerCase() === 'application/pdf';
+
+      if (!isPdf) {
+        errors.push(`"${f.name}" no es un archivo PDF válido.`);
+      }
+
+      return isPdf;
+    });
+
+    const tooLargeFiles = onlyPdf.filter(
+      (f) => f.size > this.maxFileSizeMb * 1024 * 1024,
+    );
+
+    if (tooLargeFiles.length) {
+      for (const file of tooLargeFiles) {
+        errors.push(
+          `"${file.name}" supera el máximo permitido de ${this.maxFileSizeMb} MB por archivo.`,
+        );
+      }
+    }
+
+    const validFiles = onlyPdf.filter(
+      (f) => f.size <= this.maxFileSizeMb * 1024 * 1024,
+    );
+
+    const merged = [...this.selectedFiles, ...validFiles];
 
     const uniqueByKey = new Map<string, File>();
     for (const file of merged) {
@@ -235,19 +413,35 @@ export class CargaMasivaPageComponent implements OnInit {
       uniqueByKey.set(key, file);
     }
 
-    this.selectedFiles = Array.from(uniqueByKey.values());
+    let nextFiles = Array.from(uniqueByKey.values());
+
+    if (nextFiles.length > this.maxFilesPerBatch) {
+      errors.push(
+        `Solo se permiten ${this.maxFilesPerBatch} archivos por lote.`,
+      );
+      nextFiles = nextFiles.slice(0, this.maxFilesPerBatch);
+    }
+
+    const totalBytes = nextFiles.reduce((sum, file) => sum + (file.size || 0), 0);
+    const maxTotalBytes = this.maxTotalBatchMb * 1024 * 1024;
+
+    if (totalBytes > maxTotalBytes) {
+      errors.push(
+        `El lote supera el tamaño máximo permitido de ${this.maxTotalBatchMb} MB en total.`,
+      );
+    }
+
+    this.selectedFiles = nextFiles;
     this.syncDocumentEntries();
     this.ensureValidSelectedMetadataIndex();
 
     this.uploadResult = null;
     this.hasTriedUpload = false;
     this.currentStep = 1;
+    this.uploadProgress = 0;
+    this.stopUploadProtection();
 
-    if (onlyPdf.length !== files.length) {
-      this.errorMessage = 'Solo se permiten archivos PDF.';
-    } else {
-      this.errorMessage = '';
-    }
+    this.errorMessage = errors.length ? errors.join(' ') : '';
   }
 
   removeFile(index: number): void {
@@ -259,10 +453,11 @@ export class CargaMasivaPageComponent implements OnInit {
     this.uploadResult = null;
     this.hasTriedUpload = false;
     this.currentStep = 1;
+    this.uploadProgress = 0;
+    this.stopUploadProtection();
 
-    if (!this.selectedFiles.length) {
-      this.errorMessage = '';
-    }
+    const validationError = this.validateBatchBeforeContinuing();
+    this.errorMessage = validationError || '';
   }
 
   getFileDisplayName(file: File): string {
@@ -288,8 +483,9 @@ export class CargaMasivaPageComponent implements OnInit {
       formato: 'PDF',
       fechaInicio,
       fechaCaducidad: '',
+
       unidadProductoraId: null,
-      tituloDocumento: file.name.replace(/\.pdf$/i, ''),
+      tituloDocumento: this.toUpperValue(file.name.replace(/\.pdf$/i, '')),
       palabrasClave: '',
       nombreProductores: '',
       fechaDocumento: '',
@@ -302,13 +498,16 @@ export class CargaMasivaPageComponent implements OnInit {
   }
 
   private syncDocumentEntries(): void {
-    const previous = new Map(this.documentEntries.map((entry) => [entry.key, entry]));
+    const previous = new Map(
+      this.documentEntries.map((entry) => [entry.key, entry]),
+    );
 
     this.documentEntries = this.selectedFiles.map((file, index) => {
       const key = this.getFileKey(file);
       const existing = previous.get(key);
 
-      const metadata = existing?.metadata ?? this.createDefaultMetadata(file, index);
+      const metadata =
+        existing?.metadata ?? this.createDefaultMetadata(file, index);
 
       return {
         key,
@@ -322,6 +521,18 @@ export class CargaMasivaPageComponent implements OnInit {
     this.documentEntries.forEach((entry) => {
       entry.metadata.tamanoBytes = entry.file.size;
       entry.metadata.formato = 'PDF';
+      entry.metadata.codigoReferencia = this.toUpperValue(
+        entry.metadata.codigoReferencia,
+      );
+      entry.metadata.tituloDocumento = this.toUpperValue(
+        entry.metadata.tituloDocumento,
+      );
+      entry.metadata.palabrasClave = this.toUpperValue(
+        entry.metadata.palabrasClave,
+      );
+      entry.metadata.nombreProductores = this.toUpperValue(
+        entry.metadata.nombreProductores,
+      );
 
       if (
         entry.metadata.fechaInicio &&
@@ -330,7 +541,7 @@ export class CargaMasivaPageComponent implements OnInit {
       ) {
         entry.metadata.fechaCaducidad = this.computeFechaCaducidad(
           entry.metadata.fechaInicio,
-          entry.metadata.plazoConservacionAnios
+          entry.metadata.plazoConservacionAnios,
         );
       } else {
         entry.metadata.fechaCaducidad = '';
@@ -350,7 +561,7 @@ export class CargaMasivaPageComponent implements OnInit {
   }
 
   get canContinue(): boolean {
-    return this.selectedFiles.length > 0;
+    return this.selectedFiles.length > 0 && !this.validateBatchBeforeContinuing();
   }
 
   get hasMissingTitles(): boolean {
@@ -368,8 +579,31 @@ export class CargaMasivaPageComponent implements OnInit {
     });
   }
 
+  get hasInvalidCodigoReferenciaLength(): boolean {
+    return this.documentEntries.some(
+      (entry) =>
+        entry.metadata.codigoReferencia.trim().length >
+        this.maxCodigoReferenciaLength,
+    );
+  }
+
+  get hasInvalidTituloLength(): boolean {
+    return this.documentEntries.some(
+      (entry) =>
+        entry.metadata.tituloDocumento.trim().length >
+        this.maxTituloDocumentoLength,
+    );
+  }
+
   get canUpload(): boolean {
-    return this.documentEntries.length > 0 && !this.hasMissingTitles && !this.isUploading;
+    return (
+      this.documentEntries.length > 0 &&
+      !this.hasMissingTitles &&
+      !this.hasInvalidCodigoReferenciaLength &&
+      !this.hasInvalidTituloLength &&
+      !this.exceedsTotalBatchLimit &&
+      !this.isUploading
+    );
   }
 
   get activeDocumentEntry(): DocumentEntry | null {
@@ -484,7 +718,7 @@ export class CargaMasivaPageComponent implements OnInit {
   onPlazoChange(entry: DocumentEntry): void {
     entry.metadata.fechaCaducidad = this.computeFechaCaducidad(
       entry.metadata.fechaInicio,
-      entry.metadata.plazoConservacionAnios
+      entry.metadata.plazoConservacionAnios,
     );
   }
 
@@ -507,7 +741,14 @@ export class CargaMasivaPageComponent implements OnInit {
   }
 
   private buildReferenceSuggestion(fileName: string): string {
-    return (fileName || '').replace(/\.pdf$/i, '').trim();
+    return this.toUpperValue(
+      String(fileName || '')
+        .replace(/\.pdf$/i, '')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9-_]/g, '')
+        .trim()
+        .slice(0, this.maxCodigoReferenciaLength),
+    );
   }
 
   private buildMetadataPorDocumento(): Array<Record<string, unknown>> {
@@ -516,21 +757,21 @@ export class CargaMasivaPageComponent implements OnInit {
 
       const palabrasClave = perFile.palabrasClave
         .split(',')
-        .map((keyword) => keyword.trim())
+        .map((keyword) => keyword.trim().toUpperCase())
         .filter(Boolean);
 
       const nombreProductores = perFile.nombreProductores
         .split(',')
-        .map((value) => value.trim())
+        .map((value) => value.trim().toUpperCase())
         .filter(Boolean);
 
       const metadataDocumento: Record<string, unknown> = {
         index,
         archivo: entry.file.name,
 
-        codigoReferencia: perFile.codigoReferencia.trim(),
+        codigoReferencia: perFile.codigoReferencia.trim().toUpperCase(),
         unidadProductoraId: perFile.unidadProductoraId,
-        tituloDocumento: perFile.tituloDocumento.trim(),
+        tituloDocumento: perFile.tituloDocumento.trim().toUpperCase(),
         nivelAcceso: perFile.nivelAcceso,
         serieId: perFile.serieId,
         subserieId: perFile.subserieId,
@@ -559,15 +800,64 @@ export class CargaMasivaPageComponent implements OnInit {
     });
   }
 
-  uploadFiles(): void {
+  private validateBatchBeforeContinuing(): string | null {
     if (!this.selectedFiles.length) {
-      this.errorMessage = 'Debes seleccionar al menos un archivo PDF.';
+      return 'Debes seleccionar al menos un archivo PDF.';
+    }
+
+    if (this.selectedFiles.length > this.maxFilesPerBatch) {
+      return `Solo se permiten ${this.maxFilesPerBatch} archivos por lote.`;
+    }
+
+    if (this.exceedsTotalBatchLimit) {
+      return `El lote supera el tamaño máximo permitido de ${this.maxTotalBatchMb} MB en total.`;
+    }
+
+    return null;
+  }
+
+  private validateMetadataBeforeUpload(): string | null {
+    if (this.hasMissingTitles) {
+      return 'Debes completar los campos obligatorios de todos los documentos antes de cargar el lote.';
+    }
+
+    const invalidCodigo = this.documentEntries.find(
+      (entry) =>
+        entry.metadata.codigoReferencia.trim().length >
+        this.maxCodigoReferenciaLength,
+    );
+
+    if (invalidCodigo) {
+      return `El código de referencia de "${invalidCodigo.file.name}" supera el máximo de ${this.maxCodigoReferenciaLength} caracteres.`;
+    }
+
+    const invalidTitulo = this.documentEntries.find(
+      (entry) =>
+        entry.metadata.tituloDocumento.trim().length >
+        this.maxTituloDocumentoLength,
+    );
+
+    if (invalidTitulo) {
+      return `El título del documento de "${invalidTitulo.file.name}" supera el máximo de ${this.maxTituloDocumentoLength} caracteres.`;
+    }
+
+    if (this.exceedsTotalBatchLimit) {
+      return `El lote supera el tamaño máximo permitido de ${this.maxTotalBatchMb} MB en total.`;
+    }
+
+    return null;
+  }
+
+  uploadFiles(): void {
+    const batchError = this.validateBatchBeforeContinuing();
+    if (batchError) {
+      this.errorMessage = batchError;
       return;
     }
 
-    if (this.hasMissingTitles) {
-      this.errorMessage =
-        'Debes completar los campos obligatorios de todos los documentos antes de cargar el lote.';
+    const metadataError = this.validateMetadataBeforeUpload();
+    if (metadataError) {
+      this.errorMessage = metadataError;
       return;
     }
 
@@ -575,6 +865,8 @@ export class CargaMasivaPageComponent implements OnInit {
     this.isUploading = true;
     this.errorMessage = '';
     this.uploadResult = null;
+    this.uploadProgress = 0;
+    this.startUploadProtection();
 
     const formData = new FormData();
     formData.append('origen_documento', this.documentOrigin);
@@ -586,25 +878,44 @@ export class CargaMasivaPageComponent implements OnInit {
 
     formData.append(
       'metadata_por_documento',
-      JSON.stringify(this.buildMetadataPorDocumento())
+      JSON.stringify(this.buildMetadataPorDocumento()),
     );
 
-    this.http.post(this.API_URL, formData).subscribe({
-      next: (resp: any) => {
-        this.uploadResult = resp;
-        this.isUploading = false;
-        this.currentStep = 3;
-      },
-      error: (err) => {
-        this.uploadResult = err?.error || null;
-        this.errorMessage =
-          err?.error?.message ||
-          err?.message ||
-          `Error ${err?.status || ''} al cargar los archivos.`;
+    this.http
+      .post(this.API_URL, formData, {
+        observe: 'events',
+        reportProgress: true,
+      })
+      .subscribe({
+        next: (event: HttpEvent<any>) => {
+          if (event.type === HttpEventType.UploadProgress) {
+            const total = event.total || 0;
+            this.uploadProgress = total
+              ? Math.round((event.loaded * 100) / total)
+              : 0;
+            return;
+          }
 
-        this.isUploading = false;
-        this.currentStep = 3;
-      },
-    });
+          if (event.type === HttpEventType.Response) {
+            this.uploadResult = event.body;
+            this.isUploading = false;
+            this.uploadProgress = 100;
+            this.currentStep = 3;
+            this.stopUploadProtection();
+          }
+        },
+        error: (err: HttpErrorResponse) => {
+          this.uploadResult = err?.error || null;
+          this.errorMessage =
+            err?.error?.message ||
+            err?.message ||
+            `Error ${err?.status || ''} al cargar los archivos.`;
+
+          this.isUploading = false;
+          this.uploadProgress = 0;
+          this.currentStep = 3;
+          this.stopUploadProtection();
+        },
+      });
   }
 }
