@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import type {
   SerieOption,
@@ -17,6 +17,8 @@ import {
   TipoDisposicionId,
 } from './disposicion-documental-dialog/disposicion-documental-dialog.component';
 import { ExpedienteConservacionDetalleDialogComponent } from './expediente-conservacion-detalle/expediente-conservacion-detalle-dialog.component';
+import { ExtenderVigenciaDialogComponent } from './extender-vigencia-dialog/extender-vigencia-dialog.component';
+import { listaExpedientesAlertasVencimiento } from './gestion-plazos-alertas-vencimiento';
 
 @Component({
   selector: 'app-gestion-plazos',
@@ -26,6 +28,7 @@ import { ExpedienteConservacionDetalleDialogComponent } from './expediente-conse
     FormsModule,
     ExpedienteConservacionDetalleDialogComponent,
     DisposicionDocumentalDialogComponent,
+    ExtenderVigenciaDialogComponent,
   ],
   templateUrl: './gestion-plazos.component.html',
   styleUrls: ['./gestion-plazos.component.css']
@@ -34,6 +37,9 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   expedientesCargados: ExpedientePlazoRow[] = [];
   loading = false;
   error = '';
+
+  /** Pestaña superior: listado completo vs solo vencidos (fecha_vencimiento antes que hoy). */
+  vistaPlazos: 'archivados' | 'alertas' = 'archivados';
 
   private textoDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly textoDebounceMs = 400;
@@ -55,6 +61,9 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   disposicionAbierta = false;
   expedienteDisposicion: ExpedientePlazoRow | null = null;
 
+  extenderAbierto = false;
+  expedienteExtender: ExpedientePlazoRow | null = null;
+
   /** Paginación del listado (cliente). */
   readonly pageSize = 10;
   paginaActual = 1;
@@ -62,6 +71,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   constructor(
     private readonly plazosService: GestionPlazosConservacionService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
   ) {}
 
   /** Series del catálogo filtradas por unidad organizacional (si hay una elegida). */
@@ -72,14 +82,32 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     return this.series.filter((s) => s.unidad_id === this.filtroUnidadId);
   }
 
+  /** Listado según pestaña (misma fuente `expedientesCargados`, filtrado en alertas). */
+  get expedientesListaActiva(): ExpedientePlazoRow[] {
+    if (this.vistaPlazos === 'alertas') {
+      return this.expedientesListaAlertasVencimiento;
+    }
+    return this.expedientesCargados;
+  }
+
+  /** Vencimiento estrictamente anterior al día calendario actual (local). */
+  get expedientesListaAlertasVencimiento(): ExpedientePlazoRow[] {
+    return listaExpedientesAlertasVencimiento(this.expedientesCargados);
+  }
+
+  get conteoAlertasVencimiento(): number {
+    return this.expedientesListaAlertasVencimiento.length;
+  }
+
   /** Filas visibles en la página actual. */
   get expedientesPagina(): ExpedientePlazoRow[] {
+    const lista = this.expedientesListaActiva;
     const start = (this.paginaActual - 1) * this.pageSize;
-    return this.expedientesCargados.slice(start, start + this.pageSize);
+    return lista.slice(start, start + this.pageSize);
   }
 
   get totalPaginas(): number {
-    const n = this.expedientesCargados.length;
+    const n = this.expedientesListaActiva.length;
     if (n === 0) {
       return 1;
     }
@@ -87,7 +115,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   get rangoDesde(): number {
-    if (this.expedientesCargados.length === 0) {
+    if (this.expedientesListaActiva.length === 0) {
       return 0;
     }
     return (this.paginaActual - 1) * this.pageSize + 1;
@@ -96,8 +124,13 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   get rangoHasta(): number {
     return Math.min(
       this.paginaActual * this.pageSize,
-      this.expedientesCargados.length
+      this.expedientesListaActiva.length
     );
+  }
+
+  seleccionarVista(v: 'archivados' | 'alertas'): void {
+    this.vistaPlazos = v;
+    this.paginaActual = 1;
   }
 
   irPagina(p: number): void {
@@ -110,6 +143,11 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    const v = this.route.snapshot.queryParamMap.get('v');
+    if (v === 'alertas') {
+      this.vistaPlazos = 'alertas';
+    }
+
     this.plazosService.getUnidadesCatalogo().subscribe({
       next: (u) => {
         this.unidades = u;
@@ -222,13 +260,84 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   abrirDisposicion(ex: ExpedientePlazoRow): void {
+    if (this.vistaPlazos === 'alertas') {
+      if (ex.fecha_vencimiento == null || ex.fecha_vencimiento === '') {
+        return;
+      }
+      this.expedienteDisposicion = ex;
+      this.disposicionAbierta = true;
+      return;
+    }
+    if (!this.puedeDisposicion(ex)) {
+      return;
+    }
     this.expedienteDisposicion = ex;
     this.disposicionAbierta = true;
+  }
+
+  /**
+   * Habilitado solo si la fecha de vencimiento (día local, mismo criterio que la tabla)
+   * es estrictamente mayor que la fecha de hoy.
+   */
+  puedeDisposicion(ex: ExpedientePlazoRow): boolean {
+    const raw = ex.fecha_vencimiento;
+    if (raw == null || raw === '') {
+      return false;
+    }
+    const v = new Date(raw);
+    if (Number.isNaN(v.getTime())) {
+      return false;
+    }
+    const ymdV = this.fechaALocalYmd(v);
+    const ymdHoy = this.fechaALocalYmd(new Date());
+    return ymdV > ymdHoy;
+  }
+
+  private fechaALocalYmd(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  tituloDisposicionDeshabilitada(): string {
+    return 'Solo disponible si la fecha de vencimiento es mayor que la de hoy.';
   }
 
   cerrarDisposicion(): void {
     this.disposicionAbierta = false;
     this.expedienteDisposicion = null;
+  }
+
+  abrirExtender(ex: ExpedientePlazoRow): void {
+    if (!this.puedeExtenderVigencia(ex)) {
+      return;
+    }
+    this.expedienteExtender = ex;
+    this.extenderAbierto = true;
+  }
+
+  cerrarExtender(): void {
+    this.extenderAbierto = false;
+    this.expedienteExtender = null;
+  }
+
+  /** Requiere fecha de vencimiento conocida para sumar años. */
+  puedeExtenderVigencia(ex: ExpedientePlazoRow): boolean {
+    const raw = ex.fecha_vencimiento;
+    if (raw == null || raw === '') {
+      return false;
+    }
+    const v = new Date(raw);
+    return !Number.isNaN(v.getTime());
+  }
+
+  tituloExtenderDeshabilitada(): string {
+    return 'Solo disponible si el expediente tiene fecha de vencimiento.';
+  }
+
+  onExtensionVigenciaGuardada(): void {
+    this.cargarPlazos();
   }
 
   /** Reservado: enlazar POST de disposición / bitácora cuando exista el endpoint. */

@@ -75,10 +75,10 @@
                 <div class="notif-dropdown__item-title">
                   {{ n.tipo === 'PLAZO_ASIGNADO' ? 'Plazo asignado' : titleForNotif(n.tipo) }}
                 </div>
-                <div class="notif-dropdown__item-doc" *ngIf="isRevisionExpedientesActivosNotif(n.tipo)">
+                <div class="notif-dropdown__item-doc" *ngIf="isRevisionExpedientesActivosNotif(n.tipo) || isExpedienteConservacionVencidoNotif(n.tipo)">
                   {{ n.resultado }}
                 </div>
-                <div class="notif-dropdown__item-doc" *ngIf="n.documento_titulo && !isRevisionExpedientesActivosNotif(n.tipo)">
+                <div class="notif-dropdown__item-doc" *ngIf="n.documento_titulo && !isRevisionExpedientesActivosNotif(n.tipo) && !isExpedienteConservacionVencidoNotif(n.tipo)">
                   «{{ n.documento_titulo }}»
                 </div>
                 <div class="notif-dropdown__item-meta">{{ formatNotifDate(n.fecha) }}</div>

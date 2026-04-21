@@ -235,9 +235,17 @@ export class NavComponent {
     return !!tipo && tipo.startsWith('ARCHIVISTA_EXP_ACTIVOS_');
   }
 
+  /** Plazo de conservación del expediente archivado ya superado (gestión de plazos). */
+  isExpedienteConservacionVencidoNotif(tipo?: string | null): boolean {
+    return tipo === 'EXPEDIENTE_CONSERVACION_VENCIDO';
+  }
+
   titleForNotif(tipo?: string): string {
     if (this.isRevisionExpedientesActivosNotif(tipo)) {
       return 'Revisión de expedientes activos';
+    }
+    if (this.isExpedienteConservacionVencidoNotif(tipo)) {
+      return 'Plazo de conservación vencido';
     }
     switch (tipo) {
       case 'PLAZO_ASIGNADO':

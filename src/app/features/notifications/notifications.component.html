@@ -29,9 +29,14 @@
       </div>
 
       <div class="notif-body">
-        <div *ngIf="isRevisionExpedientesActivos(n.tipo); else docTituloNotif">
+        <div *ngIf="isRevisionExpedientesActivos(n.tipo); else vencidoOdocTitulo">
           <b>Detalle:</b> {{ n.resultado || 'Hay expedientes activos pendientes de revisión archivística.' }}
         </div>
+        <ng-template #vencidoOdocTitulo>
+          <div *ngIf="isExpedienteConservacionVencido(n.tipo); else docTituloNotif">
+            <b>Detalle:</b> {{ n.resultado || 'El plazo de conservación de un expediente archivado ya venció.' }}
+          </div>
+        </ng-template>
         <ng-template #docTituloNotif>
           <div><b>Título:</b> "{{ n.documento_titulo || 'Sin título' }}"</div>
         </ng-template>

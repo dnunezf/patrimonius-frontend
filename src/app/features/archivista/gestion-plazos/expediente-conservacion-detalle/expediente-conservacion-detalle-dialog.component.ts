@@ -62,9 +62,20 @@ export class ExpedienteConservacionDetalleDialogComponent
     this.closed.emit();
   }
 
-  fechaArchivoFormateada(): string {
-    const fc = this.expediente?.fecha_cierre;
-    if (!fc) {
+  fechaCreacionFormateada(): string {
+    return this.formatearFechaLarga(this.expediente?.fecha_creacion);
+  }
+
+  fechaInicioVigenciaFormateada(): string {
+    return this.formatearFechaLarga(this.expediente?.fecha_inicio_vigencia);
+  }
+
+  fechaVencimientoFormateada(): string {
+    return this.formatearFechaLarga(this.expediente?.fecha_vencimiento);
+  }
+
+  private formatearFechaLarga(iso: string | null | undefined): string {
+    if (!iso) {
       return this.sinDato;
     }
     try {
@@ -72,7 +83,7 @@ export class ExpedienteConservacionDetalleDialogComponent
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-      }).format(new Date(fc));
+      }).format(new Date(iso));
     } catch {
       return this.sinDato;
     }

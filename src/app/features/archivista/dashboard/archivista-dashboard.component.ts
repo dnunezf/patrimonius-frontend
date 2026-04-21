@@ -65,7 +65,7 @@ export class ArchivistaDashboardComponent {
       link: '/archivista/clasificacion',
     },
     {
-      title: 'Seguimiento de Conservación (HU-031)',
+      title: 'Seguimiento de Conservación ',
       description:
         'Control de vigencia y disposición final de documentos archivados',
       badge: '10 documentos',
@@ -74,16 +74,7 @@ export class ArchivistaDashboardComponent {
       iconClass: 'soft-cyan',
       link: '/archivista/gestion-plazos',
     },
-    {
-      title: 'Disposición Automatizada (HU-032)',
-      description:
-        'Ejecución controlada de eliminación o transferencia con validación obligatoria',
-      badge: '10 documentos vencidos',
-      features: ['Revisar documentos', 'Aprobar/Rechazar', 'Generar Acta/SIP'],
-      icon: 'settings',
-      iconClass: 'soft-orange',
-      link: '/archivista/gestion-plazos',
-    },
+  
   ];
 
   goTo(link?: string): void {

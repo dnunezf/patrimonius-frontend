@@ -9,7 +9,7 @@
   gap: 16px;
   padding: 1rem 1rem 18px;
   box-sizing: border-box;
-  max-width: 1200px;
+  max-width: 1480px;
   margin: 0 auto;
 }
 
@@ -54,6 +54,67 @@
   color: #334155;
   max-width: 85ch;
   line-height: 1.5;
+}
+
+/* Pestañas de vista (archivados / alertas), encima de filtros */
+.gp-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  padding: 8px 10px;
+  background: #e2e8f0;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  box-sizing: border-box;
+}
+
+.gp-view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 18px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #334155;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.gp-view-tab:hover:not(.gp-view-tab--active) {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.gp-view-tab--active {
+  background: #fff;
+  color: #0c4a6e;
+  border-color: #0284c7;
+  box-shadow:
+    0 0 0 1px rgba(2, 132, 199, 0.25),
+    0 2px 8px rgba(2, 132, 199, 0.12);
+}
+
+.gp-view-tab__icon {
+  display: inline-flex;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.gp-view-tab__icon svg {
+  display: block;
 }
 
 /* Pestañas (referencia visual tipo la maqueta) */
@@ -340,7 +401,7 @@
 
 .data-table {
   width: 100%;
-  min-width: 1020px;
+  min-width: 1180px;
   border-collapse: collapse;
 }
 

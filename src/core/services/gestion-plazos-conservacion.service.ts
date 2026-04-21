@@ -35,7 +35,14 @@ export interface ExpedientePlazoRow {
   serie_nombre: string;
   subserie_nombre: string | null;
   estado: 'CERRADO' | 'TRANSFERIDO' | 'ELIMINADO';
+  /** Columna `fecha_creacion` en Expediente. */
+  fecha_creacion: string | null;
   fecha_cierre: string | null;
+  /** Vigencia del expediente (columnas `fecha_inicio_vigencia` / `fecha_vencimiento`). */
+  fecha_inicio_vigencia: string | null;
+  fecha_vencimiento: string | null;
+  /** Nombre (y apellidos) o correo del usuario `created_by`. */
+  creado_por: string | null;
 }
 
 /** Fila de `GET /documentos/expediente/:expedienteId` (misma forma que en clasificación). */
@@ -61,6 +68,11 @@ export interface ListarPlazosParams {
   unidad_id?: number;
   serie_id?: number;
   subserie_id?: number;
+}
+
+export interface ExtenderVigenciaExpedienteBody {
+  anios: number;
+  justificacion: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -113,16 +125,63 @@ export class GestionPlazosConservacionService {
 
   /** Normaliza respuesta del API (p. ej. variaciones de mayúsculas en claves). */
   private normalizarFilasExpediente(body: unknown): ExpedientePlazoRow[] {
-    const rows = Array.isArray(body) ? body : [];
+    let rows: unknown[] = [];
+    if (Array.isArray(body)) {
+      rows = body;
+    } else if (body && typeof body === 'object') {
+      const b = body as Record<string, unknown>;
+      if (Array.isArray(b['data'])) {
+        rows = b['data'];
+      } else if (Array.isArray(b['rows'])) {
+        rows = b['rows'];
+      } else if (Array.isArray(b['expedientes'])) {
+        rows = b['expedientes'];
+      } else if (Array.isArray(b['items'])) {
+        rows = b['items'];
+      }
+    }
     return rows.map((r) => this.normalizarFilaExpediente(r));
   }
 
   private normalizarFilaExpediente(raw: unknown): ExpedientePlazoRow {
+    if (raw == null || typeof raw !== 'object') {
+      return {
+        id: 0,
+        codigo: '',
+        nombre: '',
+        unidad_nombre: '—',
+        serie_nombre: '—',
+        subserie_nombre: null,
+        estado: 'CERRADO',
+        fecha_creacion: null,
+        fecha_cierre: null,
+        fecha_inicio_vigencia: null,
+        fecha_vencimiento: null,
+        creado_por: null,
+      };
+    }
     const o = raw as Record<string, unknown>;
+    const lowerKeyToOriginal = (): Map<string, string> => {
+      const m = new Map<string, string>();
+      for (const k of Object.keys(o)) {
+        m.set(k.toLowerCase(), k);
+      }
+      return m;
+    };
+    const lowerMap = lowerKeyToOriginal();
     const pick = (...keys: string[]): unknown => {
       for (const k of keys) {
         if (o[k] !== undefined && o[k] !== null) {
           return o[k];
+        }
+      }
+      for (const k of keys) {
+        const orig = lowerMap.get(k.toLowerCase());
+        if (orig != null) {
+          const v = o[orig];
+          if (v !== undefined && v !== null) {
+            return v;
+          }
         }
       }
       return undefined;
@@ -140,15 +199,22 @@ export class GestionPlazosConservacionService {
     } else if (estadoUp === 'CERRADO') {
       estado = 'CERRADO';
     }
+    let fechaCreacion: string | null = null;
+    const fcr = pick('fecha_creacion', 'fechaCreacion', 'FECHA_CREACION');
+    if (fcr != null && fcr !== '') {
+      fechaCreacion = this.valorFechaApiAIso(fcr);
+    }
     let fechaCierre: string | null = null;
     const fc = pick('fecha_cierre', 'fechaCierre', 'FECHA_CIERRE');
     if (fc != null && fc !== '') {
-      if (fc instanceof Date) {
-        fechaCierre = fc.toISOString();
-      } else {
-        fechaCierre = String(fc);
-      }
+      fechaCierre = this.valorFechaApiAIso(fc);
     }
+    const parseFechaNullable = (v: unknown): string | null => {
+      if (v == null || v === '') {
+        return null;
+      }
+      return this.valorFechaApiAIso(v);
+    };
     return {
       id,
       codigo: str(pick('codigo', 'CODIGO')),
@@ -163,8 +229,52 @@ export class GestionPlazosConservacionService {
         return str(v);
       })(),
       estado,
+      fecha_creacion: fechaCreacion,
       fecha_cierre: fechaCierre,
+      fecha_inicio_vigencia: parseFechaNullable(
+        pick(
+          'fecha_inicio_vigencia',
+          'fechaInicioVigencia',
+          'FECHA_INICIO_VIGENCIA'
+        )
+      ),
+      fecha_vencimiento: parseFechaNullable(
+        pick('fecha_vencimiento', 'fechaVencimiento', 'FECHA_VENCIMIENTO')
+      ),
+      creado_por: (() => {
+        const v = pick('creado_por', 'creadoPor', 'CREADO_POR');
+        if (v == null || v === '') {
+          return null;
+        }
+        const t = str(v).trim();
+        return t === '' || t === '—' ? null : t;
+      })(),
     };
+  }
+
+  /** Fecha desde API (ISO, mysql `YYYY-MM-DD HH:mm:ss`, epoch ms) → ISO para `DatePipe`. */
+  private valorFechaApiAIso(v: unknown): string | null {
+    if (v == null || v === '') {
+      return null;
+    }
+    if (v instanceof Date) {
+      return Number.isNaN(v.getTime()) ? null : v.toISOString();
+    }
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? null : d.toISOString();
+    }
+    const s = String(v).trim();
+    if (!s) {
+      return null;
+    }
+    const mysqlLike = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2}(\.\d+)?)/;
+    const normalized = mysqlLike.test(s) ? s.replace(' ', 'T') : s;
+    const d = new Date(normalized);
+    if (Number.isNaN(d.getTime())) {
+      return null;
+    }
+    return d.toISOString();
   }
 
   asignarPlazo(documentoId: number, body: AsignarPlazoBody): Observable<unknown> {
@@ -192,6 +302,16 @@ export class GestionPlazosConservacionService {
     return this.http.post(`${this.api}/gestion-plazos/revisar-vencimientos`, {
       days,
     });
+  }
+
+  extenderVigenciaExpediente(
+    expedienteId: number,
+    body: ExtenderVigenciaExpedienteBody
+  ): Observable<unknown> {
+    return this.http.post(
+      `${this.api}/gestion-plazos/expediente/${expedienteId}/extender-vigencia`,
+      body
+    );
   }
 
   /** Documentos asignados al expediente (índice / clasificación). */

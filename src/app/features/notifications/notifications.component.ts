@@ -74,10 +74,17 @@ export class NotificationsComponent implements OnInit {
     return !!tipo && tipo.startsWith('ARCHIVISTA_EXP_ACTIVOS_');
   }
 
+  isExpedienteConservacionVencido(tipo?: string | null): boolean {
+    return tipo === 'EXPEDIENTE_CONSERVACION_VENCIDO';
+  }
+
   // Actualización del título según el tipo de notificación
   titleFor(tipo?: string) {
     if (this.isRevisionExpedientesActivos(tipo)) {
       return 'Revisión de expedientes activos';
+    }
+    if (this.isExpedienteConservacionVencido(tipo)) {
+      return 'Plazo de conservación vencido';
     }
     switch (tipo) {
       case 'PLAZO_ASIGNADO': return 'Plazo asignado';
@@ -101,6 +108,7 @@ export class NotificationsComponent implements OnInit {
   }
 
   iconFor(n: Notificacion): 'warn' | 'info' | 'ok' {
+    if (n.tipo === 'EXPEDIENTE_CONSERVACION_VENCIDO') return 'warn';
     if (n.tipo === 'DOC_FIRMA_INVALIDA') return 'warn';
     if (n.tipo?.includes('DENEG') || n.tipo?.includes('ACCESO')) return 'warn';
     if (n.accion_requerida === 'FIRMAR') return 'info';
@@ -124,6 +132,8 @@ export class NotificationsComponent implements OnInit {
       case 'DOC_ELIMINACION':
         return '🗑️';
       case 'DOC_FIRMA_INVALIDA':
+        return '⚠️';
+      case 'EXPEDIENTE_CONSERVACION_VENCIDO':
         return '⚠️';
       default:
         if (t.startsWith('ARCHIVISTA_EXP_ACTIVOS_')) return '📁';

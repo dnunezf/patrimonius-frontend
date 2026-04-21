@@ -1,0 +1,236 @@
+.ext-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+}
+
+.ext-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(92vh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.ext-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.ext-modal__title-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ext-modal__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ext-modal__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.ext-modal__subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.ext-modal__close {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ext-modal__close:hover:not(:disabled) {
+  background: #bfdbfe;
+}
+
+.ext-modal__close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ext-modal__body {
+  padding: 1rem 1.25rem 1.25rem;
+  overflow-y: auto;
+}
+
+.ext-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.ext-card__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.35rem 0;
+}
+
+.ext-card__row + .ext-card__row {
+  border-top: 1px solid #e2e8f0;
+}
+
+.ext-card__row--strong .ext-card__value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ext-card__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ext-card__value {
+  font-size: 0.92rem;
+  color: #334155;
+}
+
+.ext-card__row--docs .ext-card__docs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.92rem;
+  color: #334155;
+}
+
+.ext-field {
+  margin-bottom: 1rem;
+}
+
+.ext-field__label {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.4rem;
+}
+
+.ext-field__req {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.ext-input {
+  width: 100%;
+  max-width: 200px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.ext-textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  resize: vertical;
+  min-height: 96px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.ext-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.ext-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.86rem;
+  color: #b91c1c;
+}
+
+.ext-modal__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0.9rem 1.25rem 1.1rem;
+  border-top: 1px solid #f1f5f9;
+  background: #fafafa;
+}
+
+.ext-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.ext-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ext-btn--cancel {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+.ext-btn--cancel:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.ext-btn--primary {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.ext-btn--primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.ext-btn__icon {
+  display: flex;
+}
