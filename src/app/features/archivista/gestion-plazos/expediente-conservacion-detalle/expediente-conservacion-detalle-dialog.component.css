@@ -348,3 +348,53 @@
     gap: 0.5rem;
   }
 }
+
+.conservacion-bitacora {
+  margin-bottom: 0.5rem;
+}
+
+.conservacion-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.5rem;
+  border-left: 2px solid #e2e8f0;
+}
+
+.conservacion-timeline__item {
+  position: relative;
+  padding: 0 0 1rem 1.1rem;
+}
+
+.conservacion-timeline__dot {
+  position: absolute;
+  left: -0.42rem;
+  top: 0.2rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #e2e8f0;
+}
+
+.conservacion-timeline__title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.conservacion-timeline__meta {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.conservacion-timeline__detail {
+  font-size: 0.8rem;
+  margin-top: 4px;
+  color: #334155;
+}
+
+.campo__valor--mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

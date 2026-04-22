@@ -233,7 +233,7 @@
               >
                 Detalle
               </button>
-              <ng-container *ngIf="vistaPlazos === 'archivados'">
+              <ng-container *ngIf="vistaPlazos === 'archivados' && muestraBotonExtender(ex)">
                 <button
                   type="button"
                   class="btn outline sm"
@@ -244,15 +244,38 @@
                   Extender
                 </button>
               </ng-container>
-              <ng-container *ngIf="vistaPlazos === 'alertas'">
-                <button
-                  type="button"
-                  class="btn primary sm"
-                  (click)="abrirDisposicion(ex)"
-                >
-                  Disposición
-                </button>
-              </ng-container>
+              <button
+                *ngIf="vistaPlazos === 'alertas' && puedeDisposicion(ex)"
+                type="button"
+                class="btn primary sm"
+                (click)="abrirDisposicion(ex)"
+              >
+                Disposición
+              </button>
+              <button
+                *ngIf="vistaPlazos === 'alertas' && puedeRevisionDisposicion(ex)"
+                type="button"
+                class="btn outline sm"
+                (click)="abrirRevision(ex)"
+              >
+                Revisión
+              </button>
+              <button
+                *ngIf="vistaPlazos === 'alertas' && puedeAprobarDisposicion(ex)"
+                type="button"
+                class="btn primary sm"
+                (click)="abrirAprobar(ex)"
+              >
+                Aprobar
+              </button>
+              <button
+                *ngIf="vistaPlazos === 'alertas' && puedeRechazarDisposicion(ex)"
+                type="button"
+                class="btn outline sm danger-text"
+                (click)="abrirRechazar(ex)"
+              >
+                Rechazar
+              </button>
             </div>
           </td>
         </tr>
@@ -333,7 +356,7 @@
             Detalle
           </button>
           <button
-            *ngIf="vistaPlazos === 'archivados'"
+            *ngIf="vistaPlazos === 'archivados' && muestraBotonExtender(ex)"
             type="button"
             class="btn outline sm exp-card__btn"
             [disabled]="!puedeExtenderVigencia(ex)"
@@ -343,12 +366,36 @@
             Extender
           </button>
           <button
-            *ngIf="vistaPlazos === 'alertas'"
+            *ngIf="vistaPlazos === 'alertas' && puedeDisposicion(ex)"
             type="button"
             class="btn primary sm exp-card__btn"
             (click)="abrirDisposicion(ex)"
           >
             Disposición
+          </button>
+          <button
+            *ngIf="vistaPlazos === 'alertas' && puedeRevisionDisposicion(ex)"
+            type="button"
+            class="btn outline sm exp-card__btn"
+            (click)="abrirRevision(ex)"
+          >
+            Revisión
+          </button>
+          <button
+            *ngIf="vistaPlazos === 'alertas' && puedeAprobarDisposicion(ex)"
+            type="button"
+            class="btn primary sm exp-card__btn"
+            (click)="abrirAprobar(ex)"
+          >
+            Aprobar
+          </button>
+          <button
+            *ngIf="vistaPlazos === 'alertas' && puedeRechazarDisposicion(ex)"
+            type="button"
+            class="btn outline sm exp-card__btn danger-text"
+            (click)="abrirRechazar(ex)"
+          >
+            Rechazar
           </button>
         </div>
       </article>
@@ -405,5 +452,26 @@
     [expediente]="expedienteExtender"
     (closed)="cerrarExtender()"
     (extensionGuardada)="onExtensionVigenciaGuardada()"
+  />
+
+  <app-revision-disposicion-expediente-dialog
+    [open]="revisionAbierta"
+    [expediente]="expedienteRevision"
+    (closed)="cerrarRevision()"
+    (revisionGuardada)="onRevisionGuardada()"
+  />
+
+  <app-aprobar-disposicion-expediente-dialog
+    [open]="aprobarAbierto"
+    [expediente]="expedienteAprobar"
+    (closed)="cerrarAprobar()"
+    (disposicionAprobada)="onDisposicionAprobada()"
+  />
+
+  <app-rechazar-disposicion-expediente-dialog
+    [open]="rechazarAbierto"
+    [expediente]="expedienteRechazar"
+    (closed)="cerrarRechazar()"
+    (disposicionRechazada)="onDisposicionRechazada()"
   />
 </section>

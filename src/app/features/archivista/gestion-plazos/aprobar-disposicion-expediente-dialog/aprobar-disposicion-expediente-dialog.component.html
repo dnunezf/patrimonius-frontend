@@ -1,0 +1,59 @@
+<div class="ap-overlay" *ngIf="open" (click)="cerrar()" role="presentation">
+  <div class="ap-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <header class="ap-head">
+      <h2 class="ap-title">Aprobar disposición documental del expediente</h2>
+      <p class="ap-sub">
+        Confirme la aprobación para generar el acta (eliminación) o el paquete ZIP (transferencia) y ejecutar el cambio de estado.
+      </p>
+      <button type="button" class="ap-close" (click)="cerrar()" aria-label="Cerrar">×</button>
+    </header>
+
+    <div class="ap-body" *ngIf="expediente as ex">
+      <div class="ap-card">
+        <div class="ap-row">
+          <span class="ap-label">Expediente</span>
+          <span class="ap-val">{{ ex.nombre }}</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-label">Código</span>
+          <span class="ap-val ap-mono">{{ ex.codigo }}</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-label">Acción a ejecutar</span>
+          <span class="ap-badge">{{ etiquetaAccion() }}</span>
+        </div>
+      </div>
+
+      <label class="ap-lab" for="ap-just">
+        Justificación de aprobación <span class="ap-req">*</span>
+      </label>
+      <textarea
+        id="ap-just"
+        class="ap-ta"
+        rows="4"
+        [(ngModel)]="justificacion"
+        placeholder="Indique la justificación para aprobar esta disposición…"
+      ></textarea>
+      <p class="ap-hint">Esta justificación quedará registrada en la bitácora del expediente.</p>
+
+      <div class="ap-info" role="status">
+        La aprobación autoriza la generación de documentos oficiales (acta de eliminación o paquete ZIP) y la
+        ejecución de la disposición final supervisada.
+      </div>
+
+      <p class="ap-err" *ngIf="errorMsg">{{ errorMsg }}</p>
+    </div>
+
+    <footer class="ap-foot">
+      <button type="button" class="btn ghost" (click)="cerrar()">Cancelar</button>
+      <button
+        type="button"
+        class="btn ok"
+        [disabled]="!puedeAprobar"
+        (click)="confirmar()"
+      >
+        {{ saving ? 'Procesando…' : 'Aprobar disposición' }}
+      </button>
+    </footer>
+  </div>
+</div>

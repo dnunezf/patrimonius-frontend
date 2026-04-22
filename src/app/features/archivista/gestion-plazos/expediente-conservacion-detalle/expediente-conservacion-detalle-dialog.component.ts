@@ -11,6 +11,7 @@ import {
 import { Subscription } from 'rxjs';
 
 import {
+  BitacoraExpedienteItem,
   ExpedienteDocumentoListRow,
   ExpedientePlazoRow,
   GestionPlazosConservacionService,
@@ -38,7 +39,15 @@ export class ExpedienteConservacionDetalleDialogComponent
   documentosLoading = false;
   documentosError = '';
 
+  bitacora: BitacoraExpedienteItem[] = [];
+  bitacoraLoading = false;
+  bitacoraError = '';
+
+  politicaDisposicion: string | null = null;
+  disposicionEstado: string | null = null;
+
   private documentosSub?: Subscription;
+  private bitacoraSub?: Subscription;
 
   constructor(
     private readonly gestionPlazos: GestionPlazosConservacionService
@@ -51,11 +60,13 @@ export class ExpedienteConservacionDetalleDialogComponent
     }
     if (this.expediente?.id) {
       this.cargarDocumentos();
+      this.cargarBitacoraYDisposicion();
     }
   }
 
   ngOnDestroy(): void {
     this.documentosSub?.unsubscribe();
+    this.bitacoraSub?.unsubscribe();
   }
 
   cerrar(): void {
@@ -72,6 +83,10 @@ export class ExpedienteConservacionDetalleDialogComponent
 
   fechaVencimientoFormateada(): string {
     return this.formatearFechaLarga(this.expediente?.fecha_vencimiento);
+  }
+
+  fechaCierreFormateada(): string {
+    return this.formatearFechaLarga(this.expediente?.fecha_cierre);
   }
 
   private formatearFechaLarga(iso: string | null | undefined): string {
@@ -150,5 +165,73 @@ export class ExpedienteConservacionDetalleDialogComponent
     this.documentos = [];
     this.documentosLoading = false;
     this.documentosError = '';
+    this.bitacoraSub?.unsubscribe();
+    this.bitacoraSub = undefined;
+    this.bitacora = [];
+    this.bitacoraLoading = false;
+    this.bitacoraError = '';
+    this.politicaDisposicion = null;
+    this.disposicionEstado = null;
+  }
+
+  textoPoliticaDisposicion(): string {
+    const p = String(this.politicaDisposicion ?? '').trim();
+    if (!p) return this.sinDato;
+    if (p === 'ELIMINACION') return 'Eliminación';
+    if (p === 'TRANSFERENCIA') return 'Transferencia (ZIP)';
+    if (p === 'CONSERVACION_PERMANENTE') return 'Conservación permanente';
+    return p;
+  }
+
+  eventoBitacoraLegible(ev: string): string {
+    const u = String(ev || '').toUpperCase();
+    const map: Record<string, string> = {
+      CREACION: 'Creación',
+      ACTUALIZACION: 'Actualización / trámite',
+      CIERRE: 'Cierre',
+      ELIMINACION: 'Eliminación',
+      TRANSFERENCIA: 'Transferencia',
+      ABRIR: 'Apertura',
+    };
+    return map[u] || ev || '—';
+  }
+
+  fechaHoraBitacora(iso: string): string {
+    try {
+      return new Intl.DateTimeFormat('es', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  }
+
+  private cargarBitacoraYDisposicion(): void {
+    const id = this.expediente?.id;
+    if (!id) {
+      return;
+    }
+    this.bitacoraSub?.unsubscribe();
+    this.bitacoraLoading = true;
+    this.bitacoraError = '';
+    this.bitacora = [];
+
+    this.bitacoraSub = this.gestionPlazos
+      .getDetalleConservacionExpediente(id)
+      .subscribe({
+        next: (res) => {
+          this.bitacora = res?.bitacora ?? [];
+          this.politicaDisposicion = res?.expediente?.politica_disposicion ?? null;
+          this.disposicionEstado = res?.disposicion?.estado ?? null;
+          this.bitacoraLoading = false;
+        },
+        error: (err) => {
+          this.bitacoraLoading = false;
+          this.bitacoraError =
+            err?.error?.error ||
+            'No se pudo cargar la bitácora del expediente.';
+        },
+      });
   }
 }
