@@ -32,6 +32,8 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly cdr = inject(ChangeDetectorRef);
+  previewDocId: number | null = null;
+  previewDocContext: any = null;
 
   @ViewChild('pdfHost') pdfHost?: ElementRef<HTMLDivElement>;
 
@@ -307,6 +309,13 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   }
 
   public verDesdeExpediente(row: ConsultaDocumentoRow): void {
+    this.previewDocId = row.id;
+    this.previewDocContext = {
+      ...row,
+      expediente_nombre: this.selectedExpedienteDocs?.nombre || '',
+      serie_nombre: this.selectedExpedienteDocs?.serie_nombre || '',
+      subserie_nombre: this.selectedExpedienteDocs?.subserie_nombre || '',
+    };
     this.cerrarDocumentosExpediente();
     this.ver(row);
   }
@@ -510,6 +519,11 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public ver(row: ConsultaDocumentoRow): void {
     if (row.canDownload === false) return;
+    this.previewDocId = row.id;
+
+    if (!this.previewDocContext || this.previewDocContext.id !== row.id) {
+      this.previewDocContext = row;
+    }
 
     this.previewDocumentoId = row.id;
     this.previewOpen = true;
@@ -649,6 +663,8 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.previewMode = null;
     this.pdfPreviewTruncated = false;
     this.previewDocumentoId = null;
+    this.previewDocId = null;
+    this.previewDocContext = null;
     this.clearPdfHost();
   }
 
@@ -745,5 +761,27 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public seleccionarSugerenciaHistorial(item: HistorialBusquedaRow): void {
     this.usarBusquedaHistorial(item);
     this.mostrarSugerenciasHistorial = false;
+  }
+
+  abrirClasificacionDesdePreview(): void {
+    const docId = this.previewDocId;
+    const context = this.previewDocContext;
+
+    if (!docId) return;
+
+    this.cerrarPreview();
+
+    this.router.navigate(
+      ['/archivista/clasificacion-documento', docId],
+      {
+        state: {
+          expedienteNombre: context?.expediente_nombre || '',
+          serieNombre: context?.serie_nombre || '',
+          subserieNombre: context?.subserie_nombre || '',
+          soloLectura: true,
+          origen: 'consulta-interno',
+        },
+      }
+    );
   }
 }

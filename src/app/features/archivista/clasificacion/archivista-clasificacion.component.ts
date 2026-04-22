@@ -105,6 +105,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   expedienteDocsError = '';
   expedienteDocsTitle = '';
   expedienteDocsRows: ExpedienteDocumentoRow[] = [];
+  expedienteSeleccionado: any = null;
 
   seriesPage = 1;
   seriesPageSize = 5;
@@ -521,7 +522,11 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   }
 
   verDocumentosExpediente(expediente: ExpedienteRow): void {
+    this.expedienteSeleccionado = expediente;
+
+
     this.expedienteDocsOpen = true;
+    this.expedienteDocsTitle = expediente.nombre ?? 'Expediente';
     this.expedienteDocsLoading = true;
     this.expedienteDocsError = '';
     this.expedienteDocsRows = [];
@@ -565,6 +570,25 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     if (e === 'ELIMINACION' || e === 'TRANSFERENCIA') return 'pill danger';
 
     return 'pill';
+  }
+
+  /*clasificarDocumento(doc: { id: number }): void {
+    this.cerrarDocumentosExpediente();
+    this.router.navigate(['/archivista/clasificacion-documento', doc.id]);
+  }*/
+  clasificarDocumento(doc: any): void {
+    this.cerrarDocumentosExpediente();
+
+    this.router.navigate(
+      ['/archivista/clasificacion-documento', doc.id],
+      {
+        state: {
+          expedienteNombre: this.expedienteSeleccionado?.nombre ?? '',
+          serieNombre: this.expedienteSeleccionado?.serie_nombre ?? '',
+          subserieNombre: this.expedienteSeleccionado?.subserie_nombre ?? '',
+        },
+      }
+    );
   }
 
   get totalSeriesPages(): number {

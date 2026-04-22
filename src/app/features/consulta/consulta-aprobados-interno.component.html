@@ -438,7 +438,21 @@
     >
       <header class="consulta-preview-header">
         <h3 id="consulta-preview-title">{{ previewTitle }}</h3>
-        <button type="button" class="btn ghost" (click)="cerrarPreview()">Cerrar</button>
+
+        <div class="preview-header-actions">
+          <button
+            type="button"
+            class="btn ghost"
+            (click)="abrirClasificacionDesdePreview()"
+            *ngIf="previewDocId"
+          >
+            Ver clasificación
+          </button>
+
+          <button type="button" class="btn ghost" (click)="cerrarPreview()">
+            Cerrar
+          </button>
+        </div>
       </header>
       <div class="consulta-preview-body">
         <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'pdf'">

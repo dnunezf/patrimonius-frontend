@@ -59,6 +59,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'archivista/clasificacion-documento/:id',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./features/archivista/clasificacion/archivista-clasificacion-documento.component').then(
+        (m) => m.ArchivistaClasificacionDocumentoComponent,
+      ),
+  },
+
+  {
     path: 'archivista/gestion-plazos',
     component: GestionPlazosComponent,
     canActivate: [AuthGuard],

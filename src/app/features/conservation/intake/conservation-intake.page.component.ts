@@ -911,7 +911,7 @@ export class ConservationIntakePageComponent {
     };
 
     this.loading.set(true);
-
+    console.log('Payload conservación:', payload);
     this.api.registerIntake(payload).subscribe({
       next: (response) => {
         this.loading.set(false);

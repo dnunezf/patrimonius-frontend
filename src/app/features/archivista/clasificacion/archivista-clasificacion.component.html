@@ -2,7 +2,7 @@
   <section class="banner">
     <header class="banner-head">
       <div>
-        <h2>Clasificación archivística</h2>
+        <h2>Clasificación archivistica</h2>
         <p>
           Gestione series, subseries y expedientes archivísticos. Desde esta pantalla también
           puede cerrar expedientes existentes para generar su índice electrónico.
@@ -446,6 +446,7 @@
     [loading]="expedienteDocsLoading"
     [errorMsg]="expedienteDocsError"
     (closed)="cerrarDocumentosExpediente()"
+    (clasificar)="clasificarDocumento($event)"
   ></app-expediente-documentos-dialog>
 
   <!-- Confirmación in-app (reemplaza window.confirm del navegador) -->

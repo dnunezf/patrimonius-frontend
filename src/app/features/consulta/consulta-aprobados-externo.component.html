@@ -380,8 +380,22 @@
       [attr.aria-labelledby]="'consulta-preview-ext-title'"
     >
       <header class="consulta-preview-header">
-        <h3 id="consulta-preview-ext-title">{{ previewTitle }}</h3>
-        <button type="button" class="btn ghost" (click)="cerrarPreview()">Cerrar</button>
+        <h3 id="consulta-preview-title">{{ previewTitle }}</h3>
+
+        <div class="preview-header-actions">
+          <button
+            type="button"
+            class="btn ghost"
+            (click)="abrirClasificacionDesdePreview()"
+            *ngIf="previewDocId"
+          >
+            Ver clasificación
+          </button>
+
+          <button type="button" class="btn ghost" (click)="cerrarPreview()">
+            Cerrar
+          </button>
+        </div>
       </header>
       <div class="consulta-preview-body">
         <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'pdf'">

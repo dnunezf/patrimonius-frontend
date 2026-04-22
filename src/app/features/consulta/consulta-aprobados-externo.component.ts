@@ -73,6 +73,8 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   previewMode: 'pdf' | 'html' | null = null;
   pdfPreviewTruncated = false;
   private previewDocumentoId: number | null = null;
+  previewDocId: number | null = null;
+  previewDocContext: any = null;
 
   solicitudOpen = false;
   selectedDocumento: ConsultaDocumentoRow | null = null;
@@ -388,9 +390,10 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.previewTitle = row.titulo;
     this.previewHtml = null;
     this.previewMode = null;
+    this.previewDocId = row.id;
+    this.previewDocContext = row;
     this.pdfPreviewTruncated = false;
     this.clearPdfHost();
-
     this.api.getPreviewPdf(row.id).subscribe({
       next: (blob) => void this.handlePreviewPdfBlob(blob, row),
       error: () => this.cargarVistaPreviaHtml(row),
@@ -520,6 +523,8 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.previewMode = null;
     this.pdfPreviewTruncated = false;
     this.previewDocumentoId = null;
+    this.previewDocId = null;
+    this.previewDocContext = null;
     this.clearPdfHost();
   }
 
@@ -755,6 +760,13 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   }
 
   verDesdeExpediente(row: ConsultaDocumentoRow): void {
+    this.previewDocId = row.id;
+    this.previewDocContext = {
+      ...row,
+      expediente_nombre: this.selectedExpedienteDocs?.nombre || '',
+      serie_nombre: this.selectedExpedienteDocs?.serie_nombre || '',
+      subserie_nombre: this.selectedExpedienteDocs?.subserie_nombre || '',
+    };
     this.cerrarDocumentosExpediente();
     this.ver(row);
   }
@@ -781,5 +793,25 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
         void this.handleDownloadHttpError(err);
       },
     });
+  }
+
+  abrirClasificacionDesdePreview(): void {
+    if (!this.previewDocId) return;
+
+
+
+    this.router.navigate(
+      ['/archivista/clasificacion-documento', this.previewDocId],
+      {
+        state: {
+          expedienteNombre: this.previewDocContext?.expediente_nombre || '',
+          serieNombre: this.previewDocContext?.serie_nombre || '',
+          subserieNombre: this.previewDocContext?.subserie_nombre || '',
+          soloLectura: true,
+          origen: 'preview-consulta',
+        },
+      }
+    );
+    this.cerrarPreview();
   }
 }

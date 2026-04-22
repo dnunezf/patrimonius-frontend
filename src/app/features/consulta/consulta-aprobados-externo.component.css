@@ -979,3 +979,8 @@
     margin-bottom: 0.35rem;
   }
 }
+.preview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
