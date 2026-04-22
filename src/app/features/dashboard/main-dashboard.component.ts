@@ -10,7 +10,10 @@ type RoleKey =
   | 'USUARIO'
   | 'USUARIO_EXTERNO';
 
-type FeatureKey = 'CARGA_DOCUMENTOS' | 'CONSERVACION_INGRESO' | 'CONSULTA_APROBADOS';
+type FeatureKey =
+  | 'CARGA_DOCUMENTOS'
+  | 'CONSERVACION_INGRESO'
+  | 'CONSULTA_APROBADOS';
 
 type DashboardCard = {
   roleKey?: RoleKey;
@@ -101,13 +104,13 @@ export class MainDashboardComponent {
   private readonly CONSERVATION_INTAKE_CARD: DashboardCard = {
     featureKey: 'CONSERVACION_INGRESO',
     title: 'Gestión Documental',
-    subtitle: 'Registro archivístico de documentos finales',
+    subtitle: 'Conservación, validación archivística y exportación EAD 2002',
     icon: 'assets/icons/archive.png',
     cssClass: 'archivista',
     bullets: [
-      'Validar elegibilidad (PDF/A + firmas)',
-      'Clasificar y describir',
-      'Definir acceso y retención',
+      'Validar elegibilidad del documento',
+      'Clasificar y describir en conservación',
+      'Exportar XML conforme a EAD 2002',
     ],
   };
 
@@ -171,7 +174,7 @@ export class MainDashboardComponent {
 
   get canSeeConservationIntakeCard(): boolean {
     const roles = new Set(this.userRoleKeys);
-    return roles.has('ADMINISTRADOR');
+    return roles.has('ADMINISTRADOR') || roles.has('ARCHIVISTA');
   }
 
   get visibleCards(): DashboardCard[] {

@@ -197,358 +197,474 @@
     </div>
   </aside>
 
-  <main class="right" *ngIf="selected() as doc; else emptyState">
-    <div class="card">
-      <div class="card-header">
-        <h2>Registro archivístico final</h2>
-        <span class="hint">Campos obligatorios marcados con *</span>
-      </div>
+  <main class="right">
+    <ng-container *ngIf="selected() as doc; else intakeEmptyState">
+      <div class="card">
+        <div class="card-header">
+          <h2>Registro archivístico final</h2>
+          <span class="hint">Campos obligatorios marcados con *</span>
+        </div>
 
-      <div class="validation-banner" *ngIf="formErrorSummary() as msg">
-        {{ msg }}
-      </div>
+        <div class="validation-banner" *ngIf="formErrorSummary() as msg">
+          {{ msg }}
+        </div>
 
-      <form [formGroup]="archivalForm" class="form">
-        <section class="section">
-          <h3 class="section-title">Identificación final del documento</h3>
+        <form [formGroup]="archivalForm" class="form">
+          <section class="section">
+            <h3 class="section-title">Identificación final del documento</h3>
 
-          <div class="grid2">
+            <div class="grid2">
+              <label>
+                Código de referencia final *
+                <input
+                  type="text"
+                  formControlName="officialCode"
+                  readonly
+                  [placeholder]="
+                    referenceCodeLoading() ? 'Generando código...' : ''
+                  "
+                />
+              </label>
+
+              <label>
+                Tipo documental *
+                <input type="text" formControlName="documentType" readonly />
+              </label>
+            </div>
+
             <label>
-              Código de referencia final *
+              Título del documento *
+              <input type="text" formControlName="title" readonly />
+            </label>
+
+            <div class="grid2">
+              <label>
+                Unidad productora *
+                <input type="text" formControlName="producingUnit" />
+                <div class="err" *ngIf="fieldErr('producingUnit')">
+                  {{ fieldErr("producingUnit") }}
+                </div>
+              </label>
+
+              <label>
+                Nivel de acceso *
+                <select formControlName="accessLevel">
+                  <option value="PUBLIC">PUBLIC</option>
+                  <option value="INTERNAL">INTERNAL</option>
+                  <option value="HIGH">HIGH</option>
+                  <option value="RESTRICTED">RESTRICTED</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Palabras clave
               <input
                 type="text"
-                formControlName="officialCode"
-                readonly
-                [placeholder]="
-                  referenceCodeLoading() ? 'Generando código...' : ''
-                "
+                formControlName="keywords"
+                placeholder="acta, consejo, museo..."
               />
             </label>
+          </section>
 
-            <label>
-              Tipo documental *
-              <input type="text" formControlName="documentType" readonly />
-            </label>
-          </div>
+          <section class="section">
+            <h3 class="section-title">Metadatos automáticos</h3>
 
-          <label>
-            Título del documento *
-            <input type="text" formControlName="title" readonly />
-          </label>
+            <div class="grid2">
+              <label>
+                Tamaño *
+                <input type="text" [value]="sizeHuman()" readonly />
+              </label>
 
-          <div class="grid2">
-            <label>
-              Unidad productora *
-              <input type="text" formControlName="producingUnit" />
-              <div class="err" *ngIf="fieldErr('producingUnit')">
-                {{ fieldErr("producingUnit") }}
-              </div>
-            </label>
-
-            <label>
-              Nivel de acceso *
-              <select formControlName="accessLevel">
-                <option value="PUBLIC">PUBLIC</option>
-                <option value="INTERNAL">INTERNAL</option>
-                <option value="HIGH">HIGH</option>
-                <option value="RESTRICTED">RESTRICTED</option>
-              </select>
-            </label>
-          </div>
-
-          <label>
-            Palabras clave
-            <input
-              type="text"
-              formControlName="keywords"
-              placeholder="acta, consejo, museo..."
-            />
-          </label>
-        </section>
-
-        <section class="section">
-          <h3 class="section-title">Metadatos automáticos</h3>
-
-          <div class="grid2">
-            <label>
-              Tamaño *
-              <input type="text" [value]="sizeHuman()" readonly />
-            </label>
-
-            <label>
-              Formato *
-              <input type="text" formControlName="format" readonly />
-            </label>
-          </div>
-
-          <label>
-            Nombre del productor (firmantes) *
-            <textarea
-              class="ro-area"
-              formControlName="signers"
-              rows="2"
-              readonly
-            ></textarea>
-          </label>
-
-          <label>
-            Fecha y hora de firmas *
-            <textarea
-              class="ro-area"
-              formControlName="signedAt"
-              rows="2"
-              readonly
-            ></textarea>
-          </label>
-
-          <label *ngIf="currentFlow() === 'PRODUCED_SENT'">
-            Aplicación de software y versión *
-            <input type="text" formControlName="softwareVersion" readonly />
-          </label>
-        </section>
-
-        <section class="section">
-          <h3 class="section-title">Tipo de documento final</h3>
-
-          <div class="grid2">
-            <label>
-              Flujo documental *
-              <select formControlName="documentFlow">
-                <option value="PRODUCED_SENT">
-                  Documento producido / enviado
-                </option>
-                <option value="RECEIVED">Documento recibido</option>
-              </select>
-            </label>
-
-            <label>
-              Trámite
-              <select formControlName="procedureType">
-                <option [ngValue]="null">Seleccione…</option>
-                <option
-                  *ngFor="let item of procedureOptions"
-                  [ngValue]="item.value"
-                >
-                  {{ item.label }}
-                </option>
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <section class="section" *ngIf="currentFlow() === 'PRODUCED_SENT'">
-          <h3 class="section-title">Datos de despacho / salida</h3>
-
-          <div class="grid2">
-            <label>
-              Destinatario (nombre y cargo) *
-              <input type="text" formControlName="recipientNameRole" />
-              <div class="err" *ngIf="fieldErr('recipientNameRole')">
-                {{ fieldErr("recipientNameRole") }}
-              </div>
-            </label>
-
-            <label>
-              Destinatario (institución) *
-              <input type="text" formControlName="recipientInstitution" />
-              <div class="err" *ngIf="fieldErr('recipientInstitution')">
-                {{ fieldErr("recipientInstitution") }}
-              </div>
-            </label>
-          </div>
-
-          <label>
-            Correos para despacho *
-            <input
-              type="text"
-              formControlName="dispatchEmails"
-              placeholder="correo1@dominio.com, correo2@dominio.com"
-            />
-            <div class="err" *ngIf="fieldErr('dispatchEmails')">
-              {{ fieldErr("dispatchEmails") }}
+              <label>
+                Formato *
+                <input type="text" formControlName="format" readonly />
+              </label>
             </div>
-          </label>
 
-          <div class="infobox">
-            La fecha/hora de despacho y el responsable del despacho se
-            registrarán automáticamente al guardar.
-          </div>
-        </section>
-
-        <section class="section" *ngIf="currentFlow() === 'RECEIVED'">
-          <h3 class="section-title">Datos de recepción / entrada</h3>
-
-          <div class="grid2">
             <label>
-              Remitente (nombre y cargo)
-              <input type="text" formControlName="senderNameRole" />
+              Nombre del productor (firmantes) *
+              <textarea
+                class="ro-area"
+                formControlName="signers"
+                rows="2"
+                readonly
+              ></textarea>
             </label>
 
             <label>
-              Remitente (institución)
-              <input type="text" formControlName="senderInstitution" />
-            </label>
-          </div>
-
-          <div class="infobox">
-            La fecha/hora de recepción y el responsable de la recepción se
-            registrarán automáticamente al guardar.
-          </div>
-        </section>
-
-        <section class="section">
-          <h3 class="section-title">Clasificación archivística *</h3>
-
-          <div class="grid3">
-            <label>
-              Serie *
-              <select formControlName="serieId">
-                <option [ngValue]="null">Seleccione…</option>
-                <option *ngFor="let item of series()" [ngValue]="item.id">
-                  {{ item.code }} · {{ item.name }}
-                </option>
-              </select>
+              Fecha y hora de firmas *
+              <textarea
+                class="ro-area"
+                formControlName="signedAt"
+                rows="2"
+                readonly
+              ></textarea>
             </label>
 
-            <label>
-              Subserie
-              <select formControlName="subserieId">
-                <option [ngValue]="null">Seleccione…</option>
-                <option
-                  *ngFor="let item of filteredSubseries()"
-                  [ngValue]="item.id"
-                >
-                  {{ item.code }} · {{ item.name }}
-                </option>
-              </select>
+            <label *ngIf="currentFlow() === 'PRODUCED_SENT'">
+              Aplicación de software y versión *
+              <input type="text" formControlName="softwareVersion" readonly />
             </label>
+          </section>
 
-            <label>
-              Expediente *
-              <select formControlName="expedienteId">
-                <option [ngValue]="null">Seleccione…</option>
-                <option
-                  *ngFor="let item of filteredExpedientes()"
-                  [ngValue]="item.id"
-                >
-                  {{ item.code }} · {{ item.name }}
-                </option>
-              </select>
-            </label>
-          </div>
+          <section class="section">
+            <h3 class="section-title">Tipo de documento final</h3>
 
-          <div class="picked">
-            <div class="cap">Código de clasificación</div>
-            <div class="val mono">{{ buildClassificationCode() || "—" }}</div>
-            <div class="cap mt">Ruta seleccionada</div>
-            <div class="val">
-              {{ buildClassificationLabel() || "Sin selección" }}
+            <div class="grid2">
+              <label>
+                Flujo documental *
+                <select formControlName="documentFlow">
+                  <option value="PRODUCED_SENT">
+                    Documento producido / enviado
+                  </option>
+                  <option value="RECEIVED">Documento recibido</option>
+                </select>
+              </label>
+
+              <label>
+                Trámite
+                <select formControlName="procedureType">
+                  <option [ngValue]="null">Seleccione…</option>
+                  <option
+                    *ngFor="let item of procedureOptions"
+                    [ngValue]="item.value"
+                  >
+                    {{ item.label }}
+                  </option>
+                </select>
+              </label>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section class="section">
-          <h3 class="section-title">Retención y vigencia</h3>
+          <section class="section" *ngIf="currentFlow() === 'PRODUCED_SENT'">
+            <h3 class="section-title">Datos de despacho / salida</h3>
 
-          <div class="grid2">
+            <div class="grid2">
+              <label>
+                Destinatario (nombre y cargo) *
+                <input type="text" formControlName="recipientNameRole" />
+                <div class="err" *ngIf="fieldErr('recipientNameRole')">
+                  {{ fieldErr("recipientNameRole") }}
+                </div>
+              </label>
+
+              <label>
+                Destinatario (institución) *
+                <input type="text" formControlName="recipientInstitution" />
+                <div class="err" *ngIf="fieldErr('recipientInstitution')">
+                  {{ fieldErr("recipientInstitution") }}
+                </div>
+              </label>
+            </div>
+
             <label>
-              Plazo de conservación (años) *
+              Correos para despacho *
               <input
                 type="text"
-                [value]="selectedSerie()?.plazo_conservacion_anios ?? '—'"
-                readonly
+                formControlName="dispatchEmails"
+                placeholder="correo1@dominio.com, correo2@dominio.com"
               />
+              <div class="err" *ngIf="fieldErr('dispatchEmails')">
+                {{ fieldErr("dispatchEmails") }}
+              </div>
             </label>
 
-            <label>
-              Fecha de inicio *
-              <input
-                type="date"
-                formControlName="retentionStartDateISO"
-                readonly
-              />
-            </label>
-          </div>
+            <div class="infobox">
+              La fecha/hora de despacho y el responsable del despacho se
+              registrarán automáticamente al guardar.
+            </div>
+          </section>
 
-          <div class="grid2">
-            <label>
-              Fecha de caducidad *
-              <input
-                type="date"
-                formControlName="retentionEndDateISO"
-                readonly
-              />
-            </label>
+          <section class="section" *ngIf="currentFlow() === 'RECEIVED'">
+            <h3 class="section-title">Datos de recepción / entrada</h3>
 
-            <label class="chk">
-              <input type="checkbox" checked disabled />
-              Seguimiento de vigencia activo
-            </label>
-          </div>
+            <div class="grid2">
+              <label>
+                Remitente (nombre y cargo)
+                <input type="text" formControlName="senderNameRole" />
+              </label>
 
-          <div class="infobox">{{ retentionPreviewText() }}</div>
-        </section>
+              <label>
+                Remitente (institución)
+                <input type="text" formControlName="senderInstitution" />
+              </label>
+            </div>
 
-        <section class="section">
-          <h3 class="section-title">Resumen</h3>
+            <div class="infobox">
+              La fecha/hora de recepción y el responsable de la recepción se
+              registrarán automáticamente al guardar.
+            </div>
+          </section>
 
-          <div class="summary">
-            <ul>
-              <li><strong>Documento:</strong> {{ doc.title }}</li>
-              <li>
-                <strong>Código final:</strong>
-                {{ archivalForm.getRawValue().officialCode || "—" }}
-              </li>
-              <li>
-                <strong>Clasificación:</strong>
-                {{ buildClassificationCode() || "—" }}
-              </li>
-              <li>
-                <strong>Ruta:</strong>
-                {{ buildClassificationLabel() || "—" }}
-              </li>
-              <li>
-                <strong>Acceso:</strong>
-                {{ archivalForm.get("accessLevel")?.value }}
-              </li>
-              <li>
-                <strong>Trámite:</strong>
-                {{ archivalForm.get("procedureType")?.value || "—" }}
-              </li>
-              <li>
-                <strong>Elegibilidad:</strong>
-                {{ canSave() ? "OK" : "Pendiente" }}
-              </li>
-            </ul>
-          </div>
+          <section class="section">
+            <h3 class="section-title">Clasificación archivística *</h3>
 
-          <div class="actions">
-            <button
-              class="btn primary"
-              type="button"
-              (click)="save()"
-              [disabled]="loading() || referenceCodeLoading()"
-            >
-              Guardar en conservación
-            </button>
-          </div>
+            <div class="grid3">
+              <label>
+                Serie *
+                <select formControlName="serieId">
+                  <option [ngValue]="null">Seleccione…</option>
+                  <option *ngFor="let item of series()" [ngValue]="item.id">
+                    {{ item.code }} · {{ item.name }}
+                  </option>
+                </select>
+              </label>
 
-          <div class="blocked" *ngIf="!canSave()">
-            Complete el checklist, la clasificación archivística, la vigencia automática,
-            la verificación de duplicidad y espere la generación del código
-            final antes de guardar.
-          </div>
-        </section>
-      </form>
-    </div>
-  </main>
+              <label>
+                Subserie
+                <select formControlName="subserieId">
+                  <option [ngValue]="null">Seleccione…</option>
+                  <option
+                    *ngFor="let item of filteredSubseries()"
+                    [ngValue]="item.id"
+                  >
+                    {{ item.code }} · {{ item.name }}
+                  </option>
+                </select>
+              </label>
 
-  <ng-template #emptyState>
-    <main class="right">
+              <label>
+                Expediente *
+                <select formControlName="expedienteId">
+                  <option [ngValue]="null">Seleccione…</option>
+                  <option
+                    *ngFor="let item of filteredExpedientes()"
+                    [ngValue]="item.id"
+                  >
+                    {{ item.code }} · {{ item.name }}
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <div class="picked">
+              <div class="cap">Código de clasificación</div>
+              <div class="val mono">{{ buildClassificationCode() || "—" }}</div>
+              <div class="cap mt">Ruta seleccionada</div>
+              <div class="val">
+                {{ buildClassificationLabel() || "Sin selección" }}
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h3 class="section-title">Retención y vigencia</h3>
+
+            <div class="grid2">
+              <label>
+                Plazo de conservación (años) *
+                <input
+                  type="text"
+                  [value]="selectedSerie()?.plazo_conservacion_anios ?? '—'"
+                  readonly
+                />
+              </label>
+
+              <label>
+                Fecha de inicio *
+                <input
+                  type="date"
+                  formControlName="retentionStartDateISO"
+                  readonly
+                />
+              </label>
+            </div>
+
+            <div class="grid2">
+              <label>
+                Fecha de caducidad *
+                <input
+                  type="date"
+                  formControlName="retentionEndDateISO"
+                  readonly
+                />
+              </label>
+
+              <label class="chk">
+                <input type="checkbox" checked disabled />
+                Seguimiento de vigencia activo
+              </label>
+            </div>
+
+            <div class="infobox">{{ retentionPreviewText() }}</div>
+          </section>
+
+          <section class="section">
+            <h3 class="section-title">Resumen</h3>
+
+            <div class="summary">
+              <ul>
+                <li><strong>Documento:</strong> {{ doc.title }}</li>
+                <li>
+                  <strong>Código final:</strong>
+                  {{ archivalForm.getRawValue().officialCode || "—" }}
+                </li>
+                <li>
+                  <strong>Clasificación:</strong>
+                  {{ buildClassificationCode() || "—" }}
+                </li>
+                <li>
+                  <strong>Ruta:</strong>
+                  {{ buildClassificationLabel() || "—" }}
+                </li>
+                <li>
+                  <strong>Acceso:</strong>
+                  {{ archivalForm.get("accessLevel")?.value }}
+                </li>
+                <li>
+                  <strong>Trámite:</strong>
+                  {{ archivalForm.get("procedureType")?.value || "—" }}
+                </li>
+                <li>
+                  <strong>Elegibilidad:</strong>
+                  {{ canSave() ? "OK" : "Pendiente" }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="actions">
+              <button
+                class="btn primary"
+                type="button"
+                (click)="save()"
+                [disabled]="loading() || referenceCodeLoading()"
+              >
+                Guardar en conservación
+              </button>
+            </div>
+
+            <div class="blocked" *ngIf="!canSave()">
+              Complete el checklist, la clasificación archivística, la vigencia
+              automática, la verificación de duplicidad y espere la generación
+              del código final antes de guardar.
+            </div>
+          </section>
+        </form>
+      </div>
+    </ng-container>
+
+    <ng-template #intakeEmptyState>
       <div class="card empty">
         <h2>Seleccione un candidato</h2>
         <p>Use el panel de búsqueda para seleccionar un documento final.</p>
       </div>
-    </main>
-  </ng-template>
+    </ng-template>
+
+    <!-- =========================
+         HU-035 · Exportación EAD 2002
+         ========================= -->
+    <div class="card ead-list-card">
+      <div class="card-header">
+        <div>
+          <h2>Documentos en Conservación</h2>
+          <p class="ead-list-subtitle">
+            Documentos archivados disponibles para exportación en formato EAD
+            2002
+          </p>
+        </div>
+
+        <span class="hint"> {{ totalEadDocuments() }} documento(s) </span>
+      </div>
+
+      <div
+        class="ead-list-table-wrap"
+        *ngIf="!eadDocumentsLoading(); else eadLoadingTpl"
+      >
+        <div
+          class="ead-list-table"
+          *ngIf="eadDocuments().length; else noEadDocsTpl"
+        >
+          <div class="ead-list-head">
+            <div>Código</div>
+            <div>Documento</div>
+            <div>Serie / Subserie</div>
+            <div>Estado EAD</div>
+            <div>Acciones</div>
+          </div>
+
+          <div
+            class="ead-list-row"
+            *ngFor="let row of eadDocuments(); trackBy: trackEadRow"
+          >
+            <div class="ead-code mono">
+              {{ row.officialCode || "—" }}
+            </div>
+
+            <div class="ead-doc-main">
+              <div class="ead-doc-title">{{ row.title }}</div>
+              <div class="ead-doc-secondary">
+                {{ eadSecondaryDocumentText(row) }}
+              </div>
+            </div>
+
+            <div class="ead-classification">
+              <div class="ead-classification-main">
+                {{ row.serieName || "—" }}
+              </div>
+              <div class="ead-classification-secondary">
+                {{ row.subserieName || "—" }}
+              </div>
+            </div>
+
+            <div>
+              <span
+                class="ead-status-badge"
+                [ngClass]="eadStatusClass(row.eadStatus)"
+              >
+                {{ eadStatusLabel(row.eadStatus) }}
+              </span>
+            </div>
+
+            <div class="ead-actions">
+              <button
+                type="button"
+                class="btn btn-small ghost"
+                (click)="openEadDialog(row, 'view')"
+              >
+                Ver
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-small primary"
+                (click)="openEadDialog(row, 'export')"
+              >
+                Exportar a EAD 2002
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #eadLoadingTpl>
+        <div class="ead-list-empty">Cargando documentos en conservación...</div>
+      </ng-template>
+
+      <ng-template #noEadDocsTpl>
+        <div class="ead-list-empty">
+          No hay documentos en conservación listos para exportación EAD 2002.
+        </div>
+      </ng-template>
+
+      <div class="ead-info-box">
+        <div class="ead-info-box__icon">📄</div>
+        <div>
+          <strong>Exportación EAD 2002:</strong>
+          <p>
+            Los documentos en conservación pueden ser exportados en formato XML
+            conforme al estándar EAD 2002 para interoperabilidad con el Archivo
+            Nacional y otros sistemas archivísticos.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
 </section>
+
+<app-ead-export-dialog
+  [open]="eadDialogOpen()"
+  [document]="eadDialogDocument()"
+  (closed)="closeEadDialog()"
+  (exported)="onEadExported($event)"
+></app-ead-export-dialog>
