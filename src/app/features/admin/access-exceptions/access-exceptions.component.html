@@ -131,14 +131,11 @@
               (click)="togglePermission('firmar')"
               [class.selected]="permissions.firmar"
               [disabled]="!puedeFirmarPorEstado(selectedDocument)"
-              [attr.title]="!puedeFirmarPorEstado(selectedDocument) ? 'Solo en estados Firma o Firma parcial' : null"
+              [attr.title]="!puedeFirmarPorEstado(selectedDocument) ? 'Solo en estados Creación o Edición' : null"
             >
               Firmar
             </button>
           </div>
-          <p class="filter-hint" *ngIf="selectedDocument">
-            Edición: solo Creación / Edición. Firma: solo Firma / Firma parcial. Visualizar: cualquier estado.
-          </p>
           </div>
 
           <!-- Motivo -->
