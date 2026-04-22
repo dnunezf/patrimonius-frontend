@@ -50,7 +50,8 @@ export type ExceptionsPage = {
 export class AccessExceptionService {
   private rolesUrl = `${environment.apiUrl}/admin/roles`;
   private usersUrl = `${environment.apiUrl}/admin/users`;
-  private documentsUrl = `${environment.apiUrl}/`;
+  /** Solo documentos en CREACION / EDICION (admin). */
+  private documentsUrl = `${environment.apiUrl}/permissions/exceptions/documentos-elegibles`;
   private exceptionsUrl = `${environment.apiUrl}/permissions/exceptions`;
 
   constructor(private http: HttpClient) {}

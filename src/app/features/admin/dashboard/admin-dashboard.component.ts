@@ -33,24 +33,6 @@ export class AdminDashboardComponent {
       link: '/documentos/carga-masiva',
     },
     {
-      title: 'Gestión de Paquetes SIP',
-      description: 'Generar y transferir paquetes al AN.',
-      status: 'wip',
-      features: ['Generar SIP', 'Validar OAIS', 'Transferir al AN'],
-      icon: 'paquete',
-    },
-    {
-      title: 'Gestión de Disposiciones',
-      description: 'Control de plazos de conservación y eliminación.',
-      status: 'wip',
-      features: [
-        'Asignar plazos',
-        'Alertas automáticas',
-        'Evaluar eliminación',
-      ],
-      icon: 'plazos',
-    },
-    {
       title: 'Consultas de Bitácoras',
       description: 'Auditoría completa y exportación.',
       status: 'available',
