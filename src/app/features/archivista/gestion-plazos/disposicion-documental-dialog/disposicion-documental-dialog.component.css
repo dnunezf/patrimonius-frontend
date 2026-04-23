@@ -425,6 +425,15 @@
   font-weight: 600;
 }
 
+.dispo-badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .dispo-info-green {
   margin-top: 12px;
   padding: 10px 12px;

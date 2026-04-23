@@ -20,7 +20,7 @@ import { ToastService } from '../../../../shared/ui/toast.service';
 /** Valores del combo; listos para enviar al API cuando exista el endpoint. */
 export type TipoDisposicionId = 'TRANSFERENCIA_ARCHIVO_NACIONAL' | 'ELIMINACION';
 
-export type WizardStepDisposicion = 'form' | 'transferApprove' | 'eliminarConfirm';
+export type WizardStepDisposicion = 'form' | 'transferApprove' | 'eliminarApprove';
 
 @Component({
   selector: 'app-disposicion-documental-dialog',
@@ -60,8 +60,11 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
   step: WizardStepDisposicion = 'form';
   justificacionInicioGuardada = '';
   justificacionAprobacionTransferencia = '';
+  justificacionAprobacionEliminacion = '';
   apiSavingTransfer = false;
   apiErrorTransfer = '';
+  apiSavingEliminacion = false;
+  apiErrorEliminacion = '';
 
   documentosCount: number | null = null;
   documentosLoading = false;
@@ -71,9 +74,12 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
 
   private documentosSub?: Subscription;
   private transferSub?: Subscription;
+  private eliminacionSub?: Subscription;
 
   private readonly msgTransferenciaGenerica =
     'No se pudo completar la transferencia. Si el problema persiste, revise el detalle del expediente o contacte a soporte.';
+  private readonly msgEliminacionGenerica =
+    'No se pudo completar la eliminación. Si el problema persiste, revise el detalle del expediente o contacte a soporte.';
 
   constructor(
     private readonly gestionPlazos: GestionPlazosConservacionService,
@@ -89,8 +95,11 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
       this.step = 'form';
       this.justificacionInicioGuardada = '';
       this.justificacionAprobacionTransferencia = '';
+      this.justificacionAprobacionEliminacion = '';
       this.apiSavingTransfer = false;
       this.apiErrorTransfer = '';
+      this.apiSavingEliminacion = false;
+      this.apiErrorEliminacion = '';
       this.aplicarPoliticaSerieComoDefecto();
       this.justificacion = '';
       this.apiError = '';
@@ -102,6 +111,7 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
   ngOnDestroy(): void {
     this.documentosSub?.unsubscribe();
     this.transferSub?.unsubscribe();
+    this.eliminacionSub?.unsubscribe();
   }
 
   cerrar(): void {
@@ -139,7 +149,9 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     }
     if (this.tipoSeleccionado === 'ELIMINACION') {
       this.justificacionInicioGuardada = j;
-      this.step = 'eliminarConfirm';
+      this.step = 'eliminarApprove';
+      this.justificacionAprobacionEliminacion = '';
+      this.apiErrorEliminacion = '';
     }
   }
 
@@ -179,6 +191,99 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
   /**
    * La transferencia ya quedó persistida; la descarga es un paso aparte (si falla, no se revierte el estado).
    */
+  confirmarEliminacionFinal(): void {
+    const id = this.expediente?.id;
+    const jAprob = this.justificacionAprobacionEliminacion.trim();
+    if (!id || jAprob.length < 8 || this.apiSavingEliminacion) {
+      return;
+    }
+    this.apiSavingEliminacion = true;
+    this.apiErrorEliminacion = '';
+    this.eliminacionSub?.unsubscribe();
+    this.eliminacionSub = this.gestionPlazos
+      .ejecutarEliminacionDisposicionCompleta(id, {
+        justificacion_inicio: this.justificacionInicioGuardada,
+        justificacion_aprobacion: jAprob,
+      })
+      .subscribe({
+        next: () => {
+          this.apiSavingEliminacion = false;
+          this.procesoIniciado.emit({
+            expedienteId: id,
+            tipo: 'ELIMINACION',
+            justificacion: this.justificacionInicioGuardada,
+            abrirRevisionTrasCargar: false,
+          });
+          this.closed.emit();
+          this.intentarDescargarActaDocxEnSegundoPlano(id);
+        },
+        error: (err) => {
+          this.apiSavingEliminacion = false;
+          this.asignarMensajeErrorHttp(err, this.msgEliminacionGenerica, (m) => {
+            this.apiErrorEliminacion = m;
+          });
+        },
+      });
+  }
+
+  private intentarDescargarActaDocxEnSegundoPlano(expedienteId: number): void {
+    this.gestionPlazos.descargarActaEliminacionDocx(expedienteId).subscribe({
+      next: (blob) => {
+        if (this.esProbableJsonDeError(blob)) {
+          this.toasts.error(
+            'La eliminación se registró, pero el servidor no devolvió el acta. Consulte el detalle del expediente o descargue luego el Word.'
+          );
+          return;
+        }
+        this.descargarBlobArchivo(
+          blob,
+          this.expediente?.codigo ?? 'expediente',
+          'acta-eliminacion',
+          'docx'
+        );
+        this.toasts.success('Acta de eliminación descargada (Word).');
+      },
+      error: (err) => {
+        const body = (err as { error?: unknown })?.error;
+        if (body instanceof Blob) {
+          body
+            .text()
+            .then((t) => {
+              this.toasts.error(
+                this.parseJsonErrorText(t) ??
+                  'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar desde el detalle del expediente.'
+              );
+            })
+            .catch(() => {
+              this.toasts.error(
+                'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar desde el detalle del expediente.'
+              );
+            });
+          return;
+        }
+        this.toasts.error(
+          this.mensajeDesdeErrorHttp(err) ??
+            'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar luego.'
+        );
+      },
+    });
+  }
+
+  private descargarBlobArchivo(
+    blob: Blob,
+    codigoBase: string,
+    prefijo: string,
+    extension: string
+  ): void {
+    const safe = codigoBase.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safe}-${prefijo}.${extension}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   private intentarDescargarZipEnSegundoPlano(expedienteId: number): void {
     this.gestionPlazos.descargarPaqueteTransferenciaZip(expedienteId).subscribe({
       next: (blob) => {
@@ -226,18 +331,24 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     return t.includes('json') || t === '' || t === 'text/plain';
   }
 
-  private asignarMensajeErrorHttp(err: unknown, fallback: string): void {
+  private asignarMensajeErrorHttp(
+    err: unknown,
+    fallback: string,
+    assign?: (m: string) => void
+  ): void {
     const body = (err as { error?: unknown })?.error;
     if (body instanceof Blob) {
       body.text().then((t) => {
-        this.apiErrorTransfer = this.parseJsonErrorText(t) ?? fallback;
+        const m = this.parseJsonErrorText(t) ?? fallback;
+        (assign ?? ((x) => (this.apiErrorTransfer = x)))(m);
       }).catch(() => {
-        this.apiErrorTransfer = fallback;
+        (assign ?? ((x) => (this.apiErrorTransfer = x)))(fallback);
       });
       return;
     }
     const o = err as { error?: { error?: string; message?: string } };
-    this.apiErrorTransfer = o?.error?.error || o?.error?.message || fallback;
+    const msg = o?.error?.error || o?.error?.message || fallback;
+    (assign ?? ((x) => (this.apiErrorTransfer = x)))(msg);
   }
 
   private mensajeDesdeErrorHttp(err: unknown): string | null {
@@ -269,16 +380,11 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     URL.revokeObjectURL(url);
   }
 
-  cerrarConfirmacionEliminacion(): void {
-    this.toasts.info(
-      'La eliminación definitiva del expediente aún no está habilitada; el museo definirá el procedimiento.'
-    );
+  volverFormularioDesdeEliminacion(): void {
     this.step = 'form';
-    this.closed.emit();
-  }
-
-  cancelarConfirmacionEliminacion(): void {
-    this.step = 'form';
+    this.apiErrorEliminacion = '';
+    this.apiSavingEliminacion = false;
+    this.justificacionAprobacionEliminacion = '';
   }
 
   get puedeAvanzarDesdeFormulario(): boolean {
@@ -295,6 +401,14 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
       !!this.expediente?.id &&
       this.justificacionAprobacionTransferencia.trim().length >= 8 &&
       !this.apiSavingTransfer
+    );
+  }
+
+  get puedeConfirmarEliminacion(): boolean {
+    return (
+      !!this.expediente?.id &&
+      this.justificacionAprobacionEliminacion.trim().length >= 8 &&
+      !this.apiSavingEliminacion
     );
   }
 
@@ -320,25 +434,12 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     return `${n} ${n === 1 ? 'documento' : 'documentos'}`;
   }
 
-  get tiposFiltrados(): ReadonlyArray<{ id: TipoDisposicionId; label: string }> {
-    const p = String(this.expediente?.politica_disposicion ?? '')
-      .trim()
-      .toUpperCase();
-    if (!p) {
-      return this.tiposDisposicion;
-    }
-    if (p === 'CONSERVACION_PERMANENTE') {
-      return this.tiposDisposicion;
-    }
-    const map: Record<string, TipoDisposicionId> = {
-      ELIMINACION: 'ELIMINACION',
-      TRANSFERENCIA: 'TRANSFERENCIA_ARCHIVO_NACIONAL',
-    };
-    const id = map[p];
-    if (!id) {
-      return this.tiposDisposicion;
-    }
-    return this.tiposDisposicion.filter((t) => t.id === id);
+  /**
+   * HU-032: la transferencia o eliminación la define el archivista en este flujo
+   * (no se restringe por la política indicada en la serie).
+   */
+  get tiposElegibles(): ReadonlyArray<{ id: TipoDisposicionId; label: string }> {
+    return this.tiposDisposicion;
   }
 
   private aplicarPoliticaSerieComoDefecto(): void {
@@ -384,8 +485,10 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
   private resetLocal(): void {
     this.documentosSub?.unsubscribe();
     this.transferSub?.unsubscribe();
+    this.eliminacionSub?.unsubscribe();
     this.documentosSub = undefined;
     this.transferSub = undefined;
+    this.eliminacionSub = undefined;
     this.documentosCount = null;
     this.documentosLoading = false;
     this.documentosLoadFailed = false;

@@ -452,10 +452,29 @@ export class GestionPlazosConservacionService {
     );
   }
 
+  /** Inicio + revisión + acta + eliminación física (HU-032). */
+  ejecutarEliminacionDisposicionCompleta(
+    expedienteId: number,
+    body: { justificacion_inicio: string; justificacion_aprobacion: string }
+  ): Observable<unknown> {
+    return this.http.post(
+      `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/eliminacion/ejecutar`,
+      body
+    );
+  }
+
   /** ZIP de transferencia generado por la disposición (tras ejecutar). */
   descargarPaqueteTransferenciaZip(expedienteId: number): Observable<Blob> {
     return this.http.get(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/paquete-transferencia-zip`,
+      { responseType: 'blob' }
+    );
+  }
+
+  /** Acta de eliminación en Word (.docx), tras ejecutar eliminación. */
+  descargarActaEliminacionDocx(expedienteId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/acta-eliminacion-docx`,
       { responseType: 'blob' }
     );
   }

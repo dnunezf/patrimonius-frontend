@@ -83,13 +83,14 @@
               name="tipoDisposicion"
               [(ngModel)]="tipoSeleccionado"
             >
-              <option *ngFor="let t of tiposFiltrados" [ngValue]="t.id">
+              <option *ngFor="let t of tiposElegibles" [ngValue]="t.id">
                 {{ t.label }}
               </option>
             </select>
           </div>
           <p class="dispo-field__hint" *ngIf="expediente?.politica_disposicion">
-            La serie define la política «{{ expediente?.politica_disposicion }}»; solo se permite ese tipo.
+            Política indicada en la serie: «{{ expediente?.politica_disposicion }}» (referencia; la decisión
+            de disposición la registra usted en este acto).
           </p>
         </div>
 
@@ -219,22 +220,23 @@
       </footer>
     </ng-container>
 
-    <!-- Eliminación: solo confirmación visual (sin API) -->
-    <ng-container *ngIf="step === 'eliminarConfirm' && expediente">
+    <!-- Eliminación: confirmación y aprobación (acta + archivos) -->
+    <ng-container *ngIf="step === 'eliminarApprove' && expediente">
       <header class="dispo-modal__head dispo-modal__head--danger">
         <div class="dispo-modal__title-block">
           <span class="dispo-warn-icon" aria-hidden="true">!</span>
           <div>
-            <h2 class="dispo-modal__title dispo-title-danger">Confirmación requerida</h2>
+            <h2 class="dispo-modal__title dispo-title-danger">Confirmación: eliminación de archivos</h2>
             <p class="dispo-modal__subtitle">
-              Esta acción quedará registrada en auditoría cuando el procedimiento esté definido.
+              Se generará el acta en PDF, se eliminarán los archivos digitales y el expediente quedará en
+              estado eliminado (se conservan metadatos y trazas en bitácora).
             </p>
           </div>
         </div>
         <button
           type="button"
           class="dispo-modal__close"
-          (click)="cancelarConfirmacionEliminacion()"
+          (click)="volverFormularioDesdeEliminacion()"
           aria-label="Cerrar"
         >
           ×
@@ -243,13 +245,12 @@
 
       <div class="dispo-modal__body">
         <div class="dispo-warn-box">
-          <strong>Advertencia:</strong>
-          Está a punto de confirmar una <strong>eliminación</strong> documental. Por política del museo, la
-          ejecución en sistema aún no está activa.
+          <strong>Advertencia:</strong> revisión requerida. No hay eliminación automática por el sistema: esta
+          acción solo se ejecuta con su confirmación explícita.
         </div>
 
         <div class="dispo-card">
-          <div class="dispo-card__row">
+          <div class="dispo-card__row dispo-card__row--strong">
             <span class="dispo-card__label">Expediente</span>
             <span class="dispo-card__value">{{ tituloExpediente() }}</span>
           </div>
@@ -257,17 +258,40 @@
             <span class="dispo-card__label">Código</span>
             <span class="dispo-card__value dispo-card__value--mono">{{ codigoExpediente() }}</span>
           </div>
+          <div class="dispo-card__row">
+            <span class="dispo-card__label">Acción</span>
+            <span class="dispo-badge-danger">Eliminación + acta</span>
+          </div>
         </div>
 
-        <p class="dispo-confirm-prompt">¿Desea cerrar este aviso?</p>
+        <label class="dispo-field__label" for="dispo-just-aprob-elim">
+          Justificación de aprobación <span class="dispo-field__req">*</span>
+        </label>
+        <textarea
+          id="dispo-just-aprob-elim"
+          class="dispo-textarea"
+          rows="4"
+          [(ngModel)]="justificacionAprobacionEliminacion"
+          placeholder="Indique la justificación para aprobar esta eliminación…"
+        ></textarea>
+        <p class="dispo-field__hint">Esta justificación quedará registrada en la bitácora del expediente.</p>
+        <p class="dispo-field__help" *ngIf="justificacionAprobacionEliminacion.trim().length > 0 && justificacionAprobacionEliminacion.trim().length < 8">
+          Ingrese al menos 8 caracteres.
+        </p>
+        <p class="dispo-field__help dispo-field__help--err" *ngIf="apiErrorEliminacion">{{ apiErrorEliminacion }}</p>
       </div>
 
       <footer class="dispo-modal__foot">
-        <button type="button" class="dispo-btn dispo-btn--cancel" (click)="cancelarConfirmacionEliminacion()">
+        <button type="button" class="dispo-btn dispo-btn--cancel" (click)="volverFormularioDesdeEliminacion()">
           Volver
         </button>
-        <button type="button" class="dispo-btn dispo-btn--danger" (click)="cerrarConfirmacionEliminacion()">
-          Entendido
+        <button
+          type="button"
+          class="dispo-btn dispo-btn--danger"
+          [disabled]="!puedeConfirmarEliminacion"
+          (click)="confirmarEliminacionFinal()"
+        >
+          {{ apiSavingEliminacion ? 'Procesando…' : 'Aprobar eliminación' }}
         </button>
       </footer>
     </ng-container>
