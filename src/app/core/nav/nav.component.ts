@@ -240,12 +240,19 @@ export class NavComponent {
     return tipo === 'EXPEDIENTE_CONSERVACION_VENCIDO';
   }
 
+  isExpedienteConservacionProximoNotif(tipo?: string | null): boolean {
+    return tipo === 'EXPEDIENTE_CONSERVACION_PROXIMO';
+  }
+
   titleForNotif(tipo?: string): string {
     if (this.isRevisionExpedientesActivosNotif(tipo)) {
       return 'Revisión de expedientes activos';
     }
     if (this.isExpedienteConservacionVencidoNotif(tipo)) {
       return 'Plazo de conservación vencido';
+    }
+    if (this.isExpedienteConservacionProximoNotif(tipo)) {
+      return 'Plazo próximo a vencer (expediente)';
     }
     switch (tipo) {
       case 'PLAZO_ASIGNADO':

@@ -318,7 +318,7 @@
           </td>
           <td>{{ row.serie_nombre || '—' }}</td>
           <td>{{ row.subserie_nombre || '—' }}</td>
-          <td>{{ row.total_documentos ?? '—' }}</td>
+          <td>{{ totalDocumentosConsultaExpediente(row) }}</td>
           <td>{{ formatDate(row.fecha_creacion) }}</td>
           <td class="actions-cell">
             <div class="actions-stack">

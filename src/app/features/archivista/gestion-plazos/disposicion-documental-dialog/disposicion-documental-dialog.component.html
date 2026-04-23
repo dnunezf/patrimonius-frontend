@@ -1,7 +1,7 @@
 <div
   class="dispo-overlay"
   *ngIf="open"
-  (click)="cerrar()"
+  (click)="onBackdropClick()"
   role="presentation"
 >
   <div
@@ -9,137 +9,291 @@
     (click)="$event.stopPropagation()"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="dispo-dialog-title"
+    [attr.aria-labelledby]="step === 'form' ? 'dispo-dialog-title' : null"
   >
-    <header class="dispo-modal__head">
-      <div class="dispo-modal__title-block">
-        <span class="dispo-modal__play-icon" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="#ea580c" stroke-width="1.5"/>
-            <path d="M10 9.5v5l4-2.5-4-2.5z" fill="#ea580c"/>
-          </svg>
-        </span>
-        <div>
-          <h2 id="dispo-dialog-title" class="dispo-modal__title">
-            Iniciar Proceso de Disposición Documental
-          </h2>
-          <p class="dispo-modal__subtitle">
-            Seleccione el tipo de disposición y justifique la acción
+    <!-- Paso 1: formulario inicial -->
+    <ng-container *ngIf="step === 'form'">
+      <header class="dispo-modal__head">
+        <div class="dispo-modal__title-block">
+          <span class="dispo-modal__play-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="#ea580c" stroke-width="1.5"/>
+              <path d="M10 9.5v5l4-2.5-4-2.5z" fill="#ea580c"/>
+            </svg>
+          </span>
+          <div>
+            <h2 id="dispo-dialog-title" class="dispo-modal__title">
+              Iniciar Proceso de Disposición Documental
+            </h2>
+            <p class="dispo-modal__subtitle">
+              Seleccione el tipo de disposición y justifique la acción
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="dispo-modal__close"
+          (click)="cerrar()"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="dispo-modal__body" *ngIf="open && expediente">
+        <div class="dispo-card">
+          <div class="dispo-card__row dispo-card__row--strong">
+            <span class="dispo-card__label">Expediente</span>
+            <span class="dispo-card__value">{{ tituloExpediente() }}</span>
+          </div>
+          <div class="dispo-card__row">
+            <span class="dispo-card__label">Código</span>
+            <span class="dispo-card__value dispo-card__value--mono">{{ codigoExpediente() }}</span>
+          </div>
+          <div class="dispo-card__row dispo-card__row--docs">
+            <span class="dispo-card__label">Documentos</span>
+            <span class="dispo-card__docs">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M7 3h8l4 4v13a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="#64748b" stroke-width="1.3"/>
+                <path d="M14 3v4h4" stroke="#64748b" stroke-width="1.3"/>
+              </svg>
+              {{ textoDocumentos() }}
+            </span>
+          </div>
+        </div>
+
+        <div class="dispo-field">
+          <label class="dispo-field__label" for="dispo-tipo">
+            Tipo de disposición
+            <span class="dispo-field__req" title="Requerido">*</span>
+          </label>
+          <div class="dispo-select-row">
+            <span class="dispo-tipo-icon" [ngSwitch]="tipoSeleccionado" aria-hidden="true">
+              <svg *ngSwitchCase="'TRANSFERENCIA_ARCHIVO_NACIONAL'" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M3 12l18-9-9 18-2-8-8-1z" fill="#2563eb" stroke="#1d4ed8" stroke-width="1" stroke-linejoin="round"/>
+              </svg>
+              <svg *ngSwitchCase="'ELIMINACION'" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M19 7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V7" stroke="#dc2626" stroke-width="1.4"/>
+                <path d="M10 11v6M14 11v6" stroke="#dc2626" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <select
+              id="dispo-tipo"
+              class="dispo-select"
+              name="tipoDisposicion"
+              [(ngModel)]="tipoSeleccionado"
+            >
+              <option *ngFor="let t of tiposElegibles" [ngValue]="t.id">
+                {{ t.label }}
+              </option>
+            </select>
+          </div>
+          <p class="dispo-field__hint" *ngIf="expediente?.politica_disposicion">
+            Política indicada en la serie: «{{ expediente?.politica_disposicion }}» (referencia; la decisión
+            de disposición la registra usted en este acto).
+          </p>
+        </div>
+
+        <div class="dispo-field">
+          <label class="dispo-field__label" for="dispo-just">
+            Justificación
+            <span class="dispo-field__req" title="Requerido">*</span>
+          </label>
+          <textarea
+            id="dispo-just"
+            class="dispo-textarea"
+            name="justificacion"
+            rows="4"
+            [(ngModel)]="justificacion"
+            placeholder="Describa los motivos de la disposición documental…"
+          ></textarea>
+          <p class="dispo-field__help" *ngIf="justificacion.trim().length > 0 && justificacion.trim().length < 8">
+            Ingrese al menos 8 caracteres.
+          </p>
+          <p class="dispo-field__hint">
+            Esta justificación quedará registrada en la bitácora del expediente.
+          </p>
+          <p class="dispo-field__help dispo-field__help--err" *ngIf="apiError">{{ apiError }}</p>
+        </div>
+
+        <div class="dispo-alert" role="status">
+          <span class="dispo-alert__icon" aria-hidden="true">i</span>
+          <p>
+            La disposición documental es una acción crítica que quedará completamente registrada en la
+            bitácora.
           </p>
         </div>
       </div>
-      <button
-        type="button"
-        class="dispo-modal__close"
-        (click)="cerrar()"
-        aria-label="Cerrar"
-      >
-        ×
-      </button>
-    </header>
 
-    <div class="dispo-modal__body" *ngIf="open && expediente">
-      <div class="dispo-card">
-        <div class="dispo-card__row dispo-card__row--strong">
-          <span class="dispo-card__label">Expediente</span>
-          <span class="dispo-card__value">{{ tituloExpediente() }}</span>
-        </div>
-        <div class="dispo-card__row">
-          <span class="dispo-card__label">Código</span>
-          <span class="dispo-card__value dispo-card__value--mono">{{ codigoExpediente() }}</span>
-        </div>
-        <div class="dispo-card__row dispo-card__row--docs">
-          <span class="dispo-card__label">Documentos</span>
-          <span class="dispo-card__docs">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M7 3h8l4 4v13a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="#64748b" stroke-width="1.3"/>
-              <path d="M14 3v4h4" stroke="#64748b" stroke-width="1.3"/>
-            </svg>
-            {{ textoDocumentos() }}
-          </span>
-        </div>
-      </div>
-
-      <div class="dispo-field">
-        <label class="dispo-field__label" for="dispo-tipo">
-          Tipo de disposición
-          <span class="dispo-field__req" title="Requerido">*</span>
-        </label>
-        <div class="dispo-select-row">
-          <span class="dispo-tipo-icon" [ngSwitch]="tipoSeleccionado" aria-hidden="true">
-            <svg *ngSwitchCase="'TRANSFERENCIA_ARCHIVO_NACIONAL'" width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M3 12l18-9-9 18-2-8-8-1z" fill="#2563eb" stroke="#1d4ed8" stroke-width="1" stroke-linejoin="round"/>
-            </svg>
-            <svg *ngSwitchCase="'ELIMINACION'" width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M19 7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V7" stroke="#dc2626" stroke-width="1.4"/>
-              <path d="M10 11v6M14 11v6" stroke="#dc2626" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            <svg *ngSwitchCase="'CONSERVACION_PERMANENTE'" width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3l8 4v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V7l8-4z" fill="#16a34a" stroke="#15803d" stroke-width="1.2" stroke-linejoin="round"/>
-              <path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <footer class="dispo-modal__foot" *ngIf="step === 'form'">
+        <button type="button" class="dispo-btn dispo-btn--cancel" (click)="cerrar()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="dispo-btn dispo-btn--primary"
+          [disabled]="!puedeAvanzarDesdeFormulario"
+          (click)="avanzarDesdeFormulario()"
+        >
+          <span class="dispo-btn__play" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M10 9v6l5-3-5-3z" fill="currentColor"/>
             </svg>
           </span>
-          <select
-            id="dispo-tipo"
-            class="dispo-select"
-            name="tipoDisposicion"
-            [(ngModel)]="tipoSeleccionado"
-          >
-            <option *ngFor="let t of tiposDisposicion" [ngValue]="t.id">
-              {{ t.label }}
-            </option>
-          </select>
-        </div>
-        <p class="dispo-field__hint">
-          Esta justificación quedará registrada en la bitácora de auditoría.
-        </p>
-      </div>
+          Continuar
+        </button>
+      </footer>
+    </ng-container>
 
-      <div class="dispo-field">
-        <label class="dispo-field__label" for="dispo-just">
-          Justificación
-          <span class="dispo-field__req" title="Requerido">*</span>
+    <!-- Paso transferencia: confirmación / aprobación (ZIP) -->
+    <ng-container *ngIf="step === 'transferApprove' && expediente">
+      <header class="dispo-modal__head dispo-modal__head--green">
+        <div class="dispo-modal__title-block">
+          <div>
+            <h2 class="dispo-modal__title">Confirmación requerida</h2>
+            <p class="dispo-modal__subtitle">
+              Confirme la aprobación para generar el paquete ZIP de transferencia y ejecutar el cambio de estado.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="dispo-modal__close"
+          (click)="volverAlFormularioDesdePaso()"
+          aria-label="Volver"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="dispo-modal__body">
+        <div class="dispo-card">
+          <div class="dispo-card__row dispo-card__row--strong">
+            <span class="dispo-card__label">Expediente</span>
+            <span class="dispo-card__value">{{ tituloExpediente() }}</span>
+          </div>
+          <div class="dispo-card__row">
+            <span class="dispo-card__label">Código</span>
+            <span class="dispo-card__value dispo-card__value--mono">{{ codigoExpediente() }}</span>
+          </div>
+          <div class="dispo-card__row">
+            <span class="dispo-card__label">Acción a ejecutar</span>
+            <span class="dispo-badge-transfer">Transferencia (paquete ZIP)</span>
+          </div>
+        </div>
+
+        <label class="dispo-field__label" for="dispo-just-aprob-trans">
+          Justificación de aprobación <span class="dispo-field__req">*</span>
         </label>
         <textarea
-          id="dispo-just"
+          id="dispo-just-aprob-trans"
           class="dispo-textarea"
-          name="justificacion"
           rows="4"
-          [(ngModel)]="justificacion"
-          placeholder="Describa los motivos de la disposición documental…"
+          [(ngModel)]="justificacionAprobacionTransferencia"
+          placeholder="Indique la justificación para aprobar esta transferencia…"
         ></textarea>
-        <p class="dispo-field__help" *ngIf="justificacion.trim().length > 0 && justificacion.trim().length < 8">
+        <p class="dispo-field__hint">Esta justificación quedará registrada en la bitácora del expediente.</p>
+        <p class="dispo-field__help" *ngIf="justificacionAprobacionTransferencia.trim().length > 0 && justificacionAprobacionTransferencia.trim().length < 8">
           Ingrese al menos 8 caracteres.
         </p>
+
+        <div class="dispo-info-green" role="status">
+          La aprobación autoriza la generación del paquete ZIP oficial y la ejecución de la disposición final supervisada.
+        </div>
+
+        <p class="dispo-field__help dispo-field__help--err" *ngIf="apiErrorTransfer">{{ apiErrorTransfer }}</p>
       </div>
 
-      <div class="dispo-alert" role="status">
-        <span class="dispo-alert__icon" aria-hidden="true">i</span>
-        <p>
-          La disposición documental es una acción crítica que quedará completamente registrada en la
-          bitácora.
+      <footer class="dispo-modal__foot">
+        <button type="button" class="dispo-btn dispo-btn--cancel" (click)="volverAlFormularioDesdePaso()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="dispo-btn dispo-btn--transfer-ok"
+          [disabled]="!puedeConfirmarTransferencia"
+          (click)="confirmarTransferenciaFinal()"
+        >
+          {{ apiSavingTransfer ? 'Procesando…' : 'Aprobar transferencia' }}
+        </button>
+      </footer>
+    </ng-container>
+
+    <!-- Eliminación: confirmación y aprobación (acta + archivos) -->
+    <ng-container *ngIf="step === 'eliminarApprove' && expediente">
+      <header class="dispo-modal__head dispo-modal__head--danger">
+        <div class="dispo-modal__title-block">
+          <span class="dispo-warn-icon" aria-hidden="true">!</span>
+          <div>
+            <h2 class="dispo-modal__title dispo-title-danger">Confirmación: eliminación de archivos</h2>
+            <p class="dispo-modal__subtitle">
+              Se generará el acta en PDF, se eliminarán los archivos digitales y el expediente quedará en
+              estado eliminado (se conservan metadatos y trazas en bitácora).
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="dispo-modal__close"
+          (click)="volverFormularioDesdeEliminacion()"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="dispo-modal__body">
+        <div class="dispo-warn-box">
+          <strong>Advertencia:</strong> revisión requerida. No hay eliminación automática por el sistema: esta
+          acción solo se ejecuta con su confirmación explícita.
+        </div>
+
+        <div class="dispo-card">
+          <div class="dispo-card__row dispo-card__row--strong">
+            <span class="dispo-card__label">Expediente</span>
+            <span class="dispo-card__value">{{ tituloExpediente() }}</span>
+          </div>
+          <div class="dispo-card__row">
+            <span class="dispo-card__label">Código</span>
+            <span class="dispo-card__value dispo-card__value--mono">{{ codigoExpediente() }}</span>
+          </div>
+          <div class="dispo-card__row">
+            <span class="dispo-card__label">Acción</span>
+            <span class="dispo-badge-danger">Eliminación + acta</span>
+          </div>
+        </div>
+
+        <label class="dispo-field__label" for="dispo-just-aprob-elim">
+          Justificación de aprobación <span class="dispo-field__req">*</span>
+        </label>
+        <textarea
+          id="dispo-just-aprob-elim"
+          class="dispo-textarea"
+          rows="4"
+          [(ngModel)]="justificacionAprobacionEliminacion"
+          placeholder="Indique la justificación para aprobar esta eliminación…"
+        ></textarea>
+        <p class="dispo-field__hint">Esta justificación quedará registrada en la bitácora del expediente.</p>
+        <p class="dispo-field__help" *ngIf="justificacionAprobacionEliminacion.trim().length > 0 && justificacionAprobacionEliminacion.trim().length < 8">
+          Ingrese al menos 8 caracteres.
         </p>
+        <p class="dispo-field__help dispo-field__help--err" *ngIf="apiErrorEliminacion">{{ apiErrorEliminacion }}</p>
       </div>
-    </div>
 
-    <footer class="dispo-modal__foot">
-      <button type="button" class="dispo-btn dispo-btn--cancel" (click)="cerrar()">
-        Cancelar
-      </button>
-      <button
-        type="button"
-        class="dispo-btn dispo-btn--primary"
-        [disabled]="!puedeConfirmar"
-        (click)="confirmar()"
-      >
-        <span class="dispo-btn__play" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M10 9v6l5-3-5-3z" fill="currentColor"/>
-          </svg>
-        </span>
-        Iniciar disposición
-      </button>
-    </footer>
+      <footer class="dispo-modal__foot">
+        <button type="button" class="dispo-btn dispo-btn--cancel" (click)="volverFormularioDesdeEliminacion()">
+          Volver
+        </button>
+        <button
+          type="button"
+          class="dispo-btn dispo-btn--danger"
+          [disabled]="!puedeConfirmarEliminacion"
+          (click)="confirmarEliminacionFinal()"
+        >
+          {{ apiSavingEliminacion ? 'Procesando…' : 'Aprobar eliminación' }}
+        </button>
+      </footer>
+    </ng-container>
   </div>
 </div>
