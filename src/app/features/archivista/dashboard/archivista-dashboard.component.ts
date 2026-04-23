@@ -12,37 +12,6 @@ import { Router } from '@angular/router';
 export class ArchivistaDashboardComponent {
   constructor(private router: Router) {}
 
-  statsCards = [
-    {
-      title: 'Documentos Recibidos',
-      value: '1',
-      subtitle: 'Pendientes de clasificación',
-      icon: 'folder-open',
-      iconClass: 'icon-blue',
-    },
-    {
-      title: 'En Conservación',
-      value: '1',
-      subtitle: 'Conservación activa',
-      icon: 'shield',
-      iconClass: 'icon-green',
-    },
-    {
-      title: 'Próximos a Disposición',
-      value: '1',
-      subtitle: 'Requieren evaluación',
-      icon: 'clock',
-      iconClass: 'icon-orange',
-    },
-    {
-      title: 'Eventos de Auditoría',
-      value: '3',
-      subtitle: 'Registros totales',
-      icon: 'activity',
-      iconClass: 'icon-gray',
-    },
-  ];
-
   moduleCards = [
     {
       title: 'Clasificación Archivistica',
@@ -55,16 +24,6 @@ export class ArchivistaDashboardComponent {
       link: '/archivista/clasificacion',
     },
     {
-      title: 'Clasificación y Descripción (HU-022)',
-      description:
-        'Clasificar y describir archivísticamente con metadatos OAIS completos',
-      badge: '1 por clasificar',
-      features: ['Clasificar jerarquía', 'Completar metadatos', 'Validar OAIS'],
-      icon: 'file-text',
-      iconClass: 'soft-green',
-      link: '/archivista/clasificacion',
-    },
-    {
       title: 'Seguimiento de Conservación ',
       description:
         'Control de vigencia y disposición final de documentos archivados',
@@ -74,7 +33,7 @@ export class ArchivistaDashboardComponent {
       iconClass: 'soft-cyan',
       link: '/archivista/gestion-plazos',
     },
-  
+
   ];
 
   goTo(link?: string): void {

@@ -943,3 +943,17 @@
     justify-content: flex-start;
   }
 }
+
+.search-history-text .muted.small {
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
+.search-history-item {
+  align-items: flex-start;
+}
+
+.search-history-date {
+  font-size: 0.82rem;
+  padding-top: 0.1rem;
+}

@@ -58,6 +58,68 @@
       <button type="button" class="btn ghost panel-block__back" (click)="volver()">Regresar</button>
     </header>
 
+    <div class="search-history-wrap">
+      <div class="search-history-box">
+        <div class="filtros__actions" style="padding-top: 0; margin-bottom: 0.85rem;">
+          <button
+            type="button"
+            class="btn ghost"
+            (click)="toggleHistorialBusquedas()"
+            [disabled]="loadingHistorial || historialVisible.length === 0"
+          >
+            {{ loadingHistorial ? 'Cargando búsquedas…' : 'Búsquedas recientes' }}
+          </button>
+
+          <span class="muted small" *ngIf="!loadingHistorial && historialVisible.length > 0">
+        Últimas {{ historialVisible.length }} búsquedas guardadas
+      </span>
+
+          <span class="muted small" *ngIf="!loadingHistorial && historialVisible.length === 0">
+        Aún no hay búsquedas recientes
+      </span>
+        </div>
+
+        <div
+          class="search-history-dropdown"
+          *ngIf="mostrarSugerenciasHistorial && historialVisible.length > 0"
+        >
+          <button
+            type="button"
+            class="search-history-item"
+            *ngFor="let item of historialVisible"
+            (click)="seleccionarSugerenciaHistorial(item)"
+          >
+            <div class="search-history-text">
+              <div>
+                <strong>{{ item.texto_busqueda }}</strong>
+                <span class="pill ok sm" style="margin-left: 0.5rem;">
+              {{ labelVistaHistorial(item) }}
+            </span>
+              </div>
+
+              <div class="muted small" *ngIf="resumenBusquedaHistorial(item)">
+                {{ resumenBusquedaHistorial(item) }}
+              </div>
+            </div>
+
+            <span class="search-history-date">
+          {{ formatDateTime(item.fecha_consulta) }}
+        </span>
+          </button>
+
+          <div class="search-history-footer">
+            <button
+              type="button"
+              class="search-history-clear"
+              (click)="limpiarHistorialBusquedas()"
+            >
+              Limpiar historial
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <section class="panel filtros filtros--ext-doc" *ngIf="vistaActual === 'documentos'">
       <div class="field">
         <label>Código</label>
@@ -511,7 +573,7 @@
             <tr>
               <th>Código</th>
               <th>Nombre del documento</th>
-              <th>Categoría</th>
+              <th>Categoría</th>ía
               <th>Fecha</th>
               <th>Estado</th>
               <th>Acciones</th>

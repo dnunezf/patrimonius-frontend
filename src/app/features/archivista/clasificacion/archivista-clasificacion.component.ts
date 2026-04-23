@@ -187,7 +187,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     this.loadingExpedientes = true;
     this.errorExpedientes = '';
 
-    this.http.get<ExpedienteRow[]>(`${this.apiUrl}/api/admin/expedientes`).subscribe({
+    this.http.get<ExpedienteRow[]>(`${this.apiUrl}/api/expedientes`).subscribe({
       next: (response) => {
         this.expedientes = response ?? [];
         this.aplicarFiltroExpedientes();

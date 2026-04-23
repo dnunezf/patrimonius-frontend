@@ -54,6 +54,68 @@
       </div>
     </header>
 
+    <div class="search-history-wrap">
+      <div class="search-history-box">
+        <div class="filtros__actions" style="padding-top: 0; margin-bottom: 0.85rem;">
+          <button
+            type="button"
+            class="btn ghost"
+            (click)="mostrarSugerenciasHistorial = !mostrarSugerenciasHistorial"
+            [disabled]="loadingHistorial || historialVisible.length === 0"
+          >
+            {{ loadingHistorial ? 'Cargando búsquedas…' : 'Búsquedas recientes' }}
+          </button>
+
+          <span class="muted small" *ngIf="!loadingHistorial && historialVisible.length > 0">
+        Últimas {{ historialVisible.length }} búsquedas guardadas
+      </span>
+
+          <span class="muted small" *ngIf="!loadingHistorial && historialVisible.length === 0">
+        Aún no hay búsquedas recientes
+      </span>
+        </div>
+
+        <div
+          class="search-history-dropdown"
+          *ngIf="mostrarSugerenciasHistorial && historialVisible.length > 0"
+        >
+          <button
+            type="button"
+            class="search-history-item"
+            *ngFor="let item of historialVisible"
+            (click)="usarBusquedaHistorial(item)"
+          >
+            <div class="search-history-text">
+              <div>
+                <strong>{{ item.texto_busqueda }}</strong>
+                <span class="pill ok sm" style="margin-left: 0.5rem;">
+              {{ labelVistaHistorial(item) }}
+            </span>
+              </div>
+
+              <div class="muted small" *ngIf="formatHistorialResumen(item)">
+                {{ formatHistorialResumen(item) }}
+              </div>
+            </div>
+
+            <span class="search-history-date">
+          {{ formatDateTime(item.fecha_consulta) }}
+        </span>
+          </button>
+
+          <div class="search-history-footer">
+            <button
+              type="button"
+              class="search-history-clear"
+              (click)="limpiarHistorialBusquedas()"
+            >
+              Limpiar historial
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <section class="panel filtros filtros--int-doc" *ngIf="vistaActual === 'documentos'">
       <div class="field">
         <label>Código</label>
@@ -65,43 +127,14 @@
         />
       </div>
 
-      <div class="field field--span-2 search-history-wrap">
+      <div class="field field--span-2">
         <label>Nombre / palabra clave <span class="label-optional">(opcional)</span></label>
-        <div class="search-history-box">
-          <input
-            type="search"
-            [(ngModel)]="nombreDocumentoFiltro"
-            placeholder="Título, metadatos…"
-            (focus)="onFocusBusqueda()"
-            (blur)="onBlurBusqueda()"
-            (input)="mostrarSugerenciasHistorial = true"
-            (keyup.enter)="aplicarFiltrosConsulta()"
-          />
-          <div
-            class="search-history-dropdown"
-            *ngIf="mostrarSugerenciasHistorial && historialVisible.length > 0"
-          >
-            <button
-              type="button"
-              class="search-history-item"
-              *ngFor="let item of historialVisible"
-              (mousedown)="seleccionarSugerenciaHistorial(item)"
-              title="Volver a ejecutar esta búsqueda"
-            >
-              <span class="search-history-text">{{ item.texto_busqueda }}</span>
-              <small class="search-history-date">{{ formatDateTime(item.fecha_consulta) }}</small>
-            </button>
-            <div class="search-history-footer">
-              <button
-                type="button"
-                class="search-history-clear"
-                (mousedown)="limpiarHistorialBusquedas()"
-              >
-                Limpiar historial
-              </button>
-            </div>
-          </div>
-        </div>
+        <input
+          type="search"
+          [(ngModel)]="nombreDocumentoFiltro"
+          placeholder="Título, metadatos…"
+          (keyup.enter)="aplicarFiltrosConsulta()"
+        />
       </div>
 
       <div class="field">

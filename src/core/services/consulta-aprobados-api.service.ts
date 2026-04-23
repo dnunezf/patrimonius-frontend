@@ -73,6 +73,7 @@ export type ConsultaSearchQuery = {
   titulo?: string;
   nombre?: string;
   soloConElegibles?: string | boolean;
+  vista?: 'documentos' | 'expedientes';
 
   page?: number;
   pageSize?: number;
