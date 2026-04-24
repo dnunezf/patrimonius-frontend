@@ -1,0 +1,69 @@
+<div class="rev-overlay" *ngIf="open" (click)="cerrar()" role="presentation">
+  <div class="rev-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <header class="rev-head">
+      <h2 class="rev-title">Revisión obligatoria del expediente</h2>
+      <p class="rev-sub">
+        Valide el cumplimiento de todos los requisitos antes de aprobar la disposición documental.
+      </p>
+      <button type="button" class="rev-close" (click)="cerrar()" aria-label="Cerrar">×</button>
+    </header>
+
+    <div class="rev-body" *ngIf="expediente as ex">
+      <div class="rev-card">
+        <div class="rev-row">
+          <span class="rev-label">Expediente</span>
+          <span class="rev-val">{{ ex.nombre }}</span>
+        </div>
+        <div class="rev-row">
+          <span class="rev-label">Código</span>
+          <span class="rev-val rev-mono">{{ ex.codigo }}</span>
+        </div>
+        <div class="rev-row">
+          <span class="rev-label">Política / acción</span>
+          <span class="rev-badge">{{ etiquetaAccion() }}</span>
+        </div>
+      </div>
+
+      <h3 class="rev-h3">Validación de requisitos <span class="rev-req">*</span></h3>
+      <label class="rev-check">
+        <input type="checkbox" [(ngModel)]="metadatosOk" />
+        Metadatos completos y correctos
+      </label>
+      <label class="rev-check">
+        <input type="checkbox" [(ngModel)]="firmaOk" />
+        Firma digital válida y verificada (cuando aplica al expediente)
+      </label>
+      <label class="rev-check">
+        <input type="checkbox" [(ngModel)]="plazoOk" />
+        Plazo de retención cumplido correctamente
+      </label>
+      <label class="rev-check">
+        <input type="checkbox" [(ngModel)]="politicaOk" />
+        Política de disposición aplicada correctamente
+      </label>
+
+      <label class="rev-notes-label" for="rev-notas">Notas de revisión (opcional)</label>
+      <textarea
+        id="rev-notas"
+        class="rev-notes"
+        rows="3"
+        [(ngModel)]="notas"
+        placeholder="Observaciones adicionales sobre el expediente…"
+      ></textarea>
+
+      <p class="rev-err" *ngIf="errorMsg">{{ errorMsg }}</p>
+    </div>
+
+    <footer class="rev-foot">
+      <button type="button" class="btn ghost" (click)="cerrar()">Cancelar</button>
+      <button
+        type="button"
+        class="btn warn"
+        [disabled]="!puedeCompletar"
+        (click)="guardar()"
+      >
+        {{ saving ? 'Guardando…' : 'Completar revisión' }}
+      </button>
+    </footer>
+  </div>
+</div>

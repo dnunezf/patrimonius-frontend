@@ -18,6 +18,19 @@
     </div>
 
     <div class="form-group">
+      <label for="plazo">Plazo de conservación (años) *</label>
+      <input
+        type="number"
+        id="plazo"
+        name="plazo"
+        min="1"
+        step="1"
+        [(ngModel)]="plazo_conservacion_anios"
+        required
+      />
+    </div>
+
+    <div class="form-group">
       <select id="unidad" [(ngModel)]="unidad_id" name="unidad" required>
         <option [ngValue]="0" disabled>Seleccione una unidad organizacional</option>
         <option *ngFor="let unidad of unidades" [ngValue]="unidad.id">

@@ -112,3 +112,95 @@ export type IntakePayload = {
     senderInstitution?: string | null;
   } | null;
 };
+
+/* =========================
+ * HU-035 · EAD 2002 export
+ * ========================= */
+
+export type EadExportStatus = 'NO_EXPORTADO' | 'EXPORTADO';
+
+export type ConservationEadDocumentRow = {
+  id: number;
+  officialCode: string;
+  title: string;
+  state: string;
+  accessLevel?: ConfidentialityLevel | null;
+
+  serieId?: number | null;
+  serieCode?: string | null;
+  serieName?: string | null;
+
+  subserieId?: number | null;
+  subserieCode?: string | null;
+  subserieName?: string | null;
+
+  expedienteId?: number | null;
+  expedienteCode?: string | null;
+  expedienteName?: string | null;
+
+  createdAtISO?: string | null;
+  eadStatus?: EadExportStatus | null;
+  lastExportedAtISO?: string | null;
+};
+
+export type EadPreviewValidationItem = {
+  key: string;
+  label: string;
+  valid: boolean;
+  message?: string | null;
+};
+
+export type EadPreviewTreeNode = {
+  tag: string;
+  label: string;
+  value?: string | null;
+  children?: EadPreviewTreeNode[];
+};
+
+export type EadPreviewResponse = {
+  canExport: boolean;
+  fileName: string;
+
+  document: {
+    id: number;
+    officialCode: string;
+    title: string;
+    state: string;
+    serieName?: string | null;
+    subserieName?: string | null;
+    expedienteCode?: string | null;
+    expedienteName?: string | null;
+  };
+
+  metadata: {
+    descriptive: {
+      title?: string | null;
+      author?: string | null;
+      documentType?: string | null;
+      serie?: string | null;
+      subserie?: string | null;
+      expediente?: string | null;
+    };
+    technical: {
+      format?: string | null;
+      sizeBytes?: number | null;
+      sizeHuman?: string | null;
+      code?: string | null;
+    };
+    management: {
+      state?: string | null;
+      createdAtISO?: string | null;
+      retentionYears?: number | null;
+      unitResponsible?: string | null;
+    };
+  };
+
+  validations: EadPreviewValidationItem[];
+  previewTree: EadPreviewTreeNode[];
+  xmlPreview: string;
+};
+
+export type EadExportFileResponse = {
+  blob: Blob;
+  fileName: string | null;
+};

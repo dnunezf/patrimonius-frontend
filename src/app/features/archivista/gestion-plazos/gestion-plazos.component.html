@@ -4,16 +4,28 @@
       <div>
         <h1>Gestión de Plazos de Conservación</h1>
         <p>
-          Expedientes en estado cerrado, transferido o eliminado. Use los filtros para acotar la búsqueda.
+          Expedientes en estado cerrado, transferido o eliminado. Desde esta
+          sección puede revisar el detalle, extender vigencia, ejecutar la
+          disposición documental y descargar los artefactos generados,
+          incluyendo paquetes de transferencia con EAD 2002.
         </p>
       </div>
-      <button type="button" class="btn ghost page-regresar" (click)="volverDashboard()">
+
+      <button
+        type="button"
+        class="btn ghost page-regresar"
+        (click)="volverDashboard()"
+      >
         Regresar
       </button>
     </header>
   </section>
 
-  <div class="gp-view-tabs" role="tablist" aria-label="Vista de gestión de plazos">
+  <div
+    class="gp-view-tabs"
+    role="tablist"
+    aria-label="Vista de gestión de plazos"
+  >
     <button
       type="button"
       class="gp-view-tab"
@@ -24,11 +36,16 @@
     >
       <span class="gp-view-tab__icon" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M4 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" stroke="currentColor" stroke-width="1.4"/>
+          <path
+            d="M4 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"
+            stroke="currentColor"
+            stroke-width="1.4"
+          />
         </svg>
       </span>
       Expedientes archivados
     </button>
+
     <button
       type="button"
       class="gp-view-tab"
@@ -39,8 +56,18 @@
     >
       <span class="gp-view-tab__icon" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M12 3 21 19H3L12 3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-          <path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <path
+            d="M12 3 21 19H3L12 3z"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M12 9v5M12 17h.01"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
         </svg>
       </span>
       Alertas de vencimiento ({{ conteoAlertasVencimiento }})
@@ -52,7 +79,13 @@
       <div class="filters-head__text">
         <div class="filters-head__title-row">
           <span class="filters-head__funnel" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <path
                 d="M4 5h16l-6.5 7.32V19l-3 1.5v-8.18L4 5z"
                 stroke="currentColor"
@@ -74,9 +107,26 @@
         <label for="gp-buscar">Buscar expediente</label>
         <div class="input-with-icon">
           <span class="input-with-icon__glyph" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.6"/>
-              <path d="M16 16l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="6.5"
+                stroke="currentColor"
+                stroke-width="1.6"
+              />
+              <path
+                d="M16 16l5 5"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
             </svg>
           </span>
           <input
@@ -112,7 +162,9 @@
           (ngModelChange)="onUnidadChange($event)"
         >
           <option [ngValue]="null">Todas las unidades</option>
-          <option *ngFor="let u of unidades" [ngValue]="u.id">{{ u.nombre }}</option>
+          <option *ngFor="let u of unidades" [ngValue]="u.id">
+            {{ u.nombre }}
+          </option>
         </select>
       </div>
 
@@ -124,7 +176,9 @@
           (ngModelChange)="onSerieChange($event)"
         >
           <option [ngValue]="null">Todas las series</option>
-          <option *ngFor="let s of seriesVisibles" [ngValue]="s.id">{{ s.nombre }}</option>
+          <option *ngFor="let s of seriesVisibles" [ngValue]="s.id">
+            {{ s.nombre }}
+          </option>
         </select>
       </div>
 
@@ -137,7 +191,9 @@
           (ngModelChange)="aplicarFiltros()"
         >
           <option [ngValue]="null">Todas las subseries</option>
-          <option *ngFor="let ss of subseries" [ngValue]="ss.id">{{ ss.nombre }}</option>
+          <option *ngFor="let ss of subseries" [ngValue]="ss.id">
+            {{ ss.nombre }}
+          </option>
         </select>
       </div>
 
@@ -156,117 +212,167 @@
   </div>
 
   <div class="table-card">
-    <div *ngIf="loading" class="state">
-      Cargando expedientes...
-    </div>
+    <div *ngIf="loading" class="state">Cargando expedientes...</div>
 
     <div *ngIf="!loading && error" class="state error">
       {{ error }}
     </div>
 
-    <div *ngIf="!loading && !error" class="table-wrapper table-wrapper--desktop">
+    <div
+      *ngIf="!loading && !error"
+      class="table-wrapper table-wrapper--desktop"
+    >
       <table class="data-table">
         <thead>
-        <tr>
-          <th>Código</th>
-          <th>Nombre</th>
-          <th>Unidad</th>
-          <th>Serie</th>
-          <th>Subserie</th>
-          <th>Estado</th>
-          <th>Fecha de creación</th>
-          <th>Inicio vigencia</th>
-          <th>Vencimiento</th>
-          <th class="th-actions">Acciones</th>
-        </tr>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Unidad</th>
+            <th>Serie</th>
+            <th>Subserie</th>
+            <th>Estado</th>
+            <th>Fecha de creación</th>
+            <th>Inicio vigencia</th>
+            <th>Vencimiento</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
         </thead>
 
         <tbody>
-        <tr *ngIf="expedientesListaActiva.length === 0">
-          <td colspan="10" class="empty">
-            {{
-              vistaPlazos === 'alertas'
-                ? 'No hay expedientes con vencimiento anterior a la fecha de hoy.'
-                : 'No hay expedientes para mostrar.'
-            }}
-          </td>
-        </tr>
+          <tr *ngIf="expedientesListaActiva.length === 0">
+            <td colspan="10" class="empty">
+              {{
+                vistaPlazos === "alertas"
+                  ? "No hay expedientes con vencimiento anterior a la fecha de hoy."
+                  : "No hay expedientes para mostrar."
+              }}
+            </td>
+          </tr>
 
-        <tr *ngFor="let ex of expedientesPagina">
-          <td>{{ ex.codigo }}</td>
-          <td>{{ ex.nombre }}</td>
-          <td>{{ ex.unidad_nombre || '—' }}</td>
-          <td>{{ ex.serie_nombre || '—' }}</td>
-          <td>{{ ex.subserie_nombre || '—' }}</td>
-          <td>
-            <span [class]="getEstadoExpedienteClass(ex.estado)">
-              {{ ex.estado }}
-            </span>
-          </td>
-          <td>
-            {{
-              ex.fecha_creacion
-                ? (ex.fecha_creacion | date:'yyyy-MM-dd')
-                : '—'
-            }}
-          </td>
-          <td>
-            {{
-              ex.fecha_inicio_vigencia
-                ? (ex.fecha_inicio_vigencia | date:'yyyy-MM-dd')
-                : '—'
-            }}
-          </td>
-          <td>
-            {{
-              ex.fecha_vencimiento
-                ? (ex.fecha_vencimiento | date:'yyyy-MM-dd')
-                : '—'
-            }}
-          </td>
-          <td class="td-actions">
-            <div class="td-actions-inner">
-              <button
-                type="button"
-                class="btn primary sm"
-                (click)="abrirDetalle(ex)"
-              >
-                Detalle
-              </button>
-              <ng-container *ngIf="vistaPlazos === 'archivados'">
-                <button
-                  type="button"
-                  class="btn outline sm"
-                  [disabled]="!puedeExtenderVigencia(ex)"
-                  [attr.title]="puedeExtenderVigencia(ex) ? null : tituloExtenderDeshabilitada()"
-                  (click)="abrirExtender(ex)"
-                >
-                  Extender
-                </button>
-              </ng-container>
-              <ng-container *ngIf="vistaPlazos === 'alertas'">
+          <tr *ngFor="let ex of expedientesPagina">
+            <td>{{ ex.codigo }}</td>
+            <td>{{ ex.nombre }}</td>
+            <td>{{ ex.unidad_nombre || "—" }}</td>
+            <td>{{ ex.serie_nombre || "—" }}</td>
+            <td>{{ ex.subserie_nombre || "—" }}</td>
+            <td>
+              <span [class]="getEstadoExpedienteClass(ex.estado)">
+                {{ ex.estado }}
+              </span>
+            </td>
+            <td>
+              {{
+                ex.fecha_creacion
+                  ? (ex.fecha_creacion | date: "yyyy-MM-dd")
+                  : "—"
+              }}
+            </td>
+            <td>
+              {{
+                ex.fecha_inicio_vigencia
+                  ? (ex.fecha_inicio_vigencia | date: "yyyy-MM-dd")
+                  : "—"
+              }}
+            </td>
+            <td>
+              {{
+                ex.fecha_vencimiento
+                  ? (ex.fecha_vencimiento | date: "yyyy-MM-dd")
+                  : "—"
+              }}
+            </td>
+            <td class="td-actions">
+              <div class="td-actions-inner">
                 <button
                   type="button"
                   class="btn primary sm"
+                  (click)="abrirDetalle(ex)"
+                >
+                  Detalle
+                </button>
+
+                <ng-container
+                  *ngIf="
+                    vistaPlazos === 'archivados' && muestraBotonExtender(ex)
+                  "
+                >
+                  <button
+                    type="button"
+                    class="btn outline sm"
+                    [disabled]="!puedeExtenderVigencia(ex)"
+                    [attr.title]="
+                      puedeExtenderVigencia(ex)
+                        ? null
+                        : tituloExtenderDeshabilitada()
+                    "
+                    (click)="abrirExtender(ex)"
+                  >
+                    Extender
+                  </button>
+                </ng-container>
+
+                <button
+                  *ngIf="vistaPlazos === 'alertas' && puedeDisposicion(ex)"
+                  type="button"
+                  class="btn primary sm"
                   (click)="abrirDisposicion(ex)"
+                  title="Iniciar disposición documental"
                 >
                   Disposición
                 </button>
-              </ng-container>
-            </div>
-          </td>
-        </tr>
+
+                <button
+                  *ngIf="
+                    vistaPlazos === 'alertas' && puedeRevisionDisposicion(ex)
+                  "
+                  type="button"
+                  class="btn outline sm"
+                  (click)="abrirRevision(ex)"
+                >
+                  Revisión
+                </button>
+
+                <button
+                  *ngIf="
+                    vistaPlazos === 'alertas' && puedeAprobarDisposicion(ex)
+                  "
+                  type="button"
+                  class="btn primary sm"
+                  (click)="abrirAprobar(ex)"
+                >
+                  Aprobar
+                </button>
+
+                <button
+                  *ngIf="
+                    vistaPlazos === 'alertas' && puedeRechazarDisposicion(ex)
+                  "
+                  type="button"
+                  class="btn outline sm danger-text"
+                  (click)="abrirRechazar(ex)"
+                >
+                  Rechazar
+                </button>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Listado en tarjetas (móvil; la tabla ancha se oculta vía CSS) -->
-    <div *ngIf="!loading && !error" class="expedientes-cards expedientes-cards--mobile" aria-label="Listado de expedientes">
-      <p *ngIf="expedientesListaActiva.length === 0" class="empty expedientes-cards__empty">
+    <div
+      *ngIf="!loading && !error"
+      class="expedientes-cards expedientes-cards--mobile"
+      aria-label="Listado de expedientes"
+    >
+      <p
+        *ngIf="expedientesListaActiva.length === 0"
+        class="empty expedientes-cards__empty"
+      >
         {{
-          vistaPlazos === 'alertas'
-            ? 'No hay expedientes con vencimiento anterior a la fecha de hoy.'
-            : 'No hay expedientes para mostrar.'
+          vistaPlazos === "alertas"
+            ? "No hay expedientes con vencimiento anterior a la fecha de hoy."
+            : "No hay expedientes para mostrar."
         }}
       </p>
 
@@ -276,54 +382,64 @@
             <span class="exp-card__code">{{ ex.codigo }}</span>
             <h3 class="exp-card__name">{{ ex.nombre }}</h3>
           </div>
-          <span [class]="getEstadoExpedienteClass(ex.estado) + ' exp-card__badge'">
+
+          <span
+            [class]="getEstadoExpedienteClass(ex.estado) + ' exp-card__badge'"
+          >
             {{ ex.estado }}
           </span>
         </div>
+
         <dl class="exp-card__dl">
           <div class="exp-card__row">
             <dt>Unidad</dt>
-            <dd>{{ ex.unidad_nombre || '—' }}</dd>
+            <dd>{{ ex.unidad_nombre || "—" }}</dd>
           </div>
+
           <div class="exp-card__row">
             <dt>Serie</dt>
-            <dd>{{ ex.serie_nombre || '—' }}</dd>
+            <dd>{{ ex.serie_nombre || "—" }}</dd>
           </div>
+
           <div class="exp-card__row">
             <dt>Subserie</dt>
-            <dd>{{ ex.subserie_nombre || '—' }}</dd>
+            <dd>{{ ex.subserie_nombre || "—" }}</dd>
           </div>
+
           <div class="exp-card__row">
             <dt>Fecha de creación</dt>
             <dd>
               {{
                 ex.fecha_creacion
-                  ? (ex.fecha_creacion | date:'yyyy-MM-dd')
-                  : '—'
+                  ? (ex.fecha_creacion | date: "yyyy-MM-dd")
+                  : "—"
               }}
             </dd>
           </div>
+
           <div class="exp-card__row">
             <dt>Inicio vigencia</dt>
             <dd>
               {{
                 ex.fecha_inicio_vigencia
-                  ? (ex.fecha_inicio_vigencia | date:'yyyy-MM-dd')
-                  : '—'
+                  ? (ex.fecha_inicio_vigencia | date: "yyyy-MM-dd")
+                  : "—"
               }}
             </dd>
           </div>
+
           <div class="exp-card__row">
             <dt>Vencimiento</dt>
             <dd>
               {{
                 ex.fecha_vencimiento
-                  ? (ex.fecha_vencimiento | date:'yyyy-MM-dd')
-                  : '—'
+                  ? (ex.fecha_vencimiento | date: "yyyy-MM-dd")
+                  : "—"
               }}
             </dd>
           </div>
         </dl>
+
         <div class="exp-card__actions">
           <button
             type="button"
@@ -332,23 +448,54 @@
           >
             Detalle
           </button>
+
           <button
-            *ngIf="vistaPlazos === 'archivados'"
+            *ngIf="vistaPlazos === 'archivados' && muestraBotonExtender(ex)"
             type="button"
             class="btn outline sm exp-card__btn"
             [disabled]="!puedeExtenderVigencia(ex)"
-            [attr.title]="puedeExtenderVigencia(ex) ? null : tituloExtenderDeshabilitada()"
+            [attr.title]="
+              puedeExtenderVigencia(ex) ? null : tituloExtenderDeshabilitada()
+            "
             (click)="abrirExtender(ex)"
           >
             Extender
           </button>
+
           <button
-            *ngIf="vistaPlazos === 'alertas'"
+            *ngIf="vistaPlazos === 'alertas' && puedeDisposicion(ex)"
             type="button"
             class="btn primary sm exp-card__btn"
             (click)="abrirDisposicion(ex)"
           >
             Disposición
+          </button>
+
+          <button
+            *ngIf="vistaPlazos === 'alertas' && puedeRevisionDisposicion(ex)"
+            type="button"
+            class="btn outline sm exp-card__btn"
+            (click)="abrirRevision(ex)"
+          >
+            Revisión
+          </button>
+
+          <button
+            *ngIf="vistaPlazos === 'alertas' && puedeAprobarDisposicion(ex)"
+            type="button"
+            class="btn primary sm exp-card__btn"
+            (click)="abrirAprobar(ex)"
+          >
+            Aprobar
+          </button>
+
+          <button
+            *ngIf="vistaPlazos === 'alertas' && puedeRechazarDisposicion(ex)"
+            type="button"
+            class="btn outline sm exp-card__btn danger-text"
+            (click)="abrirRechazar(ex)"
+          >
+            Rechazar
           </button>
         </div>
       </article>
@@ -360,9 +507,11 @@
       aria-label="Paginación de expedientes"
     >
       <p class="pagination-bar__info">
-        Mostrando <strong>{{ rangoDesde }}</strong>–<strong>{{ rangoHasta }}</strong>
-        de <strong>{{ expedientesListaActiva.length }}</strong> expedientes
+        Mostrando <strong>{{ rangoDesde }}</strong
+        >–<strong>{{ rangoHasta }}</strong> de
+        <strong>{{ expedientesListaActiva.length }}</strong> expedientes
       </p>
+
       <div class="pagination-bar__controls">
         <button
           type="button"
@@ -372,9 +521,11 @@
         >
           Anterior
         </button>
+
         <span class="pagination-bar__page">
           Página {{ paginaActual }} de {{ totalPaginas }}
         </span>
+
         <button
           type="button"
           class="pagination-bar__btn"
@@ -405,5 +556,26 @@
     [expediente]="expedienteExtender"
     (closed)="cerrarExtender()"
     (extensionGuardada)="onExtensionVigenciaGuardada()"
+  />
+
+  <app-revision-disposicion-expediente-dialog
+    [open]="revisionAbierta"
+    [expediente]="expedienteRevision"
+    (closed)="cerrarRevision()"
+    (revisionGuardada)="onRevisionGuardada()"
+  />
+
+  <app-aprobar-disposicion-expediente-dialog
+    [open]="aprobarAbierto"
+    [expediente]="expedienteAprobar"
+    (closed)="cerrarAprobar()"
+    (disposicionAprobada)="onDisposicionAprobada()"
+  />
+
+  <app-rechazar-disposicion-expediente-dialog
+    [open]="rechazarAbierto"
+    [expediente]="expedienteRechazar"
+    (closed)="cerrarRechazar()"
+    (disposicionRechazada)="onDisposicionRechazada()"
   />
 </section>

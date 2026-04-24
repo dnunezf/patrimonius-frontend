@@ -1,0 +1,451 @@
+<div class="ead-backdrop" *ngIf="open" (click)="close()"></div>
+
+<div
+  class="ead-modal"
+  *ngIf="open"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="eadExportTitle"
+>
+  <header class="ead-header">
+    <div class="ead-header__left">
+      <div class="ead-header__icon">📄</div>
+
+      <div>
+        <div class="ead-header__title-row">
+          <h3 id="eadExportTitle">Exportar a EAD 2002</h3>
+
+          <span
+            class="ead-state-chip"
+            [ngClass]="{
+              loading: state === 'loading' || state === 'exporting',
+              ready: state === 'ready',
+              done: state === 'done',
+            }"
+          >
+            {{
+              state === "loading"
+                ? "Validando..."
+                : state === "exporting"
+                  ? "Exportando..."
+                  : state === "done"
+                    ? "Completado"
+                    : state === "ready"
+                      ? "Listo"
+                      : "Preparando"
+            }}
+          </span>
+        </div>
+
+        <p class="ead-header__subtitle">
+          Exportación de documento archivado conforme al estándar EAD 2002 (ISO
+          639-2b)
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="ead-close"
+      aria-label="Cerrar"
+      (click)="close()"
+      [disabled]="state === 'exporting'"
+    >
+      ×
+    </button>
+  </header>
+
+  <section class="ead-body">
+    <div
+      class="ead-loading-card"
+      *ngIf="state === 'loading' || state === 'exporting'"
+    >
+      <div class="ead-loading-card__top">
+        <strong>
+          {{
+            state === "exporting"
+              ? "Generando exportación EAD 2002..."
+              : "Validando requisitos EAD 2002..."
+          }}
+        </strong>
+
+        <span>{{ validationProgress }}%</span>
+      </div>
+
+      <div class="ead-progress">
+        <div
+          class="ead-progress__bar"
+          [style.width.%]="validationProgress"
+        ></div>
+      </div>
+
+      <ul class="ead-loading-list">
+        <li>
+          <span class="ead-loading-dot done"></span>
+          Validando estado del documento...
+        </li>
+        <li>
+          <span class="ead-loading-dot done"></span>
+          Verificando metadatos completos...
+        </li>
+        <li>
+          <span
+            class="ead-loading-dot"
+            [ngClass]="state === 'exporting' ? 'done' : 'active'"
+          ></span>
+          Validando estructura archivística...
+        </li>
+      </ul>
+
+      <p class="ead-loading-text">{{ validationStatusText }}</p>
+    </div>
+
+    <div class="ead-error" *ngIf="errorMessage && state !== 'exporting'">
+      <strong>No se pudo completar la operación.</strong>
+      <span>{{ errorMessage }}</span>
+
+      <div class="ead-error__actions" *ngIf="document?.id">
+        <button type="button" class="btn btn--ghost" (click)="retryPreview()">
+          Reintentar
+        </button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="canShowReadyContent() && preview as data">
+      <div class="ead-success-banner" *ngIf="exportCompleted">
+        <div class="ead-success-banner__icon">✓</div>
+
+        <div>
+          <strong>Archivo EAD 2002 generado correctamente</strong>
+          <p>
+            El documento ha sido exportado exitosamente en formato XML conforme
+            al estándar EAD 2002.
+          </p>
+        </div>
+      </div>
+
+      <section class="ead-section">
+        <div class="ead-section__head">
+          <h4>Información del Documento</h4>
+        </div>
+
+        <div class="ead-info-grid">
+          <div class="ead-info-field">
+            <label>Código</label>
+            <div class="ead-info-value mono">
+              {{ data.document.officialCode || "—" }}
+            </div>
+          </div>
+
+          <div class="ead-info-field">
+            <label>Estado</label>
+            <div class="ead-info-value">
+              <span class="ead-badge ead-badge--state">
+                {{ data.document.state }}
+              </span>
+            </div>
+          </div>
+
+          <div class="ead-info-field ead-info-field--full">
+            <label>Título</label>
+            <div class="ead-info-value">
+              {{ data.document.title || "—" }}
+            </div>
+          </div>
+
+          <div class="ead-info-field">
+            <label>Serie documental</label>
+            <div class="ead-info-value">
+              {{ data.document.serieName || "—" }}
+            </div>
+          </div>
+
+          <div class="ead-info-field">
+            <label>Subserie</label>
+            <div class="ead-info-value">
+              {{ data.document.subserieName || "—" }}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ead-section">
+        <div class="ead-section__head">
+          <h4>Validaciones Previas a Exportación</h4>
+        </div>
+
+        <div class="ead-validation-list">
+          <div
+            class="ead-validation-item"
+            *ngFor="let item of data.validations; trackBy: trackValidation"
+          >
+            <div class="ead-validation-item__left">
+              <span
+                class="ead-validation-icon"
+                [ngClass]="item.valid ? 'ok' : 'bad'"
+              >
+                {{ item.valid ? "✓" : "!" }}
+              </span>
+              <span>{{ item.label }}</span>
+            </div>
+
+            <span
+              class="ead-status-pill"
+              [ngClass]="validationBadgeClass(item)"
+            >
+              {{ item.valid ? "Válido" : "Pendiente" }}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="ead-section">
+        <div class="ead-section__head">
+          <h4>Metadatos a Incluir en EAD 2002</h4>
+        </div>
+
+        <div class="ead-meta-group">
+          <div class="ead-meta-group__title-row">
+            <h5>Metadatos Descriptivos</h5>
+            <span class="ead-status-pill ok">Completo</span>
+          </div>
+
+          <div class="ead-meta-box">
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Título:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.descriptive.title || "—" }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Autor:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.descriptive.author || "—" }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Tipo documental:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.descriptive.documentType || "—" }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Serie:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.descriptive.serie || "—" }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Subserie:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.descriptive.subserie || "—" }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Expediente:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.descriptive.expediente || "—" }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ead-meta-group">
+          <div class="ead-meta-group__title-row">
+            <h5>Metadatos Técnicos</h5>
+            <span class="ead-status-pill ok">Completo</span>
+          </div>
+
+          <div class="ead-meta-box">
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Formato:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.technical.format || "—" }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Tamaño:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.technical.sizeHuman || "—" }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Código:</span>
+              <span class="ead-meta-line__value mono">
+                {{ data.metadata.technical.code || "—" }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ead-meta-group">
+          <div class="ead-meta-group__title-row">
+            <h5>Metadatos de Gestión</h5>
+            <span class="ead-status-pill ok">Completo</span>
+          </div>
+
+          <div class="ead-meta-box">
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Estado:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.management.state || "—" }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Fecha de creación:</span>
+              <span class="ead-meta-line__value">
+                {{ formatShortDate(data.metadata.management.createdAtISO) }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Plazo de retención:</span>
+              <span class="ead-meta-line__value">
+                {{
+                  data.metadata.management.retentionYears != null
+                    ? data.metadata.management.retentionYears + " años"
+                    : "—"
+                }}
+              </span>
+            </div>
+
+            <div class="ead-meta-line">
+              <span class="ead-meta-line__label">Unidad responsable:</span>
+              <span class="ead-meta-line__value">
+                {{ data.metadata.management.unitResponsible || "—" }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ead-section">
+        <div class="ead-structure-row">
+          <div>
+            <h4>Estructura EAD 2002 (Preview)</h4>
+            <p>
+              Representación jerárquica de la estructura XML que se generará
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn--ghost"
+            (click)="toggleStructure()"
+          >
+            {{ showStructure ? "Ocultar" : "Ver Estructura" }}
+          </button>
+        </div>
+
+        <div class="ead-tree" *ngIf="showStructure">
+          <ng-container
+            *ngTemplateOutlet="
+              treeNodesTpl;
+              context: { $implicit: data.previewTree, level: 0 }
+            "
+          ></ng-container>
+        </div>
+      </section>
+
+      <section class="ead-section" *ngIf="exportCompleted">
+        <div class="ead-section__head">
+          <h4>Información del Archivo Generado</h4>
+        </div>
+
+        <div class="ead-info-grid">
+          <div class="ead-info-field">
+            <label>Nombre del archivo</label>
+            <div class="ead-info-value mono">
+              {{ exportedFileName || data.fileName || "—" }}
+            </div>
+          </div>
+
+          <div class="ead-info-field">
+            <label>Fecha de exportación</label>
+            <div class="ead-info-value">
+              {{ formatDate(exportedAtISO) }}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ead-section" *ngIf="exportCompleted || data.xmlPreview">
+        <div class="ead-section__head">
+          <h4>Vista Previa del XML</h4>
+        </div>
+
+        <div class="ead-code-preview">
+          <pre><code>{{ data.xmlPreview }}</code></pre>
+        </div>
+      </section>
+
+      <div class="ead-note">
+        Esta exportación quedará registrada en la bitácora de auditoría conforme
+        a las leyes 7202 y 8454.
+      </div>
+
+      <footer class="ead-footer">
+        <button
+          type="button"
+          class="btn btn--ghost"
+          (click)="close()"
+          [disabled]="state === 'exporting'"
+        >
+          {{ exportCompleted ? "Cerrar" : "Cancelar" }}
+        </button>
+
+        <button
+          type="button"
+          class="btn btn--primary"
+          *ngIf="!exportCompleted"
+          (click)="exportXml()"
+          [disabled]="!data.canExport || state === 'exporting'"
+        >
+          Confirmar Exportación
+        </button>
+
+        <button
+          type="button"
+          class="btn btn--success"
+          *ngIf="exportCompleted"
+          (click)="exportXml()"
+        >
+          Descargar XML
+        </button>
+      </footer>
+    </ng-container>
+  </section>
+</div>
+
+<ng-template #treeNodesTpl let-nodes let-level="level">
+  <div
+    class="ead-tree-node"
+    *ngFor="let node of nodes; trackBy: trackNode"
+    [style.paddingLeft.px]="level * 18"
+  >
+    <div class="ead-tree-node__row">
+      <span class="ead-tree-node__tag">&lt;{{ node.tag }}&gt;</span>
+      <span class="ead-tree-node__label">{{ node.label }}</span>
+      <span class="ead-tree-node__value" *ngIf="node.value">
+        {{ node.value }}
+      </span>
+    </div>
+
+    <ng-container *ngIf="node.children?.length">
+      <ng-container
+        *ngTemplateOutlet="
+          treeNodesTpl;
+          context: { $implicit: node.children, level: level + 1 }
+        "
+      ></ng-container>
+    </ng-container>
+  </div>
+</ng-template>

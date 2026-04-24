@@ -73,7 +73,9 @@
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .conservacion-modal__close:hover {
@@ -346,5 +348,105 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+}
+
+.conservacion-bitacora {
+  margin-bottom: 0.5rem;
+}
+
+.conservacion-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.5rem;
+  border-left: 2px solid #e2e8f0;
+}
+
+.conservacion-timeline__item {
+  position: relative;
+  padding: 0 0 1rem 1.1rem;
+}
+
+.conservacion-timeline__dot {
+  position: absolute;
+  left: -0.42rem;
+  top: 0.2rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #e2e8f0;
+}
+
+.conservacion-timeline__title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.conservacion-timeline__meta {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.conservacion-timeline__detail {
+  font-size: 0.8rem;
+  margin-top: 4px;
+  color: #334155;
+}
+
+.campo__valor--mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+.conservacion-artifacts {
+  margin-bottom: 0.5rem;
+}
+
+.conservacion-artifacts__box {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 14px;
+  padding: 1rem 1rem 1.05rem;
+}
+
+.conservacion-artifacts__summary {
+  font-size: 0.92rem;
+  color: #1e3a8a;
+  line-height: 1.45;
+  margin-bottom: 0.75rem;
+}
+
+.conservacion-artifacts__ead-note {
+  margin-bottom: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.conservacion-artifacts__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.conservacion-artifacts__actions .btn {
+  min-width: 180px;
+}
+
+@media (max-width: 767px) {
+  .conservacion-artifacts__actions {
+    flex-direction: column;
+  }
+
+  .conservacion-artifacts__actions .btn {
+    width: 100%;
+    min-width: 0;
   }
 }

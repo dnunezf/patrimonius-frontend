@@ -19,6 +19,12 @@ import {
 import { ExpedienteConservacionDetalleDialogComponent } from './expediente-conservacion-detalle/expediente-conservacion-detalle-dialog.component';
 import { ExtenderVigenciaDialogComponent } from './extender-vigencia-dialog/extender-vigencia-dialog.component';
 import { listaExpedientesAlertasVencimiento } from './gestion-plazos-alertas-vencimiento';
+import { RevisionDisposicionExpedienteDialogComponent } from './revision-disposicion-expediente-dialog/revision-disposicion-expediente-dialog.component';
+import { AprobarDisposicionExpedienteDialogComponent } from './aprobar-disposicion-expediente-dialog/aprobar-disposicion-expediente-dialog.component';
+import { RechazarDisposicionExpedienteDialogComponent } from './rechazar-disposicion-expediente-dialog/rechazar-disposicion-expediente-dialog.component';
+
+const DIS_REV_PEND = 'DISPOSICION_REVISION_PENDIENTE';
+const DIS_REV_OK = 'DISPOSICION_REVISION_COMPLETADA';
 
 @Component({
   selector: 'app-gestion-plazos',
@@ -29,16 +35,18 @@ import { listaExpedientesAlertasVencimiento } from './gestion-plazos-alertas-ven
     ExpedienteConservacionDetalleDialogComponent,
     DisposicionDocumentalDialogComponent,
     ExtenderVigenciaDialogComponent,
+    RevisionDisposicionExpedienteDialogComponent,
+    AprobarDisposicionExpedienteDialogComponent,
+    RechazarDisposicionExpedienteDialogComponent,
   ],
   templateUrl: './gestion-plazos.component.html',
-  styleUrls: ['./gestion-plazos.component.css']
+  styleUrls: ['./gestion-plazos.component.css'],
 })
 export class GestionPlazosComponent implements OnInit, OnDestroy {
   expedientesCargados: ExpedientePlazoRow[] = [];
   loading = false;
   error = '';
 
-  /** Pestaña superior: listado completo vs solo vencidos (fecha_vencimiento antes que hoy). */
   vistaPlazos: 'archivados' | 'alertas' = 'archivados';
 
   private textoDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -49,7 +57,6 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   subseries: SubserieOption[] = [];
 
   filtroTexto = '';
-  /** Refina entre CERRADO, TRANSFERIDO, ELIMINADO (el listado ya solo incluye esos estados). */
   filtroEstadoExpediente = '';
   filtroUnidadId: number | null = null;
   filtroSerieId: number | null = null;
@@ -64,7 +71,15 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   extenderAbierto = false;
   expedienteExtender: ExpedientePlazoRow | null = null;
 
-  /** Paginación del listado (cliente). */
+  revisionAbierta = false;
+  expedienteRevision: ExpedientePlazoRow | null = null;
+
+  aprobarAbierto = false;
+  expedienteAprobar: ExpedientePlazoRow | null = null;
+
+  rechazarAbierto = false;
+  expedienteRechazar: ExpedientePlazoRow | null = null;
+
   readonly pageSize = 10;
   paginaActual = 1;
 
@@ -74,7 +89,6 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
   ) {}
 
-  /** Series del catálogo filtradas por unidad organizacional (si hay una elegida). */
   get seriesVisibles(): SerieOption[] {
     if (this.filtroUnidadId == null) {
       return this.series;
@@ -82,7 +96,6 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     return this.series.filter((s) => s.unidad_id === this.filtroUnidadId);
   }
 
-  /** Listado según pestaña (misma fuente `expedientesCargados`, filtrado en alertas). */
   get expedientesListaActiva(): ExpedientePlazoRow[] {
     if (this.vistaPlazos === 'alertas') {
       return this.expedientesListaAlertasVencimiento;
@@ -90,7 +103,6 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     return this.expedientesCargados;
   }
 
-  /** Vencimiento estrictamente anterior al día calendario actual (local). */
   get expedientesListaAlertasVencimiento(): ExpedientePlazoRow[] {
     return listaExpedientesAlertasVencimiento(this.expedientesCargados);
   }
@@ -99,7 +111,6 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     return this.expedientesListaAlertasVencimiento.length;
   }
 
-  /** Filas visibles en la página actual. */
   get expedientesPagina(): ExpedientePlazoRow[] {
     const lista = this.expedientesListaActiva;
     const start = (this.paginaActual - 1) * this.pageSize;
@@ -124,7 +135,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   get rangoHasta(): number {
     return Math.min(
       this.paginaActual * this.pageSize,
-      this.expedientesListaActiva.length
+      this.expedientesListaActiva.length,
     );
   }
 
@@ -154,16 +165,18 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.unidades = [];
-      }
+      },
     });
+
     this.plazosService.getSeriesCatalogo().subscribe({
       next: (s) => {
         this.series = s;
       },
       error: () => {
         this.series = [];
-      }
+      },
     });
+
     this.cargarPlazos();
   }
 
@@ -173,16 +186,15 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Filtros de lista y desplegables: recarga inmediata. */
   aplicarFiltros(): void {
     this.cargarPlazos();
   }
 
-  /** Campo de texto: recarga con pequeño retraso para no saturar el servidor. */
   onFiltroTextoChange(): void {
     if (this.textoDebounceTimer != null) {
       clearTimeout(this.textoDebounceTimer);
     }
+
     this.textoDebounceTimer = setTimeout(() => {
       this.textoDebounceTimer = null;
       this.cargarPlazos();
@@ -199,6 +211,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   onSerieChange(serieId: number | null): void {
     this.filtroSubserieId = null;
     this.subseries = [];
+
     if (serieId != null && serieId > 0) {
       this.plazosService.getSubseriesCatalogo(serieId).subscribe({
         next: (ss) => {
@@ -206,33 +219,40 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.subseries = [];
-        }
+        },
       });
     }
+
     this.aplicarFiltros();
   }
 
-  cargarPlazos(): void {
+  cargarPlazos(opts?: {
+    luegoDeCargar?: (rows: ExpedientePlazoRow[]) => void;
+  }): void {
     this.loading = true;
     this.error = '';
 
-    this.plazosService.listarPlazos({
-      texto: this.filtroTexto || undefined,
-      estado: this.filtroEstadoExpediente || undefined,
-      unidad_id: this.filtroUnidadId ?? undefined,
-      serie_id: this.filtroSerieId ?? undefined,
-      subserie_id: this.filtroSubserieId ?? undefined,
-    }).subscribe({
-      next: (data) => {
-        this.expedientesCargados = data;
-        this.paginaActual = 1;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = err?.error?.error || 'No se pudieron cargar los expedientes.';
-        this.loading = false;
-      }
-    });
+    this.plazosService
+      .listarPlazos({
+        texto: this.filtroTexto || undefined,
+        estado: this.filtroEstadoExpediente || undefined,
+        unidad_id: this.filtroUnidadId ?? undefined,
+        serie_id: this.filtroSerieId ?? undefined,
+        subserie_id: this.filtroSubserieId ?? undefined,
+      })
+      .subscribe({
+        next: (data) => {
+          this.expedientesCargados = data;
+          this.paginaActual = 1;
+          this.loading = false;
+          opts?.luegoDeCargar?.(data);
+        },
+        error: (err) => {
+          this.error =
+            err?.error?.error || 'No se pudieron cargar los expedientes.';
+          this.loading = false;
+        },
+      });
   }
 
   limpiarFiltros(): void {
@@ -240,6 +260,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
       clearTimeout(this.textoDebounceTimer);
       this.textoDebounceTimer = null;
     }
+
     this.filtroTexto = '';
     this.filtroEstadoExpediente = '';
     this.filtroUnidadId = null;
@@ -260,14 +281,6 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   abrirDisposicion(ex: ExpedientePlazoRow): void {
-    if (this.vistaPlazos === 'alertas') {
-      if (ex.fecha_vencimiento == null || ex.fecha_vencimiento === '') {
-        return;
-      }
-      this.expedienteDisposicion = ex;
-      this.disposicionAbierta = true;
-      return;
-    }
     if (!this.puedeDisposicion(ex)) {
       return;
     }
@@ -275,22 +288,121 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     this.disposicionAbierta = true;
   }
 
-  /**
-   * Habilitado solo si la fecha de vencimiento (día local, mismo criterio que la tabla)
-   * es estrictamente mayor que la fecha de hoy.
-   */
   puedeDisposicion(ex: ExpedientePlazoRow): boolean {
+    if (ex.estado !== 'CERRADO') {
+      return false;
+    }
+
     const raw = ex.fecha_vencimiento;
     if (raw == null || raw === '') {
       return false;
     }
+
     const v = new Date(raw);
     if (Number.isNaN(v.getTime())) {
       return false;
     }
+
     const ymdV = this.fechaALocalYmd(v);
     const ymdHoy = this.fechaALocalYmd(new Date());
-    return ymdV > ymdHoy;
+    if (ymdV > ymdHoy) {
+      return false;
+    }
+
+    const st = String(ex.disposicion_estado ?? '').trim();
+    if (!st || st === 'DISPOSICION_RECHAZADA') {
+      return true;
+    }
+
+    return false;
+  }
+
+  puedeRevisionDisposicion(ex: ExpedientePlazoRow): boolean {
+    const tipo = String(ex.disposicion_tipo ?? '')
+      .trim()
+      .toUpperCase();
+    return (
+      ex.estado === 'CERRADO' &&
+      String(ex.disposicion_estado ?? '').trim() === DIS_REV_PEND &&
+      tipo === 'ELIMINACION'
+    );
+  }
+
+  puedeAprobarDisposicion(ex: ExpedientePlazoRow): boolean {
+    const tipo = String(ex.disposicion_tipo ?? '')
+      .trim()
+      .toUpperCase();
+    return (
+      ex.estado === 'CERRADO' &&
+      String(ex.disposicion_estado ?? '').trim() === DIS_REV_OK &&
+      tipo === 'ELIMINACION'
+    );
+  }
+
+  puedeRechazarDisposicion(ex: ExpedientePlazoRow): boolean {
+    if (ex.estado !== 'CERRADO') {
+      return false;
+    }
+
+    const st = String(ex.disposicion_estado ?? '').trim();
+    if (!st || st === 'DISPOSICION_RECHAZADA') {
+      return false;
+    }
+
+    if (this.disposicionEstaEjecutada(st)) {
+      return false;
+    }
+
+    return st === DIS_REV_PEND || st === DIS_REV_OK;
+  }
+
+  private disposicionEstaEjecutada(disposicionEstado: string): boolean {
+    const s = disposicionEstado.trim().toUpperCase();
+    return (
+      s === 'DISPOSICION_EJECUTADA_TRANSFERENCIA' ||
+      s === 'DISPOSICION_EJECUTADA_ELIMINACION' ||
+      s === 'DISPOSICION_EJECUTADA_CONSERVACION_PERMANENTE' ||
+      s.startsWith('DISPOSICION_EJECUTADA_')
+    );
+  }
+
+  abrirRevision(ex: ExpedientePlazoRow): void {
+    if (!this.puedeRevisionDisposicion(ex)) {
+      return;
+    }
+    this.expedienteRevision = ex;
+    this.revisionAbierta = true;
+  }
+
+  cerrarRevision(): void {
+    this.revisionAbierta = false;
+    this.expedienteRevision = null;
+  }
+
+  abrirAprobar(ex: ExpedientePlazoRow): void {
+    if (!this.puedeAprobarDisposicion(ex)) {
+      return;
+    }
+    this.expedienteAprobar = ex;
+    this.aprobarAbierto = true;
+  }
+
+  cerrarAprobar(): void {
+    this.aprobarAbierto = false;
+    this.expedienteAprobar = null;
+  }
+
+  abrirRechazar(ex: ExpedientePlazoRow): void {
+    if (!this.puedeRechazarDisposicion(ex)) {
+      return;
+    }
+    this.expedienteRechazar = ex;
+    this.rechazarAbierto = true;
+  }
+
+  cerrarRechazar(): void {
+    this.rechazarAbierto = false;
+    this.expedienteRechazar = null;
   }
 
   private fechaALocalYmd(d: Date): string {
@@ -301,7 +413,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   tituloDisposicionDeshabilitada(): string {
-    return 'Solo disponible si la fecha de vencimiento es mayor que la de hoy.';
+    return 'Solo expedientes cerrados, con plazo vencido y sin disposición en curso.';
   }
 
   cerrarDisposicion(): void {
@@ -322,7 +434,14 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     this.expedienteExtender = null;
   }
 
-  /** Requiere fecha de vencimiento conocida para sumar años. */
+  muestraBotonExtender(ex: ExpedientePlazoRow): boolean {
+    return (
+      String(ex.estado ?? '')
+        .trim()
+        .toUpperCase() === 'CERRADO'
+    );
+  }
+
   puedeExtenderVigencia(ex: ExpedientePlazoRow): boolean {
     const raw = ex.fecha_vencimiento;
     if (raw == null || raw === '') {
@@ -340,13 +459,35 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     this.cargarPlazos();
   }
 
-  /** Reservado: enlazar POST de disposición / bitácora cuando exista el endpoint. */
-  onDisposicionIniciada(_payload: {
+  onDisposicionIniciada(payload: {
     expedienteId: number;
     tipo: TipoDisposicionId;
     justificacion: string;
+    abrirRevisionTrasCargar?: boolean;
   }): void {
-    /* Intencionalmente vacío: el combo y la justificación quedan listos para el API. */
+    this.cargarPlazos({
+      luegoDeCargar: (rows) => {
+        if (payload.abrirRevisionTrasCargar === false) {
+          return;
+        }
+        const ex = rows.find((e) => e.id === payload.expedienteId);
+        if (ex && this.puedeRevisionDisposicion(ex)) {
+          this.abrirRevision(ex);
+        }
+      },
+    });
+  }
+
+  onRevisionGuardada(): void {
+    this.cargarPlazos();
+  }
+
+  onDisposicionAprobada(): void {
+    this.cargarPlazos();
+  }
+
+  onDisposicionRechazada(): void {
+    this.cargarPlazos();
   }
 
   getEstadoExpedienteClass(estado: string | null): string {

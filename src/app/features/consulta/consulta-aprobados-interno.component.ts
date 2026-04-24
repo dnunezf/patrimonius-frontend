@@ -349,6 +349,13 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     });
   }
 
+  public totalDocumentosConsultaExpediente(row: ConsultaExpedienteRow): number | string {
+    if (row.total_documentos_consulta != null) {
+      return Number(row.total_documentos_consulta);
+    }
+    return row.total_documentos ?? '—';
+  }
+
   public get expedienteRangeStart(): number {
     if (this.totalExpedientes === 0) return 0;
     return (this.expedientePage - 1) * this.expedientePageSize + 1;

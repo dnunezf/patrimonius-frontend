@@ -17,6 +17,8 @@ export class ArchivistaSerieDialogComponent implements OnInit {
   nombre = '';
   descripcion = '';
   unidad_id = 0;
+  /** Años de conservación en archivo (requerido para ingreso a conservación). */
+  plazo_conservacion_anios = 5;
 
   constructor(private http: HttpClient, private router: Router) {}
 
@@ -33,12 +35,20 @@ export class ArchivistaSerieDialogComponent implements OnInit {
   }
 
   crearSerie(): void {
-    if (this.codigo && this.nombre && this.unidad_id !== 0) {
+    const plazo = Number(this.plazo_conservacion_anios);
+    if (
+      this.codigo &&
+      this.nombre &&
+      this.unidad_id !== 0 &&
+      Number.isInteger(plazo) &&
+      plazo > 0
+    ) {
       const serieData = {
         codigo: this.codigo,
         nombre: this.nombre,
         descripcion: this.descripcion,
-        unidad_id: this.unidad_id
+        unidad_id: this.unidad_id,
+        plazo_conservacion_anios: plazo,
       };
 
       this.http.post('http://localhost:3000/api/series', serieData).subscribe({
@@ -51,7 +61,9 @@ export class ArchivistaSerieDialogComponent implements OnInit {
         }
       });
     } else {
-      alert('Por favor complete todos los campos obligatorios.');
+      alert(
+        'Complete código, nombre de serie, unidad y un plazo de conservación en años (entero ≥ 1).',
+      );
     }
   }
 

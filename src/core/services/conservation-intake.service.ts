@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable, EMPTY, map } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
@@ -7,6 +7,9 @@ import {
   ArchivalSeries,
   ArchivalSubseries,
   CandidateDoc,
+  ConservationEadDocumentRow,
+  EadExportFileResponse,
+  EadPreviewResponse,
   IntakePayload,
   RetentionRule,
 } from '../../app/features/conservation/intake/models';
@@ -30,6 +33,22 @@ function extractArray<T = any>(raw: any): T[] {
   if (Array.isArray(raw?.rows)) return raw.rows as T[];
   if (Array.isArray(raw?.data)) return raw.data as T[];
   return [];
+}
+
+function parseDispositionFileName(headerValue: string | null): string | null {
+  if (!headerValue) return null;
+
+  const utf8Match = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+
+  const plainMatch = headerValue.match(/filename="?([^"]+)"?/i);
+  return plainMatch?.[1] || null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -89,9 +108,7 @@ export class ConservationIntakeService {
     return this.http.get<RetentionRule[]>(`${this.base}/retention-rules`);
   }
 
-  registerIntake(
-    payload: IntakePayload,
-  ): Observable<{
+  registerIntake(payload: IntakePayload): Observable<{
     intakeId: string;
     id: number;
     message: string;
@@ -160,9 +177,125 @@ export class ConservationIntakeService {
               : item.unitId != null
                 ? Number(item.unitId)
                 : null,
+          latestDocumentDateISO:
+            item.latestDocumentDateISO ??
+            item.latest_document_date_iso ??
+            item.latest_document_date ??
+            null,
         })),
       ),
     );
+  }
+
+  /* =========================
+   * HU-035 · EAD 2002 export
+   * ========================= */
+
+  /**
+   * Returns archived conservation documents available for EAD 2002 export.
+   */
+  getConservationDocumentsForEad(): Observable<ConservationEadDocumentRow[]> {
+    return this.http.get<any>(`${this.base}/ead/documents`).pipe(
+      map((raw) =>
+        extractArray(raw).map((item: any) => ({
+          id: Number(item.id ?? item.documento_id ?? 0),
+          officialCode: String(
+            item.officialCode ?? item.official_code ?? item.numero_serie ?? '',
+          ),
+          title: String(item.title ?? item.titulo ?? ''),
+          state: String(item.state ?? item.estado ?? ''),
+          accessLevel:
+            item.accessLevel ?? item.access_level ?? item.confid_level ?? null,
+
+          serieId:
+            item.serieId != null
+              ? Number(item.serieId)
+              : item.serie_id != null
+                ? Number(item.serie_id)
+                : null,
+          serieCode:
+            item.serieCode ?? item.serie_code ?? item.serie_codigo ?? null,
+          serieName:
+            item.serieName ?? item.serie_name ?? item.serie_nombre ?? null,
+
+          subserieId:
+            item.subserieId != null
+              ? Number(item.subserieId)
+              : item.subserie_id != null
+                ? Number(item.subserie_id)
+                : null,
+          subserieCode:
+            item.subserieCode ??
+            item.subserie_code ??
+            item.subserie_codigo ??
+            null,
+          subserieName:
+            item.subserieName ??
+            item.subserie_name ??
+            item.subserie_nombre ??
+            null,
+
+          expedienteId:
+            item.expedienteId != null
+              ? Number(item.expedienteId)
+              : item.expediente_id != null
+                ? Number(item.expediente_id)
+                : null,
+          expedienteCode:
+            item.expedienteCode ??
+            item.expediente_code ??
+            item.expediente_codigo ??
+            null,
+          expedienteName:
+            item.expedienteName ??
+            item.expediente_name ??
+            item.expediente_nombre ??
+            null,
+
+          createdAtISO:
+            item.createdAtISO ?? item.created_at_iso ?? item.fecha ?? null,
+          eadStatus:
+            item.eadStatus ??
+            item.ead_status ??
+            item.estado_ead ??
+            'NO_EXPORTADO',
+          lastExportedAtISO:
+            item.lastExportedAtISO ??
+            item.last_exported_at_iso ??
+            item.ultima_exportacion ??
+            null,
+        })),
+      ),
+    );
+  }
+
+  /**
+   * Returns export validation data, preview tree and XML preview.
+   */
+  getEadExportPreview(documentId: number): Observable<EadPreviewResponse> {
+    return this.http.get<EadPreviewResponse>(
+      `${this.base}/ead/documents/${documentId}/preview`,
+    );
+  }
+
+  /**
+   * Exports the EAD 2002 XML file and returns both blob and filename.
+   */
+  exportEadXml(documentId: number): Observable<EadExportFileResponse> {
+    return this.http
+      .post(`${this.base}/ead/documents/${documentId}/export`, null, {
+        observe: 'response',
+        responseType: 'blob',
+      })
+      .pipe(
+        map((response: HttpResponse<Blob>) => {
+          const disposition = response.headers.get('content-disposition');
+          return {
+            blob: response.body as Blob,
+            fileName: parseDispositionFileName(disposition),
+          };
+        }),
+      );
   }
 
   /**
