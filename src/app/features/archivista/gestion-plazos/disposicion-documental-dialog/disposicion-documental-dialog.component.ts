@@ -17,10 +17,14 @@ import {
 } from '../../../../../core/services/gestion-plazos-conservacion.service';
 import { ToastService } from '../../../../shared/ui/toast.service';
 
-/** Valores del combo; listos para enviar al API cuando exista el endpoint. */
-export type TipoDisposicionId = 'TRANSFERENCIA_ARCHIVO_NACIONAL' | 'ELIMINACION';
+export type TipoDisposicionId =
+  | 'TRANSFERENCIA_ARCHIVO_NACIONAL'
+  | 'ELIMINACION';
 
-export type WizardStepDisposicion = 'form' | 'transferApprove' | 'eliminarApprove';
+export type WizardStepDisposicion =
+  | 'form'
+  | 'transferApprove'
+  | 'eliminarApprove';
 
 @Component({
   selector: 'app-disposicion-documental-dialog',
@@ -29,17 +33,17 @@ export type WizardStepDisposicion = 'form' | 'transferApprove' | 'eliminarApprov
   templateUrl: './disposicion-documental-dialog.component.html',
   styleUrls: ['./disposicion-documental-dialog.component.css'],
 })
-export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestroy {
+export class DisposicionDocumentalDialogComponent
+  implements OnChanges, OnDestroy
+{
   @Input() open = false;
   @Input() expediente: ExpedientePlazoRow | null = null;
 
   @Output() closed = new EventEmitter<void>();
-  /** Tras respuesta exitosa del API (HU-032). */
   @Output() procesoIniciado = new EventEmitter<{
     expedienteId: number;
     tipo: TipoDisposicionId;
     justificacion: string;
-    /** Si es false, no se abre el diálogo de revisión (p. ej. transferencia ya ejecutada). */
     abrirRevisionTrasCargar: boolean;
   }>();
 
@@ -83,7 +87,7 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
 
   constructor(
     private readonly gestionPlazos: GestionPlazosConservacionService,
-    private readonly toasts: ToastService
+    private readonly toasts: ToastService,
   ) {}
 
   ngOnChanges(_changes: SimpleChanges): void {
@@ -91,6 +95,7 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
       this.resetLocal();
       return;
     }
+
     if (this.expediente?.id) {
       this.step = 'form';
       this.justificacionInicioGuardada = '';
@@ -131,24 +136,24 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     this.justificacionAprobacionTransferencia = '';
   }
 
-  /**
-   * Desde el formulario principal: avanza a confirmación de transferencia o eliminación (sin API aún).
-   */
   avanzarDesdeFormulario(): void {
     const id = this.expediente?.id;
     const j = this.justificacion.trim();
+
     if (!id || !j || this.apiSaving) {
       return;
     }
+
+    this.justificacionInicioGuardada = j;
+
     if (this.tipoSeleccionado === 'TRANSFERENCIA_ARCHIVO_NACIONAL') {
-      this.justificacionInicioGuardada = j;
       this.step = 'transferApprove';
       this.justificacionAprobacionTransferencia = '';
       this.apiErrorTransfer = '';
       return;
     }
+
     if (this.tipoSeleccionado === 'ELIMINACION') {
-      this.justificacionInicioGuardada = j;
       this.step = 'eliminarApprove';
       this.justificacionAprobacionEliminacion = '';
       this.apiErrorEliminacion = '';
@@ -158,12 +163,15 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
   confirmarTransferenciaFinal(): void {
     const id = this.expediente?.id;
     const jAprob = this.justificacionAprobacionTransferencia.trim();
+
     if (!id || jAprob.length < 8 || this.apiSavingTransfer) {
       return;
     }
+
     this.apiSavingTransfer = true;
     this.apiErrorTransfer = '';
     this.transferSub?.unsubscribe();
+
     this.transferSub = this.gestionPlazos
       .ejecutarTransferenciaDisposicionCompleta(id, {
         justificacion_inicio: this.justificacionInicioGuardada,
@@ -172,12 +180,14 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
       .subscribe({
         next: () => {
           this.apiSavingTransfer = false;
+
           this.procesoIniciado.emit({
             expedienteId: id,
             tipo: 'TRANSFERENCIA_ARCHIVO_NACIONAL',
             justificacion: this.justificacionInicioGuardada,
             abrirRevisionTrasCargar: false,
           });
+
           this.closed.emit();
           this.intentarDescargarZipEnSegundoPlano(id);
         },
@@ -188,18 +198,18 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
       });
   }
 
-  /**
-   * La transferencia ya quedó persistida; la descarga es un paso aparte (si falla, no se revierte el estado).
-   */
   confirmarEliminacionFinal(): void {
     const id = this.expediente?.id;
     const jAprob = this.justificacionAprobacionEliminacion.trim();
+
     if (!id || jAprob.length < 8 || this.apiSavingEliminacion) {
       return;
     }
+
     this.apiSavingEliminacion = true;
     this.apiErrorEliminacion = '';
     this.eliminacionSub?.unsubscribe();
+
     this.eliminacionSub = this.gestionPlazos
       .ejecutarEliminacionDisposicionCompleta(id, {
         justificacion_inicio: this.justificacionInicioGuardada,
@@ -208,20 +218,26 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
       .subscribe({
         next: () => {
           this.apiSavingEliminacion = false;
+
           this.procesoIniciado.emit({
             expedienteId: id,
             tipo: 'ELIMINACION',
             justificacion: this.justificacionInicioGuardada,
             abrirRevisionTrasCargar: false,
           });
+
           this.closed.emit();
           this.intentarDescargarActaDocxEnSegundoPlano(id);
         },
         error: (err) => {
           this.apiSavingEliminacion = false;
-          this.asignarMensajeErrorHttp(err, this.msgEliminacionGenerica, (m) => {
-            this.apiErrorEliminacion = m;
-          });
+          this.asignarMensajeErrorHttp(
+            err,
+            this.msgEliminacionGenerica,
+            (m) => {
+              this.apiErrorEliminacion = m;
+            },
+          );
         },
       });
   }
@@ -231,39 +247,42 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
       next: (blob) => {
         if (this.esProbableJsonDeError(blob)) {
           this.toasts.error(
-            'La eliminación se registró, pero el servidor no devolvió el acta. Consulte el detalle del expediente o descargue luego el Word.'
+            'La eliminación se registró, pero el servidor no devolvió el acta. Consulte el detalle del expediente o descargue luego el DOCX.',
           );
           return;
         }
+
         this.descargarBlobArchivo(
           blob,
           this.expediente?.codigo ?? 'expediente',
           'acta-eliminacion',
-          'docx'
+          'docx',
         );
-        this.toasts.success('Acta de eliminación descargada (Word).');
+        this.toasts.success('Acta de eliminación descargada (DOCX).');
       },
       error: (err) => {
         const body = (err as { error?: unknown })?.error;
+
         if (body instanceof Blob) {
           body
             .text()
             .then((t) => {
               this.toasts.error(
                 this.parseJsonErrorText(t) ??
-                  'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar desde el detalle del expediente.'
+                  'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar desde el detalle del expediente.',
               );
             })
             .catch(() => {
               this.toasts.error(
-                'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar desde el detalle del expediente.'
+                'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar desde el detalle del expediente.',
               );
             });
           return;
         }
+
         this.toasts.error(
           this.mensajeDesdeErrorHttp(err) ??
-            'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar luego.'
+            'La eliminación se registró, pero no se pudo descargar el acta. Puede reintentar luego.',
         );
       },
     });
@@ -273,7 +292,7 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     blob: Blob,
     codigoBase: string,
     prefijo: string,
-    extension: string
+    extension: string,
   ): void {
     const safe = codigoBase.replace(/[^a-zA-Z0-9._-]/g, '_');
     const url = URL.createObjectURL(blob);
@@ -285,42 +304,47 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
   }
 
   private intentarDescargarZipEnSegundoPlano(expedienteId: number): void {
-    this.gestionPlazos.descargarPaqueteTransferenciaZip(expedienteId).subscribe({
-      next: (blob) => {
-        if (this.esProbableJsonDeError(blob)) {
+    this.gestionPlazos
+      .descargarPaqueteTransferenciaZip(expedienteId)
+      .subscribe({
+        next: (blob) => {
+          if (this.esProbableJsonDeError(blob)) {
+            this.toasts.error(
+              'La transferencia se registró, pero el servidor no devolvió el ZIP. Recargue la lista o consulte el detalle del expediente.',
+            );
+            return;
+          }
+
+          this.descargarBlobZip(blob);
+          this.toasts.success('Paquete ZIP con EAD 2002 descargado.');
+        },
+        error: (err) => {
+          const body = (err as { error?: unknown })?.error;
+
+          if (body instanceof Blob) {
+            body
+              .text()
+              .then((t) => {
+                const m = this.parseJsonErrorText(t);
+                this.toasts.error(
+                  m ??
+                    'La transferencia se registró, pero no se pudo descargar el ZIP. Recargue e intente de nuevo o use el detalle del expediente.',
+                );
+              })
+              .catch(() => {
+                this.toasts.error(
+                  'La transferencia se registró, pero no se pudo descargar el ZIP. Recargue e intente de nuevo o use el detalle del expediente.',
+                );
+              });
+            return;
+          }
+
           this.toasts.error(
-            'La transferencia se registró, pero el servidor no devolvió el ZIP. Recargue la lista o consulte el detalle del expediente.'
+            this.mensajeDesdeErrorHttp(err) ??
+              'La transferencia se registró, pero no se pudo descargar el ZIP. Recargue e intente de nuevo o use el detalle del expediente.',
           );
-          return;
-        }
-        this.descargarBlobZip(blob);
-        this.toasts.success('Paquete ZIP descargado.');
-      },
-      error: (err) => {
-        const body = (err as { error?: unknown })?.error;
-        if (body instanceof Blob) {
-          body
-            .text()
-            .then((t) => {
-              const m = this.parseJsonErrorText(t);
-              this.toasts.error(
-                m ??
-                  'La transferencia se registró, pero no se pudo descargar el ZIP. Recargue e intente de nuevo o use el detalle del expediente.'
-              );
-            })
-            .catch(() => {
-              this.toasts.error(
-                'La transferencia se registró, pero no se pudo descargar el ZIP. Recargue e intente de nuevo o use el detalle del expediente.'
-              );
-            });
-          return;
-        }
-        this.toasts.error(
-          this.mensajeDesdeErrorHttp(err) ??
-            'La transferencia se registró, pero no se pudo descargar el ZIP. Recargue e intente de nuevo o use el detalle del expediente.'
-        );
-      },
-    });
+        },
+      });
   }
 
   private esProbableJsonDeError(blob: Blob): boolean {
@@ -334,18 +358,23 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
   private asignarMensajeErrorHttp(
     err: unknown,
     fallback: string,
-    assign?: (m: string) => void
+    assign?: (m: string) => void,
   ): void {
     const body = (err as { error?: unknown })?.error;
+
     if (body instanceof Blob) {
-      body.text().then((t) => {
-        const m = this.parseJsonErrorText(t) ?? fallback;
-        (assign ?? ((x) => (this.apiErrorTransfer = x)))(m);
-      }).catch(() => {
-        (assign ?? ((x) => (this.apiErrorTransfer = x)))(fallback);
-      });
+      body
+        .text()
+        .then((t) => {
+          const m = this.parseJsonErrorText(t) ?? fallback;
+          (assign ?? ((x) => (this.apiErrorTransfer = x)))(m);
+        })
+        .catch(() => {
+          (assign ?? ((x) => (this.apiErrorTransfer = x)))(fallback);
+        });
       return;
     }
+
     const o = err as { error?: { error?: string; message?: string } };
     const msg = o?.error?.error || o?.error?.message || fallback;
     (assign ?? ((x) => (this.apiErrorTransfer = x)))(msg);
@@ -375,7 +404,7 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${safe}-transferencia.zip`;
+    a.download = `${safe}-transferencia-ead2002.zip`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -430,15 +459,15 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     if (this.documentosCount == null) {
       return '—';
     }
+
     const n = this.documentosCount;
     return `${n} ${n === 1 ? 'documento' : 'documentos'}`;
   }
 
-  /**
-   * HU-032: la transferencia o eliminación la define el archivista en este flujo
-   * (no se restringe por la política indicada en la serie).
-   */
-  get tiposElegibles(): ReadonlyArray<{ id: TipoDisposicionId; label: string }> {
+  get tiposElegibles(): ReadonlyArray<{
+    id: TipoDisposicionId;
+    label: string;
+  }> {
     return this.tiposDisposicion;
   }
 
@@ -446,12 +475,9 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     const p = String(this.expediente?.politica_disposicion ?? '')
       .trim()
       .toUpperCase();
+
     if (p === 'ELIMINACION') {
       this.tipoSeleccionado = 'ELIMINACION';
-    } else if (p === 'TRANSFERENCIA') {
-      this.tipoSeleccionado = 'TRANSFERENCIA_ARCHIVO_NACIONAL';
-    } else if (p === 'CONSERVACION_PERMANENTE') {
-      this.tipoSeleccionado = 'TRANSFERENCIA_ARCHIVO_NACIONAL';
     } else {
       this.tipoSeleccionado = 'TRANSFERENCIA_ARCHIVO_NACIONAL';
     }
@@ -462,6 +488,7 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     if (!id) {
       return;
     }
+
     this.documentosSub?.unsubscribe();
     this.documentosLoading = true;
     this.documentosLoadFailed = false;
@@ -499,7 +526,10 @@ export class DisposicionDocumentalDialogComponent implements OnChanges, OnDestro
     this.step = 'form';
     this.justificacionInicioGuardada = '';
     this.justificacionAprobacionTransferencia = '';
+    this.justificacionAprobacionEliminacion = '';
     this.apiSavingTransfer = false;
     this.apiErrorTransfer = '';
+    this.apiSavingEliminacion = false;
+    this.apiErrorEliminacion = '';
   }
 }

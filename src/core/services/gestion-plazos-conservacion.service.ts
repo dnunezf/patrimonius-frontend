@@ -44,7 +44,11 @@ export interface ExpedientePlazoRow {
   /** Nombre (y apellidos) o correo del usuario `created_by`. */
   creado_por: string | null;
   /** Política de la serie (HU-032), si existe en BD. */
-  politica_disposicion?: 'ELIMINACION' | 'TRANSFERENCIA' | 'CONSERVACION_PERMANENTE' | null;
+  politica_disposicion?:
+    | 'ELIMINACION'
+    | 'TRANSFERENCIA'
+    | 'CONSERVACION_PERMANENTE'
+    | null;
   disposicion_estado?: string | null;
   disposicion_tipo?: string | null;
   acta_eliminacion_codigo?: string | null;
@@ -112,6 +116,35 @@ export interface ExtenderVigenciaExpedienteBody {
   justificacion: string;
 }
 
+export interface AprobarDisposicionExpedienteBody {
+  justificacion: string;
+}
+
+export interface EjecutarTransferenciaDisposicionCompletaBody {
+  justificacion_inicio: string;
+  justificacion_aprobacion: string;
+}
+
+export interface EjecutarEliminacionDisposicionCompletaBody {
+  justificacion_inicio: string;
+  justificacion_aprobacion: string;
+}
+
+export interface EjecutarTransferenciaDisposicionCompletaResponse {
+  expediente_id: number;
+  disposicion_estado: string;
+  expediente_estado: string;
+  paquete_transferencia_zip_path: string | null;
+}
+
+export interface EjecutarEliminacionDisposicionCompletaResponse {
+  expediente_id: number;
+  disposicion_estado: string;
+  expediente_estado: string;
+  acta_eliminacion_codigo: string | null;
+  acta_eliminacion_pdf_path: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GestionPlazosConservacionService {
   private readonly api = environment.api;
@@ -120,19 +153,19 @@ export class GestionPlazosConservacionService {
 
   getUnidadesCatalogo(): Observable<UnidadOption[]> {
     return this.http.get<UnidadOption[]>(
-      `${this.api}/api/carga-masiva/catalogos/unidades`
+      `${this.api}/api/carga-masiva/catalogos/unidades`,
     );
   }
 
   getSeriesCatalogo(): Observable<SerieOption[]> {
     return this.http.get<SerieOption[]>(
-      `${this.api}/api/carga-masiva/catalogos/series`
+      `${this.api}/api/carga-masiva/catalogos/series`,
     );
   }
 
   getSubseriesCatalogo(serieId: number): Observable<SubserieOption[]> {
     return this.http.get<SubserieOption[]>(
-      `${this.api}/api/carga-masiva/catalogos/subseries?serie_id=${serieId}`
+      `${this.api}/api/carga-masiva/catalogos/subseries?serie_id=${serieId}`,
     );
   }
 
@@ -205,6 +238,7 @@ export class GestionPlazosConservacionService {
         paquete_transferencia_zip_path: null,
       };
     }
+
     const o = raw as Record<string, unknown>;
     const lowerKeyToOriginal = (): Map<string, string> => {
       const m = new Map<string, string>();
@@ -213,7 +247,9 @@ export class GestionPlazosConservacionService {
       }
       return m;
     };
+
     const lowerMap = lowerKeyToOriginal();
+
     const pick = (...keys: string[]): unknown => {
       for (const k of keys) {
         if (o[k] !== undefined && o[k] !== null) {
@@ -231,11 +267,13 @@ export class GestionPlazosConservacionService {
       }
       return undefined;
     };
+
     const str = (v: unknown) => (v == null ? '' : String(v));
+
     const id = Number(pick('id', 'ID') ?? 0);
-    const estadoUp = str(pick('estado', 'ESTADO'))
-      .trim()
-      .toUpperCase();
+
+    const estadoUp = str(pick('estado', 'ESTADO')).trim().toUpperCase();
+
     let estado: ExpedientePlazoRow['estado'] = 'CERRADO';
     if (estadoUp === 'TRANSFERIDO') {
       estado = 'TRANSFERIDO';
@@ -244,28 +282,34 @@ export class GestionPlazosConservacionService {
     } else if (estadoUp === 'CERRADO') {
       estado = 'CERRADO';
     }
+
     let fechaCreacion: string | null = null;
     const fcr = pick('fecha_creacion', 'fechaCreacion', 'FECHA_CREACION');
     if (fcr != null && fcr !== '') {
       fechaCreacion = this.valorFechaApiAIso(fcr);
     }
+
     let fechaCierre: string | null = null;
     const fc = pick('fecha_cierre', 'fechaCierre', 'FECHA_CIERRE');
     if (fc != null && fc !== '') {
       fechaCierre = this.valorFechaApiAIso(fc);
     }
+
     const parseFechaNullable = (v: unknown): string | null => {
       if (v == null || v === '') {
         return null;
       }
       return this.valorFechaApiAIso(v);
     };
+
     return {
       id,
       codigo: str(pick('codigo', 'CODIGO')),
       nombre: str(pick('nombre', 'NOMBRE')),
-      unidad_nombre: str(pick('unidad_nombre', 'unidadNombre', 'UNIDAD_NOMBRE')) || '—',
-      serie_nombre: str(pick('serie_nombre', 'serieNombre', 'SERIE_NOMBRE')) || '—',
+      unidad_nombre:
+        str(pick('unidad_nombre', 'unidadNombre', 'UNIDAD_NOMBRE')) || '—',
+      serie_nombre:
+        str(pick('serie_nombre', 'serieNombre', 'SERIE_NOMBRE')) || '—',
       subserie_nombre: (() => {
         const v = pick('subserie_nombre', 'subserieNombre', 'SUBSERIE_NOMBRE');
         if (v == null || v === '') {
@@ -280,11 +324,11 @@ export class GestionPlazosConservacionService {
         pick(
           'fecha_inicio_vigencia',
           'fechaInicioVigencia',
-          'FECHA_INICIO_VIGENCIA'
-        )
+          'FECHA_INICIO_VIGENCIA',
+        ),
       ),
       fecha_vencimiento: parseFechaNullable(
-        pick('fecha_vencimiento', 'fechaVencimiento', 'FECHA_VENCIMIENTO')
+        pick('fecha_vencimiento', 'fechaVencimiento', 'FECHA_VENCIMIENTO'),
       ),
       creado_por: (() => {
         const v = pick('creado_por', 'creadoPor', 'CREADO_POR');
@@ -298,7 +342,7 @@ export class GestionPlazosConservacionService {
         const v = pick(
           'politica_disposicion',
           'politicaDisposicion',
-          'POLITICA_DISPOSICION'
+          'POLITICA_DISPOSICION',
         );
         if (v == null || v === '') return null;
         const u = str(v).trim().toUpperCase();
@@ -326,7 +370,7 @@ export class GestionPlazosConservacionService {
       paquete_transferencia_zip_path: (() => {
         const v = pick(
           'paquete_transferencia_zip_path',
-          'paqueteTransferenciaZipPath'
+          'paqueteTransferenciaZipPath',
         );
         return v == null || v === '' ? null : str(v);
       })(),
@@ -358,10 +402,13 @@ export class GestionPlazosConservacionService {
     return d.toISOString();
   }
 
-  asignarPlazo(documentoId: number, body: AsignarPlazoBody): Observable<unknown> {
+  asignarPlazo(
+    documentoId: number,
+    body: AsignarPlazoBody,
+  ): Observable<unknown> {
     return this.http.post(
       `${this.api}/gestion-plazos/${documentoId}/asignar`,
-      body
+      body,
     );
   }
 
@@ -369,13 +416,13 @@ export class GestionPlazosConservacionService {
     const params = new HttpParams().set('days', days.toString());
     return this.http.get<DocumentoPlazoRow[]>(
       `${this.api}/gestion-plazos/proximos`,
-      { params }
+      { params },
     );
   }
 
   listarVencidos(): Observable<DocumentoPlazoRow[]> {
     return this.http.get<DocumentoPlazoRow[]>(
-      `${this.api}/gestion-plazos/vencidos`
+      `${this.api}/gestion-plazos/vencidos`,
     );
   }
 
@@ -387,29 +434,29 @@ export class GestionPlazosConservacionService {
 
   extenderVigenciaExpediente(
     expedienteId: number,
-    body: ExtenderVigenciaExpedienteBody
+    body: ExtenderVigenciaExpedienteBody,
   ): Observable<unknown> {
     return this.http.post(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/extender-vigencia`,
-      body
+      body,
     );
   }
 
   getDetalleConservacionExpediente(
-    expedienteId: number
+    expedienteId: number,
   ): Observable<ExpedienteConservacionDetalleResponse> {
     return this.http.get<ExpedienteConservacionDetalleResponse>(
-      `${this.api}/gestion-plazos/expediente/${expedienteId}/detalle-conservacion`
+      `${this.api}/gestion-plazos/expediente/${expedienteId}/detalle-conservacion`,
     );
   }
 
   iniciarDisposicionExpediente(
     expedienteId: number,
-    body: { tipo_disposicion: string; justificacion: string }
+    body: { tipo_disposicion: string; justificacion: string },
   ): Observable<unknown> {
     return this.http.post(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/iniciar`,
-      body
+      body,
     );
   }
 
@@ -423,43 +470,43 @@ export class GestionPlazosConservacionService {
         politica_ok: boolean;
       };
       notas?: string;
-    }
+    },
   ): Observable<unknown> {
     return this.http.post(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/revision`,
-      body
+      body,
     );
   }
 
   aprobarDisposicionExpediente(
     expedienteId: number,
-    body: { justificacion: string }
+    body: AprobarDisposicionExpedienteBody,
   ): Observable<unknown> {
     return this.http.post(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/aprobar`,
-      body
+      body,
     );
   }
 
   /** Inicio + revisión + ZIP y estado TRANSFERIDO en un solo flujo (HU-032). */
   ejecutarTransferenciaDisposicionCompleta(
     expedienteId: number,
-    body: { justificacion_inicio: string; justificacion_aprobacion: string }
-  ): Observable<unknown> {
-    return this.http.post(
+    body: EjecutarTransferenciaDisposicionCompletaBody,
+  ): Observable<EjecutarTransferenciaDisposicionCompletaResponse> {
+    return this.http.post<EjecutarTransferenciaDisposicionCompletaResponse>(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/transferencia/ejecutar`,
-      body
+      body,
     );
   }
 
   /** Inicio + revisión + acta + eliminación física (HU-032). */
   ejecutarEliminacionDisposicionCompleta(
     expedienteId: number,
-    body: { justificacion_inicio: string; justificacion_aprobacion: string }
-  ): Observable<unknown> {
-    return this.http.post(
+    body: EjecutarEliminacionDisposicionCompletaBody,
+  ): Observable<EjecutarEliminacionDisposicionCompletaResponse> {
+    return this.http.post<EjecutarEliminacionDisposicionCompletaResponse>(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/eliminacion/ejecutar`,
-      body
+      body,
     );
   }
 
@@ -467,7 +514,7 @@ export class GestionPlazosConservacionService {
   descargarPaqueteTransferenciaZip(expedienteId: number): Observable<Blob> {
     return this.http.get(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/paquete-transferencia-zip`,
-      { responseType: 'blob' }
+      { responseType: 'blob' },
     );
   }
 
@@ -475,26 +522,26 @@ export class GestionPlazosConservacionService {
   descargarActaEliminacionDocx(expedienteId: number): Observable<Blob> {
     return this.http.get(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/acta-eliminacion-docx`,
-      { responseType: 'blob' }
+      { responseType: 'blob' },
     );
   }
 
   rechazarDisposicionExpediente(
     expedienteId: number,
-    body: { motivo: string }
+    body: { motivo: string },
   ): Observable<unknown> {
     return this.http.post(
       `${this.api}/gestion-plazos/expediente/${expedienteId}/disposicion/rechazar`,
-      body
+      body,
     );
   }
 
   /** Documentos asignados al expediente (índice / clasificación). */
   getDocumentosByExpedienteId(
-    expedienteId: number
+    expedienteId: number,
   ): Observable<ExpedienteDocumentoListRow[]> {
     return this.http.get<ExpedienteDocumentoListRow[]>(
-      `${this.api}/documentos/expediente/${expedienteId}`
+      `${this.api}/documentos/expediente/${expedienteId}`,
     );
   }
 }
