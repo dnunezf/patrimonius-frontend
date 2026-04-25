@@ -27,6 +27,8 @@ interface ExpedienteRow {
   estado: 'ACTIVO' | 'CERRADO' | 'TRANSFERIDO' | 'ELIMINADO';
   fecha_creacion?: string | null;
   fecha_cierre?: string | null;
+  fecha_inicio_vigencia?: string | null;
+  fecha_vencimiento?: string | null;
 
   unidad_id: number;
   serie_id: number;
@@ -45,6 +47,16 @@ interface ExpedienteDocumentoRow {
   estado: string;
   numero_serie?: string | null;
   expediente_id?: number | null;
+}
+
+interface CerrarExpedienteResponse {
+  duplicated?: boolean;
+  expedienteId?: number;
+  vigencia?: {
+    fecha_inicio_vigencia: string;
+    fecha_vencimiento: string;
+    plazo_conservacion_anios: number;
+  };
 }
 
 @Component({
@@ -93,6 +105,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   expedienteDocsError = '';
   expedienteDocsTitle = '';
   expedienteDocsRows: ExpedienteDocumentoRow[] = [];
+  expedienteSeleccionado: any = null;
 
   seriesPage = 1;
   seriesPageSize = 5;
@@ -106,13 +119,11 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   expedientesPageSize = 5;
   pagedExpedientes: ExpedienteRow[] = [];
 
-  /** Diálogo de confirmación (sustituye window.confirm) */
   confirmDialogOpen = false;
   confirmDialogTitle = '';
   confirmDialogMessage = '';
   private pendingConfirmAction: (() => void) | null = null;
 
-  /** Toast in-app (sustituye alert) */
   toastVisible = false;
   toastMessage = '';
   toastKind: 'success' | 'error' = 'success';
@@ -123,17 +134,17 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     private http: HttpClient,
   ) {}
 
+  ngOnInit(): void {
+    this.cargarSeries();
+    this.cargarSubseries();
+    this.cargarExpedientes();
+  }
+
   ngOnDestroy(): void {
     if (this.toastClearId) {
       clearTimeout(this.toastClearId);
       this.toastClearId = null;
     }
-  }
-
-  ngOnInit(): void {
-    this.cargarSeries();
-    this.cargarSubseries();
-    this.cargarExpedientes();
   }
 
   cargarSeries(): void {
@@ -176,7 +187,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     this.loadingExpedientes = true;
     this.errorExpedientes = '';
 
-    this.http.get<ExpedienteRow[]>(`${this.apiUrl}/api/admin/expedientes`).subscribe({
+    this.http.get<ExpedienteRow[]>(`${this.apiUrl}/api/expedientes`).subscribe({
       next: (response) => {
         this.expedientes = response ?? [];
         this.aplicarFiltroExpedientes();
@@ -303,6 +314,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   crearSubserie(): void {
     this.router.navigate(['/archivista/crear-subserie']);
   }
+
   verIndices(): void {
     this.router.navigate(['/archivista/indices']);
   }
@@ -407,14 +419,35 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
       `¿Deseas cerrar el expediente "${expediente.nombre}" y generar su índice electrónico?`,
       () => {
         this.http
-          .post(`${this.apiUrl}/indices/cerrar-expediente/${expediente.id}`, {})
+          .post<CerrarExpedienteResponse>(
+            `${this.apiUrl}/indices/cerrar-expediente/${expediente.id}`,
+            {}
+          )
           .subscribe({
-            next: () => {
-              this.showToast(
-                'Expediente cerrado e índice electrónico generado correctamente.',
-                'success',
-              );
-              this.cargarExpedientes();
+            next: (response) => {
+              expediente.estado = 'CERRADO';
+              expediente.fecha_cierre = new Date().toISOString();
+
+              if (response?.vigencia) {
+                expediente.fecha_inicio_vigencia =
+                  response.vigencia.fecha_inicio_vigencia;
+                expediente.fecha_vencimiento =
+                  response.vigencia.fecha_vencimiento;
+
+                this.showToast(
+                  `Expediente cerrado correctamente. Vigencia: ${this.formatDate(
+                    expediente.fecha_inicio_vigencia
+                  )} a ${this.formatDate(expediente.fecha_vencimiento)}.`,
+                  'success',
+                );
+              } else {
+                this.showToast(
+                  'Expediente cerrado e índice electrónico generado correctamente.',
+                  'success',
+                );
+              }
+
+              this.aplicarFiltroExpedientes();
             },
             error: (error) => {
               const mensaje =
@@ -448,8 +481,13 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
           })
           .subscribe({
             next: () => {
+              expediente.estado = 'ACTIVO';
+              expediente.fecha_cierre = null;
+              expediente.fecha_inicio_vigencia = null;
+              expediente.fecha_vencimiento = null;
+
               this.showToast('Expediente reabierto correctamente.', 'success');
-              this.cargarExpedientes();
+              this.aplicarFiltroExpedientes();
             },
             error: (error) => {
               const mensaje =
@@ -482,8 +520,13 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
       year: 'numeric',
     });
   }
+
   verDocumentosExpediente(expediente: ExpedienteRow): void {
+    this.expedienteSeleccionado = expediente;
+
+
     this.expedienteDocsOpen = true;
+    this.expedienteDocsTitle = expediente.nombre ?? 'Expediente';
     this.expedienteDocsLoading = true;
     this.expedienteDocsError = '';
     this.expedienteDocsRows = [];
@@ -507,6 +550,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
         },
       });
   }
+
   cerrarDocumentosExpediente(): void {
     this.expedienteDocsOpen = false;
     this.expedienteDocsLoading = false;
@@ -514,6 +558,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     this.expedienteDocsRows = [];
     this.expedienteDocsTitle = '';
   }
+
   documentoEstadoClass(estado: string | null | undefined): string {
     const e = String(estado || '').toUpperCase();
 
@@ -525,6 +570,25 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     if (e === 'ELIMINACION' || e === 'TRANSFERENCIA') return 'pill danger';
 
     return 'pill';
+  }
+
+  /*clasificarDocumento(doc: { id: number }): void {
+    this.cerrarDocumentosExpediente();
+    this.router.navigate(['/archivista/clasificacion-documento', doc.id]);
+  }*/
+  clasificarDocumento(doc: any): void {
+    this.cerrarDocumentosExpediente();
+
+    this.router.navigate(
+      ['/archivista/clasificacion-documento', doc.id],
+      {
+        state: {
+          expedienteNombre: this.expedienteSeleccionado?.nombre ?? '',
+          serieNombre: this.expedienteSeleccionado?.serie_nombre ?? '',
+          subserieNombre: this.expedienteSeleccionado?.subserie_nombre ?? '',
+        },
+      }
+    );
   }
 
   get totalSeriesPages(): number {

@@ -60,6 +60,18 @@ export class LogQueriesComponent {
       ],
       link: '/logs/actividad-usuario',
     },
+    {
+      title: 'Bitácora de expedientes',
+      description:
+        'Historial del ciclo de vida del expediente: creación, cierre, documentos vinculados, permisos, visitas y descargas.',
+      icon: 'document-signed.png',
+      funciones: [
+        'Filtrar por evento, resultado, expediente y fechas',
+        'Ver detalle con JSON y datos de unidad',
+        'Exportar CSV y XML',
+      ],
+      link: '/logs/expediente-bitacora',
+    },
   ];
 
   // Function to dynamically generate the image path for each icon

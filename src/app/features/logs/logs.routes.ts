@@ -5,6 +5,7 @@ import { DocumentCycleLogComponent } from './document-cycle-log/document-cycle-l
 import { SecurityLogComponent } from './security-log/security-log.component';
 import { UserActivityLogComponent } from './user-activity-log/user-activity-log.component';
 import { ActividadUsuarioLogComponent } from './actividad-usuario-log/actividad-usuario-log.component';
+import { ExpedienteBitacoraLogComponent } from './expediente-bitacora-log/expediente-bitacora-log.component';
 
 export const LOGS_ROUTES: Routes = [
   {
@@ -22,6 +23,11 @@ export const LOGS_ROUTES: Routes = [
         path: 'actividad-usuario',
         component: ActividadUsuarioLogComponent,
         title: 'Patrimonius | Bitácora de Actividad de Usuario',
+      },
+      {
+        path: 'expediente-bitacora',
+        component: ExpedienteBitacoraLogComponent,
+        title: 'Patrimonius | Bitácora de expedientes',
       },
       { path: '', pathMatch: 'full', redirectTo: 'queries' }
     ]

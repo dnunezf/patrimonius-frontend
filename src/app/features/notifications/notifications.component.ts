@@ -69,8 +69,30 @@ export class NotificationsComponent implements OnInit {
     return new Date(raw).toLocaleString('es-CR');
   }
 
+  /** Recordatorio semestral archivista / expedientes ACTIVO. */
+  isRevisionExpedientesActivos(tipo?: string | null): boolean {
+    return !!tipo && tipo.startsWith('ARCHIVISTA_EXP_ACTIVOS_');
+  }
+
+  isExpedienteConservacionVencido(tipo?: string | null): boolean {
+    return tipo === 'EXPEDIENTE_CONSERVACION_VENCIDO';
+  }
+
+  isExpedienteConservacionProximo(tipo?: string | null): boolean {
+    return tipo === 'EXPEDIENTE_CONSERVACION_PROXIMO';
+  }
+
   // Actualización del título según el tipo de notificación
   titleFor(tipo?: string) {
+    if (this.isRevisionExpedientesActivos(tipo)) {
+      return 'Revisión de expedientes activos';
+    }
+    if (this.isExpedienteConservacionVencido(tipo)) {
+      return 'Plazo de conservación vencido';
+    }
+    if (this.isExpedienteConservacionProximo(tipo)) {
+      return 'Plazo próximo a vencer (expediente)';
+    }
     switch (tipo) {
       case 'PLAZO_ASIGNADO': return 'Plazo asignado';
       case 'DOC_EDITADO': return 'Documento editado';
@@ -93,6 +115,8 @@ export class NotificationsComponent implements OnInit {
   }
 
   iconFor(n: Notificacion): 'warn' | 'info' | 'ok' {
+    if (n.tipo === 'EXPEDIENTE_CONSERVACION_VENCIDO') return 'warn';
+    if (n.tipo === 'EXPEDIENTE_CONSERVACION_PROXIMO') return 'warn';
     if (n.tipo === 'DOC_FIRMA_INVALIDA') return 'warn';
     if (n.tipo?.includes('DENEG') || n.tipo?.includes('ACCESO')) return 'warn';
     if (n.accion_requerida === 'FIRMAR') return 'info';
@@ -117,7 +141,12 @@ export class NotificationsComponent implements OnInit {
         return '🗑️';
       case 'DOC_FIRMA_INVALIDA':
         return '⚠️';
+      case 'EXPEDIENTE_CONSERVACION_VENCIDO':
+        return '⚠️';
+      case 'EXPEDIENTE_CONSERVACION_PROXIMO':
+        return '⏳';
       default:
+        if (t.startsWith('ARCHIVISTA_EXP_ACTIVOS_')) return '📁';
         if (t.includes('DENEG') || t.includes('ACCESO')) return '🔒';
         return '🔔';
     }

@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AsignarPlazoBody, DocumentoPlazoRow, DocumentService } from '../../../../core/services/document.service';
+import {
+  AsignarPlazoBody,
+  DocumentoPlazoRow,
+  GestionPlazosConservacionService,
+} from '../../../../core/services/gestion-plazos-conservacion.service';
 
 @Component({
   selector: 'app-asignar-plazo-dialog',
@@ -25,7 +29,9 @@ export class AsignarPlazoDialogComponent implements OnChanges {
   loading = false;
   error = '';
 
-  constructor(private readonly documentService: DocumentService) {}
+  constructor(
+    private readonly plazosService: GestionPlazosConservacionService,
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['documento'] && this.documento) {
@@ -95,7 +101,7 @@ export class AsignarPlazoDialogComponent implements OnChanges {
     this.loading = true;
     this.error = '';
 
-    this.documentService.asignarPlazo(this.documento.id, body).subscribe({
+    this.plazosService.asignarPlazo(this.documento.id, body).subscribe({
       next: () => {
         this.loading = false;
         this.saved.emit();

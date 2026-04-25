@@ -187,11 +187,60 @@ export interface UserActivityBitacoraPage {
   hasPrev: boolean;
 }
 
+/** Lista desde VW_Bitacora_Expediente_Lista. */
+export interface ExpedienteBitacoraItem {
+  id_registro: number;
+  fecha_hora: string;
+  expediente_id: number;
+  expediente_codigo: string | null;
+  expediente_nombre: string | null;
+  expediente_estado_actual: string | null;
+  usuario_id: number;
+  usuario_email: string | null;
+  usuario_nombre_completo: string | null;
+  evento: string | null;
+  resultado: string | null;
+  estado_anterior: string | null;
+  estado_nuevo: string | null;
+}
+
+/** Detalle desde VW_Bitacora_Expediente_Detalle. */
+export interface ExpedienteBitacoraDetail {
+  id_registro: number;
+  fecha_hora: string;
+  expediente_id: number;
+  expediente_codigo: string | null;
+  expediente_nombre: string | null;
+  expediente_estado_actual: string | null;
+  expediente_unidad_id: number | null;
+  unidad_nombre: string | null;
+  usuario_id: number;
+  usuario_email: string | null;
+  usuario_nombre_completo: string | null;
+  usuario_rol_nombre: string | null;
+  evento: string | null;
+  resultado: string | null;
+  estado_anterior: string | null;
+  estado_nuevo: string | null;
+  detalle: unknown;
+}
+
+export interface ExpedienteBitacoraPage {
+  items: ExpedienteBitacoraItem[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 
 @Injectable({ providedIn: 'root' })
 export class AuditService {
   private base = `${environment.apiUrl}/audit`;
   private permissionBitacoraBase = `${environment.apiUrl}/audit/permission-bitacora`;
+  private expedienteBitacoraBase = `${environment.apiUrl}/audit/expediente-bitacora`;
   private bitacoraActividadBase = `${environment.apiUrl}/audit/bitacora-actividad`;
 
   constructor(private http: HttpClient) {}
@@ -445,6 +494,75 @@ export class AuditService {
   getUserActivityBitacoraRecursos(): Observable<string[]> {
     return this.http
       .get<{ items: string[] }>(`${this.bitacoraActividadBase}/recursos`)
+      .pipe(map((res) => res.items || []));
+  }
+
+  /** Bitácora de expediente (VW_Bitacora_Expediente_*). */
+  listExpedienteBitacoraEvents(opts: {
+    page?: number;
+    pageSize?: number;
+    q?: string;
+    evento?: string;
+    resultado?: string;
+    expedienteId?: number | string;
+    usuario?: string;
+    from?: string;
+    to?: string;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+  }) {
+    const o = opts || {};
+    const page = o.page ?? 1;
+    const pageSize = o.pageSize ?? 25;
+    const sortBy = (o.sortBy && String(o.sortBy).trim()) || 'fecha_hora';
+    const sortDir =
+      o.sortDir === 'asc' || o.sortDir === 'desc' ? o.sortDir : 'desc';
+
+    let params = new HttpParams()
+      .set('page', String(page))
+      .set('pageSize', String(pageSize))
+      .set('sortBy', sortBy)
+      .set('sortDir', sortDir);
+
+    const optional: (keyof typeof o)[] = [
+      'q',
+      'evento',
+      'resultado',
+      'expedienteId',
+      'usuario',
+      'from',
+      'to',
+    ];
+    for (const key of optional) {
+      const v = o[key];
+      if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+        params = params.set(String(key), String(v));
+      }
+    }
+
+    return this.http.get<ExpedienteBitacoraPage>(
+      `${this.expedienteBitacoraBase}/events`,
+      { params },
+    );
+  }
+
+  getExpedienteBitacoraDetail(id: number): Observable<ExpedienteBitacoraDetail> {
+    return this.http
+      .get<{ item: ExpedienteBitacoraDetail }>(
+        `${this.expedienteBitacoraBase}/events/${id}`,
+      )
+      .pipe(map((res) => res.item));
+  }
+
+  getExpedienteBitacoraTiposEvento(): Observable<string[]> {
+    return this.http
+      .get<{ items: string[] }>(`${this.expedienteBitacoraBase}/tipos-evento`)
+      .pipe(map((res) => res.items || []));
+  }
+
+  getExpedienteBitacoraResultados(): Observable<string[]> {
+    return this.http
+      .get<{ items: string[] }>(`${this.expedienteBitacoraBase}/resultados`)
       .pipe(map((res) => res.items || []));
   }
 }

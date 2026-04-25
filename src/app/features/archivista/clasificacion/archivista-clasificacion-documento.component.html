@@ -1,0 +1,185 @@
+<div class="page">
+  <section class="banner">
+    <div class="banner-head">
+      <div>
+        <h2>Clasificación y descripción archivistica</h2>
+        <p>
+          Revisa la información general del documento y el estado de completitud de
+          la clasificación archivística.
+        </p>
+      </div>
+
+      <button type="button" class="btn ghost" (click)="volver()">
+        Regresar
+      </button>
+    </div>
+  </section>
+
+  <div class="loading-card" *ngIf="loading">
+    Cargando detalle del documento...
+  </div>
+
+  <div class="error-card" *ngIf="!loading && errorMsg">
+    {{ errorMsg }}
+  </div>
+
+  <section class="layout" *ngIf="!loading && !errorMsg">
+    <article class="panel card-general">
+      <div class="card-head">
+        <h3>Datos Generales del Documento</h3>
+        <span class="pill info">Documento #{{ documento.id }}</span>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Código</span>
+          <span class="value mono">{{ documento.codigo }}</span>
+        </div>
+
+        <div class="info-item full">
+          <span class="label">Título</span>
+          <span class="value strong">{{ documento.titulo }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="label">Tipo documental</span>
+          <span class="value">{{ documento.tipoDocumental }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="label">Estado actual</span>
+          <span class="value">
+            <span class="pill ok">{{ documento.estadoActual }}</span>
+          </span>
+        </div>
+
+        <div class="info-item">
+          <span class="label">Productor</span>
+          <span class="value">{{ documento.autorProductor }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="label">Unidad productora</span>
+          <span class="value">{{ documento.unidadProductora }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="label">Fecha de creación</span>
+          <span class="value">{{ formatearFecha(documento.fechaCreacion) }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="label">Fecha de recepción</span>
+          <span class="value">{{ formatearFecha(documento.fechaRecepcion) }}</span>
+        </div>
+
+        <div class="info-item full">
+          <span class="label">Descripción Breve del Contenido</span>
+          <span class="value">{{ documento.descripcion }}</span>
+        </div>
+
+        <div class="info-item full">
+          <span class="label">Palabras clave</span>
+          <span class="value">
+            <ng-container *ngIf="documento.palabrasClave.length > 0; else sinKeywords">
+              {{ documento.palabrasClave.join(', ') }}
+            </ng-container>
+            <ng-template #sinKeywords>—</ng-template>
+          </span>
+        </div>
+      </div>
+      <div class="info-item">
+        <span class="label">Serie</span>
+        <span class="value">{{ documento.serie || '—' }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="label">Subserie</span>
+        <span class="value">{{ documento.subserie || '—' }}</span>
+      </div>
+
+      <div class="info-item full">
+        <span class="label">Expediente</span>
+        <span class="value">{{ documento.expediente || '—' }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="label">Nivel de acceso</span>
+        <span class="value">{{ documento.nivelAcceso || '—' }}</span>
+      </div>
+    </article>
+
+    <article class="panel card-resumen">
+      <div class="card-head">
+        <h3>Estado de la clasificación</h3>
+      </div>
+
+      <div class="status-list">
+        <button
+          type="button"
+          class="status-row clickable"
+          [class.active]="activeTab === 'cuadro'"
+          (click)="seleccionarTab('cuadro')"
+        >
+          <span>Cuadro de clasificación</span>
+          <span [class]="estadoClase(resumen.cuadroCompleto)">
+      {{ estadoTexto(resumen.cuadroCompleto) }}
+    </span>
+        </button>
+
+        <button
+          type="button"
+          class="status-row clickable"
+          [class.active]="activeTab === 'descriptivos'"
+          (click)="seleccionarTab('descriptivos')"
+        >
+          <span>Metadatos descriptivos</span>
+          <span [class]="estadoClase(resumen.descriptivosCompletos)">
+      {{ estadoTexto(resumen.descriptivosCompletos) }}
+    </span>
+        </button>
+
+        <div class="status-help" *ngIf="faltantes.descriptivos.length > 0">
+          Faltan: {{ faltantes.descriptivos.join(', ') }}
+        </div>
+
+        <button
+          type="button"
+          class="status-row clickable"
+          [class.active]="activeTab === 'tecnicos'"
+          (click)="seleccionarTab('tecnicos')"
+        >
+          <span>Metadatos técnicos</span>
+          <span [class]="estadoClase(resumen.tecnicosCompletos)">
+      {{ estadoTexto(resumen.tecnicosCompletos) }}
+    </span>
+        </button>
+
+        <button
+          type="button"
+          class="status-row clickable"
+          [class.active]="activeTab === 'gestion'"
+          (click)="seleccionarTab('gestion')"
+        >
+          <span>Metadatos de gestión</span>
+          <span [class]="estadoClase(resumen.gestionCompleta)">
+      {{ estadoTexto(resumen.gestionCompleta) }}
+    </span>
+        </button>
+      </div>
+
+      <div class="detail-box">
+        <div class="card-head">
+          <h3>Detalle del bloque</h3>
+        </div>
+
+        <div class="detail-list">
+          <div class="detail-row" *ngFor="let item of getDetalleActivo()">
+            <span class="detail-label">{{ item.label }}</span>
+            <span class="detail-value">{{ item.value }}</span>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

@@ -1,0 +1,53 @@
+<div class="rx-overlay" *ngIf="open" (click)="cerrar()" role="presentation">
+  <div class="rx-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <header class="rx-head">
+      <h2 class="rx-title">Rechazar disposición del expediente</h2>
+      <p class="rx-sub">
+        Indique el motivo del rechazo; el expediente permanecerá cerrado y podrá reiniciarse el flujo más adelante.
+      </p>
+      <button type="button" class="rx-close" (click)="cerrar()" aria-label="Cerrar">×</button>
+    </header>
+
+    <div class="rx-body" *ngIf="expediente as ex">
+      <div class="rx-card">
+        <div class="rx-row">
+          <span class="rx-label">Expediente</span>
+          <span class="rx-val">{{ ex.nombre }}</span>
+        </div>
+        <div class="rx-row">
+          <span class="rx-label">Código</span>
+          <span class="rx-val rx-mono">{{ ex.codigo }}</span>
+        </div>
+      </div>
+
+      <label class="rx-lab" for="rx-motivo">
+        Motivo del rechazo <span class="rx-req">*</span>
+      </label>
+      <textarea
+        id="rx-motivo"
+        class="rx-ta"
+        rows="4"
+        [(ngModel)]="motivo"
+        placeholder="Indique claramente las razones del rechazo y las acciones correctivas necesarias…"
+      ></textarea>
+
+      <div class="rx-warn" role="alert">
+        El proceso de disposición quedará marcado como rechazado y quedará trazabilidad en la bitácora del expediente.
+      </div>
+
+      <p class="rx-err" *ngIf="errorMsg">{{ errorMsg }}</p>
+    </div>
+
+    <footer class="rx-foot">
+      <button type="button" class="btn ghost" (click)="cerrar()">Cancelar</button>
+      <button
+        type="button"
+        class="btn danger"
+        [disabled]="!puedeConfirmar"
+        (click)="confirmar()"
+      >
+        {{ saving ? 'Guardando…' : 'Confirmar rechazo' }}
+      </button>
+    </footer>
+  </div>
+</div>

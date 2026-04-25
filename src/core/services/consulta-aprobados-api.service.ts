@@ -53,6 +53,7 @@ export type ConsultaExpedienteRow = {
   serie_nombre?: string | null;
   subserie_nombre?: string | null;
   total_documentos?: number;
+  total_documentos_consulta?: number;
   total_documentos_elegibles?: number;
   canRequestAccess?: boolean;
   has_approved_access?: boolean;
@@ -73,6 +74,7 @@ export type ConsultaSearchQuery = {
   titulo?: string;
   nombre?: string;
   soloConElegibles?: string | boolean;
+  vista?: 'documentos' | 'expedientes';
 
   page?: number;
   pageSize?: number;

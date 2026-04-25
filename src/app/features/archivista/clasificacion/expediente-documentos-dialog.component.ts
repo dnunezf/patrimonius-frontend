@@ -6,6 +6,7 @@ export interface ExpedienteDocumentoDialogRow {
   titulo: string;
   estado: string;
   numero_serie?: string | null;
+  expediente_id?: number | null;
 }
 
 @Component({
@@ -23,9 +24,14 @@ export class ExpedienteDocumentosDialogComponent {
   @Input() errorMsg = '';
 
   @Output() closed = new EventEmitter<void>();
+  @Output() clasificar = new EventEmitter<ExpedienteDocumentoDialogRow>();
 
   close(): void {
     this.closed.emit();
+  }
+
+  onClasificar(doc: ExpedienteDocumentoDialogRow): void {
+    this.clasificar.emit(doc);
   }
 
   estadoClass(estado: string | null | undefined): string {

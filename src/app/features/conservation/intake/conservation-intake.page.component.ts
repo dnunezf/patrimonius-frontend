@@ -1,5 +1,5 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { CommonModule, DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { CommonModule, NgClass, NgFor, NgIf } from '@angular/common';
 import {
   AbstractControl,
   FormBuilder,
@@ -21,11 +21,14 @@ import {
   ArchivalSubseries,
   CandidateDoc,
   ConfidentialityLevel,
+  ConservationEadDocumentRow,
+  EadExportStatus,
   EligibilityState,
   FinalDocumentFlow,
   IntakePayload,
   ProcedureType,
 } from './models';
+import { EadExportDialogComponent } from './components/ead-export-dialog/ead-export-dialog.component';
 
 function humanSize(bytes: number | null | undefined): string {
   if (bytes == null || Number.isNaN(bytes)) return '—';
@@ -67,7 +70,14 @@ function commaEmailsValidator(): ValidatorFn {
 @Component({
   selector: 'app-conservation-intake-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NgIf, NgFor, NgClass, DatePipe],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    NgIf,
+    NgFor,
+    NgClass,
+    EadExportDialogComponent,
+  ],
   templateUrl: './conservation-intake.page.component.html',
   styleUrls: ['./conservation-intake.page.component.css'],
 })
@@ -109,6 +119,17 @@ export class ConservationIntakePageComponent {
 
     return `${position} de ${total} documentos`;
   });
+
+  /* =========================
+   * HU-035 · EAD 2002 export
+   * ========================= */
+
+  readonly eadDocumentsLoading = signal(false);
+  readonly eadDocuments = signal<ConservationEadDocumentRow[]>([]);
+  readonly eadDialogOpen = signal(false);
+  readonly eadDialogDocument = signal<ConservationEadDocumentRow | null>(null);
+
+  readonly totalEadDocuments = computed(() => this.eadDocuments().length);
 
   readonly procedureOptions: Array<{
     value: ProcedureType;
@@ -152,7 +173,10 @@ export class ConservationIntakePageComponent {
     expedienteId: [null as number | null, [Validators.required]],
 
     retentionRuleId: [{ value: 0, disabled: true }],
-    retentionStartDateISO: [{ value: '', disabled: true }, [Validators.required]],
+    retentionStartDateISO: [
+      { value: '', disabled: true },
+      [Validators.required],
+    ],
     retentionEndDateISO: [{ value: '', disabled: true }],
 
     recipientNameRole: [''],
@@ -270,6 +294,7 @@ export class ConservationIntakePageComponent {
     this.setupReferenceCodePreview();
     this.loadArchivalStructure();
     this.search();
+    this.loadEadDocuments();
   }
 
   private setupDynamicValidators(): void {
@@ -315,17 +340,17 @@ export class ConservationIntakePageComponent {
     this.archivalForm
       .get('serieId')
       ?.valueChanges.pipe(
-      startWith(this.archivalForm.get('serieId')?.value),
-      takeUntilDestroyed(this.destroyRef),
-    )
+        startWith(this.archivalForm.get('serieId')?.value),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(() => this.refreshRetentionEndDate());
 
     this.archivalForm
       .get('retentionStartDateISO')
       ?.valueChanges.pipe(
-      startWith(this.archivalForm.get('retentionStartDateISO')?.value),
-      takeUntilDestroyed(this.destroyRef),
-    )
+        startWith(this.archivalForm.get('retentionStartDateISO')?.value),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(() => this.refreshRetentionEndDate());
   }
 
@@ -535,7 +560,7 @@ export class ConservationIntakePageComponent {
           if (!silent) {
             this.toasts.error(
               err?.error?.message ||
-              'No se pudo generar el código de referencia final.',
+                'No se pudo generar el código de referencia final.',
             );
           }
         },
@@ -580,7 +605,7 @@ export class ConservationIntakePageComponent {
         this.duplicateState.set('NOT_CHECKED');
         this.toasts.error(
           err?.error?.message ||
-          'No se pudo verificar la duplicidad del código.',
+            'No se pudo verificar la duplicidad del código.',
         );
       },
     });
@@ -670,9 +695,7 @@ export class ConservationIntakePageComponent {
     const selectedDoc = this.selected();
 
     const startDate =
-      expediente?.latestDocumentDateISO ||
-      selectedDoc?.createdAtISO ||
-      '';
+      expediente?.latestDocumentDateISO || selectedDoc?.createdAtISO || '';
 
     this.archivalForm.patchValue(
       {
@@ -891,27 +914,27 @@ export class ConservationIntakePageComponent {
       outgoing:
         documentFlow === 'PRODUCED_SENT'
           ? {
-            recipientNameRole: String(raw.recipientNameRole || '').trim(),
-            recipientInstitution: String(
-              raw.recipientInstitution || '',
-            ).trim(),
-            dispatchEmails: csvToUniqueArray(
-              String(raw.dispatchEmails || ''),
-            ).map((item) => item.toLowerCase()),
-          }
+              recipientNameRole: String(raw.recipientNameRole || '').trim(),
+              recipientInstitution: String(
+                raw.recipientInstitution || '',
+              ).trim(),
+              dispatchEmails: csvToUniqueArray(
+                String(raw.dispatchEmails || ''),
+              ).map((item) => item.toLowerCase()),
+            }
           : null,
       incoming:
         documentFlow === 'RECEIVED'
           ? {
-            senderNameRole: String(raw.senderNameRole || '').trim() || null,
-            senderInstitution:
-              String(raw.senderInstitution || '').trim() || null,
-          }
+              senderNameRole: String(raw.senderNameRole || '').trim() || null,
+              senderInstitution:
+                String(raw.senderInstitution || '').trim() || null,
+            }
           : null,
     };
 
     this.loading.set(true);
-
+    console.log('Payload conservación:', payload);
     this.api.registerIntake(payload).subscribe({
       next: (response) => {
         this.loading.set(false);
@@ -944,6 +967,7 @@ export class ConservationIntakePageComponent {
         );
 
         this.search();
+        this.loadEadDocuments();
       },
       error: (err) => {
         this.loading.set(false);
@@ -986,10 +1010,98 @@ export class ConservationIntakePageComponent {
 
         this.toasts.error(
           err?.error?.message ||
-          'No se pudo registrar el ingreso a conservación.',
+            'No se pudo registrar el ingreso a conservación.',
         );
       },
     });
+  }
+
+  /* =========================
+   * HU-035 · helpers y flujo
+   * ========================= */
+
+  loadEadDocuments(): void {
+    this.eadDocumentsLoading.set(true);
+
+    this.api.getConservationDocumentsForEad().subscribe({
+      next: (rows) => {
+        this.eadDocuments.set(rows || []);
+        this.eadDocumentsLoading.set(false);
+      },
+      error: (err) => {
+        this.eadDocumentsLoading.set(false);
+        this.toasts.error(
+          err?.error?.message ||
+            'No se pudieron cargar los documentos en conservación para exportación EAD 2002.',
+        );
+      },
+    });
+  }
+
+  openEadDialog(
+    row: ConservationEadDocumentRow,
+    source: 'view' | 'export' = 'view',
+  ): void {
+    this.eadDialogDocument.set(row);
+    this.eadDialogOpen.set(true);
+
+    this.api
+      .audit('EAD2002_DIALOG_OPENED', {
+        documentId: row.id,
+        officialCode: row.officialCode,
+        source,
+      })
+      .subscribe();
+  }
+
+  closeEadDialog(): void {
+    this.eadDialogOpen.set(false);
+    this.eadDialogDocument.set(null);
+  }
+
+  onEadExported(documentId: number): void {
+    this.loadEadDocuments();
+
+    this.api
+      .audit('EAD2002_LIST_REFRESH_REQUESTED', {
+        documentId,
+      })
+      .subscribe();
+  }
+
+  eadStatusLabel(status: EadExportStatus | null | undefined): string {
+    return status === 'EXPORTADO' ? 'Exportado' : 'No exportado';
+  }
+
+  eadStatusClass(status: EadExportStatus | null | undefined): string {
+    return status === 'EXPORTADO' ? 'ok' : 'neutral';
+  }
+
+  displayConservationState(state: string | null | undefined): string {
+    const normalized = String(state || '')
+      .trim()
+      .toUpperCase();
+
+    if (normalized === 'ARCHIVADO' || normalized === 'CONSERVACION') {
+      return 'conservación';
+    }
+
+    if (!normalized) return '—';
+    return normalized.toLowerCase();
+  }
+
+  eadSerieSubserieText(row: ConservationEadDocumentRow): string {
+    const parts = [row.serieName, row.subserieName].filter(Boolean);
+    return parts.length ? parts.join(' / ') : '—';
+  }
+
+  eadSecondaryDocumentText(row: ConservationEadDocumentRow): string {
+    const parts = [row.expedienteCode, row.expedienteName].filter(Boolean);
+    return parts.length ? parts.join(' · ') : 'Sin expediente';
+  }
+
+  trackEadRow(_: number, row: ConservationEadDocumentRow): number {
+    return row.id;
   }
 
   fieldErr(name: string): string | null {

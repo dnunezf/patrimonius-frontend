@@ -1,0 +1,127 @@
+<div
+  class="ext-overlay"
+  *ngIf="open"
+  (click)="cerrar()"
+  role="presentation"
+>
+  <div
+    class="ext-modal"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="ext-vig-dialog-title"
+  >
+    <header class="ext-modal__head">
+      <div class="ext-modal__title-block">
+        <span class="ext-modal__icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.5"/>
+            <path d="M12 6v6l4 2" stroke="#2563eb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M17 7a7 7 0 00-10 10" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+          </svg>
+        </span>
+        <div>
+          <h2 id="ext-vig-dialog-title" class="ext-modal__title">
+            Extender plazo de retención
+          </h2>
+          <p class="ext-modal__subtitle">
+            Extienda el plazo de conservación del expediente (años sobre la fecha de vencimiento).
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="ext-modal__close"
+        (click)="cerrar()"
+        [disabled]="guardando"
+        aria-label="Cerrar"
+      >
+        ×
+      </button>
+    </header>
+
+    <div class="ext-modal__body" *ngIf="open && expediente">
+      <div class="ext-card">
+        <div class="ext-card__row ext-card__row--strong">
+          <span class="ext-card__label">Expediente</span>
+          <span class="ext-card__value">{{ tituloExpediente() }}</span>
+        </div>
+        <div class="ext-card__row">
+          <span class="ext-card__label">Vencimiento actual</span>
+          <span class="ext-card__value">{{ vencimientoActualFormateado() }}</span>
+        </div>
+        <div class="ext-card__row ext-card__row--docs">
+          <span class="ext-card__label">Documentos</span>
+          <span class="ext-card__docs">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M7 3h8l4 4v13a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="#64748b" stroke-width="1.3"/>
+              <path d="M14 3v4h4" stroke="#64748b" stroke-width="1.3"/>
+            </svg>
+            {{ textoDocumentos() }}
+          </span>
+        </div>
+      </div>
+
+      <div class="ext-field">
+        <label class="ext-field__label" for="ext-anios">
+          Años de extensión
+          <span class="ext-field__req" title="Requerido">*</span>
+        </label>
+        <input
+          id="ext-anios"
+          type="number"
+          class="ext-input"
+          [(ngModel)]="aniosExt"
+          min="1"
+          max="10"
+          step="1"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="1 a 10"
+        />
+        <p class="ext-hint">Entero entre 1 y 10. Se sumará a la fecha de vencimiento actual.</p>
+      </div>
+
+      <div class="ext-field">
+        <label class="ext-field__label" for="ext-just">
+          Justificación
+          <span class="ext-field__req" title="Requerido">*</span>
+        </label>
+        <textarea
+          id="ext-just"
+          class="ext-textarea"
+          rows="4"
+          [(ngModel)]="justificacion"
+          placeholder="Indique los motivos para extender el plazo de conservación..."
+        ></textarea>
+      </div>
+
+      <p class="ext-error" *ngIf="errorApi" role="alert">{{ errorApi }}</p>
+    </div>
+
+    <footer class="ext-modal__foot">
+      <button
+        type="button"
+        class="ext-btn ext-btn--cancel"
+        [disabled]="guardando"
+        (click)="cerrar()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="ext-btn ext-btn--primary"
+        [disabled]="!puedeGuardar || guardando"
+        (click)="guardar()"
+      >
+        <span class="ext-btn__icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        {{ guardando ? 'Guardando…' : 'Guardar extensión' }}
+      </button>
+    </footer>
+  </div>
+</div>

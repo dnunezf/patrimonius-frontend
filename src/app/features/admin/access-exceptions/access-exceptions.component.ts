@@ -354,7 +354,7 @@ export class AccessExceptionsComponent implements OnInit {
   // =======================
   // Validación + permisos
   // =======================
-  /** Misma regla que backend: solo CREACION/EDICION permiten EDIT; FIRMA/FIRMA_PARCIAL para SIGN */
+  /** En acceso por excepciones solo llegan docs CREACION/EDICION y ahí se permiten EDIT y SIGN. */
   private docEstadoRaw(doc: any | null): string {
     return String(doc?.estado ?? '').toUpperCase();
   }
@@ -366,7 +366,7 @@ export class AccessExceptionsComponent implements OnInit {
 
   puedeFirmarPorEstado(doc: any | null): boolean {
     const s = this.docEstadoRaw(doc);
-    return s === 'FIRMA' || s === 'FIRMA_PARCIAL';
+    return s === 'CREACION' || s === 'EDICION';
   }
 
   onDocumentForExceptionChange(): void {
@@ -411,7 +411,7 @@ export class AccessExceptionsComponent implements OnInit {
       parts.push('edición solo si el documento está en Creación o Edición');
     }
     if (this.selectedDocument && this.permissions.firmar && !this.puedeFirmarPorEstado(this.selectedDocument)) {
-      parts.push('firma solo si el documento está en Firma o Firma parcial');
+      parts.push('firma solo si el documento está en Creación o Edición');
     }
     if (!this.reason.trim()) {
       parts.push('escriba el motivo de la excepción');

@@ -230,7 +230,30 @@ export class NavComponent {
     return new Date(raw).toLocaleString('es-CR');
   }
 
+  /** Misma convención que notificaciones del sistema (recordatorio archivista). */
+  isRevisionExpedientesActivosNotif(tipo?: string | null): boolean {
+    return !!tipo && tipo.startsWith('ARCHIVISTA_EXP_ACTIVOS_');
+  }
+
+  /** Plazo de conservación del expediente archivado ya superado (gestión de plazos). */
+  isExpedienteConservacionVencidoNotif(tipo?: string | null): boolean {
+    return tipo === 'EXPEDIENTE_CONSERVACION_VENCIDO';
+  }
+
+  isExpedienteConservacionProximoNotif(tipo?: string | null): boolean {
+    return tipo === 'EXPEDIENTE_CONSERVACION_PROXIMO';
+  }
+
   titleForNotif(tipo?: string): string {
+    if (this.isRevisionExpedientesActivosNotif(tipo)) {
+      return 'Revisión de expedientes activos';
+    }
+    if (this.isExpedienteConservacionVencidoNotif(tipo)) {
+      return 'Plazo de conservación vencido';
+    }
+    if (this.isExpedienteConservacionProximoNotif(tipo)) {
+      return 'Plazo próximo a vencer (expediente)';
+    }
     switch (tipo) {
       case 'PLAZO_ASIGNADO':
         return 'Plazo asignado';
