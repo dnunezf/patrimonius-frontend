@@ -83,7 +83,14 @@ export class AuthInterceptor implements HttpInterceptor {
         }),
         catchError((err) => {
           this.isRefreshing = false;
-          this.auth.logout();
+
+          if (this.auth.hasLongRunningProcess()) {
+            this.auth.sessionWarningVisible.set(true);
+            this.auth.sessionSecondsRemaining.set(0);
+          } else {
+            this.auth.logout();
+          }
+
           return throwError(() => err);
         })
       );

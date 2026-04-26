@@ -57,7 +57,8 @@ export class AuthService {
    * Producción recomendada: 5 * 60
    * Pruebas rápidas: 20 o 30
    */
-  private readonly warningBeforeSeconds = 5 * 60;
+  // private readonly warningBeforeSeconds = 5 * 60;
+  private readonly warningBeforeSeconds = 30;
   constructor(private http: HttpClient) {
     this.restoreSessionFromStorage();
   }
@@ -141,7 +142,7 @@ export class AuthService {
     if (secondsUntilExpiry <= 0) {
       this.sessionWarningVisible.set(false);
       this.sessionSecondsRemaining.set(0);
-      this.logout();
+      this.handleSessionExpired();
       return;
     }
 
@@ -166,7 +167,7 @@ export class AuthService {
           this.sessionWarningVisible.set(false);
           this.sessionSecondsRemaining.set(0);
           this.clearSessionTimers();
-          this.logout();
+          this.handleSessionExpired();
         }
       });
 
@@ -205,10 +206,23 @@ export class AuthService {
           this.sessionWarningVisible.set(false);
           this.sessionSecondsRemaining.set(0);
           this.clearSessionTimers();
-          this.logout();
+          this.handleSessionExpired();
         }
       });
     }, warningDelayMs);
+  }
+
+  private handleSessionExpired(): void {
+    if (this.longRunningProcessActive()) {
+      this.sessionWarningVisible.set(true);
+      this.sessionSecondsRemaining.set(0);
+
+      // No cerramos sesión porque hay una carga o proceso largo en curso.
+      // El componente de carga masiva mantiene la sesión viva con refreshSession().
+      return;
+    }
+
+    this.logout();
   }
 
   private restoreSessionFromStorage(): void {
@@ -257,6 +271,10 @@ export class AuthService {
 
   setLongRunningProcess(active: boolean): void {
     this.longRunningProcessActive.set(active);
+  }
+
+  hasLongRunningProcess(): boolean {
+    return this.longRunningProcessActive();
   }
 
   login(email: string, password: string) {
@@ -328,7 +346,13 @@ export class AuthService {
     this.sessionWarningVisible.set(false);
   }
 
-  logout(): void {
+  logout(force = false): void {
+    if (this.longRunningProcessActive() && !force) {
+      this.sessionWarningVisible.set(true);
+      this.sessionSecondsRemaining.set(0);
+      return;
+    }
+
     const refreshToken = this.getRefreshToken();
 
     this.clearSession();
@@ -341,7 +365,6 @@ export class AuthService {
 
     this.router.navigate(['/']);
   }
-
   activateAccount(token: string, newPassword: string) {
     return this.http.post<{ message: string }>(`${this.api}/auth/activate`, {
       token,

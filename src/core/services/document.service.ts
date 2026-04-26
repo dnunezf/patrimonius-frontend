@@ -161,6 +161,8 @@ export interface SerieOption {
   nombre: string;
   descripcion?: string | null;
   unidad_id?: number;
+  plazo_conservacion_anios?: number | null;
+  plazoConservacionAnios?: number | null;
 }
 
 export interface SubserieOption {

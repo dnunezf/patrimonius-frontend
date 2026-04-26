@@ -1,12 +1,20 @@
 <div class="cm-page">
   <section class="cm-hero">
     <div class="cm-hero__content">
-      <div class="cm-hero__badge">📄 Gestión documental</div>
+      <div class="cm-hero__badge">Gestión documental</div>
+
       <h1 class="cm-hero__title">Carga masiva de documentos</h1>
+
       <p class="cm-hero__subtitle">
-        Carga lotes de documentos PDF escaneados o electrónicos, completa sus
-        metadatos archivísticos y revisa el resultado del procesamiento.
+        Agrega documentos PDF al lote, completa sus metadatos archivísticos y revisa
+        el resultado del procesamiento antes de finalizar.
       </p>
+
+      <div class="cm-hero__note">
+        Actualmente el sistema permite cargar únicamente archivos en formato PDF.
+        Puedes seleccionar varios archivos o una carpeta completa; el sistema solo
+        tomará en cuenta los documentos válidos.
+      </div>
     </div>
 
     <div class="cm-hero__actions">
@@ -27,7 +35,7 @@
         <span class="stepper__circle">1</span>
         <span class="stepper__text">
           <strong>Carga del lote</strong>
-          <small>Selecciona archivos PDF</small>
+          <small>Selecciona documentos PDF</small>
         </span>
       </button>
 
@@ -54,7 +62,7 @@
         class="stepper__item"
         [class.is-active]="currentStep === 3"
         [disabled]="!hasTriedUpload && !uploadResult"
-        (click)="(hasTriedUpload || uploadResult) ? goToStep(3) : null"
+        (click)="hasTriedUpload || uploadResult ? goToStep(3) : null"
       >
         <span class="stepper__circle">3</span>
         <span class="stepper__text">
@@ -72,82 +80,35 @@
           <div>
             <h2 class="cm-card__title">1. Selección del lote</h2>
             <p class="cm-card__subtitle">
-              Define el origen del documento y agrega los archivos PDF que
-              deseas procesar.
+              Agrega los documentos PDF que deseas incorporar al sistema.
             </p>
           </div>
         </div>
 
-        <div class="cm-section">
-          <h3 class="section-title">Tipo de documentos del lote</h3>
-          <div class="origin-options">
-            <button
-              type="button"
-              class="origin-card"
-              [class.is-active]="documentOrigin === 'ESCANEADO'"
-              (click)="setOrigin('ESCANEADO')"
-            >
-              <div class="origin-card__title">PDF escaneado</div>
-              <div class="origin-card__text">
-                Documentos digitalizados desde papel.
-              </div>
-            </button>
+        <div class="limits-box" [ngClass]="batchStatusClass">
+          <div class="limits-box__top">
+            <div>
+              <div class="limits-box__title">Estado del lote</div>
+              <p class="limits-box__message">{{ batchStatusMessage }}</p>
+            </div>
 
-            <button
-              type="button"
-              class="origin-card"
-              [class.is-active]="documentOrigin === 'ELECTRONICO'"
-              (click)="setOrigin('ELECTRONICO')"
-            >
-              <div class="origin-card__title">PDF electrónico</div>
-              <div class="origin-card__text">
-                Documentos generados digitalmente.
-              </div>
-            </button>
+            <div class="limits-box__metrics">
+              <strong>{{ selectedFiles.length }} / {{ maxFilesPerBatch }} archivos</strong>
+              <span>{{ totalSelectedSizeLabel }} / {{ maxTotalBatchMb }} MB</span>
+            </div>
           </div>
-        </div>
 
-        <div class="cm-section">
-          <h3 class="section-title">Método de carga</h3>
-          <div class="mode-options">
-            <button
-              type="button"
-              class="mode-card"
-              [class.is-active]="mode === 'FILES'"
-              (click)="setMode('FILES')"
-            >
-              <div class="mode-card__title">Subir archivos</div>
-              <div class="mode-card__text">
-                Selecciona varios PDFs manualmente.
-              </div>
-            </button>
-
-            <button
-              type="button"
-              class="mode-card"
-              [class.is-active]="mode === 'FOLDER'"
-              (click)="setMode('FOLDER')"
-            >
-              <div class="mode-card__title">Cargar carpeta</div>
-              <div class="mode-card__text">
-                Toma todos los PDFs incluidos en una carpeta.
-              </div>
-            </button>
+          <div class="limits-progress">
+            <div
+              class="limits-progress__fill"
+              [style.width.%]="totalBatchPercent"
+            ></div>
           </div>
-        </div>
 
-        <div class="limits-box">
-          <div class="limits-box__title">Límites del lote</div>
           <ul class="limits-box__list">
-            <li>
-              Máximo por archivo: <strong>{{ maxFileSizeMb }} MB</strong>
-            </li>
-            <li>
-              Máximo por lote: <strong>{{ maxFilesPerBatch }} archivos</strong>
-            </li>
-            <li>
-              Tamaño total máximo: <strong>{{ maxTotalBatchMb }} MB</strong>
-            </li>
+            <li>Máximo por archivo: <strong>{{ maxFileSizeMb }} MB</strong></li>
+            <li>Máximo por lote: <strong>{{ maxFilesPerBatch }} archivos</strong></li>
+            <li>Tamaño total máximo: <strong>{{ maxTotalBatchMb }} MB</strong></li>
           </ul>
         </div>
 
@@ -159,47 +120,51 @@
           (drop)="onDrop($event)"
         >
           <div class="dropzone__inner">
-            <div class="dropzone__bigicon">📂</div>
+            <div class="dropzone__bigicon">PDF</div>
+
             <p class="dropzone__title">
-              Arrastra y suelta archivos PDF aquí
+              Arrastra y suelta tus documentos PDF aquí
             </p>
 
-            <label class="dropzone__btn">
-              {{
-                mode === "FILES"
-                  ? "Seleccionar archivos"
-                  : "Seleccionar carpeta"
-              }}
+            <p class="dropzone__hint">
+              También puedes seleccionarlos manualmente desde tu equipo.
+            </p>
 
-              <input
-                *ngIf="mode === 'FILES'"
-                type="file"
-                accept=".pdf,application/pdf"
-                multiple
-                hidden
-                (change)="onFileSelected($event)"
-              />
+            <div class="dropzone__actions">
+              <label class="dropzone__btn">
+                Seleccionar archivos PDF
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  multiple
+                  hidden
+                  (change)="onFileSelected($event)"
+                />
+              </label>
 
-              <input
-                *ngIf="mode === 'FOLDER'"
-                type="file"
-                hidden
-                multiple
-                webkitdirectory
-                directory
-                (change)="onFolderSelected($event)"
-              />
-            </label>
+              <label class="dropzone__btn dropzone__btn--secondary">
+                Seleccionar carpeta
+                <input
+                  type="file"
+                  hidden
+                  multiple
+                  webkitdirectory
+                  directory
+                  (change)="onFolderSelected($event)"
+                />
+              </label>
+            </div>
 
-            <p class="dropzone__hint">Solo se permiten archivos PDF.</p>
+            <p class="dropzone__small">
+              Se rechazarán automáticamente archivos que no sean PDF o que superen
+              los límites permitidos.
+            </p>
           </div>
         </div>
 
-        <div
-          class="alert alert--error"
-          *ngIf="currentStep === 1 && errorMessage"
-        >
-          {{ errorMessage }}
+        <div class="alert alert--error" *ngIf="currentStep === 1 && errorMessage">
+          <strong>Revisa el lote:</strong>
+          <span>{{ errorMessage }}</span>
         </div>
       </div>
 
@@ -208,23 +173,39 @@
           <div>
             <h2 class="cm-card__title">2. Metadatos del documento</h2>
             <p class="cm-card__subtitle">
-              Completa la información archivística para el documento
-              seleccionado.
+              Completa la información archivística del documento seleccionado.
             </p>
           </div>
+
+          <button
+            type="button"
+            class="btn btn--danger-soft"
+            (click)="removeEntryFromMetadata(selectedMetadataIndex, $event)"
+          >
+            Quitar documento
+          </button>
         </div>
 
-        <div class="field">
-          <label class="field__label">Documento seleccionado</label>
-          <div class="field__static field__static--highlight">
-            {{ getFileDisplayName(active.file) }}
+        <div class="selected-doc-card">
+          <div>
+            <span class="selected-doc-card__label">Documento seleccionado</span>
+            <strong class="selected-doc-card__name">
+              {{ getFileDisplayName(active.file) }}
+            </strong>
           </div>
+
+          <span
+            class="doc-status-pill"
+            [ngClass]="getEntryStatusClass(active)"
+          >
+            {{ getEntryStatusLabel(active) }}
+          </span>
         </div>
 
         <div class="metadata-box">
           <div class="metadata-box__header">
-            <h3 class="section-title">Metadatos automáticos</h3>
-            <span class="metadata-chip">Autocompletados por el sistema</span>
+            <h3 class="section-title">Información automática</h3>
+            <span class="metadata-chip">Generada por el sistema</span>
           </div>
 
           <div class="metadata-grid">
@@ -259,7 +240,7 @@
               <div class="field__static">{{ active.metadata.fechaInicio }}</div>
             </div>
 
-            <div class="field">
+            <div class="field field--full">
               <label class="field__label">Fecha de caducidad</label>
               <div class="field__static">
                 {{
@@ -273,10 +254,10 @@
 
         <div class="metadata-box">
           <div class="metadata-box__header">
-            <h3 class="section-title">Metadatos manuales</h3>
-            <span class="metadata-chip metadata-chip--manual"
-            >Obligatorios y opcionales</span
-            >
+            <h3 class="section-title">Información archivística</h3>
+            <span class="metadata-chip metadata-chip--manual">
+              Campos obligatorios y opcionales
+            </span>
           </div>
 
           <div class="metadata-grid">
@@ -308,39 +289,6 @@
                 (ngModelChange)="onTituloDocumentoInput(active)"
                 [maxlength]="maxTituloDocumentoLength"
                 placeholder="Título del documento"
-              />
-            </div>
-
-            <div class="field">
-              <label class="field__label">Palabras clave</label>
-              <input
-                class="field__input field__input--uppercase"
-                type="text"
-                [(ngModel)]="active.metadata.palabrasClave"
-                (ngModelChange)="onPalabrasClaveInput(active)"
-                placeholder="Ej. ACTA, ARCHIVO, MUSEO"
-              />
-            </div>
-
-            <div class="field">
-              <label class="field__label"
-              >Nombre de productores / firmantes</label
-              >
-              <input
-                class="field__input field__input--uppercase"
-                type="text"
-                [(ngModel)]="active.metadata.nombreProductores"
-                (ngModelChange)="onNombreProductoresInput(active)"
-                placeholder="Ej. ANA PÉREZ, LUIS ROJAS"
-              />
-            </div>
-
-            <div class="field">
-              <label class="field__label">Fecha del documento</label>
-              <input
-                class="field__input"
-                type="date"
-                [(ngModel)]="active.metadata.fechaDocumento"
               />
             </div>
 
@@ -407,36 +355,159 @@
             </div>
 
             <div class="field">
-              <label class="field__label">Plazo de conservación</label>
+              <label class="field__label">Palabras clave</label>
+              <input
+                class="field__input field__input--uppercase"
+                type="text"
+                [(ngModel)]="active.metadata.palabrasClave"
+                (ngModelChange)="onPalabrasClaveInput(active)"
+                placeholder="Ej. ACTA, ARCHIVO, MUSEO"
+              />
+            </div>
+
+            <div class="field">
+              <label class="field__label">Nombre de productores / firmantes</label>
+              <input
+                class="field__input field__input--uppercase"
+                type="text"
+                [(ngModel)]="active.metadata.nombreProductores"
+                (ngModelChange)="onNombreProductoresInput(active)"
+                placeholder="Ej. ANA PÉREZ, LUIS ROJAS"
+              />
+            </div>
+
+            <div class="field">
+              <label class="field__label">Fecha del documento</label>
               <input
                 class="field__input"
-                type="number"
-                [(ngModel)]="active.metadata.plazoConservacionAnios"
-                (ngModelChange)="onPlazoChange(active)"
-                placeholder="Ej. 5"
+                type="date"
+                [(ngModel)]="active.metadata.fechaDocumento"
               />
+            </div>
+
+            <div class="field">
+              <label class="field__label">Plazo de conservación *</label>
+
+              <div
+                class="field__static"
+                [class.field__static--warning]="!active.metadata.plazoConservacionAnios"
+              >
+                {{
+                  active.metadata.plazoConservacionAnios
+                    ? active.metadata.plazoConservacionAnios + " año(s)"
+                    : "Seleccione una serie para calcular el plazo"
+                }}
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="alert alert--error" *ngIf="hasMissingTitles">
-          Debes completar los campos obligatorios de todos los documentos antes
-          de cargar el lote.
+        <div class="metadata-box">
+          <div class="metadata-box__header">
+            <div>
+              <h3 class="section-title">Anexos opcionales</h3>
+              <p class="metadata-box__hint">
+                Puedes agregar archivos complementarios asociados únicamente a este documento.
+              </p>
+            </div>
+
+            <span class="metadata-chip metadata-chip--manual">
+              Opcional
+            </span>
+          </div>
+
+          <div class="anexos-upload-box">
+            <div>
+              <strong>Archivos permitidos</strong>
+              <p>
+                PDF, Word, Excel, PowerPoint, imágenes, TXT, CSV o ZIP.
+                Tamaño máximo por anexo: {{ maxAnexoSizeMb }} MB.
+              </p>
+            </div>
+
+            <label class="dropzone__btn dropzone__btn--secondary">
+              Agregar anexos
+              <input
+                type="file"
+                hidden
+                multiple
+                [accept]="allowedAnexoAccept"
+                (change)="onAnexosSelected(active, $event)"
+              />
+            </label>
+          </div>
+
+          <div class="anexos-empty" *ngIf="!active.anexos.length">
+            Este documento no tiene anexos agregados.
+          </div>
+
+          <div class="anexos-list" *ngIf="active.anexos.length">
+            <div
+              class="anexo-item"
+              *ngFor="let anexo of active.anexos; let i = index"
+            >
+              <div class="anexo-item__info">
+                <strong>{{ anexo.name }}</strong>
+                <span>{{ formatTamano(anexo.size) }}</span>
+              </div>
+
+              <button
+                type="button"
+                class="file-card__remove"
+                (click)="removeAnexo(active, i)"
+              >
+                Quitar
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="alert alert--error" *ngIf="hasInvalidCodigoReferenciaLength">
-          Hay al menos un documento cuyo código de referencia supera el máximo
-          permitido de {{ maxCodigoReferenciaLength }} caracteres.
-        </div>
+        <div
+          class="validation-panel"
+          *ngIf="
+            hasMissingTitles ||
+            hasInvalidCodigoReferenciaLength ||
+            hasInvalidTituloLength ||
+            exceedsTotalBatchLimit ||
+            exceedsFileCountLimit
+          "
+        >
+          <div class="validation-panel__title">Hay detalles pendientes</div>
 
-        <div class="alert alert--error" *ngIf="hasInvalidTituloLength">
-          Hay al menos un documento cuyo título supera el máximo permitido de
-          {{ maxTituloDocumentoLength }} caracteres.
-        </div>
+          <div class="validation-item" *ngIf="hasMissingTitles">
+            <span class="validation-item__icon">!</span>
+            <span>
+              Hay {{ missingRequiredDocumentsCount }} documento(s) con campos obligatorios pendientes.
+            </span>
+          </div>
 
-        <div class="alert alert--error" *ngIf="exceedsTotalBatchLimit">
-          El lote supera el tamaño máximo permitido de {{ maxTotalBatchMb }} MB
-          en total.
+          <div class="validation-item" *ngIf="hasInvalidCodigoReferenciaLength">
+            <span class="validation-item__icon">!</span>
+            <span>
+              Hay al menos un código de referencia que supera el máximo permitido.
+            </span>
+          </div>
+
+          <div class="validation-item" *ngIf="hasInvalidTituloLength">
+            <span class="validation-item__icon">!</span>
+            <span>
+              Hay al menos un título que supera el máximo permitido.
+            </span>
+          </div>
+
+          <div class="validation-item" *ngIf="exceedsFileCountLimit">
+            <span class="validation-item__icon">!</span>
+            <span>
+              El lote supera la cantidad máxima permitida. Quita documentos antes de cargar.
+            </span>
+          </div>
+
+          <div class="validation-item" *ngIf="exceedsTotalBatchLimit">
+            <span class="validation-item__icon">!</span>
+            <span>
+              El lote supera el tamaño máximo permitido. Quita documentos antes de cargar.
+            </span>
+          </div>
         </div>
       </div>
 
@@ -445,16 +516,15 @@
           <div>
             <h2 class="cm-card__title">3. Resultado de la carga</h2>
             <p class="cm-card__subtitle">
-              Revisa los documentos procesados correctamente y los que
-              presentaron error.
+              Revisa los documentos procesados correctamente y los que presentaron error.
             </p>
           </div>
         </div>
 
         <div class="upload-progress" *ngIf="isUploading">
           <div class="alert alert--warning">
-            Hay una carga masiva en progreso. No cierres esta ventana ni cambies
-            de pantalla hasta que finalice.
+            <strong>Carga en progreso.</strong>
+            <span>No cierres esta ventana ni cambies de pantalla hasta que finalice.</span>
           </div>
 
           <div class="upload-progress__header">
@@ -476,7 +546,8 @@
         </div>
 
         <div class="alert alert--error" *ngIf="errorMessage">
-          {{ errorMessage }}
+          <strong>No se pudo completar la carga.</strong>
+          <span>{{ errorMessage }}</span>
         </div>
 
         <div class="result-box" *ngIf="uploadResult; else emptyResult">
@@ -505,9 +576,7 @@
             <div class="result-panel" *ngIf="resultSuccess.length">
               <div class="result-panel__header">
                 <h4>Documentos procesados</h4>
-                <span class="result-panel__count">{{
-                    resultSuccess.length
-                  }}</span>
+                <span class="result-panel__count">{{ resultSuccess.length }}</span>
               </div>
 
               <div class="result-panel__list">
@@ -545,9 +614,7 @@
             <div class="result-panel" *ngIf="resultErrors.length">
               <div class="result-panel__header">
                 <h4>Documentos con error</h4>
-                <span class="result-panel__count">{{
-                    resultErrors.length
-                  }}</span>
+                <span class="result-panel__count">{{ resultErrors.length }}</span>
               </div>
 
               <div class="result-panel__list">
@@ -584,8 +651,7 @@
           <pre
             class="result-json"
             *ngIf="!resultSuccess.length && !resultErrors.length"
-          >{{ uploadResult | json }}</pre
-          >
+          >{{ uploadResult | json }}</pre>
         </div>
 
         <ng-template #emptyResult>
@@ -607,42 +673,41 @@
           <div>
             <h3 class="cm-card__title">Resumen del lote</h3>
             <p class="cm-card__subtitle">
-              Información general del proceso actual.
+              Información del proceso actual.
             </p>
           </div>
         </div>
 
         <div class="summary-stats">
           <div class="summary-stat">
-            <span class="summary-stat__label">Origen</span>
-            <strong class="summary-stat__value">
-              {{
-                documentOrigin === "ESCANEADO"
-                  ? "PDF escaneado"
-                  : "PDF electrónico"
-              }}
-            </strong>
+            <span class="summary-stat__label">Formato permitido</span>
+            <strong class="summary-stat__value">PDF</strong>
           </div>
 
-          <div class="summary-stat">
-            <span class="summary-stat__label">Método</span>
-            <strong class="summary-stat__value">
-              {{ mode === "FILES" ? "Archivos" : "Carpeta" }}
-            </strong>
-          </div>
-
-          <div class="summary-stat">
+          <div class="summary-stat" [ngClass]="batchStatusClass">
             <span class="summary-stat__label">Cantidad</span>
-            <strong class="summary-stat__value"
-            >{{ selectedFiles.length }} archivo(s)</strong
-            >
+            <strong class="summary-stat__value">
+              {{ selectedFiles.length }} / {{ maxFilesPerBatch }} archivo(s)
+            </strong>
+          </div>
+
+          <div class="summary-stat" [ngClass]="batchStatusClass">
+            <span class="summary-stat__label">Tamaño total</span>
+            <strong class="summary-stat__value">{{ totalSelectedSizeLabel }}</strong>
           </div>
 
           <div class="summary-stat">
-            <span class="summary-stat__label">Tamaño total</span>
-            <strong class="summary-stat__value">{{
-                totalSelectedSizeLabel
-              }}</strong>
+            <span class="summary-stat__label">Metadatos</span>
+            <strong class="summary-stat__value">
+              {{ readyDocumentsCount }} listo(s) / {{ missingRequiredDocumentsCount }} pendiente(s)
+            </strong>
+          </div>
+
+          <div class="summary-stat">
+            <span class="summary-stat__label">Anexos</span>
+            <strong class="summary-stat__value">
+              {{ totalAnexosCount }} archivo(s)
+            </strong>
           </div>
         </div>
 
@@ -653,60 +718,55 @@
           </div>
 
           <div class="files-panel__empty" *ngIf="!documentEntries.length">
-            Aún no has agregado archivos al lote.
+            {{
+              currentStep === 3
+                ? "El lote ya fue procesado. Para cargar nuevos documentos, inicia otro lote."
+                : "Aún no has agregado archivos al lote."
+            }}
           </div>
 
           <div class="files-panel__list" *ngIf="documentEntries.length">
-            <ng-container *ngIf="currentStep === 2; else filesSimpleList">
-              <button
-                type="button"
-                class="doc-select-item"
-                *ngFor="let entry of documentEntries; let i = index; trackBy: trackByEntry"
-                [class.is-active]="selectedMetadataIndex === i"
-                (click)="selectMetadataDocument(i)"
-              >
-                <span class="doc-select-item__name">{{
-                    getFileDisplayName(entry.file)
-                  }}</span>
-                <span class="doc-select-item__meta">
-                  {{
-                    entry.metadata.codigoReferencia.trim() &&
-                    entry.metadata.unidadProductoraId &&
-                    entry.metadata.tituloDocumento.trim() &&
-                    entry.metadata.nivelAcceso &&
-                    entry.metadata.serieId &&
-                    entry.metadata.subserieId &&
-                    entry.metadata.expedienteId
-                      ? "Metadatos obligatorios listos"
-                      : "Faltan campos obligatorios"
-                  }}
+            <button
+              *ngFor="let entry of documentEntries; let i = index; trackBy: trackByEntry"
+              type="button"
+              class="doc-select-item"
+              [class.is-active]="currentStep === 2 && selectedMetadataIndex === i"
+              (click)="currentStep === 2 ? selectMetadataDocument(i) : null"
+            >
+              <span class="doc-select-item__main">
+                <span class="doc-select-item__name">
+                  {{ getFileDisplayName(entry.file) }}
                 </span>
-              </button>
-            </ng-container>
 
-            <ng-template #filesSimpleList>
-              <div
-                class="file-card"
-                *ngFor="let entry of documentEntries; let i = index; trackBy: trackByEntry"
+                <span class="doc-select-item__size">
+                  {{ formatTamano(entry.file.size) }}
+                </span>
+              </span>
+
+              <span
+                class="doc-select-item__meta"
+                [ngClass]="getEntryStatusClass(entry)"
               >
-                <div class="file-card__content">
-                  <div class="file-card__name">
-                    {{ getFileDisplayName(entry.file) }}
-                  </div>
-                  <div class="file-card__meta">
-                    {{ formatTamano(entry.file.size) }}
-                  </div>
-                </div>
+                {{ getEntryStatusLabel(entry) }}
+              </span>
+
+              <span class="doc-select-item__actions">
+                <span
+                  *ngIf="currentStep === 2"
+                  class="doc-select-item__edit"
+                >
+                  Editar
+                </span>
 
                 <button
                   type="button"
                   class="file-card__remove"
-                  (click)="removeFile(i)"
+                  (click)="removeEntryFromMetadata(i, $event)"
                 >
                   Quitar
                 </button>
-              </div>
-            </ng-template>
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -720,7 +780,7 @@
       class="btn btn--ghost"
       (click)="prevStep()"
     >
-      Volver
+      {{ currentStep === 3 ? "Cargar otro lote" : "Volver" }}
     </button>
 
     <button type="button" class="btn btn--ghost" (click)="onCancel()">

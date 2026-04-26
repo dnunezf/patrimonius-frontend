@@ -51,6 +51,7 @@ type PerDocumentMetadata = {
 type DocumentEntry = {
   key: string;
   file: File;
+  anexos: File[];
   metadata: PerDocumentMetadata;
   subseriesDisponibles: SubserieOption[];
   expedientesDisponibles: ExpedienteOption[];
@@ -71,8 +72,8 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   currentStep = 1;
   selectedMetadataIndex = 0;
 
-  documentOrigin: DocumentOrigin = 'ESCANEADO';
-  mode: UploadMode = 'FILES';
+  documentOrigin: DocumentOrigin = 'ELECTRONICO';
+  private currentUploadMode: UploadMode = 'FILES';
 
   selectedFiles: File[] = [];
   isDragging = false;
@@ -103,6 +104,27 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   readonly maxCodigoReferenciaLength = 60;
   readonly maxTituloDocumentoLength = 255;
 
+  readonly maxAnexoSizeMb = 100;
+
+  readonly allowedAnexoExtensions = [
+    '.pdf',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.ppt',
+    '.pptx',
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.txt',
+    '.csv',
+    '.zip',
+  ];
+
+  readonly allowedAnexoAccept =
+    '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.txt,.csv,.zip';
+
   constructor(private router: Router) {}
 
   ngOnInit(): void {
@@ -111,11 +133,12 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopUploadProtection();
+    this.auth.setLongRunningProcess(false);
   }
 
   @HostListener('window:beforeunload', ['$event'])
   handleBeforeUnload(event: BeforeUnloadEvent): void {
-    if (!this.isUploading) return;
+    if (!this.isUploading && !this.documentEntries.length) return;
 
     event.preventDefault();
     event.returnValue = '';
@@ -287,8 +310,109 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
     return this.totalSelectedBytes / (1024 * 1024);
   }
 
+  get totalBatchPercent(): number {
+    return Math.max(this.totalSizePercent, this.fileCountPercent);
+  }
+
+  get batchStatusClass(): string {
+    if (!this.selectedFiles.length) return 'is-empty';
+
+    if (this.exceedsTotalBatchLimit || this.exceedsFileCountLimit) {
+      return 'is-danger';
+    }
+
+    const nearSizeLimit = this.totalSelectedMb >= this.maxTotalBatchMb * 0.85;
+    const nearFileLimit =
+      this.selectedFiles.length >= this.maxFilesPerBatch * 0.85;
+
+    if (nearSizeLimit || nearFileLimit) {
+      return 'is-warning';
+    }
+
+    return 'is-ok';
+  }
+
+  get batchStatusMessage(): string {
+    if (!this.selectedFiles.length) {
+      return 'Aún no has agregado documentos al lote.';
+    }
+
+    if (this.exceedsFileCountLimit && this.exceedsTotalBatchLimit) {
+      return `El lote supera los límites permitidos: máximo ${this.maxFilesPerBatch} archivos y máximo ${this.maxTotalBatchMb} MB en total.`;
+    }
+
+    if (this.exceedsFileCountLimit) {
+      return `El lote supera el máximo permitido de ${this.maxFilesPerBatch} archivos. Debes quitar uno o más documentos para continuar.`;
+    }
+
+    if (this.exceedsTotalBatchLimit) {
+      return `El lote supera el máximo permitido de ${this.maxTotalBatchMb} MB. Debes quitar uno o más archivos para continuar.`;
+    }
+
+    const nearFileLimit =
+      this.selectedFiles.length >= this.maxFilesPerBatch * 0.85;
+    const nearSizeLimit = this.totalSelectedMb >= this.maxTotalBatchMb * 0.85;
+
+    if (nearFileLimit && nearSizeLimit) {
+      return 'El lote está cerca del límite máximo de archivos y tamaño permitido.';
+    }
+
+    if (nearFileLimit) {
+      return `El lote está cerca del límite máximo de ${this.maxFilesPerBatch} archivos.`;
+    }
+
+    if (nearSizeLimit) {
+      return `El lote está cerca del límite máximo permitido de ${this.maxTotalBatchMb} MB.`;
+    }
+
+    return 'El lote se encuentra dentro de los límites permitidos.';
+  }
+
+  get missingRequiredDocumentsCount(): number {
+    return this.documentEntries.filter(
+      (entry) => !this.isEntryRequiredMetadataComplete(entry),
+    ).length;
+  }
+
+  get readyDocumentsCount(): number {
+    return this.documentEntries.filter((entry) =>
+      this.isEntryRequiredMetadataComplete(entry),
+    ).length;
+  }
+
   get exceedsTotalBatchLimit(): boolean {
     return this.totalSelectedMb > this.maxTotalBatchMb;
+  }
+
+  get exceedsFileCountLimit(): boolean {
+    return this.selectedFiles.length > this.maxFilesPerBatch;
+  }
+
+  get fileCountPercent(): number {
+    if (!this.maxFilesPerBatch) return 0;
+
+    const percent = Math.round(
+      (this.selectedFiles.length / this.maxFilesPerBatch) * 100,
+    );
+
+    return Math.min(percent, 100);
+  }
+
+  get totalSizePercent(): number {
+    if (!this.maxTotalBatchMb) return 0;
+
+    const percent = Math.round(
+      (this.totalSelectedMb / this.maxTotalBatchMb) * 100,
+    );
+
+    return Math.min(percent, 100);
+  }
+
+  get totalAnexosCount(): number {
+    return this.documentEntries.reduce(
+      (total, entry) => total + entry.anexos.length,
+      0,
+    );
   }
 
   onClose(): void {
@@ -308,16 +432,7 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   }
 
   setMode(mode: UploadMode): void {
-    this.mode = mode;
-    this.selectedFiles = [];
-    this.documentEntries = [];
-    this.errorMessage = '';
-    this.uploadResult = null;
-    this.hasTriedUpload = false;
-    this.currentStep = 1;
-    this.selectedMetadataIndex = 0;
-    this.uploadProgress = 0;
-    this.stopUploadProtection();
+    this.currentUploadMode = mode;
   }
 
   goToStep(step: number): void {
@@ -338,10 +453,18 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   }
 
   prevStep(): void {
+    if (this.currentStep === 3) {
+      this.clearSelectedBatch();
+      this.currentStep = 1;
+      return;
+    }
+
     this.currentStep = Math.max(1, this.currentStep - 1);
   }
 
   onFileSelected(event: Event): void {
+    this.currentUploadMode = 'FILES';
+
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     this.addFiles(files);
@@ -349,6 +472,8 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   }
 
   onFolderSelected(event: Event): void {
+    this.currentUploadMode = 'FOLDER';
+
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     this.addFiles(files);
@@ -368,6 +493,7 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   onDrop(event: DragEvent): void {
     event.preventDefault();
     this.isDragging = false;
+    this.currentUploadMode = 'FILES';
 
     const files = Array.from(event.dataTransfer?.files || []);
     this.addFiles(files);
@@ -413,13 +539,14 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
       uniqueByKey.set(key, file);
     }
 
-    let nextFiles = Array.from(uniqueByKey.values());
+    const nextFiles = Array.from(uniqueByKey.values());
 
     if (nextFiles.length > this.maxFilesPerBatch) {
       errors.push(
-        `Solo se permiten ${this.maxFilesPerBatch} archivos por lote.`,
+        `Solo se permiten ${this.maxFilesPerBatch} archivos por lote. Quita ${
+          nextFiles.length - this.maxFilesPerBatch
+        } archivo(s) para continuar.`,
       );
-      nextFiles = nextFiles.slice(0, this.maxFilesPerBatch);
     }
 
     const totalBytes = nextFiles.reduce((sum, file) => sum + (file.size || 0), 0);
@@ -442,6 +569,7 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
     this.stopUploadProtection();
 
     this.errorMessage = errors.length ? errors.join(' ') : '';
+    this.updateCargaMasivaProtection();
   }
 
   removeFile(index: number): void {
@@ -458,6 +586,8 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
 
     const validationError = this.validateBatchBeforeContinuing();
     this.errorMessage = validationError || '';
+
+    this.updateCargaMasivaProtection();
   }
 
   getFileDisplayName(file: File): string {
@@ -512,6 +642,7 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
       return {
         key,
         file,
+        anexos: existing?.anexos ?? [],
         metadata,
         subseriesDisponibles: existing?.subseriesDisponibles ?? [],
         expedientesDisponibles: existing?.expedientesDisponibles ?? [],
@@ -574,7 +705,8 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
         !m.nivelAcceso ||
         !m.serieId ||
         !m.subserieId ||
-        !m.expedienteId
+        !m.expedienteId ||
+        !m.plazoConservacionAnios
       );
     });
   }
@@ -602,6 +734,7 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
       !this.hasInvalidCodigoReferenciaLength &&
       !this.hasInvalidTituloLength &&
       !this.exceedsTotalBatchLimit &&
+      !this.exceedsFileCountLimit &&
       !this.isUploading
     );
   }
@@ -612,6 +745,86 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
 
   selectMetadataDocument(index: number): void {
     this.selectedMetadataIndex = index;
+  }
+
+  isEntryRequiredMetadataComplete(entry: DocumentEntry): boolean {
+    const m = entry.metadata;
+
+    return !!(
+      m.codigoReferencia.trim() &&
+      m.unidadProductoraId &&
+      m.tituloDocumento.trim() &&
+      m.nivelAcceso &&
+      m.serieId &&
+      m.subserieId &&
+      m.expedienteId &&
+      m.plazoConservacionAnios
+    );
+  }
+
+  getEntryStatusLabel(entry: DocumentEntry): string {
+    return this.isEntryRequiredMetadataComplete(entry)
+      ? 'Metadatos obligatorios listos'
+      : 'Faltan campos obligatorios';
+  }
+
+  getEntryStatusClass(entry: DocumentEntry): string {
+    return this.isEntryRequiredMetadataComplete(entry) ? 'is-ready' : 'is-pending';
+  }
+
+  removeEntryFromMetadata(index: number, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.removeFile(index);
+  }
+
+  private isAllowedAnexo(file: File): boolean {
+    const name = file.name.toLowerCase();
+    return this.allowedAnexoExtensions.some((ext) => name.endsWith(ext));
+  }
+
+  onAnexosSelected(entry: DocumentEntry, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    const errors: string[] = [];
+
+    const nextAnexos = [...entry.anexos];
+
+    for (const file of files) {
+      if (!this.isAllowedAnexo(file)) {
+        errors.push(`"${file.name}" no tiene un formato permitido para anexos.`);
+        continue;
+      }
+
+      if (file.size > this.maxAnexoSizeMb * 1024 * 1024) {
+        errors.push(
+          `"${file.name}" supera el máximo permitido de ${this.maxAnexoSizeMb} MB por anexo.`,
+        );
+        continue;
+      }
+
+      const exists = nextAnexos.some(
+        (existing) =>
+          existing.name === file.name &&
+          existing.size === file.size &&
+          existing.lastModified === file.lastModified,
+      );
+
+      if (!exists) {
+        nextAnexos.push(file);
+      }
+    }
+
+    entry.anexos = nextAnexos;
+    input.value = '';
+
+    this.errorMessage = errors.length ? errors.join(' ') : '';
+    this.updateCargaMasivaProtection();
+  }
+
+  removeAnexo(entry: DocumentEntry, index: number): void {
+    entry.anexos.splice(index, 1);
+    entry.anexos = [...entry.anexos];
+    this.updateCargaMasivaProtection();
   }
 
   get resultErrors(): any[] {
@@ -684,11 +897,42 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
     return this.selectedFiles.length;
   }
 
+  private obtenerPlazoConservacionDesdeSerie(serieId: number | null): number | null {
+    if (!serieId) return null;
+
+    const serie = this.series.find((item) => Number(item.id) === Number(serieId));
+
+    const plazo =
+      serie?.plazo_conservacion_anios ??
+      serie?.plazoConservacionAnios ??
+      null;
+
+    if (plazo === null || plazo === undefined || plazo === 0) {
+      return null;
+    }
+
+    const plazoNumerico = Number(plazo);
+
+    return Number.isFinite(plazoNumerico) && plazoNumerico > 0
+      ? plazoNumerico
+      : null;
+  }
+
   onSerieChange(entry: DocumentEntry): void {
     entry.metadata.subserieId = null;
     entry.metadata.expedienteId = null;
     entry.subseriesDisponibles = [];
     entry.expedientesDisponibles = [];
+
+    const plazoConservacion = this.obtenerPlazoConservacionDesdeSerie(
+      entry.metadata.serieId,
+    );
+
+    entry.metadata.plazoConservacionAnios = plazoConservacion;
+    entry.metadata.fechaCaducidad = this.computeFechaCaducidad(
+      entry.metadata.fechaInicio,
+      plazoConservacion,
+    );
 
     if (!entry.metadata.serieId) return;
 
@@ -738,6 +982,15 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
           entry.expedientesDisponibles = [];
         },
       });
+  }
+
+  private updateCargaMasivaProtection(): void {
+    const hayLoteActivo =
+      this.documentEntries.length > 0 ||
+      this.selectedFiles.length > 0 ||
+      this.isUploading;
+
+    this.auth.setLongRunningProcess(hayLoteActivo);
   }
 
   private buildReferenceSuggestion(fileName: string): string {
@@ -805,7 +1058,7 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
       return 'Debes seleccionar al menos un archivo PDF.';
     }
 
-    if (this.selectedFiles.length > this.maxFilesPerBatch) {
+    if (this.exceedsFileCountLimit) {
       return `Solo se permiten ${this.maxFilesPerBatch} archivos por lote.`;
     }
 
@@ -819,6 +1072,10 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   private validateMetadataBeforeUpload(): string | null {
     if (this.hasMissingTitles) {
       return 'Debes completar los campos obligatorios de todos los documentos antes de cargar el lote.';
+    }
+
+    if (this.exceedsFileCountLimit) {
+      return `Solo se permiten ${this.maxFilesPerBatch} archivos por lote.`;
     }
 
     const invalidCodigo = this.documentEntries.find(
@@ -870,11 +1127,17 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
 
     const formData = new FormData();
     formData.append('origen_documento', this.documentOrigin);
-    formData.append('modo_carga', this.mode);
+    formData.append('modo_carga', this.currentUploadMode);
 
     for (const file of this.selectedFiles) {
       formData.append('files', file);
     }
+
+    this.documentEntries.forEach((entry, index) => {
+      entry.anexos.forEach((anexo) => {
+        formData.append(`anexos_${index}`, anexo);
+      });
+    });
 
     formData.append(
       'metadata_por_documento',
@@ -900,8 +1163,16 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
             this.uploadResult = event.body;
             this.isUploading = false;
             this.uploadProgress = 100;
+            this.hasTriedUpload = true;
             this.currentStep = 3;
+
             this.stopUploadProtection();
+
+            this.selectedFiles = [];
+            this.documentEntries = [];
+            this.selectedMetadataIndex = 0;
+            this.currentUploadMode = 'FILES';
+            this.updateCargaMasivaProtection();
           }
         },
         error: (err: HttpErrorResponse) => {
@@ -915,7 +1186,19 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
           this.uploadProgress = 0;
           this.currentStep = 3;
           this.stopUploadProtection();
+          this.updateCargaMasivaProtection();
         },
       });
+  }
+
+  private clearSelectedBatch(): void {
+    this.selectedFiles = [];
+    this.documentEntries = [];
+    this.selectedMetadataIndex = 0;
+    this.uploadProgress = 0;
+    this.currentUploadMode = 'FILES';
+    this.errorMessage = '';
+    this.stopUploadProtection();
+    this.updateCargaMasivaProtection();
   }
 }

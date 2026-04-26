@@ -7,7 +7,7 @@ import { NavComponent } from './core/nav/nav.component';
 import { LoginDialogComponent } from './auth/login-dialog.component';
 import { ConfirmDialogComponent } from './shared/ui/confirm-dialog.component';
 import { ToastContainerComponent } from './shared/ui/toast-container.component';
-import{AuthService} from '../core/services/auth.service';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -43,42 +43,75 @@ import{AuthService} from '../core/services/auth.service';
       *ngIf="auth.sessionWarningVisible()"
     >
       <div class="session-warning-modal">
-        <h3>La sesión está por vencer</h3>
+        <ng-container *ngIf="auth.longRunningProcessActive(); else normalSessionWarning">
+          <div class="session-warning-icon session-warning-icon--upload">
+            ↑
+          </div>
 
-        <p *ngIf="!auth.longRunningProcessActive()">
-          Su sesión vencerá en {{ auth.sessionSecondsRemaining() }} segundos.
-          ¿Desea continuar con la sesión activa?
-        </p>
+          <h3>Carga en progreso</h3>
 
-        <p *ngIf="auth.longRunningProcessActive()">
-          Su sesión vencerá en {{ auth.sessionSecondsRemaining() }} segundos.
-          Hay un proceso en curso. Si desea continuar con la sesión activa para no interrumpirlo,
-          seleccione “Continuar”.
-        </p>
+          <p>
+            Actualmente hay un lote de documentos en proceso. Para evitar errores
+            o pérdida de información, mantenga la sesión activa mientras finaliza
+            la carga o completa los metadatos pendientes.
+          </p>
 
-        <div class="session-warning-error" *ngIf="refreshError()">
-          {{ refreshError() }}
-        </div>
+          <p class="session-warning-note">
+            La sesión se renovará para que pueda continuar trabajando sin perder el proceso.
+          </p>
 
-        <div class="session-warning-actions">
-          <button
-            type="button"
-            class="session-warning-btn session-warning-btn--secondary"
-            (click)="logout()"
-            [disabled]="refreshing()"
-          >
-            Cerrar sesión
-          </button>
+          <div class="session-warning-error" *ngIf="refreshError()">
+            {{ refreshError() }}
+          </div>
 
-          <button
-            type="button"
-            class="session-warning-btn session-warning-btn--primary"
-            (click)="continueSession()"
-            [disabled]="refreshing()"
-          >
-            {{ refreshing() ? 'Renovando...' : 'Continuar' }}
-          </button>
-        </div>
+          <div class="session-warning-actions">
+            <button
+              type="button"
+              class="session-warning-btn session-warning-btn--primary"
+              (click)="continueSession()"
+              [disabled]="refreshing()"
+            >
+              {{ refreshing() ? 'Renovando...' : 'Mantener sesión activa' }}
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-template #normalSessionWarning>
+          <div class="session-warning-icon">
+            !
+          </div>
+
+          <h3>La sesión está por vencer</h3>
+
+          <p>
+            Su sesión vencerá en {{ auth.sessionSecondsRemaining() }} segundos.
+            ¿Desea continuar con la sesión activa?
+          </p>
+
+          <div class="session-warning-error" *ngIf="refreshError()">
+            {{ refreshError() }}
+          </div>
+
+          <div class="session-warning-actions">
+            <button
+              type="button"
+              class="session-warning-btn session-warning-btn--secondary"
+              (click)="logout()"
+              [disabled]="refreshing()"
+            >
+              Cerrar sesión
+            </button>
+
+            <button
+              type="button"
+              class="session-warning-btn session-warning-btn--primary"
+              (click)="continueSession()"
+              [disabled]="refreshing()"
+            >
+              {{ refreshing() ? 'Renovando...' : 'Continuar' }}
+            </button>
+          </div>
+        </ng-template>
       </div>
     </div>
   `,
@@ -95,11 +128,29 @@ import{AuthService} from '../core/services/auth.service';
       }
 
       .session-warning-modal {
-        width: min(460px, calc(100vw - 32px));
+        width: min(480px, calc(100vw - 32px));
         background: #fff;
-        border-radius: 16px;
-        padding: 24px;
+        border-radius: 18px;
+        padding: 26px;
         box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+      }
+
+      .session-warning-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 14px;
+        background: #fff7ed;
+        color: #c2410c;
+        font-weight: 900;
+        font-size: 1.1rem;
+      }
+
+      .session-warning-icon--upload {
+        background: #eff6ff;
+        color: #0b5bd3;
       }
 
       .session-warning-modal h3 {
@@ -112,6 +163,15 @@ import{AuthService} from '../core/services/auth.service';
         margin: 0;
         color: #475569;
         line-height: 1.5;
+      }
+
+      .session-warning-note {
+        margin-top: 10px !important;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: #1e3a8a !important;
+        font-size: 0.9rem;
       }
 
       .session-warning-error {
@@ -178,11 +238,11 @@ export class AppComponent {
       });
   }
 
-  openLogin() {
+  openLogin(): void {
     this.loginOpen.set(true);
   }
 
-  closeLogin() {
+  closeLogin(): void {
     this.loginOpen.set(false);
   }
 
@@ -197,13 +257,20 @@ export class AppComponent {
       error: () => {
         this.refreshing.set(false);
         this.refreshError.set(
-          'No fue posible renovar la sesión. Por favor inicie sesión nuevamente.'
+          'No fue posible renovar la sesión. Por favor intente nuevamente.'
         );
       },
     });
   }
 
   logout(): void {
+    if (this.auth.longRunningProcessActive()) {
+      this.refreshError.set(
+        'Hay una carga de documentos en progreso. Espere a que finalice antes de cerrar sesión.'
+      );
+      return;
+    }
+
     this.auth.logout();
   }
 }
