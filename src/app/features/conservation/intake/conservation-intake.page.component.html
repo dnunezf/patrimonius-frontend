@@ -632,6 +632,14 @@
               >
                 Exportar a EAD 2002
               </button>
+
+              <button
+                type="button"
+                class="btn btn-small dispatch"
+                (click)="openDispatchDialog(row)"
+              >
+                Enviar por correo
+              </button>
             </div>
           </div>
         </div>
@@ -668,3 +676,10 @@
   (closed)="closeEadDialog()"
   (exported)="onEadExported($event)"
 ></app-ead-export-dialog>
+
+<app-dispatch-email-dialog
+  [open]="dispatchDialogOpen()"
+  [document]="dispatchDialogDocument()"
+  (closed)="closeDispatchDialog()"
+  (sent)="onDispatchEmailSent($event)"
+></app-dispatch-email-dialog>

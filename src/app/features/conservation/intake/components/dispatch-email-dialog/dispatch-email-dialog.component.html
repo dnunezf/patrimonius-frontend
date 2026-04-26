@@ -1,0 +1,230 @@
+<div class="modal-backdrop" *ngIf="open">
+  <section class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="close-btn" (click)="close()">×</button>
+
+    <header class="modal-header">
+      <div class="title-row">
+        <span class="mail-icon">✉</span>
+        <h2>Enviar Documento por Correo Electrónico</h2>
+      </div>
+      <p>Envío de documento oficial con trazabilidad completa.</p>
+    </header>
+
+    <div class="loading-box" *ngIf="loading(); else contentTpl">
+      Cargando información del documento...
+    </div>
+
+    <ng-template #contentTpl>
+      <ng-container *ngIf="detail() as data">
+        <div class="modal-body">
+          <section class="doc-card">
+            <h3>📄 Documento a Enviar</h3>
+
+            <div class="doc-grid">
+              <div>
+                <span class="label">Código</span>
+                <strong>{{ data.document.officialCode || document?.officialCode || "—" }}</strong>
+              </div>
+
+              <div>
+                <span class="label">Estado</span>
+                <span class="state-badge">
+                  {{ displayState(data.document.state || document?.state) }}
+                </span>
+              </div>
+
+              <div class="wide">
+                <span class="label">Título</span>
+                <strong>{{ data.document.title || document?.title || "—" }}</strong>
+              </div>
+
+              <div>
+                <span class="label">Tipo</span>
+                <strong>{{ data.document.documentType || "—" }}</strong>
+              </div>
+
+              <div>
+                <span class="label">Unidad emisora</span>
+                <strong>{{ data.document.producingUnit || "—" }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <form [formGroup]="dispatchForm" class="mail-form">
+            <section class="form-section">
+              <h3>Datos del Correo Electrónico</h3>
+
+              <label>
+                Destinatario(s) <span class="required">*</span>
+                <input
+                  type="text"
+                  formControlName="to"
+                  placeholder="ejemplo@dominio.com"
+                />
+                <small>
+                  Puede agregar múltiples correos separados por coma.
+                </small>
+                <div class="err" *ngIf="fieldErr('to')">
+                  {{ fieldErr("to") }}
+                </div>
+              </label>
+
+              <label>
+                CC (Con Copia) <span class="optional">- Opcional</span>
+                <input
+                  type="text"
+                  formControlName="cc"
+                  placeholder="persona1@ejemplo.com, persona2@ejemplo.com"
+                />
+                <small>
+                  Puede agregar múltiples correos separados por coma.
+                </small>
+                <div class="err" *ngIf="fieldErr('cc')">
+                  {{ fieldErr("cc") }}
+                </div>
+              </label>
+
+              <label>
+                Asunto <span class="required">*</span>
+                <input type="text" formControlName="subject" />
+                <div class="err" *ngIf="fieldErr('subject')">
+                  {{ fieldErr("subject") }}
+                </div>
+              </label>
+
+              <label>
+                Mensaje <span class="required">*</span>
+                <textarea rows="8" formControlName="message"></textarea>
+                <div class="err" *ngIf="fieldErr('message')">
+                  {{ fieldErr("message") }}
+                </div>
+              </label>
+            </section>
+
+            <section class="form-section">
+              <h3>📎 Archivos Adjuntos</h3>
+              <p class="section-help">
+                Seleccione los archivos que desea incluir en el envío.
+              </p>
+
+              <div class="attachment main" *ngIf="mainDocument() as main">
+                <div class="file-icon">📄</div>
+
+                <div class="file-info">
+                  <strong>{{ main.fileName }}</strong>
+                  <span>
+                    Documento principal (obligatorio) ·
+                    {{ attachmentSizeText(main) }}
+                  </span>
+                </div>
+
+                <span class="included-badge">Incluido</span>
+              </div>
+
+              <div class="attachments-title" *ngIf="optionalAttachments().length">
+                Anexos disponibles:
+              </div>
+
+              <div class="no-attachments" *ngIf="!optionalAttachments().length">
+                Este documento no tiene anexos opcionales registrados. Se enviará únicamente
+                el documento principal.
+              </div>
+
+
+              <div
+                class="attachment optional"
+                *ngFor="let attachment of optionalAttachments()"
+                [ngClass]="{ selected: isAttachmentSelected(attachment) }"
+                (click)="toggleAttachment(attachment)"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="isAttachmentSelected(attachment)"
+                  [disabled]="attachment.required || attachment.isMainDocument"
+                  readonly
+                />
+
+                <div class="file-icon">📄</div>
+
+                <div class="file-info">
+                  <strong>{{ attachment.fileName }}</strong>
+                  <span>
+                    {{ attachment.mimeType || "Archivo" }} ·
+                    {{ attachmentSizeText(attachment) }}
+                  </span>
+                </div>
+
+                <span class="selected-badge" *ngIf="isAttachmentSelected(attachment)">
+                  Seleccionado
+                </span>
+              </div>
+
+              <div class="summary-box">
+                <div class="summary-icon">ⓘ</div>
+                <div>
+                  <strong>Total de archivos:</strong>
+                  <p>{{ totalSelectedFiles() }} archivo(s)</p>
+
+                  <strong>Tamaño total:</strong>
+                  <p>{{ totalSelectedSize() }}</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="preview-box" *ngIf="previewOpen()">
+              <h3>Vista previa del correo</h3>
+
+              <div class="preview-line">
+                <strong>Para:</strong>
+                <span>{{ dispatchForm.getRawValue().to || "—" }}</span>
+              </div>
+
+              <div class="preview-line" *ngIf="dispatchForm.getRawValue().cc">
+                <strong>CC:</strong>
+                <span>{{ dispatchForm.getRawValue().cc }}</span>
+              </div>
+
+              <div class="preview-line">
+                <strong>Asunto:</strong>
+                <span>{{ dispatchForm.getRawValue().subject || "—" }}</span>
+              </div>
+
+              <div class="preview-message">
+                {{ dispatchForm.getRawValue().message || "—" }}
+              </div>
+            </section>
+          </form>
+        </div>
+
+        <footer class="modal-actions">
+          <button
+            type="button"
+            class="btn ghost"
+            (click)="close()"
+            [disabled]="sending()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            class="btn preview"
+            (click)="togglePreview()"
+            [disabled]="sending()"
+          >
+            Vista previa
+          </button>
+
+          <button
+            type="button"
+            class="btn primary"
+            (click)="send()"
+            [disabled]="sending()"
+          >
+            {{ sending() ? "Enviando..." : "Enviar correo" }}
+          </button>
+        </footer>
+      </ng-container>
+    </ng-template>
+  </section>
+</div>

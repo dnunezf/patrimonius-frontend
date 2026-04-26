@@ -30,6 +30,8 @@ import {
 } from './models';
 import { EadExportDialogComponent } from './components/ead-export-dialog/ead-export-dialog.component';
 
+import { DispatchEmailDialogComponent } from './components/dispatch-email-dialog/dispatch-email-dialog.component';
+
 function humanSize(bytes: number | null | undefined): string {
   if (bytes == null || Number.isNaN(bytes)) return '—';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -77,6 +79,7 @@ function commaEmailsValidator(): ValidatorFn {
     NgFor,
     NgClass,
     EadExportDialogComponent,
+    DispatchEmailDialogComponent,
   ],
   templateUrl: './conservation-intake.page.component.html',
   styleUrls: ['./conservation-intake.page.component.css'],
@@ -129,8 +132,15 @@ export class ConservationIntakePageComponent {
   readonly eadDialogOpen = signal(false);
   readonly eadDialogDocument = signal<ConservationEadDocumentRow | null>(null);
 
-  readonly totalEadDocuments = computed(() => this.eadDocuments().length);
+  /* =========================
+   * HU-036 · Despacho por correo
+   * ========================= */
 
+  readonly dispatchDialogOpen = signal(false);
+  readonly dispatchDialogDocument =
+    signal<ConservationEadDocumentRow | null>(null);
+
+  readonly totalEadDocuments = computed(() => this.eadDocuments().length);
   readonly procedureOptions: Array<{
     value: ProcedureType;
     label: string;
@@ -1064,6 +1074,38 @@ export class ConservationIntakePageComponent {
 
     this.api
       .audit('EAD2002_LIST_REFRESH_REQUESTED', {
+        documentId,
+      })
+      .subscribe();
+  }
+
+  /* =========================
+ * HU-036 · Despacho por correo
+ * ========================= */
+
+  openDispatchDialog(row: ConservationEadDocumentRow): void {
+    this.dispatchDialogDocument.set(row);
+    this.dispatchDialogOpen.set(true);
+
+    this.api
+      .audit('DISPATCH_EMAIL_DIALOG_OPENED', {
+        documentId: row.id,
+        officialCode: row.officialCode,
+        title: row.title,
+      })
+      .subscribe();
+  }
+
+  closeDispatchDialog(): void {
+    this.dispatchDialogOpen.set(false);
+    this.dispatchDialogDocument.set(null);
+  }
+
+  onDispatchEmailSent(documentId: number): void {
+    this.loadEadDocuments();
+
+    this.api
+      .audit('DISPATCH_EMAIL_LIST_REFRESH_REQUESTED', {
         documentId,
       })
       .subscribe();

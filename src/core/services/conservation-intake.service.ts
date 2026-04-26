@@ -27,6 +27,44 @@ export type ReferenceCodePreview = {
   year: number;
 };
 
+export type DispatchAttachment = {
+  id: number;
+  fileName: string;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  required?: boolean;
+  selectedByDefault?: boolean;
+  isMainDocument?: boolean;
+};
+
+export type ConservationDispatchDetail = {
+  document: {
+    id: number;
+    officialCode: string;
+    title: string;
+    state: string;
+    documentType?: string | null;
+    producingUnit?: string | null;
+    dispatchEmails?: string[];
+  };
+  attachments: DispatchAttachment[];
+};
+
+export type DispatchEmailPayload = {
+  to: string[];
+  cc?: string[];
+  subject: string;
+  message: string;
+  attachmentIds: number[];
+};
+
+export type DispatchEmailResponse = {
+  ok: boolean;
+  message: string;
+  dispatchId?: number;
+  documentId: number;
+};
+
 function extractArray<T = any>(raw: any): T[] {
   if (Array.isArray(raw)) return raw as T[];
   if (Array.isArray(raw?.items)) return raw.items as T[];
@@ -296,6 +334,121 @@ export class ConservationIntakeService {
           };
         }),
       );
+  }
+
+  /* =========================
+ * HU-036 · Despacho por correo
+ * ========================= */
+
+  /**
+   * Returns the document data, default recipients and available attachments
+   * required to prepare the dispatch email dialog.
+   */
+  getDispatchDetail(
+    documentId: number,
+  ): Observable<ConservationDispatchDetail> {
+    return this.http
+      .get<any>(`${this.base}/documents/${documentId}/dispatch-email`)
+      .pipe(
+        map((raw) => {
+          const documentRaw = raw?.document ?? raw?.documento ?? raw ?? {};
+          const attachmentsRaw = extractArray<any>(
+            raw?.attachments ?? raw?.anexos ?? raw?.files ?? [],
+          );
+
+          return {
+            document: {
+              id: Number(
+                documentRaw.id ??
+                documentRaw.documento_id ??
+                documentRaw.documentId ??
+                documentId,
+              ),
+              officialCode: String(
+                documentRaw.officialCode ??
+                documentRaw.official_code ??
+                documentRaw.numero_serie ??
+                '',
+              ),
+              title: String(documentRaw.title ?? documentRaw.titulo ?? ''),
+              state: String(documentRaw.state ?? documentRaw.estado ?? ''),
+              documentType:
+                documentRaw.documentType ??
+                documentRaw.document_type ??
+                documentRaw.tipo_documental ??
+                null,
+              producingUnit:
+                documentRaw.producingUnit ??
+                documentRaw.producing_unit ??
+                documentRaw.unidad_productora ??
+                null,
+              dispatchEmails: extractArray<string>(
+                documentRaw.dispatchEmails ??
+                documentRaw.dispatch_emails ??
+                documentRaw.correos_despacho ??
+                [],
+              ),
+            },
+            attachments: attachmentsRaw.map((item: any) => ({
+              id: Number(item.id ?? item.attachmentId ?? item.anexo_id ?? 0),
+              fileName: String(
+                item.fileName ??
+                item.file_name ??
+                item.nombre_archivo ??
+                item.nombre ??
+                '',
+              ),
+              mimeType:
+                item.mimeType ?? item.mime_type ?? item.tipo_mime ?? null,
+              sizeBytes:
+                item.sizeBytes != null
+                  ? Number(item.sizeBytes)
+                  : item.size_bytes != null
+                    ? Number(item.size_bytes)
+                    : item.tamano_bytes != null
+                      ? Number(item.tamano_bytes)
+                      : null,
+              required: Boolean(item.required ?? item.obligatorio ?? false),
+              selectedByDefault: Boolean(
+                item.selectedByDefault ??
+                item.selected_by_default ??
+                item.seleccionado ??
+                item.obligatorio ??
+                false,
+              ),
+              isMainDocument: Boolean(
+                item.isMainDocument ??
+                item.is_main_document ??
+                item.es_documento_principal ??
+                false,
+              ),
+            })),
+          };
+        }),
+      );
+  }
+
+  /**
+   * Sends an official dispatch email for a conservation document.
+   */
+  sendDispatchEmail(
+    documentId: number,
+    payload: DispatchEmailPayload,
+  ): Observable<DispatchEmailResponse> {
+    return this.http.post<DispatchEmailResponse>(
+      `${this.base}/documents/${documentId}/dispatch-email`,
+      payload,
+    );
+  }
+
+  /**
+   * Returns dispatch history for a conservation document.
+   * This can be used later for the "Historial" column.
+   */
+  getDispatchHistory(documentId: number): Observable<any[]> {
+    return this.http
+      .get<any>(`${this.base}/documents/${documentId}/dispatch-email/history`)
+      .pipe(map((raw) => extractArray(raw)));
   }
 
   /**
