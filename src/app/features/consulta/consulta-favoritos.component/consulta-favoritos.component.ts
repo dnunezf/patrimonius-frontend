@@ -2,15 +2,15 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import {
   ConsultaAprobadosApiService,
   ConsultaDocumentoRow,
   ConsultaFiltrosOpciones,
-} from '../../../core/services/consulta-aprobados-api.service';
-import { ConsultaDashboardApiService } from '../../../core/services/consulta-dashboard-api.service';
-import { ConsultaFavoritosService } from '../../../core/services/consulta-favoritos.service';
-import { ConfirmService } from '../../shared/ui/confirm.service';
+} from '../../../../core/services/consulta-aprobados-api.service';
+import { ConsultaDashboardApiService } from '../../../../core/services/consulta-dashboard-api.service';
+import { ConsultaFavoritosService } from '../../../../core/services/consulta-favoritos.service';
+import { ConfirmService } from '../../../shared/ui/confirm.service';
 
 @Component({
   selector: 'app-consulta-favoritos',

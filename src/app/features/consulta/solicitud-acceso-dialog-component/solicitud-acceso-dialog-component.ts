@@ -13,32 +13,26 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ConsultaAprobadosApiService } from '../../../core/services/consulta-aprobados-api.service';
-
-export type ConsultaExpedienteRow = {
-  id: number;
-  codigo: string;
-  nombre: string;
-  estado?: string | null;
-  serie_nombre?: string | null;
-  subserie_nombre?: string | null;
-  total_documentos_elegibles?: number | null;
-};
+import {
+  ConsultaAprobadosApiService,
+  ConsultaDocumentoRow,
+} from '../../../../core/services/consulta-aprobados-api.service';
 
 @Component({
-  selector: 'app-solicitud-acceso-expediente-dialog',
+  selector: 'app-solicitud-acceso-dialog',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './solicitud-acceso-expediente-dialog-component.html',
-  styleUrls: ['./solicitud-acceso-expediente-dialog-component.css'],
+  templateUrl: './solicitud-acceso-dialog-component.html',
+  styleUrls: ['./solicitud-acceso-dialog-component.css'],
 })
-export class SolicitudAccesoExpedienteDialogComponent implements OnChanges {
+export class SolicitudAccesoDialogComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ConsultaAprobadosApiService);
 
   @Input() open = false;
-  @Input() expediente: ConsultaExpedienteRow | null = null;
+  @Input() documento: ConsultaDocumentoRow | null = null;
 
+  // opcional: si luego quieres mostrar el id del usuario autenticado
   @Input() usuarioSolicitanteId: number | null = null;
   @Input() usuarioNombre = 'Usuario autenticado';
 
@@ -64,7 +58,7 @@ export class SolicitudAccesoExpedienteDialogComponent implements OnChanges {
   }
 
   submit(): void {
-    if (!this.expediente) return;
+    if (!this.documento) return;
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -79,22 +73,20 @@ export class SolicitudAccesoExpedienteDialogComponent implements OnChanges {
     this.error = '';
     this.success = '';
 
-    this.api
-      .createSolicitudAccesoExpediente(this.expediente.id, { justificacion })
-      .subscribe({
-        next: () => {
-          this.saving = false;
-          this.success = 'Solicitud de acceso al expediente enviada correctamente.';
-          this.created.emit();
-          setTimeout(() => this.close(), 500);
-        },
-        error: (e) => {
-          this.saving = false;
-          this.error =
-            e?.error?.message ||
-            'No se pudo registrar la solicitud de acceso al expediente.';
-        },
-      });
+    this.api.createSolicitudAcceso(this.documento.id, { justificacion }).subscribe({
+      next: () => {
+        this.saving = false;
+        this.success = 'Solicitud enviada correctamente.';
+        this.created.emit();
+        setTimeout(() => this.close(), 500);
+      },
+      error: (e: unknown) => {
+        this.saving = false;
+        const err = e as { error?: { message?: string } };
+        this.error =
+          err?.error?.message || 'No se pudo registrar la solicitud.';
+      },
+    });
   }
 
   close(): void {
@@ -104,5 +96,15 @@ export class SolicitudAccesoExpedienteDialogComponent implements OnChanges {
 
   get f() {
     return this.form.controls;
+  }
+
+  formatDate(value: string | null | undefined): string {
+    if (!value) return 'Pendiente';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return 'Pendiente';
+    return new Intl.DateTimeFormat('es-CR', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(d);
   }
 }

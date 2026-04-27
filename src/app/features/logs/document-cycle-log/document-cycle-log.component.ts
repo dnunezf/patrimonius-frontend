@@ -127,7 +127,7 @@ export class DocumentCycleLogComponent implements OnInit, OnDestroy {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Error cargando eventos de auditoría';
+        this.error = 'Error al cargar los eventos de auditoría';
         console.error(err);
         this.loading = false;
       }

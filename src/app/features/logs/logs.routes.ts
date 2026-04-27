@@ -27,7 +27,7 @@ export const LOGS_ROUTES: Routes = [
       {
         path: 'expediente-bitacora',
         component: ExpedienteBitacoraLogComponent,
-        title: 'Patrimonius | Bitácora de expedientes',
+        title: 'Patrimonius | Bitácora de Expedientes',
       },
       { path: '', pathMatch: 'full', redirectTo: 'queries' }
     ]

@@ -4,9 +4,9 @@ import { Router } from '@angular/router';
 import {
   ConsultaDashboardApiService,
   ConsultaHistorialItem,
-} from '../../../core/services/consulta-dashboard-api.service';
-import { ConsultaPanelPrefsService } from '../../../core/services/consulta-panel-prefs.service';
-import { AuthService } from '../../../core/services/auth.service';
+} from '../../../../core/services/consulta-dashboard-api.service';
+import { ConsultaPanelPrefsService } from '../../../../core/services/consulta-panel-prefs.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-consulta-historial',

@@ -8,11 +8,9 @@ import {
   ExceptionPermission,
   ExceptionRow
 } from '../../../../core/services/access-exception.service';
-import { CategoriaService } from '../../../../core/services/categoria.service';
 import { AuditService } from '../../../../core/services/audit.service';
 
 type UiUser = { id: number; email: string; fullName: string; rol: string };
-type UiCategory = { id?: number; nombre: string };
 
 @Component({
   selector: 'app-access-exceptions',
@@ -22,6 +20,22 @@ type UiCategory = { id?: number; nombre: string };
   styleUrls: ['./access-exceptions.component.css'],
 })
 export class AccessExceptionsComponent implements OnInit {
+  /** Estados que no deben aparecer en los desplegables de filtro (formulario y listado). */
+  private static readonly excludedStatesForFilterUi = new Set([
+    'archivado',
+    'eliminacion',
+    'transferencia',
+  ]);
+
+  private static isExcludedStateForFilter(label: string): boolean {
+    const key = String(label)
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return AccessExceptionsComponent.excludedStatesForFilterUi.has(key);
+  }
+
   // ====== Form (crear excepción) ======
   documents: any[] = [];
   filteredDocuments: any[] = [];
@@ -34,9 +48,6 @@ export class AccessExceptionsComponent implements OnInit {
   // ✅ roles SIEMPRE en este shape
   roles: Array<{ label: string; value: string }> = [];
   selectedRole: string = 'todos';
-
-  categorias: UiCategory[] = [];
-  selectedCategoriaForm: string = 'todos';
 
   states: string[] = [];
   selectedDocumentStatusForm: string = 'todos';
@@ -56,7 +67,6 @@ export class AccessExceptionsComponent implements OnInit {
 
   filters = {
     user: 'Todos',
-    category: 'Todas',
     status: 'Todos',
     dateFrom: '',
     dateTo: ''
@@ -71,7 +81,6 @@ export class AccessExceptionsComponent implements OnInit {
 
   constructor(
     private service: AccessExceptionService,
-    private categoriaService: CategoriaService,
     private auditService: AuditService
   ) {
   }
@@ -79,7 +88,6 @@ export class AccessExceptionsComponent implements OnInit {
   ngOnInit() {
     this.loadRoles();
     this.loadUsers();
-    this.loadCategorias();
     this.loadStates();
     this.loadDocuments();
 
@@ -160,30 +168,17 @@ export class AccessExceptionsComponent implements OnInit {
     });
   }
 
-  private loadCategorias() {
-    this.categoriaService.getCategorias().subscribe({
-      next: (cats: any[]) => {
-        this.categorias = (cats || []).map((c: any) => ({
-          id: c.id ?? c.id_categoria ?? c.categoria_id ?? c.Id ?? undefined,
-          nombre: c.nombre ?? c.name ?? String(c)
-        }));
-      },
-      error: (err) => {
-        console.log('ERROR CATEGORIAS =>', err);
-        this.categorias = [];
-      }
-    });
-  }
-
   private loadStates() {
     this.auditService.getDocumentStates().subscribe({
       next: (states: any[]) => {
-        this.states = (states || []).map((s: string) =>
-          String(s)
-            .replace(/_/g, ' ')
-            .toLowerCase()
-            .replace(/\b\w/g, (ch: string) => ch.toUpperCase())
-        );
+        this.states = (states || [])
+          .map((s: string) =>
+            String(s)
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .replace(/\b\w/g, (ch: string) => ch.toUpperCase())
+          )
+          .filter((label) => !AccessExceptionsComponent.isExcludedStateForFilter(label));
       },
       error: (err) => {
         console.log('ERROR STATES =>', err);
@@ -198,7 +193,6 @@ export class AccessExceptionsComponent implements OnInit {
         this.documents = (docs || []).map((d: any) => ({
           ...d,
           id: d.id ?? d.documentId ?? d.documento_id ?? d.id_documento ?? d.idDocumento,
-          categoria: this.formatCategory(d.categoria || 'Sin categoría'),
           formattedState: this.formatState(d.estado || ''),
           formattedDate: d.fecha
         }));
@@ -222,7 +216,6 @@ export class AccessExceptionsComponent implements OnInit {
     };
 
     if (this.filters.user !== 'Todos') q.userId = Number(this.filters.user);
-    if (this.filters.category !== 'Todas') q.categoryId = Number(this.filters.category);
 
     if (this.filters.status !== 'Todos') q.status = String(this.filters.status).toLowerCase();
 
@@ -264,7 +257,6 @@ export class AccessExceptionsComponent implements OnInit {
   clearFilters() {
     this.filters = {
       user: 'Todos',
-      category: 'Todas',
       status: 'Todos',
       dateFrom: '',
       dateTo: ''
@@ -310,14 +302,12 @@ export class AccessExceptionsComponent implements OnInit {
 
   filterDocuments() {
     const q = this.documentSearchTerm.toLowerCase();
-    const cat = this.selectedCategoriaForm === 'todos' ? null : this.selectedCategoriaForm.toLowerCase();
     const state = this.selectedDocumentStatusForm === 'todos' ? null : this.selectedDocumentStatusForm.toLowerCase();
 
     this.filteredDocuments = this.documents.filter((d: any) => {
       const byTitle = String(d.titulo || '').toLowerCase().includes(q);
-      const byCat = !cat || String(d.categoria || '').toLowerCase().includes(cat);
       const byState = !state || String(d.estado || '').toLowerCase() === state;
-      return byTitle && byCat && byState;
+      return byTitle && byState;
     });
   }
 
@@ -326,10 +316,6 @@ export class AccessExceptionsComponent implements OnInit {
   // =======================
   formatState(state: string): string {
     return state ? state.charAt(0).toUpperCase() + state.slice(1).toLowerCase() : '';
-  }
-
-  formatCategory(category: string): string {
-    return category?.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Sin categoría';
   }
 
   formatPermissions(p: string | string[] | null | undefined): string {

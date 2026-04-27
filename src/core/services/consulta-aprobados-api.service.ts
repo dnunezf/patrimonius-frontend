@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { Observable } from 'rxjs';
+import { Observable, catchError } from 'rxjs';
 
 export type ConsultaFiltrosOpciones = {
   categorias: { id: number; nombre: string }[];
@@ -199,17 +199,47 @@ export class ConsultaAprobadosApiService {
    * (assertCanAccess + bitácora DESCARGA; permiso VIEW para externos).
    * No usar `/documentos/.../firma/descargar/pdf` aquí: esa ruta no registra consulta.
    */
-  download(documentoId: number): Observable<Blob> {
+  download(documentoId: number): Observable<HttpResponse<Blob>> {
     return this.downloadConsulta(documentoId);
   }
 
   /**
    * HU-025: descarga alineada con la búsqueda (`assertCanAccess` + bitácora).
    */
-  downloadConsulta(documentoId: number): Observable<Blob> {
+  downloadConsulta(documentoId: number): Observable<HttpResponse<Blob>> {
     return this.http.get(`${this.base}/${documentoId}/download`, {
       responseType: 'blob',
+      observe: 'response',
     });
+  }
+
+  /**
+   * Anexos en contexto HU-025: misma base que preview/descarga (`/documents/...`).
+   * Si el backend aún no expone la ruta bajo `/documents`, se intenta el listado legado `/documentos/.../anexos`.
+   */
+  listAnexosConsulta(documentoId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/${documentoId}/anexos`).pipe(
+      catchError(() =>
+        this.http.get<any[]>(
+          `${environment.apiUrl}/documentos/${documentoId}/anexos`,
+        ),
+      ),
+    );
+  }
+
+  /**
+   * Descarga de anexo con `assertCanAccess` (misma familia que `downloadConsulta`).
+   * Prueba `/download` y `/descargar` bajo `/documents` por compatibilidad de rutas.
+   */
+  downloadAnexoConsulta(documentoId: number, anexoId: number): Observable<Blob> {
+    const basePath = `${this.base}/${documentoId}/anexos/${anexoId}`;
+    const legacy = `${environment.apiUrl}/documentos/${documentoId}/anexos/${anexoId}/descargar`;
+    return this.http.get(`${basePath}/download`, { responseType: 'blob' }).pipe(
+      catchError(() =>
+        this.http.get(`${basePath}/descargar`, { responseType: 'blob' }),
+      ),
+      catchError(() => this.http.get(legacy, { responseType: 'blob' })),
+    );
   }
 
   createSolicitudAcceso(

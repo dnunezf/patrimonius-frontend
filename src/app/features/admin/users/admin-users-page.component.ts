@@ -13,6 +13,7 @@ import { ToastService } from '../../../shared/ui/toast.service';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ChangeDetectorRef } from '@angular/core';
 import { finalize, timeout, catchError, throwError } from 'rxjs';
+import { CatalogosService, Rol } from '../../../../core/services/catalogos.service';
 
 /** Admin Users page: now uses ToastService (success/error) and ConfirmService (delete). */
 @Component({
@@ -67,17 +68,37 @@ export class AdminUsersPageComponent {
     () => this.users().filter((u) => u.rolId === EDITOR_ID).length,
   );
 
-  readonly ROLES = ROLES;
+  roleOptions = signal<{ id: number; label: string }[]>([...ROLES]);
   readonly UNIDADES = UNIDADES;
   readonly EDITOR_ID = EDITOR_ID;
 
   constructor(
     private api: AdminUsersService,
+    private catalogosApi: CatalogosService,
     private toast: ToastService,
     private confirm: ConfirmService,
     private cd: ChangeDetectorRef,
   ) {
     effect(() => void this.load());
+    effect(() => void this.loadRoles());
+  }
+
+  private loadRoles(): void {
+    this.catalogosApi.loadRoles();
+    this.catalogosApi.roles$.subscribe({
+      next: (roles: Rol[]) => {
+        const mapped = (roles || [])
+          .map((r) => ({
+            id: Number(r.idRol),
+            label: String(r.nombreRol || '').trim(),
+          }))
+          .filter((r) => Number.isInteger(r.id) && r.id > 0 && !!r.label);
+
+        if (mapped.length) {
+          this.roleOptions.set(mapped);
+        }
+      },
+    });
   }
 
   load(): void {

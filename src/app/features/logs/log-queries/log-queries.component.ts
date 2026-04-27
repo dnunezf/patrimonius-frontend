@@ -12,7 +12,7 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['./log-queries.component.css']
 })
 export class LogQueriesComponent {
-  // Array for storing bitacora data including image filenames and functions
+  // Datos de las tarjetas de bitácoras (iconos y funciones)
   bitacoras = [
     {
       title: 'Bitácora de Ciclo Documental',
@@ -51,7 +51,7 @@ export class LogQueriesComponent {
     {
       title: 'Bitácora de Actividad de Usuario',
       description:
-        'Monitorea las descargas, búsquedas y visualización de documentos  conservación.',
+        'Monitorea descargas, búsquedas y la visualización de documentos de conservación.',
       icon: 'users.png',
       funciones: [
         'Filtrar por usuario, actividad, recurso y fechas',
@@ -61,7 +61,7 @@ export class LogQueriesComponent {
       link: '/logs/actividad-usuario',
     },
     {
-      title: 'Bitácora de expedientes',
+      title: 'Bitácora de Expedientes',
       description:
         'Historial del ciclo de vida del expediente: creación, cierre, documentos vinculados, permisos, visitas y descargas.',
       icon: 'document-signed.png',

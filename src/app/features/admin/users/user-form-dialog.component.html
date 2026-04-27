@@ -150,7 +150,7 @@
         aria-describedby="err-roles"
         role="group"
       >
-        <label class="chip" *ngFor="let r of ROLES; trackBy: trackByRole">
+        <label class="chip" *ngFor="let r of roleOptions; trackBy: trackByRole">
           <input
             type="checkbox"
             [checked]="hasRole(r.id)"

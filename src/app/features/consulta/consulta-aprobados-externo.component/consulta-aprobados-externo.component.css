@@ -730,6 +730,22 @@
   flex-shrink: 0;
 }
 
+.modal.consulta-preview-modal header.consulta-preview-header,
+.modal.consulta-preview-modal--doc header.consulta-preview-header {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  row-gap: 0.35rem;
+}
+
+.modal.consulta-preview-modal header.consulta-preview-header h3,
+.modal.consulta-preview-modal--doc header.consulta-preview-header h3 {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+  word-break: break-word;
+}
+
 .consulta-preview-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -980,9 +996,12 @@
   }
 }
 .preview-header-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .search-history-text .muted.small {
@@ -997,4 +1016,53 @@
 .search-history-date {
   font-size: 0.82rem;
   padding-top: 0.1rem;
+}
+
+.consulta-preview-anexos-panel {
+  flex-shrink: 0;
+  margin: 0.75rem 0 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.consulta-preview-anexos-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.consulta-preview-anexos-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.consulta-preview-anexo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.consulta-preview-anexo-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.consulta-preview-anexo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.consulta-preview-anexo-info strong {
+  word-break: break-word;
 }

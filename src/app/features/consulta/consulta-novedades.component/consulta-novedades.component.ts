@@ -1,10 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ConsultaDashboardApiService } from '../../../core/services/consulta-dashboard-api.service';
-import { ConsultaDocumentoRow } from '../../../core/services/consulta-aprobados-api.service';
-import { ConsultaPanelPrefsService } from '../../../core/services/consulta-panel-prefs.service';
-import { AuthService } from '../../../core/services/auth.service';
+import {
+  ConsultaDashboardApiService,
+  ConsultaDashboardResumen,
+} from '../../../../core/services/consulta-dashboard-api.service';
+import { ConsultaDocumentoRow } from '../../../../core/services/consulta-aprobados-api.service';
+import { ConsultaPanelPrefsService } from '../../../../core/services/consulta-panel-prefs.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-consulta-novedades',
@@ -47,15 +50,16 @@ export class ConsultaNovedadesComponent implements OnInit {
         novedadesDesde: desde || undefined,
       })
       .subscribe({
-        next: (r) => {
+        next: (r: ConsultaDashboardResumen) => {
           this.periodo = r.periodo ?? r.semana;
           this.novedades = r.novedades ?? [];
           this.totalItems = r.novedadesTotal ?? this.novedades.length;
           this.totalPages = r.novedadesTotalPages ?? 1;
           this.loading = false;
         },
-        error: (e) => {
-          this.errorMsg = e?.error?.message || 'Error al cargar novedades.';
+        error: (e: unknown) => {
+          const err = e as { error?: { message?: string } };
+          this.errorMsg = err?.error?.message || 'Error al cargar novedades.';
           this.loading = false;
         },
       });

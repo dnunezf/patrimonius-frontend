@@ -1,4 +1,4 @@
-@import './consulta-subpanel.css';
+@import '../consulta-subpanel.css';
 
 .page__head-actions {
   display: flex;

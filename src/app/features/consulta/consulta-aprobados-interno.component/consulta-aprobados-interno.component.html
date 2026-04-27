@@ -46,7 +46,7 @@
       <div class="panel-block__head-text">
         <h3>Consulta de {{ vistaActual === 'documentos' ? 'documentos' : 'expedientes' }}</h3>
         <p class="muted" *ngIf="vistaActual === 'documentos'">
-          Filtre por código, nombre, categoría, serie, subserie, expediente y rango de fechas.
+          Filtre por código, nombre, serie, subserie, expediente y rango de fechas.
         </p>
         <p class="muted" *ngIf="vistaActual === 'expedientes'">
           Filtre por código, nombre, serie, subserie y fecha de creación del expediente.
@@ -135,14 +135,6 @@
           placeholder="Título, metadatos…"
           (keyup.enter)="aplicarFiltrosConsulta()"
         />
-      </div>
-
-      <div class="field">
-        <label>Categoría</label>
-        <select [(ngModel)]="categoriaId">
-          <option value="">Todas</option>
-          <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
-        </select>
       </div>
 
       <div class="field">
@@ -262,7 +254,6 @@
         <tr>
           <th (click)="onSort('codigo')" class="sortable">Código</th>
           <th (click)="onSort('titulo')" class="sortable">Título</th>
-          <th (click)="onSort('categoria')" class="sortable">Categoría</th>
           <th (click)="onSort('unidad')" class="sortable">Unidad</th>
           <th>Serie / Subserie</th>
           <th (click)="onSort('fecha_aprobacion')" class="sortable">Fecha</th>
@@ -277,7 +268,6 @@
             <div class="title doc-title">{{ row.titulo }}</div>
             <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
           </td>
-          <td>{{ row.categoria_nombre || '—' }}</td>
           <td>{{ row.unidad_nombre || '—' }}</td>
           <td>
             <span class="small">{{ row.serie_nombre || '—' }}</span>
@@ -422,7 +412,6 @@
             <tr>
               <th>Código</th>
               <th>Nombre del documento</th>
-              <th>Categoría</th>
               <th>Fecha</th>
               <th>Estado</th>
               <th>Acciones</th>
@@ -430,18 +419,13 @@
             </thead>
             <tbody>
             <tr *ngIf="documentosExpedienteRows.length === 0">
-              <td colspan="6" class="loading">No hay documentos visibles en este expediente.</td>
+              <td colspan="5" class="loading">No hay documentos visibles en este expediente.</td>
             </tr>
             <tr *ngFor="let row of documentosExpedienteRows">
               <td class="mono">{{ row.codigo }}</td>
               <td>
                 <div class="doc-title">{{ row.titulo }}</div>
                 <div class="muted small" *ngIf="row.autor_nombre">{{ row.autor_nombre }}</div>
-              </td>
-              <td>
-                <span class="cat-badge" [ngClass]="categoriaClass(row.categoria_nombre)">
-                  {{ row.categoria_nombre || '—' }}
-                </span>
               </td>
               <td>{{ formatDate(row.fecha_aprobacion) }}</td>
               <td>
@@ -476,18 +460,54 @@
           <button
             type="button"
             class="btn ghost"
+            *ngIf="previewTieneAnexos"
+            (click)="togglePreviewAnexos()"
+          >
+            {{ previewAnexosOpen ? 'Ocultar anexos' : 'Anexos' }}
+          </button>
+          <button
+            type="button"
+            class="btn ghost"
             (click)="abrirClasificacionDesdePreview()"
-            *ngIf="previewDocId"
+            *ngIf="previewDocId != null"
           >
             Ver clasificación
           </button>
-
           <button type="button" class="btn ghost" (click)="cerrarPreview()">
             Cerrar
           </button>
         </div>
       </header>
       <div class="consulta-preview-body">
+        <section
+          class="consulta-preview-anexos-panel"
+          *ngIf="previewAnexosOpen"
+          (click)="$event.stopPropagation()"
+        >
+          <h4 class="consulta-preview-anexos-title">Anexos del documento</h4>
+          <p class="consulta-preview-loading" *ngIf="previewAnexosLoading">Cargando anexos…</p>
+          <p class="toolbar-error" *ngIf="previewAnexosError && !previewAnexosLoading">{{ previewAnexosError }}</p>
+          <p class="muted" *ngIf="!previewAnexosLoading && !previewAnexos.length && !previewAnexosError">
+            Este documento no tiene anexos.
+          </p>
+          <ul class="consulta-preview-anexos-list" *ngIf="!previewAnexosLoading && previewAnexos.length">
+            <li *ngFor="let anexo of previewAnexos" class="consulta-preview-anexo-row">
+              <div class="consulta-preview-anexo-info">
+                <strong>{{ anexo.nombre_original || anexo.nombre || 'Archivo' }}</strong>
+                <span class="muted small" *ngIf="anexo.descripcion">{{ anexo.descripcion }}</span>
+                <span class="muted small" *ngIf="anexo.fecha_subida">{{ anexo.fecha_subida | date:'short' }}</span>
+              </div>
+              <button
+                type="button"
+                class="btn sm primary"
+                (click)="descargarPreviewAnexo(anexo)"
+              >
+                Descargar
+              </button>
+            </li>
+          </ul>
+        </section>
+
         <p class="consulta-preview-disclaimer" *ngIf="!previewLoading && previewMode === 'pdf'">
           Vista previa del mismo PDF que puede descargar. Renderizado como imagen por página: el texto no es
           seleccionable ni copiable desde aquí.

@@ -1,9 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ConsultaDashboardApiService } from '../../../core/services/consulta-dashboard-api.service';
-import { ConsultaPanelPrefsService } from '../../../core/services/consulta-panel-prefs.service';
-import { AuthService } from '../../../core/services/auth.service';
+import {
+  ConsultaDashboardApiService,
+  ConsultaDashboardResumen,
+} from '../../../../core/services/consulta-dashboard-api.service';
+import { ConsultaPanelPrefsService } from '../../../../core/services/consulta-panel-prefs.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-consulta-recientes',
@@ -47,13 +50,14 @@ export class ConsultaRecientesComponent implements OnInit {
         recientesDesde: desde || undefined,
       })
       .subscribe({
-        next: (r) => {
+        next: (r: ConsultaDashboardResumen) => {
           this.recientes = r.recientes ?? [];
           this.loading = false;
         },
-        error: (e) => {
+        error: (e: unknown) => {
+          const err = e as { error?: { message?: string } };
           this.errorMsg =
-            e?.error?.message || 'Error al cargar documentos recientes.';
+            err?.error?.message || 'Error al cargar documentos recientes.';
           this.loading = false;
         },
       });

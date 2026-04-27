@@ -18,7 +18,7 @@ export class SecurityLogComponent implements OnInit, OnDestroy {
   users: string[] = ['Todos los usuarios'];
   actions: string[] = ['Todas las acciones'];
 
-  results: string[] = ['Todos los resultados',  'PERMITIDO', 'DENEGADO'];
+  results: string[] = ['Todos los resultados', 'PERMITIDO', 'DENEGADO'];
 
   filters = {
     q: '',
@@ -109,7 +109,7 @@ export class SecurityLogComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error(err);
-        this.error = 'Error cargando eventos de seguridad';
+        this.error = 'Error al cargar los eventos de seguridad';
         this.loading = false;
       }
     });

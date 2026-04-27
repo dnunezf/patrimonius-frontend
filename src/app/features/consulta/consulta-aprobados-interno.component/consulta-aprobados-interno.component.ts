@@ -16,9 +16,9 @@ import {
   ConsultaExpedienteRow,
   ConsultaFiltrosOpciones,
   HistorialBusquedaRow,
-} from '../../../core/services/consulta-aprobados-api.service';
-import { onConsultaPreviewLinkClick } from './consulta-preview-link.util';
-import { SolicitudAccesoDialogComponent } from './solicitud-acceso-dialog-component';
+} from '../../../../core/services/consulta-aprobados-api.service';
+import { onConsultaPreviewLinkClick } from '../consulta-preview-link.util';
+import { SolicitudAccesoDialogComponent } from '../solicitud-acceso-dialog-component/solicitud-acceso-dialog-component';
 
 @Component({
   selector: 'app-consulta-aprobados-interno',
@@ -56,7 +56,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public codigoDocumentoFiltro = '';
   public nombreDocumentoFiltro = '';
-  public categoriaId: string = '';
   public serieId: string = '';
   public subserieId: string = '';
   public expedienteId: string = '';
@@ -94,6 +93,15 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public pdfPreviewTruncated = false;
 
   private previewDocumentoId: number | null = null;
+
+  /** Panel de anexos dentro del modal de vista previa */
+  public previewAnexosOpen = false;
+  public previewAnexos: any[] = [];
+  public previewAnexosLoading = false;
+  public previewAnexosError = '';
+  /** Si el documento en vista previa tiene anexos (tras consultar la API de consulta). */
+  public previewTieneAnexos = false;
+  private previewAnexosMetaRows: any[] | null = null;
 
   public downloadErrorOpen = false;
   public downloadErrorTitle = 'No se pudo descargar';
@@ -155,7 +163,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         pageSize: this.pageSize,
         sortBy: this.sortBy,
         sortDir: this.sortDir,
-        categoriaId: this.categoriaId || undefined,
         serieId: this.serieId || undefined,
         subserieId: this.subserieId || undefined,
         expedienteId: this.expedienteId || undefined,
@@ -245,7 +252,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public limpiarFiltrosConsulta(): void {
     this.codigoDocumentoFiltro = '';
     this.nombreDocumentoFiltro = '';
-    this.categoriaId = '';
     this.serieId = '';
     this.subserieId = '';
     this.expedienteId = '';
@@ -268,16 +274,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     }
 
     this.load();
-  }
-
-  public categoriaClass(nombre: string | null | undefined): string {
-    const n = String(nombre || '').toLowerCase();
-    if (n.includes('informe')) return 'cat-blue';
-    if (n.includes('protocolo')) return 'cat-green';
-    if (n.includes('catálogo') || n.includes('catalogo')) return 'cat-cyan';
-    if (n.includes('inventario')) return 'cat-amber';
-    if (n.includes('estudio') || n.includes('técnico')) return 'cat-orange';
-    return 'cat-neutral';
   }
 
   public abrirDocumentosExpediente(row: ConsultaExpedienteRow): void {
@@ -407,7 +403,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
     this.codigoDocumentoFiltro = '';
     this.nombreDocumentoFiltro = '';
-    this.categoriaId = '';
     this.serieId = '';
     this.subserieId = '';
     this.expedienteId = '';
@@ -427,9 +422,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         : '';
       this.nombreDocumentoFiltro = filtros['titulo']
         ? String(filtros['titulo'])
-        : '';
-      this.categoriaId = filtros['categoriaId']
-        ? String(filtros['categoriaId'])
         : '';
       this.serieId = filtros['serieId']
         ? String(filtros['serieId'])
@@ -486,7 +478,6 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     if (vista === 'documentos') {
       if (filtros['codigo']) partes.push(`Código: ${String(filtros['codigo'])}`);
       if (filtros['titulo']) partes.push(`Nombre: ${String(filtros['titulo'])}`);
-      if (filtros['categoriaId']) partes.push('Categoría');
       if (filtros['serieId']) partes.push('Serie');
       if (filtros['subserieId']) partes.push('Subserie');
       if (filtros['expedienteId']) partes.push('Expediente');
@@ -593,6 +584,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public ver(row: ConsultaDocumentoRow): void {
     if (row.canDownload === false) return;
+    this.resetPreviewAnexos();
     this.previewDocId = row.id;
 
     if (!this.previewDocContext || this.previewDocContext.id !== row.id) {
@@ -612,6 +604,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       next: (blob) => void this.handlePreviewPdfBlob(blob, row),
       error: () => this.cargarVistaPreviaHtml(row),
     });
+    this.loadPreviewAnexosMeta(row.id);
   }
 
   private async handlePreviewPdfBlob(
@@ -740,17 +733,163 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.previewDocId = null;
     this.previewDocContext = null;
     this.clearPdfHost();
+    this.resetPreviewAnexos();
+  }
+
+  public togglePreviewAnexos(): void {
+    const docId = Number(this.previewDocId ?? this.previewDocumentoId);
+    if (!Number.isFinite(docId) || docId <= 0) return;
+    this.previewAnexosOpen = !this.previewAnexosOpen;
+    if (this.previewAnexosOpen) {
+      this.cargarPreviewAnexos();
+    } else {
+      this.previewAnexosError = '';
+    }
+    this.cdr.markForCheck();
+  }
+
+  private resetPreviewAnexos(): void {
+    this.previewAnexosOpen = false;
+    this.previewAnexos = [];
+    this.previewAnexosLoading = false;
+    this.previewAnexosError = '';
+    this.previewTieneAnexos = false;
+    this.previewAnexosMetaRows = null;
+  }
+
+  private loadPreviewAnexosMeta(docId: number): void {
+    if (!Number.isFinite(docId) || docId <= 0) return;
+    this.previewTieneAnexos = false;
+    this.previewAnexosMetaRows = null;
+    this.api.listAnexosConsulta(docId).subscribe({
+      next: (rows) => {
+        const actual = Number(this.previewDocId ?? this.previewDocumentoId);
+        if (actual !== docId) return;
+        const list = rows ?? [];
+        this.previewAnexosMetaRows = list;
+        this.previewTieneAnexos = list.length > 0;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        const actual = Number(this.previewDocId ?? this.previewDocumentoId);
+        if (actual !== docId) return;
+        this.previewAnexosMetaRows = [];
+        this.previewTieneAnexos = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private cargarPreviewAnexos(): void {
+    const id = Number(this.previewDocId ?? this.previewDocumentoId);
+    if (!Number.isFinite(id) || id <= 0) return;
+    if (this.previewAnexosMetaRows != null && this.previewAnexosMetaRows.length > 0) {
+      this.previewAnexosLoading = false;
+      this.previewAnexos = [...this.previewAnexosMetaRows];
+      this.previewAnexosError = '';
+      this.cdr.markForCheck();
+      return;
+    }
+    this.previewAnexosLoading = true;
+    this.previewAnexosError = '';
+    this.previewAnexos = [];
+    this.api.listAnexosConsulta(id).subscribe({
+      next: (rows) => {
+        this.previewAnexosLoading = false;
+        this.previewAnexos = rows ?? [];
+        this.cdr.markForCheck();
+      },
+      error: (e: { error?: { message?: string } }) => {
+        this.previewAnexosLoading = false;
+        this.previewAnexos = [];
+        this.previewAnexosError =
+          e?.error?.message || 'No se pudieron cargar los anexos.';
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  public descargarPreviewAnexo(anexo: any): void {
+    const docId = Number(this.previewDocId ?? this.previewDocumentoId);
+    if (!Number.isFinite(docId) || docId <= 0) return;
+    const anexoId = Number(anexo?.id ?? anexo?.anexo_id);
+    if (!Number.isFinite(anexoId) || anexoId <= 0) return;
+    const nombre =
+      String(anexo?.nombre_original ?? anexo?.nombre ?? `anexo_${anexoId}`).trim() ||
+      `anexo_${anexoId}`;
+    this.previewAnexosError = '';
+    this.api.downloadAnexoConsulta(docId, anexoId).subscribe({
+      next: (blob) => void this.handleAnexoDownloadBlob(blob, nombre),
+      error: (err: unknown) => void this.handleAnexoDownloadError(err),
+    });
+  }
+
+  private async handleAnexoDownloadBlob(blob: Blob, filename: string): Promise<void> {
+    const mime = (blob.type || '').toLowerCase();
+    if (mime.includes('json')) {
+      try {
+        const t = await blob.text();
+        const j = JSON.parse(t) as { message?: string };
+        this.previewAnexosError =
+          j.message?.trim() || 'No se pudo descargar el anexo.';
+      } catch {
+        this.previewAnexosError = 'No se pudo descargar el anexo.';
+      }
+      this.cdr.markForCheck();
+      return;
+    }
+    this.guardarBlobAnexo(blob, filename);
+  }
+
+  private async handleAnexoDownloadError(err: unknown): Promise<void> {
+    let msg = 'No se pudo descargar el anexo.';
+    const e = err as {
+      error?: Blob | { message?: string };
+      message?: string;
+    };
+    if (e.error instanceof Blob) {
+      try {
+        const t = await e.error.text();
+        const j = JSON.parse(t) as { message?: string };
+        if (j.message?.trim()) msg = j.message.trim();
+      } catch {
+        /* mantener msg */
+      }
+    } else if (e.error && typeof e.error === 'object' && 'message' in e.error) {
+      msg = String((e.error as { message?: string }).message || msg);
+    }
+    this.previewAnexosError = msg;
+    this.cdr.markForCheck();
+  }
+
+  private guardarBlobAnexo(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   public descargar(row: ConsultaDocumentoRow): void {
     if (row.canDownload === false) return;
 
     this.api.downloadConsulta(row.id).subscribe({
-      next: (blob) => {
+      next: (response) => {
+        const blob = response.body;
+        if (!blob) {
+          this.downloadErrorTitle = 'No se pudo descargar';
+          this.downloadErrorMessage = 'La descarga no devolvio contenido.';
+          this.downloadErrorOpen = true;
+          return;
+        }
+        const filename =
+          this.getFilenameFromContentDisposition(response.headers.get('content-disposition')) ||
+          this.getDefaultDownloadName(row, blob.type);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${row.codigo || 'documento'}.pdf`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
       },
@@ -758,6 +897,26 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         void this.handleDownloadHttpError(err);
       },
     });
+  }
+
+  private getFilenameFromContentDisposition(value: string | null): string | null {
+    if (!value) return null;
+    const utf8 = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(value);
+    if (utf8?.[1]) {
+      try {
+        return decodeURIComponent(utf8[1]).replace(/^["']|["']$/g, '').trim() || null;
+      } catch {
+        return utf8[1].replace(/^["']|["']$/g, '').trim() || null;
+      }
+    }
+    const plain = /filename\s*=\s*("?)([^";]+)\1/i.exec(value);
+    return plain?.[2]?.trim() || null;
+  }
+
+  private getDefaultDownloadName(row: ConsultaDocumentoRow, mimeType: string): string {
+    const base = String(row.codigo || 'documento').trim() || 'documento';
+    const ext = String(mimeType || '').toLowerCase().includes('zip') ? 'zip' : 'pdf';
+    return `${base}.${ext}`;
   }
 
   private async handleDownloadHttpError(err: unknown): Promise<void> {

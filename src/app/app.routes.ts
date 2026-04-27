@@ -119,7 +119,7 @@ export const routes: Routes = [
     path: 'usuario/dashboard',
     canActivate: [AuthGuard],
     loadComponent: () =>
-      import('./features/consulta/usuario-consulta-hub.component').then(
+      import('./features/consulta/usuario-consulta-hub.component/usuario-consulta-hub.component').then(
         (m) => m.UsuarioConsultaHubComponent,
       ),
   },
@@ -133,7 +133,7 @@ export const routes: Routes = [
     path: 'consulta/aprobados',
     canActivate: [AuthGuard],
     loadComponent: () =>
-      import('./features/consulta/consulta-aprobados-interno.component').then(
+      import('./features/consulta/consulta-aprobados-interno.component/consulta-aprobados-interno.component').then(
         (m) => m.ConsultaAprobadosInternoComponent,
       ),
   },
@@ -141,7 +141,7 @@ export const routes: Routes = [
     path: 'consulta/aprobados-externo',
     canActivate: [AuthGuard],
     loadComponent: () =>
-      import('./features/consulta/consulta-aprobados-externo.component').then(
+      import('./features/consulta/consulta-aprobados-externo.component/consulta-aprobados-externo.component').then(
         (m) => m.ConsultaAprobadosExternoComponent,
       ),
   },
@@ -149,7 +149,7 @@ export const routes: Routes = [
     path: 'consulta/historial',
     canActivate: [AuthGuard],
     loadComponent: () =>
-      import('./features/consulta/consulta-historial.component').then(
+      import('./features/consulta/consulta-historial.component/consulta-historial.component').then(
         (m) => m.ConsultaHistorialComponent,
       ),
   },
@@ -157,7 +157,7 @@ export const routes: Routes = [
     path: 'consulta/recientes',
     canActivate: [AuthGuard],
     loadComponent: () =>
-      import('./features/consulta/consulta-recientes.component').then(
+      import('./features/consulta/consulta-recientes.component/consulta-recientes.component').then(
         (m) => m.ConsultaRecientesComponent,
       ),
   },
@@ -165,7 +165,7 @@ export const routes: Routes = [
     path: 'consulta/novedades',
     canActivate: [AuthGuard],
     loadComponent: () =>
-      import('./features/consulta/consulta-novedades.component').then(
+      import('./features/consulta/consulta-novedades.component/consulta-novedades.component').then(
         (m) => m.ConsultaNovedadesComponent,
       ),
   },
@@ -173,7 +173,7 @@ export const routes: Routes = [
     path: 'consulta/favoritos',
     canActivate: [AuthGuard],
     loadComponent: () =>
-      import('./features/consulta/consulta-favoritos.component').then(
+      import('./features/consulta/consulta-favoritos.component/consulta-favoritos.component').then(
         (m) => m.ConsultaFavoritosComponent,
       ),
   },

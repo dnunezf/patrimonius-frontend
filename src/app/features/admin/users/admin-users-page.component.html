@@ -31,7 +31,7 @@
         (ngModelChange)="roleFilter.set($event)"
       >
         <option [ngValue]="'all'">Todos los roles</option>
-        <option *ngFor="let r of ROLES" [ngValue]="r.id">{{ r.label }}</option>
+        <option *ngFor="let r of roleOptions()" [ngValue]="r.id">{{ r.label }}</option>
       </select>
     </div>
 

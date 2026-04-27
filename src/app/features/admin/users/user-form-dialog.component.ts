@@ -6,6 +6,7 @@ import {
   OnInit,
   OnChanges,
   AfterViewInit,
+  OnDestroy,
   ViewChildren,
   QueryList,
   ElementRef,
@@ -26,7 +27,9 @@ import {
   UnidadService,
   OrgUnit,
 } from '../../../../core/services/unidad.service';
+import { CatalogosService, Rol } from '../../../../core/services/catalogos.service';
 import { EDITOR_ID, ROLES } from '../../../shared/data/catalogs';
+import { Subscription } from 'rxjs';
 
 /**
  * User Form Dialog
@@ -44,7 +47,7 @@ import { EDITOR_ID, ROLES } from '../../../shared/data/catalogs';
   styleUrls: ['./user-form-dialog.component.css'],
 })
 export class UserFormDialogComponent
-  implements OnInit, OnChanges, AfterViewInit
+  implements OnInit, OnChanges, AfterViewInit, OnDestroy
 {
   @Input() open = false;
   @Input() editing: AdminUser | null = null;
@@ -61,14 +64,14 @@ export class UserFormDialogComponent
     };
   }>();
 
-  /** Static roles catalog (labels and ids) */
-  readonly ROLES = ROLES;
+  /** Dynamic roles list from backend, with static fallback */
+  roleOptions: { id: number; label: string }[] = [...ROLES];
 
   /** Role ID that gates editor permissions UI */
   readonly EDITOR_ID = EDITOR_ID;
 
-  /** ⚠️ Ajustá si tu ARCHIVISTA no es 3 */
-  readonly ARCHIVISTA_ID = 3;
+  /** Fallback if ARCHIVISTA role is not found dynamically */
+  readonly ARCHIVISTA_ID_FALLBACK = 3;
 
   /** Units loaded from backend */
   units: OrgUnit[] = [];
@@ -84,11 +87,16 @@ export class UserFormDialogComponent
 
   /** Reactive form */
   form: FormGroup;
+  private rolesSub?: Subscription;
 
   private static readonly MAX_NAME = 100;
   private static readonly MAX_EMAIL = 255;
 
-  constructor(private fb: FormBuilder, private unitsApi: UnidadService) {
+  constructor(
+    private fb: FormBuilder,
+    private unitsApi: UnidadService,
+    private catalogosApi: CatalogosService
+  ) {
     this.form = this.fb.group({
       nombre: [
         '',
@@ -194,7 +202,14 @@ export class UserFormDialogComponent
   /** True when EDITOR or ARCHIVISTA role is selected */
   isEditorOrArchivista(): boolean {
     const ids = this.getRolIds();
-    return ids.includes(this.EDITOR_ID) || ids.includes(this.ARCHIVISTA_ID);
+    return ids.includes(this.EDITOR_ID) || ids.includes(this.getArchivistaId());
+  }
+
+  private getArchivistaId(): number {
+    const archivista = this.roleOptions.find((r) =>
+      r.label.toUpperCase().startsWith('ARCH')
+    );
+    return archivista?.id ?? this.ARCHIVISTA_ID_FALLBACK;
   }
 
   /** Normalized role IDs from form state */
@@ -220,7 +235,7 @@ export class UserFormDialogComponent
 
   /** Select all roles quickly */
   selectAllRoles(): void {
-    this.form.get('rolIds')?.setValue(this.ROLES.map((r) => r.id));
+    this.form.get('rolIds')?.setValue(this.roleOptions.map((r) => r.id));
     this.form.get('rolIds')?.markAsDirty();
     this.ensurePermsConsistency();
   }
@@ -253,7 +268,23 @@ export class UserFormDialogComponent
   // ---------- Lifecycle ----------
 
   ngOnInit(): void {
+    this.loadRoles();
     this.loadUnits();
+  }
+
+  private loadRoles(): void {
+    this.catalogosApi.loadRoles();
+    this.rolesSub = this.catalogosApi.roles$.subscribe({
+      next: (roles: Rol[]) => {
+        const mapped = (roles || [])
+          .map((r) => ({ id: Number(r.idRol), label: String(r.nombreRol || '').trim() }))
+          .filter((r) => Number.isInteger(r.id) && r.id > 0 && !!r.label);
+
+        if (mapped.length) {
+          this.roleOptions = mapped;
+        }
+      },
+    });
   }
 
   /** Load units from backend and set a safe default in create mode */
@@ -311,7 +342,7 @@ export class UserFormDialogComponent
         apellido1: '',
         apellido2: '',
         email: '',
-        rolIds: [this.ROLES[0]?.id ?? 1],
+        rolIds: [this.roleOptions[0]?.id ?? 1],
         unidadId: this.units.length ? this.units[0].id : null,
         edit: false,
         sign: false,
@@ -333,6 +364,10 @@ export class UserFormDialogComponent
   }
 
   ngAfterViewInit(): void {}
+
+  ngOnDestroy(): void {
+    this.rolesSub?.unsubscribe();
+  }
 
   backdrop(e: MouseEvent) {
     if ((e.target as HTMLElement | null)?.classList.contains('modal'))

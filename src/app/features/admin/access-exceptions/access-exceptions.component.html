@@ -64,34 +64,17 @@
             />
           </div>
 
-          <div class="select-container">
-            <div class="input-group">
-              <label for="categoriaSelect" class="sr-only">Categoría</label>
-              <select
-                id="categoriaSelect"
-                [(ngModel)]="selectedCategoriaForm"
-                name="categoriaForm"
-                (change)="filterDocuments()"
-              >
-                <option value="todos">Todas las categorías</option>
-                <option *ngFor="let categoria of categorias" [value]="categoria.nombre">
-                  {{ categoria.nombre }}
-                </option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="estadoSelect" class="sr-only">Estado</label>
-              <select
-                id="estadoSelect"
-                [(ngModel)]="selectedDocumentStatusForm"
-                name="documentStatusForm"
-                (change)="filterDocuments()"
-              >
-                <option value="todos">Todos los estados</option>
-                <option *ngFor="let state of states" [value]="state">{{ state }}</option>
-              </select>
-            </div>
+          <div class="input-group">
+            <label for="estadoSelect">Estado del documento</label>
+            <select
+              id="estadoSelect"
+              [(ngModel)]="selectedDocumentStatusForm"
+              name="documentStatusForm"
+              (change)="filterDocuments()"
+            >
+              <option value="todos">Todos los estados</option>
+              <option *ngFor="let state of states" [value]="state">{{ state }}</option>
+            </select>
           </div>
 
           <div class="input-group">
@@ -105,7 +88,6 @@
               <option [ngValue]="null" disabled>Seleccionar Documento...</option>
               <option *ngFor="let document of filteredDocuments" [ngValue]="document">
                 {{ document.titulo }} - {{ document.numero_serie }} - {{ document.formattedState }}
-                ({{ document.categoria }})
               </option>
             </select>
           </div>
@@ -178,17 +160,6 @@
             </select>
           </div>
 
-          <!-- Categoría -->
-          <div class="input-group">
-            <label>Categoría</label>
-            <select [(ngModel)]="filters.category" name="filterCategory">
-              <option value="Todas">Todas</option>
-              <option *ngFor="let c of categorias" [value]="c.id">
-                {{ c.nombre }}
-              </option>
-            </select>
-          </div>
-
           <!-- Estado -->
           <div class="input-group">
             <label>Estado</label>
@@ -231,7 +202,6 @@
               <th>Fecha</th>
               <th>Usuario</th>
               <th>Documento</th>
-              <th>Categoría</th>
               <th>Estado</th>
               <th>Permisos</th>
               <th>Motivo</th>
@@ -253,7 +223,6 @@
                 <div class="muted">{{ e.numero_serie || '' }}</div>
               </td>
 
-              <td>{{ e.categoria || 'Sin categoría' }}</td>
               <td>{{ e.estado || '' }}</td>
 
               <td>
@@ -270,7 +239,7 @@
             </tr>
 
             <tr *ngIf="items.length === 0">
-              <td colspan="8" class="muted">No hay resultados con los filtros actuales.</td>
+              <td colspan="7" class="muted">No hay resultados con los filtros actuales.</td>
             </tr>
             </tbody>
           </table>

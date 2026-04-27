@@ -127,7 +127,7 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error(err);
-        this.error = 'Error cargando bitácora de actividad de usuario';
+        this.error = 'Error al cargar la bitácora de actividad de usuario';
         this.loading = false;
       },
     });

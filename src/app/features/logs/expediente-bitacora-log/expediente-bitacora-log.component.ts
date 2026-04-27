@@ -142,7 +142,7 @@ export class ExpedienteBitacoraLogComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error(err);
-        this.error = 'Error cargando bitácora de expedientes';
+        this.error = 'Error al cargar la bitácora de expedientes';
         this.loading = false;
       },
     });
