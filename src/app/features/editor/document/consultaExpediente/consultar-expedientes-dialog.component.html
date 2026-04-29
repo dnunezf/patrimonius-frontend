@@ -28,22 +28,23 @@
   <section class="ce-body">
     <div *ngIf="loading" class="ce-info">Cargando expedientes…</div>
     <div *ngIf="!loading && error" class="ce-error">{{ error }}</div>
+
     <ng-container *ngIf="!loading && !error">
-        <button type="button" class="ce-btn ce-btn--primary" (click)="openCrearExpediente()">
-          Crear expediente
-        </button>
+      <button type="button" class="ce-btn ce-btn--primary" (click)="openCrearExpediente()">
+        Crear expediente
+      </button>
+
       <div class="ce-toolbar-search">
         <div class="ce-search-input-wrap">
           <span class="ce-search-ico">🔍</span>
           <input
             type="search"
             [(ngModel)]="searchExpedientes"
-            (input)="aplicarFiltroExpedientes()"
+            (input)="onSearchExpedientesInput()"
             placeholder="Buscar por código, nombre, unidad, serie o subserie..."
           />
         </div>
       </div>
-
 
       <div *ngIf="!filteredExpedientes.length" class="ce-empty">
         No hay expedientes registrados.
@@ -59,6 +60,7 @@
             <th>Subserie</th>
           </tr>
           </thead>
+
           <tbody>
           <tr *ngFor="let e of filteredExpedientes">
             <td>{{ e.codigo }}</td>
@@ -72,6 +74,7 @@
     </ng-container>
   </section>
 </div>
+
 <app-crear-expediente-dialog
   [open]="crearExpedienteOpen"
   (closed)="crearExpedienteOpen = false"

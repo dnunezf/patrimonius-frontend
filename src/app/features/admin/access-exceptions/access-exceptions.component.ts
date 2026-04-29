@@ -95,6 +95,24 @@ export class AccessExceptionsComponent implements OnInit {
     this.fetch();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onUserSearchInput(): void {
+    this.userSearchTerm = this.toUpperValue(this.userSearchTerm);
+    this.filterUsers();
+  }
+
+  onDocumentSearchInput(): void {
+    this.documentSearchTerm = this.toUpperValue(this.documentSearchTerm);
+    this.filterDocuments();
+  }
+
+  onReasonInput(): void {
+    this.reason = this.toUpperValue(this.reason);
+  }
+
   // =======================
   // Loaders
   // =======================
@@ -449,7 +467,7 @@ export class AccessExceptionsComponent implements OnInit {
       userId,
       documentId: docId,
       permissions: this.selectedPermissionsApi(),
-      reason: this.reason.trim()
+      reason: this.toUpperValue(this.reason).trim()
     };
 
     this.service.applyException(payload).subscribe({

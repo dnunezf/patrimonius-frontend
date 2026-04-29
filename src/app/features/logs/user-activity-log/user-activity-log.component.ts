@@ -80,6 +80,10 @@ export class UserActivityLogComponent implements OnInit, OnDestroy {
     this.clearFilterApplyDebounce();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
   private clearFilterApplyDebounce(): void {
     if (this.filterApplyTimer) {
       clearTimeout(this.filterApplyTimer);
@@ -112,7 +116,7 @@ export class UserActivityLogComponent implements OnInit, OnDestroy {
       sortDir: 'desc',
     };
     if (this.filters.user !== 'Todos los usuarios') qp.usuario = this.filters.user;
-    if (this.filters.documento?.trim()) qp.documento = this.filters.documento.trim();
+    if (this.filters.documento?.trim()) qp.documento = this.toUpperValue(this.filters.documento).trim();
     if (this.filters.tipoFlujo?.trim()) qp.tipoFlujo = this.filters.tipoFlujo.trim();
     if (this.filters.estadoFlujo?.trim()) qp.estadoFlujo = this.filters.estadoFlujo.trim();
     if (this.filters.from?.trim()) qp.from = this.filters.from.trim();
@@ -169,14 +173,17 @@ export class UserActivityLogComponent implements OnInit, OnDestroy {
   }
 
   limitDocumentWords(value: string): void {
-    if (!value) {
+    const upperValue = this.toUpperValue(value);
+
+    if (!upperValue) {
       this.filters.documento = '';
       this.scheduleFilterApply(false);
       return;
     }
-    const words = value.trim().split(/\s+/);
+
+    const words = upperValue.trim().split(/\s+/);
     this.filters.documento =
-      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : upperValue;
     this.scheduleFilterApply(false);
   }
 
@@ -318,8 +325,8 @@ export class UserActivityLogComponent implements OnInit, OnDestroy {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <bitacora_permisos>
 ${rows
-  .map(
-    (e) => `  <evento>
+      .map(
+        (e) => `  <evento>
     <fecha_hora>${esc(e.fecha_hora)}</fecha_hora>
     <id_registro>${esc(e.id_registro)}</id_registro>
     <solicitud_id>${esc(e.solicitud_id)}</solicitud_id>
@@ -333,8 +340,8 @@ ${rows
     <fecha_inicio_acceso>${esc(e.fecha_inicio_acceso)}</fecha_inicio_acceso>
     <fecha_fin_acceso>${esc(e.fecha_fin_acceso)}</fecha_fin_acceso>
   </evento>`,
-  )
-  .join('\n')}
+      )
+      .join('\n')}
 </bitacora_permisos>`;
     return new Blob([xml], { type: 'application/xml;charset=utf-8' });
   }

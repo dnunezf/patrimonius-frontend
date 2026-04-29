@@ -57,6 +57,10 @@ export class SecurityLogComponent implements OnInit, OnDestroy {
     this.clearFilterApplyDebounce();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
   private clearFilterApplyDebounce(): void {
     if (this.filterApplyTimer) {
       clearTimeout(this.filterApplyTimer);
@@ -86,7 +90,7 @@ export class SecurityLogComponent implements OnInit, OnDestroy {
       sortDir: this.sortDir,
     };
 
-    if (this.filters.q?.trim()) qp.q = this.filters.q.trim();
+    if (this.filters.q?.trim()) qp.q = this.toUpperValue(this.filters.q).trim();
     if (this.filters.user !== 'Todos los usuarios') qp.usuario = this.filters.user;
 
     if (this.filters.accion !== 'Todas las acciones') qp.accion = this.filters.accion;
@@ -118,13 +122,16 @@ export class SecurityLogComponent implements OnInit, OnDestroy {
   readonly maxWords = 5;
 
   limitSearchWords(value: string): void {
-    if (!value) {
+    const upperValue = this.toUpperValue(value);
+
+    if (!upperValue) {
       this.filters.q = '';
       this.scheduleFilterApply(false);
       return;
     }
-    const words = value.trim().split(/\s+/);
-    this.filters.q = words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+
+    const words = upperValue.trim().split(/\s+/);
+    this.filters.q = words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : upperValue;
     this.scheduleFilterApply(false);
   }
 

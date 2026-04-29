@@ -5,12 +5,12 @@ import { RouterLink } from '@angular/router';
 
 import {
   CatalogoSubserieService,
-  Subserie
+  Subserie,
 } from '../../../../../core/services/catalogo-subserie.service';
 
 import {
   CatalogoSerieService,
-  Serie
+  Serie,
 } from '../../../../../core/services/catalogo-serie.service';
 
 @Component({
@@ -36,6 +36,8 @@ export class CatalogoSubserieComponent implements OnInit {
   saving = false;
   errorMessage = '';
 
+  searchTerm = '';
+
   page = 1;
   readonly pageSize = 10;
   Math = Math;
@@ -60,7 +62,7 @@ export class CatalogoSubserieComponent implements OnInit {
 
   constructor(
     private api: CatalogoSubserieService,
-    private serieApi: CatalogoSerieService
+    private serieApi: CatalogoSerieService,
   ) {}
 
   ngOnInit(): void {
@@ -68,8 +70,71 @@ export class CatalogoSubserieComponent implements OnInit {
     this.load();
   }
 
+  // ===== Normalización =====
+
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onCodigoInput(): void {
+    this.form.codigo = this.toUpperValue(this.form.codigo);
+  }
+
+  onNombreInput(): void {
+    this.form.nombre = this.toUpperValue(this.form.nombre);
+  }
+
+  onDescripcionInput(): void {
+    this.form.descripcion = this.toUpperValue(this.form.descripcion);
+  }
+
+  onModalCodigoInput(): void {
+    this.modalForm.codigo = this.toUpperValue(this.modalForm.codigo);
+  }
+
+  onModalNombreInput(): void {
+    this.modalForm.nombre = this.toUpperValue(this.modalForm.nombre);
+  }
+
+  onModalDescripcionInput(): void {
+    this.modalForm.descripcion = this.toUpperValue(this.modalForm.descripcion);
+  }
+
+  onSearchInput(): void {
+    this.searchTerm = this.toUpperValue(this.searchTerm);
+    this.goToPage(1);
+  }
+
+  // ===== Búsqueda =====
+
+  get filteredSubseries(): Subserie[] {
+    const term = this.searchTerm.trim().toUpperCase();
+
+    if (!term) return this.subseries ?? [];
+
+    return (this.subseries ?? []).filter((s) => {
+      const codigo = String(s.codigo || '').toUpperCase();
+      const nombre = String(s.nombre || '').toUpperCase();
+      const descripcion = String(s.descripcion || '').toUpperCase();
+      const serie = String(s.serie_nombre || s.serie_id || '').toUpperCase();
+      const estado = Number(s.activa ?? 1) === 1 ? 'ACTIVA' : 'INACTIVA';
+
+      return (
+        codigo.includes(term) ||
+        nombre.includes(term) ||
+        descripcion.includes(term) ||
+        serie.includes(term) ||
+        estado.includes(term)
+      );
+    });
+  }
+
+  // ===== Paginación =====
+
   get totalItems(): number {
-    return Array.isArray(this.subseries) ? this.subseries.length : 0;
+    return Array.isArray(this.filteredSubseries)
+      ? this.filteredSubseries.length
+      : 0;
   }
 
   get totalPages(): number {
@@ -78,25 +143,45 @@ export class CatalogoSubserieComponent implements OnInit {
 
   get pagedSubseries(): Subserie[] {
     const start = (this.page - 1) * this.pageSize;
-    return (this.subseries ?? []).slice(start, start + this.pageSize);
+    return (this.filteredSubseries ?? []).slice(start, start + this.pageSize);
   }
 
-  private clampPage() {
+  private clampPage(): void {
     if (!Number.isFinite(this.page) || this.page < 1) this.page = 1;
+
     const tp = this.totalPages;
+
     if (this.page > tp) this.page = tp;
   }
 
-  private ensureNonEmptyPageAfterChange() {
+  private ensureNonEmptyPageAfterChange(): void {
     this.clampPage();
+
     const start = (this.page - 1) * this.pageSize;
+
     if (this.totalItems > 0 && start >= this.totalItems && this.page > 1) {
       this.page--;
     }
+
     this.clampPage();
   }
 
-  loadSeries() {
+  prevPage(): void {
+    this.page = Math.max(1, this.page - 1);
+  }
+
+  nextPage(): void {
+    this.page = Math.min(this.totalPages, this.page + 1);
+  }
+
+  goToPage(n: number): void {
+    this.page = n;
+    this.clampPage();
+  }
+
+  // ===== Datos =====
+
+  loadSeries(): void {
     this.serieApi.getSeries().subscribe({
       next: (rows: Serie[]) => {
         this.series = Array.isArray(rows) ? rows : [];
@@ -107,7 +192,7 @@ export class CatalogoSubserieComponent implements OnInit {
     });
   }
 
-  load() {
+  load(): void {
     this.loading = true;
     this.errorMessage = '';
 
@@ -126,41 +211,59 @@ export class CatalogoSubserieComponent implements OnInit {
     });
   }
 
-  create() {
+  // ===== Crear =====
+
+  create(): void {
     if (!this.form.codigo || !this.form.nombre || !this.form.serie_id) {
-      alert('Código, nombre y serie son obligatorios');
+      this.errorMessage = 'Código, nombre y serie son obligatorios';
       return;
     }
 
-    this.saving = true;
+    const codigo = this.toUpperValue(this.form.codigo).trim();
+    const nombre = this.toUpperValue(this.form.nombre).trim();
+    const descripcion = this.toUpperValue(this.form.descripcion).trim();
 
-    this.api.createSubserie({
-      codigo: this.form.codigo.trim(),
-      nombre: this.form.nombre.trim(),
-      descripcion: this.form.descripcion?.trim() || null,
-      serie_id: Number(this.form.serie_id),
-      activa: this.form.activa,
-    }).subscribe({
-      next: () => {
-        this.saving = false;
-        this.form = {
-          codigo: '',
-          nombre: '',
-          descripcion: '',
-          serie_id: null,
-          activa: 1,
-        };
-        this.load();
-      },
-      error: (err: any) => {
-        console.error(err);
-        this.saving = false;
-        alert(err?.error?.message || 'Error creando subserie');
-      },
-    });
+    this.form = {
+      ...this.form,
+      codigo,
+      nombre,
+      descripcion,
+    };
+
+    this.saving = true;
+    this.errorMessage = '';
+
+    this.api
+      .createSubserie({
+        codigo,
+        nombre,
+        descripcion: descripcion || null,
+        serie_id: Number(this.form.serie_id),
+        activa: this.form.activa,
+      })
+      .subscribe({
+        next: () => {
+          this.saving = false;
+          this.form = {
+            codigo: '',
+            nombre: '',
+            descripcion: '',
+            serie_id: null,
+            activa: 1,
+          };
+          this.load();
+        },
+        error: (err: any) => {
+          console.error(err);
+          this.saving = false;
+          this.errorMessage = err?.error?.message || 'Error creando subserie';
+        },
+      });
   }
 
-  openEditModal(subserie: Subserie) {
+  // ===== Modal =====
+
+  openEditModal(subserie: Subserie): void {
     this.pendingSubserie = subserie;
     this.pendingDeleteId = undefined;
 
@@ -171,9 +274,9 @@ export class CatalogoSubserieComponent implements OnInit {
     this.modalCancelText = 'Cancelar';
 
     this.modalForm = {
-      codigo: subserie.codigo ?? '',
-      nombre: subserie.nombre ?? '',
-      descripcion: subserie.descripcion ?? '',
+      codigo: this.toUpperValue(subserie.codigo ?? ''),
+      nombre: this.toUpperValue(subserie.nombre ?? ''),
+      descripcion: this.toUpperValue(subserie.descripcion ?? ''),
       serie_id: subserie.serie_id ?? null,
       activa: Number(subserie.activa ?? 1),
     };
@@ -181,7 +284,7 @@ export class CatalogoSubserieComponent implements OnInit {
     this.modalOpen = true;
   }
 
-  openDeleteModal(id: number) {
+  openDeleteModal(id: number): void {
     this.pendingDeleteId = id;
     this.pendingSubserie = undefined;
 
@@ -194,36 +297,47 @@ export class CatalogoSubserieComponent implements OnInit {
     this.modalOpen = true;
   }
 
-  closeModal() {
+  closeModal(): void {
     this.modalOpen = false;
     this.pendingSubserie = undefined;
     this.pendingDeleteId = undefined;
   }
 
-  confirmModal() {
+  confirmModal(): void {
     if (this.modalMode === 'edit' && this.pendingSubserie) {
-      if (!this.modalForm.codigo || !this.modalForm.nombre || !this.modalForm.serie_id) {
-        alert('Código, nombre y serie son obligatorios');
+      if (
+        !this.modalForm.codigo ||
+        !this.modalForm.nombre ||
+        !this.modalForm.serie_id
+      ) {
+        this.errorMessage = 'Código, nombre y serie son obligatorios';
         return;
       }
 
-      this.api.updateSubserie(this.pendingSubserie.id, {
-        codigo: this.modalForm.codigo.trim(),
-        nombre: this.modalForm.nombre.trim(),
-        descripcion: this.modalForm.descripcion?.trim() || null,
-        serie_id: Number(this.modalForm.serie_id),
-        activa: this.modalForm.activa,
-      }).subscribe({
-        next: () => {
-          this.closeModal();
-          this.load();
-        },
-        error: (err: any) => {
-          console.error(err);
-          this.closeModal();
-          alert(err?.error?.message || 'Error actualizando subserie');
-        },
-      });
+      const codigo = this.toUpperValue(this.modalForm.codigo).trim();
+      const nombre = this.toUpperValue(this.modalForm.nombre).trim();
+      const descripcion = this.toUpperValue(this.modalForm.descripcion).trim();
+
+      this.api
+        .updateSubserie(this.pendingSubserie.id, {
+          codigo,
+          nombre,
+          descripcion: descripcion || null,
+          serie_id: Number(this.modalForm.serie_id),
+          activa: this.modalForm.activa,
+        })
+        .subscribe({
+          next: () => {
+            this.closeModal();
+            this.load();
+          },
+          error: (err: any) => {
+            console.error(err);
+            this.closeModal();
+            this.errorMessage =
+              err?.error?.message || 'Error actualizando subserie';
+          },
+        });
 
       return;
     }
@@ -237,7 +351,8 @@ export class CatalogoSubserieComponent implements OnInit {
         error: (err: any) => {
           console.error(err);
           this.closeModal();
-          alert(err?.error?.message || 'No se pudo eliminar la subserie');
+          this.errorMessage =
+            err?.error?.message || 'No se pudo eliminar la subserie';
         },
       });
 
@@ -247,16 +362,5 @@ export class CatalogoSubserieComponent implements OnInit {
     this.closeModal();
   }
 
-  prevPage() {
-    this.page = Math.max(1, this.page - 1);
-  }
-
-  nextPage() {
-    this.page = Math.min(this.totalPages, this.page + 1);
-  }
-
-  goToPage(n: number) {
-    this.page = n;
-    this.clampPage();
-  }
+  trackById = (_: number, s: Subserie) => s.id;
 }

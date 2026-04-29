@@ -118,6 +118,38 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
     this.loadExpedientes();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onDocIdFiltroInput(): void {
+    this.docIdFiltro = this.toUpperValue(this.docIdFiltro);
+  }
+
+  onDocDocumentoFiltroInput(): void {
+    this.docDocumentoFiltro = this.toUpperValue(this.docDocumentoFiltro);
+  }
+
+  onDocSolicitanteFiltroInput(): void {
+    this.docSolicitanteFiltro = this.toUpperValue(this.docSolicitanteFiltro);
+  }
+
+  onExpIdFiltroInput(): void {
+    this.expIdFiltro = this.toUpperValue(this.expIdFiltro);
+  }
+
+  onExpExpedienteFiltroInput(): void {
+    this.expExpedienteFiltro = this.toUpperValue(this.expExpedienteFiltro);
+  }
+
+  onExpSolicitanteFiltroInput(): void {
+    this.expSolicitanteFiltro = this.toUpperValue(this.expSolicitanteFiltro);
+  }
+
+  onMotivoResolucionInput(): void {
+    this.motivoResolucion = this.toUpperValue(this.motivoResolucion);
+  }
+
   load(): void {
     this.loading = true;
     this.errorMsg = '';
@@ -289,7 +321,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
   resolver(estado: 'APROBADA' | 'RECHAZADA'): void {
     if (!this.selected) return;
 
-    const motivo = this.motivoResolucion.trim();
+    const motivo = this.toUpperValue(this.motivoResolucion).trim();
     if (!motivo) {
       this.accionError = 'Debe indicar el motivo de resolución.';
       return;
@@ -386,7 +418,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
   resolverExpediente(estado: 'APROBADA' | 'RECHAZADA'): void {
     if (!this.selectedExpediente) return;
 
-    const motivo = this.motivoResolucion.trim();
+    const motivo = this.toUpperValue(this.motivoResolucion).trim();
     if (!motivo) {
       this.accionError = 'Debe indicar el motivo de resolución.';
       return;
@@ -413,6 +445,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
         },
       });
   }
+
   aplicarFiltros(): void {
     if (this.seccionActual === 'documentos') {
       this.applyFilters();

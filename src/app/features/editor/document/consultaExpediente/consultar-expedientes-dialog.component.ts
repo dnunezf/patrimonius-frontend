@@ -40,6 +40,15 @@ export class ConsultarExpedientesDialogComponent implements OnChanges {
     }
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onSearchExpedientesInput(): void {
+    this.searchExpedientes = this.toUpperValue(this.searchExpedientes);
+    this.aplicarFiltroExpedientes();
+  }
+
   load(): void {
     this.loading = true;
     this.error = null;

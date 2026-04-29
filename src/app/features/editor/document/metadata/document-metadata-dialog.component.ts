@@ -112,6 +112,15 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     if (this.open) this.load();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onUpperInput(controlName: 'title' | 'keywords'): void {
+    const control = this.form.get(controlName);
+    control?.setValue(this.toUpperValue(control.value), { emitEvent: false });
+  }
+
   private isValidDocumentType(value: string | null | undefined): boolean {
     return this.documentTypeOptions.some((item) => item.value === value);
   }
@@ -132,8 +141,8 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
 
         this.form.reset({
           documentType: currentType,
-          title: m.manual.title || '',
-          keywords: toCsv(m.manual.keywords),
+          title: this.toUpperValue(m.manual.title || ''),
+          keywords: this.toUpperValue(toCsv(m.manual.keywords)),
           accessLevel: m.manual.accessLevel || 'INTERNAL',
         });
 
@@ -159,10 +168,10 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
 
     const payload = {
       documentType: String(v.documentType || '').trim(),
-      title: String(v.title || '')
+      title: this.toUpperValue(v.title)
         .replace(/\s+/g, ' ')
         .trim(),
-      keywords: String(v.keywords || '')
+      keywords: this.toUpperValue(v.keywords)
         .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean)

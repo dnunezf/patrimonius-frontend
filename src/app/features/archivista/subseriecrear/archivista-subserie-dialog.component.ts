@@ -33,7 +33,27 @@ export class ArchivistaSubserieDialogComponent implements OnInit {
     });
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onCodigoInput(): void {
+    this.codigo = this.toUpperValue(this.codigo);
+  }
+
+  onNombreInput(): void {
+    this.nombre = this.toUpperValue(this.nombre);
+  }
+
+  onDescripcionInput(): void {
+    this.descripcion = this.toUpperValue(this.descripcion);
+  }
+
   crearSubserie(): void {
+    this.codigo = this.toUpperValue(this.codigo).trim();
+    this.nombre = this.toUpperValue(this.nombre).trim();
+    this.descripcion = this.toUpperValue(this.descripcion).trim();
+
     if (this.codigo && this.nombre && this.serie_id !== 0) {
       const subserieData = {
         codigo: this.codigo,

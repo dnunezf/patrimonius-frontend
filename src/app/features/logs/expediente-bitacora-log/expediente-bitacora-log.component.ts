@@ -72,6 +72,10 @@ export class ExpedienteBitacoraLogComponent implements OnInit, OnDestroy {
     this.clearFilterApplyDebounce();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
   private clearFilterApplyDebounce(): void {
     if (this.filterApplyTimer) {
       clearTimeout(this.filterApplyTimer);
@@ -119,7 +123,7 @@ export class ExpedienteBitacoraLogComponent implements OnInit, OnDestroy {
       sortBy: 'fecha_hora',
       sortDir: 'desc',
     };
-    if (this.filters.q?.trim()) qp.q = this.filters.q.trim();
+    if (this.filters.q?.trim()) qp.q = this.toUpperValue(this.filters.q).trim();
     if (this.filters.user !== 'Todos los usuarios') qp.usuario = this.filters.user;
     if (this.filters.evento?.trim()) qp.evento = this.filters.evento.trim();
     if (this.filters.resultado?.trim()) qp.resultado = this.filters.resultado.trim();
@@ -149,14 +153,17 @@ export class ExpedienteBitacoraLogComponent implements OnInit, OnDestroy {
   }
 
   limitSearchWords(value: string): void {
-    if (!value) {
+    const upperValue = this.toUpperValue(value);
+
+    if (!upperValue) {
       this.filters.q = '';
       this.scheduleFilterApply(false);
       return;
     }
-    const words = value.trim().split(/\s+/);
+
+    const words = upperValue.trim().split(/\s+/);
     this.filters.q =
-      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : upperValue;
     this.scheduleFilterApply(false);
   }
 
@@ -325,8 +332,8 @@ export class ExpedienteBitacoraLogComponent implements OnInit, OnDestroy {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <bitacora_expedientes>
 ${rows
-  .map(
-    (e) => `  <evento>
+      .map(
+        (e) => `  <evento>
     <fecha_hora>${esc(e.fecha_hora)}</fecha_hora>
     <id_registro>${esc(e.id_registro)}</id_registro>
     <expediente_id>${esc(e.expediente_id)}</expediente_id>
@@ -340,8 +347,8 @@ ${rows
     <estado_anterior>${esc(e.estado_anterior)}</estado_anterior>
     <estado_nuevo>${esc(e.estado_nuevo)}</estado_nuevo>
   </evento>`,
-  )
-  .join('\n')}
+      )
+      .join('\n')}
 </bitacora_expedientes>`;
     return new Blob([xml], { type: 'application/xml;charset=utf-8' });
   }

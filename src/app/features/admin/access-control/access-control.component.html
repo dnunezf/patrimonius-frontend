@@ -48,7 +48,8 @@
           type="text"
           [(ngModel)]="filters.search"
           name="search"
-          placeholder="Título o código (número de serie)">
+          placeholder="Título o código (número de serie)"
+          (input)="onSearchInput()">
       </div>
     </div>
 

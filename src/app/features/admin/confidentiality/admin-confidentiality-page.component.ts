@@ -28,10 +28,8 @@ import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 
-/** Minimal role row returned by /admin/roles */
 type RoleRowApi = { id: number; nombre: string };
 
-/** Document selector option (combines multiple sources depending on availability). */
 type DocumentOption = {
   id: number;
   code: string;
@@ -42,10 +40,6 @@ type DocumentOption = {
   level?: ConfLevel | null;
 };
 
-/**
- * UI row for the "Configured Access Rules" table.
- * NOTE: Restrictions/authorizedAt/actions buttons were removed in the redesigned UI.
- */
 type UserRuleRow = {
   userId: number;
   actions: Action[];
@@ -55,10 +49,6 @@ type UserRuleRow = {
   editorAccessLabel: string;
 };
 
-/**
- * UI row for the "Authorized Roles" table.
- * NOTE: Role ID column was removed in the redesigned UI.
- */
 type RoleRuleRow = {
   roleId: number;
   roleName?: string | null;
@@ -95,7 +85,7 @@ export class AdminConfidentialityPageComponent {
   documentOptions = signal<DocumentOption[]>([]);
 
   // ----------------------------
-  // Config state (allow-lists)
+  // Config state
   // ----------------------------
   currentLevel = signal<ConfLevel>('PUBLIC');
   editLevel = signal<ConfLevel>('PUBLIC');
@@ -108,7 +98,6 @@ export class AdminConfidentialityPageComponent {
   allUsers = signal<AdminUser[]>([]);
   allRoles = signal<RoleRowApi[]>([]);
 
-  /** Metric: number of users explicitly allowed for the selected document. */
   allowedUsersCount = computed(() => this.allowedUsers().length);
 
   // ----------------------------
@@ -123,14 +112,9 @@ export class AdminConfidentialityPageComponent {
   // Add role modal
   // ----------------------------
   isAddRoleOpen = signal(false);
+  roleSearchQuery = signal('');
   selectedRoleId = signal<number | null>(null);
   tempRoleActions = signal<Action[]>(['VIEW']);
-
-  /**
-   * Redesign change:
-   * The "Editor Permissions" modal and its actions were removed from the UI.
-   * Keep no state/methods for that modal to avoid dead code and accidental triggers.
-   */
 
   constructor(
     private confSvc: ConfidentialityService,
@@ -142,14 +126,12 @@ export class AdminConfidentialityPageComponent {
   ) {
     this.bootstrap();
 
-    // Keep a derived "selectedDocument" for summary rendering.
     effect(() => {
       const id = this.selectedDocumentId();
       const doc = this.documentOptions().find((d) => d.id === id) || null;
       this.selectedDocument.set(doc);
     });
 
-    // Debounced server-side document search.
     effect((onCleanup) => {
       const q = this.searchQuery();
       const handle = window.setTimeout(
@@ -161,8 +143,29 @@ export class AdminConfidentialityPageComponent {
   }
 
   // ----------------------------
+  // Normalización
+  // ----------------------------
+
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onDocumentSearchInput(value: string): void {
+    this.searchQuery.set(this.toUpperValue(value));
+  }
+
+  onUserSearchInput(value: string): void {
+    this.userSearchQuery.set(this.toUpperValue(value));
+  }
+
+  onRoleSearchInput(value: string): void {
+    this.roleSearchQuery.set(this.toUpperValue(value));
+  }
+
+  // ----------------------------
   // Bootstrap
   // ----------------------------
+
   private bootstrap(): void {
     this.loadUsers();
     this.loadRoles();
@@ -189,10 +192,6 @@ export class AdminConfidentialityPageComponent {
     });
   }
 
-  /**
-   * Preferred source: confidentiality service which can provide per-document level.
-   * Falls back to the access control listing when confidentiality listing is unavailable.
-   */
   private fetchDocumentsFromServer(search: string): void {
     this.confSvc.listDocuments(search || '').subscribe({
       next: (rows: ConfDocumentOption[]) => {
@@ -205,9 +204,9 @@ export class AdminConfidentialityPageComponent {
           unitId: d.unitId ?? null,
           level: (d.level as ConfLevel) || null,
         }));
+
         this.documentOptions.set(options);
 
-        // If the previously selected document disappears from the filtered list, reset state.
         const selectedId = this.selectedDocumentId();
         if (selectedId && !options.some((x) => x.id === selectedId)) {
           this.resetSelectionState();
@@ -230,6 +229,7 @@ export class AdminConfidentialityPageComponent {
           unitId: d.unitId ?? null,
           level: null,
         }));
+
         this.documentOptions.set(options);
       },
       error: (e) => {
@@ -242,6 +242,7 @@ export class AdminConfidentialityPageComponent {
   // ----------------------------
   // Labels / helpers
   // ----------------------------
+
   levelLabel(lv: ConfLevel): string {
     return LEVEL_LABEL[lv];
   }
@@ -251,15 +252,25 @@ export class AdminConfidentialityPageComponent {
   }
 
   filteredDocuments(): DocumentOption[] {
-    const q = (this.searchQuery() || '').trim().toLowerCase();
+    const q = this.searchQuery().trim().toUpperCase();
+
     if (!q) return this.documentOptions();
-    return this.documentOptions().filter(
-      (d) =>
-        (d.title || '').toLowerCase().includes(q) ||
-        (d.code || '').toLowerCase().includes(q) ||
-        String(d.id).includes(q) ||
-        (d.type || '').toLowerCase().includes(q),
-    );
+
+    return this.documentOptions().filter((d) => {
+      const title = String(d.title || '').toUpperCase();
+      const code = String(d.code || '').toUpperCase();
+      const id = String(d.id || '').toUpperCase();
+      const type = String(d.type || '').toUpperCase();
+      const unit = String(d.unit || '').toUpperCase();
+
+      return (
+        title.includes(q) ||
+        code.includes(q) ||
+        id.includes(q) ||
+        type.includes(q) ||
+        unit.includes(q)
+      );
+    });
   }
 
   filteredDocumentsCount(): number {
@@ -267,19 +278,17 @@ export class AdminConfidentialityPageComponent {
   }
 
   filteredUsers(): AdminUser[] {
-    const q = (this.userSearchQuery() || '').trim().toLowerCase();
+    const q = this.userSearchQuery().trim().toUpperCase();
     const base = this.allUsers();
+
     if (!q) return base;
 
     return base.filter((u) => {
-      const full =
-        `${u.nombre} ${u.apellido1} ${u.apellido2 || ''}`.toLowerCase();
-      const unit = ((u as any).unidad || '').toLowerCase();
-      return (
-        full.includes(q) ||
-        (u.email || '').toLowerCase().includes(q) ||
-        unit.includes(q)
-      );
+      const full = `${u.nombre} ${u.apellido1} ${u.apellido2 || ''}`.toUpperCase();
+      const email = String(u.email || '').toUpperCase();
+      const unit = String((u as any).unidad || '').toUpperCase();
+
+      return full.includes(q) || email.includes(q) || unit.includes(q);
     });
   }
 
@@ -287,15 +296,36 @@ export class AdminConfidentialityPageComponent {
     return this.filteredUsers().length;
   }
 
+  filteredRoles(): RoleRowApi[] {
+    const q = this.roleSearchQuery().trim().toUpperCase();
+    const base = this.allRoles();
+
+    if (!q) return base;
+
+    return base.filter((r) => {
+      const nombre = String(r.nombre || '').toUpperCase();
+      const id = String(r.id || '').toUpperCase();
+
+      return nombre.includes(q) || id.includes(q);
+    });
+  }
+
+  filteredRolesCount(): number {
+    return this.filteredRoles().length;
+  }
+
   // ----------------------------
   // Document selection & config load
   // ----------------------------
+
   onSelectDocument(raw: any): void {
     const parsed = Number(raw);
+
     if (!Number.isFinite(parsed) || parsed <= 0) {
       this.toasts.error('Invalid document selection.');
       return;
     }
+
     this.selectedDocumentId.set(parsed);
     this.loadConfig(parsed);
   }
@@ -324,7 +354,6 @@ export class AdminConfidentialityPageComponent {
           })),
         );
 
-        // Optional toast; keep if you want explicit feedback.
         this.toasts.info('Configuration loaded.');
       },
       error: (e) => {
@@ -348,23 +377,9 @@ export class AdminConfidentialityPageComponent {
   }
 
   // ----------------------------
-  // UI rows (Redesign)
+  // UI rows
   // ----------------------------
-  /**
-   * Redesign: table columns kept:
-   * - User
-   * - Unit
-   * - Permission Level (VIEW/EDIT/SIGN)
-   * - Editor Access Type (derived from user's editorPermissions/permisosEditor)
-   *
-   * Removed:
-   * - restrictions
-   * - authorizedAt
-   * - actions buttons (per-user "Permisos" + delete icon)
-   *
-   * Delete action still exists via removeUserRule(index).
-   * The template should call removeUserRule(i) from a single delete button/icon if desired.
-   */
+
   userRuleRows = computed<UserRuleRow[]>(() => {
     const users = this.allUsers();
     const mapById = new Map<number, AdminUser>(users.map((u) => [u.id, u]));
@@ -379,7 +394,6 @@ export class AdminConfidentialityPageComponent {
       const email = found?.email || '';
       const unit = ((found as any)?.unidad as string) || '';
 
-      // Derive editor access from user global editor permissions (EDIT/SIGN).
       const rawEditorPerms =
         ((found as any)?.editorPermissions as Perm[]) ??
         ((found as any)?.permisosEditor as Perm[]) ??
@@ -409,15 +423,6 @@ export class AdminConfidentialityPageComponent {
     });
   });
 
-  /**
-   * Redesign: role table columns kept:
-   * - Name
-   * - Actions (VIEW/EDIT/SIGN)
-   * - Remove button
-   *
-   * Removed:
-   * - Role ID column (still kept internally for saving).
-   */
   roleRules = computed<RoleRuleRow[]>(() => {
     const roles = this.allRoles();
     const mapById = new Map<number, RoleRowApi>(roles.map((r) => [r.id, r]));
@@ -432,8 +437,10 @@ export class AdminConfidentialityPageComponent {
   // ----------------------------
   // Save config
   // ----------------------------
+
   saveConfig(): void {
     const docId = this.selectedDocumentId();
+
     if (!docId) {
       this.toasts.error('Please select a document first.');
       return;
@@ -443,8 +450,8 @@ export class AdminConfidentialityPageComponent {
     const users = this.allowedUsers();
     const roles = this.allowedRoles();
 
-    // For non-public levels, require at least one explicit authorization.
     const sensitive = level !== 'PUBLIC';
+
     if (sensitive && users.length === 0 && roles.length === 0) {
       this.toasts.error(
         'Sensitive levels require at least one authorized user or role.',
@@ -471,6 +478,7 @@ export class AdminConfidentialityPageComponent {
     this.confSvc.setConfig(docId, dto).subscribe({
       next: (saved) => {
         const lv = (saved?.level || level) as ConfLevel;
+
         this.currentLevel.set(lv);
         this.editLevel.set(lv);
 
@@ -480,6 +488,7 @@ export class AdminConfidentialityPageComponent {
             actions: this.normalizeActions(u.actions),
           })),
         );
+
         this.allowedRoles.set(
           (saved?.roles || dto.roles).map((r) => ({
             roleId: Number(r.roleId),
@@ -501,18 +510,22 @@ export class AdminConfidentialityPageComponent {
     roles: { roleId: number; actions: Action[] }[],
   ): boolean {
     const userIds = new Set<number>();
+
     for (const u of users) {
       if (!Number.isFinite(u.userId) || u.userId <= 0) {
         this.toasts.error('Validation: userId must be a positive number.');
         return false;
       }
+
       if (userIds.has(u.userId)) {
         this.toasts.error('Validation: duplicate user in allow-list.');
         return false;
       }
+
       userIds.add(u.userId);
 
       const a = this.normalizeActions(u.actions);
+
       if (a.length === 0) {
         this.toasts.error(
           'Validation: each authorized user must have at least one action.',
@@ -522,18 +535,22 @@ export class AdminConfidentialityPageComponent {
     }
 
     const roleIds = new Set<number>();
+
     for (const r of roles) {
       if (!Number.isFinite(r.roleId) || r.roleId <= 0) {
         this.toasts.error('Validation: roleId must be a positive number.');
         return false;
       }
+
       if (roleIds.has(r.roleId)) {
         this.toasts.error('Validation: duplicate role in allow-list.');
         return false;
       }
+
       roleIds.add(r.roleId);
 
       const a = this.normalizeActions(r.actions);
+
       if (a.length === 0) {
         this.toasts.error(
           'Validation: each authorized role must have at least one action.',
@@ -545,29 +562,29 @@ export class AdminConfidentialityPageComponent {
     return true;
   }
 
-  /**
-   * Normalizes actions coming from:
-   * - UI arrays: ['VIEW','EDIT']
-   * - Backend SET string: "VIEW,EDIT,SIGN"
-   */
   private normalizeActions(actions: Action[] | string | any): Action[] {
     let arr: any[] = [];
 
     if (Array.isArray(actions)) arr = actions;
-    else if (typeof actions === 'string')
+    else if (typeof actions === 'string') {
       arr = actions.split(',').map((s) => s.trim());
-    else arr = [];
+    } else {
+      arr = [];
+    }
 
     const set = new Set<Action>();
+
     for (const x of arr) {
       if (x === 'VIEW' || x === 'EDIT' || x === 'SIGN') set.add(x);
     }
+
     return Array.from(set);
   }
 
   // ----------------------------
   // Add user modal
   // ----------------------------
+
   openAddUserModal(): void {
     this.isAddUserOpen.set(true);
     this.userSearchQuery.set('');
@@ -581,6 +598,7 @@ export class AdminConfidentialityPageComponent {
 
   toggleTempUserAction(a: Action): void {
     const cur = this.tempUserActions();
+
     this.tempUserActions.set(
       cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a],
     );
@@ -588,24 +606,31 @@ export class AdminConfidentialityPageComponent {
 
   isSelectedUserAlreadyAuthorized(): boolean {
     const id = this.selectedUserId();
+
     return !!id && this.allowedUsers().some((u) => u.userId === id);
   }
 
   isAddUserDisabled(): boolean {
     const id = this.selectedUserId();
     const actions = this.normalizeActions(this.tempUserActions());
+
     return !id || actions.length === 0 || this.isSelectedUserAlreadyAuthorized();
   }
 
   confirmAddUser(): void {
     const id = this.selectedUserId();
+
     if (!id) return this.toasts.error('Please select a user.');
-    if (this.isSelectedUserAlreadyAuthorized())
+
+    if (this.isSelectedUserAlreadyAuthorized()) {
       return this.toasts.error('This user is already authorized.');
+    }
 
     const actions = this.normalizeActions(this.tempUserActions());
-    if (actions.length === 0)
+
+    if (actions.length === 0) {
       return this.toasts.error('Select at least one permission.');
+    }
 
     this.allowedUsers.update((arr) => [...arr, { userId: id, actions }]);
     this.closeAddUserModal();
@@ -617,7 +642,9 @@ export class AdminConfidentialityPageComponent {
       '¿Eliminar este usuario autorizado?',
       'Confirmar eliminación',
     );
+
     if (!ok) return;
+
     this.allowedUsers.update((arr) => arr.filter((_, i) => i !== index));
     this.toasts.info('User removed (pending save).');
   }
@@ -625,8 +652,10 @@ export class AdminConfidentialityPageComponent {
   // ----------------------------
   // Add role modal
   // ----------------------------
+
   openAddRoleModal(): void {
     this.isAddRoleOpen.set(true);
+    this.roleSearchQuery.set('');
     this.selectedRoleId.set(null);
     this.tempRoleActions.set(['VIEW']);
   }
@@ -637,6 +666,7 @@ export class AdminConfidentialityPageComponent {
 
   toggleTempRoleAction(a: Action): void {
     const cur = this.tempRoleActions();
+
     this.tempRoleActions.set(
       cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a],
     );
@@ -644,24 +674,31 @@ export class AdminConfidentialityPageComponent {
 
   isSelectedRoleAlreadyAuthorized(): boolean {
     const id = this.selectedRoleId();
+
     return !!id && this.allowedRoles().some((r) => r.roleId === id);
   }
 
   isAddRoleDisabled(): boolean {
     const id = this.selectedRoleId();
     const actions = this.normalizeActions(this.tempRoleActions());
+
     return !id || actions.length === 0 || this.isSelectedRoleAlreadyAuthorized();
   }
 
   confirmAddRole(): void {
     const id = this.selectedRoleId();
+
     if (!id) return this.toasts.error('Please select a role.');
-    if (this.isSelectedRoleAlreadyAuthorized())
+
+    if (this.isSelectedRoleAlreadyAuthorized()) {
       return this.toasts.error('This role is already authorized.');
+    }
 
     const actions = this.normalizeActions(this.tempRoleActions());
-    if (actions.length === 0)
+
+    if (actions.length === 0) {
       return this.toasts.error('Select at least one action.');
+    }
 
     this.allowedRoles.update((arr) => [...arr, { roleId: id, actions }]);
     this.closeAddRoleModal();
@@ -673,7 +710,9 @@ export class AdminConfidentialityPageComponent {
       '¿Eliminar este rol autorizado?',
       'Confirmar eliminación',
     );
+
     if (!ok) return;
+
     this.allowedRoles.update((arr) => arr.filter((_, i) => i !== index));
     this.toasts.info('Role removed (pending save).');
   }
@@ -681,8 +720,10 @@ export class AdminConfidentialityPageComponent {
   // ----------------------------
   // Error formatting
   // ----------------------------
+
   private humanHttpError(err: any, fallback: string): string {
     const e = err as HttpErrorResponse;
+
     if (!e) return fallback;
 
     const msg =

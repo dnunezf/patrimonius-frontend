@@ -1,7 +1,10 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { CatalogosService, Plantilla } from '../../../../../core/services/catalogos.service';
+import {
+  CatalogosService,
+  Plantilla,
+} from '../../../../../core/services/catalogos.service';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -16,12 +19,21 @@ export class CatalogoPlantillasComponent implements OnInit {
   @ViewChild('f') formRef!: NgForm;
 
   plantillas: Plantilla[] = [];
-  form = { nombre: '', version: '1.0', descripcion: '' };
+
+  form = {
+    nombre: '',
+    version: '1.0',
+    descripcion: '',
+  };
+
   file?: File;
   loading = false;
   uploading = false;
   errorMessage = '';
-  // ===== Modal del sistema (reemplaza prompt/confirm) =====
+
+  searchTerm = '';
+
+  // ===== Modal del sistema =====
   modalOpen = false;
   modalMode: 'rename' | 'confirmDelete' = 'rename';
   modalTitle = '';
@@ -35,7 +47,117 @@ export class CatalogoPlantillasComponent implements OnInit {
   pendingPlantilla?: Plantilla;
   pendingDeleteId?: number;
 
-  openRenameModal(p: Plantilla) {
+  // ✅ Paginación frontend
+  page = 1;
+  readonly pageSize = 10;
+
+  // ✅ Para usar Math en el HTML
+  Math = Math;
+
+  constructor(private api: CatalogosService) {}
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  // ===== Normalización =====
+
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onNombreInput(): void {
+    this.form.nombre = this.toUpperValue(this.form.nombre);
+  }
+
+  onDescripcionInput(): void {
+    this.form.descripcion = this.toUpperValue(this.form.descripcion);
+  }
+
+  onSearchInput(): void {
+    this.searchTerm = this.toUpperValue(this.searchTerm);
+    this.goToPage(1);
+  }
+
+  onModalInputValueInput(): void {
+    this.modalInputValue = this.toUpperValue(this.modalInputValue);
+  }
+
+  // ===== Búsqueda =====
+
+  get filteredPlantillas(): Plantilla[] {
+    const term = this.searchTerm.trim().toUpperCase();
+
+    if (!term) return this.plantillas ?? [];
+
+    return (this.plantillas ?? []).filter((p) => {
+      const nombre = String(p.nombre || '').toUpperCase();
+      const descripcion = String((p as any).descripcion || '').toUpperCase();
+      const version = String(p.version || '').toUpperCase();
+      const archivo = String(p.ruta_archivo || '').toUpperCase();
+
+      return (
+        nombre.includes(term) ||
+        descripcion.includes(term) ||
+        version.includes(term) ||
+        archivo.includes(term)
+      );
+    });
+  }
+
+  // ===== Paginación =====
+
+  get totalItems(): number {
+    return Array.isArray(this.filteredPlantillas)
+      ? this.filteredPlantillas.length
+      : 0;
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+  }
+
+  get pagedPlantillas(): Plantilla[] {
+    const start = (this.page - 1) * this.pageSize;
+    return (this.filteredPlantillas ?? []).slice(start, start + this.pageSize);
+  }
+
+  private clampPage(): void {
+    if (!Number.isFinite(this.page) || this.page < 1) this.page = 1;
+
+    const tp = this.totalPages;
+
+    if (this.page > tp) this.page = tp;
+  }
+
+  private ensureNonEmptyPageAfterChange(): void {
+    this.clampPage();
+
+    const start = (this.page - 1) * this.pageSize;
+
+    if (this.totalItems > 0 && start >= this.totalItems && this.page > 1) {
+      this.page--;
+    }
+
+    this.clampPage();
+  }
+
+  prevPage(): void {
+    this.page = Math.max(1, this.page - 1);
+  }
+
+  nextPage(): void {
+    this.page = Math.min(this.totalPages, this.page + 1);
+  }
+
+  goToPage(n: number): void {
+    this.page = n;
+    this.clampPage();
+  }
+
+  // ===== Modal =====
+
+  openRenameModal(p: Plantilla): void {
     this.pendingPlantilla = p;
     this.pendingDeleteId = undefined;
 
@@ -45,11 +167,11 @@ export class CatalogoPlantillasComponent implements OnInit {
     this.modalOkText = 'Guardar';
     this.modalCancelText = 'Cancelar';
 
-    this.modalInputValue = p.nombre ?? '';
+    this.modalInputValue = this.toUpperValue(p.nombre ?? '');
     this.modalOpen = true;
   }
 
-  openDeleteModal(id: number) {
+  openDeleteModal(id: number): void {
     this.pendingDeleteId = id;
     this.pendingPlantilla = undefined;
 
@@ -62,36 +184,37 @@ export class CatalogoPlantillasComponent implements OnInit {
     this.modalOpen = true;
   }
 
-  closeModal() {
+  closeModal(): void {
     this.modalOpen = false;
     this.pendingPlantilla = undefined;
     this.pendingDeleteId = undefined;
   }
 
-  confirmModal() {
-    // RENOMBRAR
+  confirmModal(): void {
     if (this.modalMode === 'rename' && this.pendingPlantilla) {
-      const nuevo = (this.modalInputValue || '').trim();
+      const nuevo = this.toUpperValue(this.modalInputValue).trim();
+
       if (!nuevo || nuevo === this.pendingPlantilla.nombre) {
         this.closeModal();
         return;
       }
 
-      this.api.updatePlantilla(this.pendingPlantilla.id, { nombre: nuevo }).subscribe({
-        next: () => {
-          this.closeModal();
-          this.load();
-        },
-        error: () => {
-          this.closeModal();
-          alert('Error renombrando plantilla'); // si quieres, luego también lo cambias a modal toast
-        },
-      });
+      this.api
+        .updatePlantilla(this.pendingPlantilla.id, { nombre: nuevo })
+        .subscribe({
+          next: () => {
+            this.closeModal();
+            this.load();
+          },
+          error: () => {
+            this.closeModal();
+            this.errorMessage = 'Error renombrando plantilla';
+          },
+        });
 
       return;
     }
 
-    // ELIMINAR
     if (this.modalMode === 'confirmDelete' && this.pendingDeleteId != null) {
       const id = this.pendingDeleteId;
 
@@ -102,7 +225,7 @@ export class CatalogoPlantillasComponent implements OnInit {
         },
         error: () => {
           this.closeModal();
-          alert('No se pudo eliminar plantilla');
+          this.errorMessage = 'No se pudo eliminar plantilla';
         },
       });
 
@@ -112,56 +235,9 @@ export class CatalogoPlantillasComponent implements OnInit {
     this.closeModal();
   }
 
-  // ✅ Paginación frontend (page size = 10)
-  page = 1;
-  readonly pageSize = 10;
+  // ===== Datos =====
 
-  // ✅ Para usar Math en el HTML
-  Math = Math;
-
-  constructor(private api: CatalogosService) {}
-
-  ngOnInit() {
-    this.load();
-  }
-
-  /** Total de items */
-  get totalItems(): number {
-    return Array.isArray(this.plantillas) ? this.plantillas.length : 0;
-  }
-
-  /** Total de páginas (mínimo 1) */
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
-  }
-
-  /** Lista paginada */
-  get pagedPlantillas(): Plantilla[] {
-    const start = (this.page - 1) * this.pageSize;
-    return (this.plantillas ?? []).slice(start, start + this.pageSize);
-  }
-
-  /** Ajusta page para que nunca quede fuera del rango */
-  private clampPage() {
-    if (!Number.isFinite(this.page) || this.page < 1) this.page = 1;
-    const tp = this.totalPages; // ya incluye mínimo 1
-    if (this.page > tp) this.page = tp;
-  }
-
-  /** Reglas extra: si estás en página vacía (por borrar), retrocede */
-  private ensureNonEmptyPageAfterChange() {
-    this.clampPage();
-
-    // si estás en una página que quedó sin items y hay items en total, retrocede una
-    const start = (this.page - 1) * this.pageSize;
-    if (this.totalItems > 0 && start >= this.totalItems && this.page > 1) {
-      this.page--;
-    }
-
-    this.clampPage();
-  }
-
-  load() {
+  load(): void {
     this.loading = true;
     this.errorMessage = '';
 
@@ -169,90 +245,91 @@ export class CatalogoPlantillasComponent implements OnInit {
       next: (rows) => {
         this.plantillas = Array.isArray(rows) ? rows : [];
         this.loading = false;
-
-        // ✅ si cambió el tamaño, ajustamos page
         this.ensureNonEmptyPageAfterChange();
       },
       error: (err) => {
         console.error(err);
         this.errorMessage = 'Error cargando plantillas';
         this.loading = false;
-
-        // si falla, igual mantenemos paginación coherente
         this.ensureNonEmptyPageAfterChange();
       },
     });
   }
 
-  onFile(e: Event) {
+  onFile(e: Event): void {
     const input = e.target as HTMLInputElement;
     this.file = input.files?.[0] ?? undefined;
   }
 
-  upload() {
+  upload(): void {
     if (!this.form.nombre || !this.form.version || !this.file) {
-      alert('Nombre, versión y archivo son obligatorios');
+      this.errorMessage = 'Nombre, versión y archivo son obligatorios';
       return;
     }
 
+    const nombre = this.toUpperValue(this.form.nombre).trim();
+    const descripcion = this.toUpperValue(this.form.descripcion).trim();
+
+    this.form = {
+      ...this.form,
+      nombre,
+      descripcion,
+    };
+
     this.uploading = true;
+    this.errorMessage = '';
 
     this.api
       .uploadPlantilla({
-        nombre: this.form.nombre,
+        nombre,
         version: this.form.version,
-        descripcion: this.form.descripcion || undefined,
+        descripcion: descripcion || undefined,
         file: this.file,
       })
       .subscribe({
         next: () => {
           this.uploading = false;
 
-          // limpiar formulario + input file
-          this.form = { nombre: '', version: '1.0', descripcion: '' };
+          this.form = {
+            nombre: '',
+            version: '1.0',
+            descripcion: '',
+          };
+
           this.file = undefined;
+          this.searchTerm = '';
 
           if (this.fileInput) this.fileInput.nativeElement.value = '';
-          if (this.formRef) this.formRef.resetForm({ nombre: '', version: '1.0', descripcion: '' });
 
-          // ✅ después de crear, volvemos a cargar y nos aseguramos de quedar en una página válida
-          // Si preferís ir a la última página automáticamente:
-          // this.page = this.totalPages;  <-- eso funcionaría solo si ya tuvieras la lista actualizada localmente
+          if (this.formRef) {
+            this.formRef.resetForm({
+              nombre: '',
+              version: '1.0',
+              descripcion: '',
+            });
+          }
+
           this.load();
         },
         error: (err) => {
           console.error(err);
           this.uploading = false;
-          alert('Error subiendo plantilla');
+          this.errorMessage = 'Error subiendo plantilla';
         },
       });
   }
 
-  rename(p: Plantilla) {
+  rename(p: Plantilla): void {
     this.openRenameModal(p);
   }
 
-  remove(id: number) {
+  remove(id: number): void {
     this.openDeleteModal(id);
   }
 
-
-  /** Para abrir el archivo */
-  href(p: Plantilla) {
+  href(p: Plantilla): string {
     return encodeURI(p.ruta_archivo);
   }
 
-  // ✅ helpers para botones de paginación (si los querés usar en HTML)
-  prevPage() {
-    this.page = Math.max(1, this.page - 1);
-  }
-
-  nextPage() {
-    this.page = Math.min(this.totalPages, this.page + 1);
-  }
-
-  goToPage(n: number) {
-    this.page = n;
-    this.clampPage();
-  }
+  trackById = (_: number, p: Plantilla) => p.id;
 }

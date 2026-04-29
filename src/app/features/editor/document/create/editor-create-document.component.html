@@ -20,6 +20,7 @@
       id="titulo"
       name="titulo"
       [(ngModel)]="titulo"
+      (input)="onTituloInput()"
       required
       placeholder="Ej. Acta de reunión 2025"
     />

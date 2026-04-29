@@ -73,6 +73,7 @@
           id="docIdFiltro"
           type="search"
           [(ngModel)]="docIdFiltro"
+          (input)="onDocIdFiltroInput()"
           (keyup.enter)="aplicarFiltros()"
           placeholder="Ej. 15"
         />
@@ -84,6 +85,7 @@
           id="docDocumentoFiltro"
           type="search"
           [(ngModel)]="docDocumentoFiltro"
+          (input)="onDocDocumentoFiltroInput()"
           (keyup.enter)="aplicarFiltros()"
           placeholder="Título o código del documento"
         />
@@ -95,6 +97,7 @@
           id="docSolicitanteFiltro"
           type="search"
           [(ngModel)]="docSolicitanteFiltro"
+          (input)="onDocSolicitanteFiltroInput()"
           (keyup.enter)="aplicarFiltros()"
           placeholder="Nombre del solicitante"
         />
@@ -159,6 +162,7 @@
           id="expIdFiltro"
           type="search"
           [(ngModel)]="expIdFiltro"
+          (input)="onExpIdFiltroInput()"
           (keyup.enter)="aplicarFiltros()"
           placeholder="Ej. 8"
         />
@@ -170,6 +174,7 @@
           id="expExpedienteFiltro"
           type="search"
           [(ngModel)]="expExpedienteFiltro"
+          (input)="onExpExpedienteFiltroInput()"
           (keyup.enter)="aplicarFiltros()"
           placeholder="Nombre o código del expediente"
         />
@@ -181,6 +186,7 @@
           id="expSolicitanteFiltro"
           type="search"
           [(ngModel)]="expSolicitanteFiltro"
+          (input)="onExpSolicitanteFiltroInput()"
           (keyup.enter)="aplicarFiltros()"
           placeholder="Nombre del solicitante"
         />
@@ -431,6 +437,7 @@
             <textarea
               id="motivoResolucion"
               [(ngModel)]="motivoResolucion"
+              (input)="onMotivoResolucionInput()"
               rows="5"
               placeholder="Indique por qué se aprueba o rechaza la solicitud."
             ></textarea>
@@ -546,6 +553,7 @@
             <textarea
               id="motivoResolucionExpediente"
               [(ngModel)]="motivoResolucion"
+              (input)="onMotivoResolucionInput()"
               rows="5"
               placeholder="Indique por qué se aprueba o rechaza la solicitud."
             ></textarea>

@@ -34,7 +34,27 @@ export class ArchivistaSerieDialogComponent implements OnInit {
     });
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onCodigoInput(): void {
+    this.codigo = this.toUpperValue(this.codigo);
+  }
+
+  onNombreInput(): void {
+    this.nombre = this.toUpperValue(this.nombre);
+  }
+
+  onDescripcionInput(): void {
+    this.descripcion = this.toUpperValue(this.descripcion);
+  }
+
   crearSerie(): void {
+    this.codigo = this.toUpperValue(this.codigo).trim();
+    this.nombre = this.toUpperValue(this.nombre).trim();
+    this.descripcion = this.toUpperValue(this.descripcion).trim();
+
     const plazo = Number(this.plazo_conservacion_anios);
     if (
       this.codigo &&

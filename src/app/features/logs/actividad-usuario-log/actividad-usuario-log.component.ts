@@ -21,6 +21,7 @@ import { BITACORA_FILTER_TYPING_DEBOUNCE_MS } from '../bitacora-list-filter.util
 export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
   users: string[] = ['Todos los usuarios'];
   actividades: string[] = ['Todas las actividades'];
+
   /** Recursos de consulta visibles en el filtro (sin solicitudes de acceso). */
   recursos: string[] = [
     'Todos los recursos',
@@ -28,6 +29,7 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
     'CONSULTA_DESCARGA',
     'CONSULTA_BUSQUEDA',
   ];
+
   results: string[] = ['Todos los resultados', 'PERMITIDO', 'DENEGADO'];
 
   filters = {
@@ -76,6 +78,10 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
     this.clearFilterApplyDebounce();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
   private clearFilterApplyDebounce(): void {
     if (this.filterApplyTimer) {
       clearTimeout(this.filterApplyTimer);
@@ -90,6 +96,7 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
       this.page = 1;
       this.fetch();
     };
+
     if (immediate) {
       run();
     } else {
@@ -104,20 +111,23 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
       sortBy: this.sortBy,
       sortDir: this.sortDir,
     };
-    if (this.filters.q?.trim()) qp.q = this.filters.q.trim();
+
+    if (this.filters.q?.trim()) qp.q = this.toUpperValue(this.filters.q).trim();
     if (this.filters.user !== 'Todos los usuarios') qp.usuario = this.filters.user;
     if (this.filters.actividad !== 'Todas las actividades') qp.actividad = this.filters.actividad;
     if (this.filters.recurso !== 'Todos los recursos') qp.recurso = this.filters.recurso;
     if (this.filters.result !== 'Todos los resultados') qp.resultado = this.filters.result;
-    if (this.filters.documento?.trim()) qp.documento = this.filters.documento.trim();
+    if (this.filters.documento?.trim()) qp.documento = this.toUpperValue(this.filters.documento).trim();
     if (this.filters.from?.trim()) qp.from = this.filters.from.trim();
     if (this.filters.to?.trim()) qp.to = this.filters.to.trim();
+
     return qp;
   }
 
   fetch() {
     this.loading = true;
     this.error = null;
+
     this.audit.listUserActivityBitacoraEvents(this.buildQuery()).subscribe({
       next: (res) => {
         this.events = res.items;
@@ -134,31 +144,40 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
   }
 
   limitSearchWords(value: string): void {
-    if (!value) {
+    const upperValue = this.toUpperValue(value);
+
+    if (!upperValue) {
       this.filters.q = '';
       this.scheduleFilterApply(false);
       return;
     }
-    const words = value.trim().split(/\s+/);
+
+    const words = upperValue.trim().split(/\s+/);
     this.filters.q =
-      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : upperValue;
+
     this.scheduleFilterApply(false);
   }
 
   limitDocumentWords(value: string): void {
-    if (!value) {
+    const upperValue = this.toUpperValue(value);
+
+    if (!upperValue) {
       this.filters.documento = '';
       this.scheduleFilterApply(false);
       return;
     }
-    const words = value.trim().split(/\s+/);
+
+    const words = upperValue.trim().split(/\s+/);
     this.filters.documento =
-      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : upperValue;
+
     this.scheduleFilterApply(false);
   }
 
   clearFilters() {
     this.clearFilterApplyDebounce();
+
     this.filters = {
       q: '',
       user: 'Todos los usuarios',
@@ -169,12 +188,14 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
       from: '',
       to: '',
     };
+
     this.page = 1;
     this.fetch();
   }
 
   goPrev() {
     this.clearFilterApplyDebounce();
+
     if (this.page > 1) {
       this.page--;
       this.fetch();
@@ -183,6 +204,7 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
 
   goNext() {
     this.clearFilterApplyDebounce();
+
     if (this.page < this.totalPages) {
       this.page++;
       this.fetch();
@@ -215,22 +237,26 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
       'documento_titulo',
       'documento_codigo_unico',
     ];
+
     const escape = (val: unknown) => {
       const s = String(val ?? '');
       const mustQuote = /[",\n]/.test(s);
       const safe = s.replace(/"/g, '""');
       return mustQuote ? `"${safe}"` : safe;
     };
+
     const csv = [
       headers.join(','),
       ...rows.map((r) => headers.map((h) => escape((r as any)[h])).join(',')),
     ].join('\n');
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     this.triggerDownload(blob, `bitacora_actividad_usuario_${new Date().toISOString().slice(0, 10)}.csv`);
   }
 
   downloadXML() {
     const rows = this.events || [];
+
     const escXml = (s: unknown) =>
       String(s ?? '')
         .replace(/&/g, '&amp;')
@@ -238,11 +264,12 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&apos;');
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <bitacoraActividadUsuario>
 ${rows
-  .map(
-    (r) => `
+      .map(
+        (r) => `
   <evento>
     <fecha_hora>${escXml(r.fecha_hora)}</fecha_hora>
     <usuario>${escXml(r.usuario)}</usuario>
@@ -253,10 +280,11 @@ ${rows
     <documento_titulo>${escXml(r.documento_titulo)}</documento_titulo>
     <documento_codigo_unico>${escXml(r.documento_codigo_unico)}</documento_codigo_unico>
   </evento>`,
-  )
-  .join('')}
+      )
+      .join('')}
 </bitacoraActividadUsuario>
 `.trim();
+
     const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
     this.triggerDownload(blob, `bitacora_actividad_usuario_${new Date().toISOString().slice(0, 10)}.xml`);
   }
@@ -264,9 +292,11 @@ ${rows
   private triggerDownload(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
+
     a.href = url;
     a.download = filename;
     a.click();
+
     URL.revokeObjectURL(url);
   }
 
@@ -275,6 +305,7 @@ ${rows
     this.detail = null;
     this.detailError = null;
     this.detailLoading = true;
+
     this.audit.getUserActivityBitacoraDetail(row.id_evento).subscribe({
       next: (item) => {
         this.detail = item;

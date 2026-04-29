@@ -1,11 +1,15 @@
 <main class="container">
   <div class="back-bar">
-    <a class="link-back" routerLink="/admin/module/catalogs">← Volver a Catálogos</a>
+    <a class="link-back" routerLink="/admin/module/catalogs">
+      ← Volver a Catálogos
+    </a>
   </div>
 
   <header class="page-header page-header--audit">
     <h1>Gestión de Series</h1>
-    <p class="sub">Administración de series archivísticas asociadas a unidades organizacionales.</p>
+    <p class="sub">
+      Administración de series archivísticas asociadas a unidades organizacionales.
+    </p>
   </header>
 
   <section class="card form-panel">
@@ -19,6 +23,7 @@
           [(ngModel)]="form.codigo"
           type="text"
           placeholder="Ej: SER-001"
+          (input)="onCodigoInput()"
         />
       </div>
 
@@ -29,6 +34,7 @@
           [(ngModel)]="form.nombre"
           type="text"
           placeholder="Ej: Actas Administrativas"
+          (input)="onNombreInput()"
         />
       </div>
     </div>
@@ -72,6 +78,7 @@
           [(ngModel)]="form.descripcion"
           type="text"
           placeholder="Breve descripción de la serie"
+          (input)="onDescripcionInput()"
         />
       </div>
     </div>
@@ -105,6 +112,17 @@
       </div>
     </div>
 
+    <!-- Búsqueda -->
+    <div class="form-group">
+      <label>Buscar serie</label>
+      <input
+        [(ngModel)]="searchTerm"
+        type="text"
+        placeholder="Buscar por código, nombre, descripción, unidad o estado"
+        (input)="onSearchInput()"
+      />
+    </div>
+
     <div *ngIf="loading" class="muted">Cargando…</div>
     <div *ngIf="!loading && errorMessage" class="error">{{ errorMessage }}</div>
 
@@ -127,44 +145,70 @@
         </thead>
 
         <tbody>
-        <tr *ngFor="let s of pagedSeries">
+        <tr *ngFor="let s of pagedSeries; trackBy: trackById">
           <td class="cell-strong">{{ s.codigo }}</td>
           <td>{{ s.nombre }}</td>
           <td class="cell-muted">{{ s.unidad_nombre || s.unidad_id }}</td>
           <td>{{ s.plazo_conservacion_anios ?? '—' }}</td>
           <td>{{ +s.activa! === 1 ? 'Activa' : 'Inactiva' }}</td>
           <td class="actions">
-            <button class="btn btn--ghost btn--sm" (click)="openEditModal(s)">Editar</button>
-            <button class="btn btn--danger btn--sm" (click)="openDeleteModal(s.id)">Eliminar</button>
+            <button
+              class="btn btn--ghost btn--sm"
+              (click)="openEditModal(s)"
+            >
+              Editar
+            </button>
+            <button
+              class="btn btn--danger btn--sm"
+              (click)="openDeleteModal(s.id)"
+            >
+              Eliminar
+            </button>
           </td>
         </tr>
         </tbody>
       </table>
 
-      <div class="pagination" *ngIf="totalItems >= 0">
+      <div class="pagination" *ngIf="totalItems > 0">
         <div class="pagination__info">
-          Página <strong>{{ page }}</strong> de <strong>{{ totalPages }}</strong>
+          Página <strong>{{ page }}</strong> de
+          <strong>{{ totalPages }}</strong>
           <span class="sep">•</span>
           Mostrando
-          <strong>{{ Math.min(pageSize, totalItems - ((page - 1) * pageSize)) }}</strong>
+          <strong>
+            {{
+              Math.min(
+                pageSize,
+                totalItems - ((page - 1) * pageSize)
+              )
+            }}
+          </strong>
           de <strong>{{ totalItems }}</strong>
         </div>
 
         <div class="pagination__controls">
-          <button class="btn btn--ghost btn--sm" [disabled]="page <= 1" (click)="prevPage()">
+          <button
+            class="btn btn--ghost btn--sm"
+            [disabled]="page <= 1"
+            (click)="prevPage()"
+          >
             ← Anterior
           </button>
 
           <button
             class="btn btn--ghost btn--sm page-pill"
             *ngFor="let _ of [].constructor(totalPages); let i = index"
-            [class.page-pill--active]="page === (i + 1)"
+            [class.page-pill--active]="page === i + 1"
             (click)="goToPage(i + 1)"
           >
             {{ i + 1 }}
           </button>
 
-          <button class="btn btn--ghost btn--sm" [disabled]="page >= totalPages" (click)="nextPage()">
+          <button
+            class="btn btn--ghost btn--sm"
+            [disabled]="page >= totalPages"
+            (click)="nextPage()"
+          >
             Siguiente →
           </button>
         </div>
@@ -173,23 +217,44 @@
   </section>
 </main>
 
-<div class="sys-modal__backdrop" *ngIf="modalOpen" (click)="closeModal()"></div>
+<div
+  class="sys-modal__backdrop"
+  *ngIf="modalOpen"
+  (click)="closeModal()"
+></div>
 
 <div class="sys-modal" *ngIf="modalOpen" role="dialog" aria-modal="true">
   <div class="card sys-modal__card" (click)="$event.stopPropagation()">
     <div class="sys-modal__header">
       <h3 class="sys-modal__title">{{ modalTitle }}</h3>
-      <button class="sys-modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
+      <button
+        class="sys-modal__close"
+        type="button"
+        (click)="closeModal()"
+        aria-label="Cerrar"
+      >
+        ×
+      </button>
     </div>
 
     <p class="sys-modal__message">{{ modalMessage }}</p>
 
     <div *ngIf="modalMode === 'edit'" class="sys-modal__form">
       <label class="sys-modal__label">Código</label>
-      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.codigo" />
+      <input
+        class="sys-modal__input"
+        type="text"
+        [(ngModel)]="modalForm.codigo"
+        (input)="onModalCodigoInput()"
+      />
 
       <label class="sys-modal__label">Nombre</label>
-      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.nombre" />
+      <input
+        class="sys-modal__input"
+        type="text"
+        [(ngModel)]="modalForm.nombre"
+        (input)="onModalNombreInput()"
+      />
 
       <label class="sys-modal__label">Unidad organizacional</label>
       <select class="sys-modal__input" [(ngModel)]="modalForm.unidad_id">
@@ -214,16 +279,22 @@
       </select>
 
       <label class="sys-modal__label">Descripción</label>
-      <input class="sys-modal__input" type="text" [(ngModel)]="modalForm.descripcion" />
+      <input
+        class="sys-modal__input"
+        type="text"
+        [(ngModel)]="modalForm.descripcion"
+        (input)="onModalDescripcionInput()"
+      />
     </div>
 
     <div class="sys-modal__actions">
-      <button class="btn btn--ghost" (click)="closeModal()">
+      <button class="btn btn--ghost" type="button" (click)="closeModal()">
         {{ modalCancelText }}
       </button>
 
       <button
         class="btn"
+        type="button"
         [ngClass]="modalMode === 'confirmDelete' ? 'btn--danger' : 'btn--primary'"
         (click)="confirmModal()"
       >
