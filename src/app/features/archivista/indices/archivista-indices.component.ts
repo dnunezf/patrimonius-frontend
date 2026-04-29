@@ -74,6 +74,22 @@ export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
     this.cargarIndices();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onFiltroExpedienteInput(): void {
+    this.filtroExpediente = this.toUpperValue(this.filtroExpediente);
+  }
+
+  onFiltroCodigoInput(): void {
+    this.filtroCodigo = this.toUpperValue(this.filtroCodigo);
+  }
+
+  onFiltroHashInput(): void {
+    this.filtroHash = this.toUpperValue(this.filtroHash);
+  }
+
   cargarIndices(): void {
     this.loadingIndices = true;
     this.errorIndices = '';
@@ -93,6 +109,10 @@ export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
   }
 
   aplicarFiltroIndices(): void {
+    this.filtroExpediente = this.toUpperValue(this.filtroExpediente);
+    this.filtroCodigo = this.toUpperValue(this.filtroCodigo);
+    this.filtroHash = this.toUpperValue(this.filtroHash);
+
     const idQ = this.filtroId.trim();
     const expedienteQ = this.filtroExpediente.trim().toLowerCase();
     const codigoQ = this.filtroCodigo.trim().toLowerCase();
@@ -138,6 +158,7 @@ export class ArchivistaIndicesComponent implements OnInit, OnDestroy {
     this.indicesPage = 1;
     this.repaginarIndices();
   }
+
   limpiarFiltros(): void {
     this.filtroId = '';
     this.filtroExpediente = '';

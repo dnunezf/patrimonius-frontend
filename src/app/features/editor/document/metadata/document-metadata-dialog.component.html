@@ -170,6 +170,7 @@
               <input
                 formControlName="title"
                 placeholder="Ingrese el título del documento"
+                (input)="onUpperInput('title')"
               />
               <small
                 class="err"
@@ -184,9 +185,10 @@
               <input
                 formControlName="keywords"
                 placeholder="Ej. patrimonio, conservación, arqueología"
+                (input)="onUpperInput('keywords')"
               />
               <small class="hint"
-                >Opcional. Separar por comas. Máximo 20.</small
+              >Opcional. Separar por comas. Máximo 20.</small
               >
               <small
                 class="err"

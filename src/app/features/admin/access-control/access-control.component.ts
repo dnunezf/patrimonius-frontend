@@ -71,6 +71,14 @@ export class AccessControlComponent implements OnInit {
     this.fetch();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onSearchInput(): void {
+    this.filters.search = this.toUpperValue(this.filters.search);
+  }
+
   private restoreFromUrl() {
     const qp = this.route.snapshot.queryParamMap;
 
@@ -89,7 +97,7 @@ export class AccessControlComponent implements OnInit {
     this.filters.status = status ? String(status) : 'Todos';
     this.filters.dateFrom = dateFrom ? String(dateFrom) : '';
     this.filters.dateTo = dateTo ? String(dateTo) : '';
-    this.filters.search = search ? String(search) : '';
+    this.filters.search = search ? this.toUpperValue(String(search)) : '';
   }
 
   private syncUrl() {
@@ -133,7 +141,7 @@ export class AccessControlComponent implements OnInit {
     if (this.filters.dateFrom) q.dateFrom = this.filters.dateFrom;
     if (this.filters.dateTo) q.dateTo = this.filters.dateTo;
 
-    if (this.filters.search.trim()) q.search = this.filters.search.trim();
+    if (this.filters.search.trim()) q.search = this.toUpperValue(this.filters.search).trim();
 
     return q;
   }

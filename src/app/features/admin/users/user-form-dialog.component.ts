@@ -137,6 +137,25 @@ export class UserFormDialogComponent
     });
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onNombreInput(): void {
+    const control = this.form.get('nombre');
+    control?.setValue(this.toUpperValue(control.value), { emitEvent: false });
+  }
+
+  onApellido1Input(): void {
+    const control = this.form.get('apellido1');
+    control?.setValue(this.toUpperValue(control.value), { emitEvent: false });
+  }
+
+  onApellido2Input(): void {
+    const control = this.form.get('apellido2');
+    control?.setValue(this.toUpperValue(control.value), { emitEvent: false });
+  }
+
   // ---------- Validators ----------
 
   /** Rejects strings that are only whitespace */
@@ -370,9 +389,9 @@ export class UserFormDialogComponent
       editorPermissions?: ('EDIT' | 'SIGN')[];
       canUpload?: boolean;
     } = {
-      nombre: String(v.nombre).trim(),
-      apellido1: String(v.apellido1).trim(),
-      apellido2: String(v.apellido2 || '').trim(),
+      nombre: this.toUpperValue(v.nombre).trim(),
+      apellido1: this.toUpperValue(v.apellido1).trim(),
+      apellido2: this.toUpperValue(v.apellido2 || '').trim(),
       email: String(v.email).trim(),
       rolId: rolIds[0],
       rolIds,

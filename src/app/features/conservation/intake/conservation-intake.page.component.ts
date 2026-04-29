@@ -307,6 +307,59 @@ export class ConservationIntakePageComponent {
     this.loadEadDocuments();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  private setSearchControlUpperValue(controlName: string): void {
+    const control = this.searchForm.get(controlName);
+    if (!control) return;
+
+    control.setValue(this.toUpperValue(control.value), {
+      emitEvent: false,
+    });
+  }
+
+  private setArchivalControlUpperValue(controlName: string): void {
+    const control = this.archivalForm.get(controlName);
+    if (!control) return;
+
+    control.setValue(this.toUpperValue(control.value), {
+      emitEvent: false,
+    });
+  }
+
+  onSearchUpperInput(controlName: 'q' | 'officialCode' | 'producingUnit'): void {
+    this.setSearchControlUpperValue(controlName);
+  }
+
+  onArchivalUpperInput(
+    controlName:
+      | 'producingUnit'
+      | 'keywords'
+      | 'recipientNameRole'
+      | 'recipientInstitution'
+      | 'senderNameRole'
+      | 'senderInstitution',
+  ): void {
+    this.setArchivalControlUpperValue(controlName);
+  }
+
+  private normalizeSearchFormTextFields(): void {
+    this.setSearchControlUpperValue('q');
+    this.setSearchControlUpperValue('officialCode');
+    this.setSearchControlUpperValue('producingUnit');
+  }
+
+  private normalizeArchivalTextFields(): void {
+    this.setArchivalControlUpperValue('producingUnit');
+    this.setArchivalControlUpperValue('keywords');
+    this.setArchivalControlUpperValue('recipientNameRole');
+    this.setArchivalControlUpperValue('recipientInstitution');
+    this.setArchivalControlUpperValue('senderNameRole');
+    this.setArchivalControlUpperValue('senderInstitution');
+  }
+
   private setupDynamicValidators(): void {
     const flowControl = this.archivalForm.get('documentFlow');
 
@@ -350,17 +403,17 @@ export class ConservationIntakePageComponent {
     this.archivalForm
       .get('serieId')
       ?.valueChanges.pipe(
-        startWith(this.archivalForm.get('serieId')?.value),
-        takeUntilDestroyed(this.destroyRef),
-      )
+      startWith(this.archivalForm.get('serieId')?.value),
+      takeUntilDestroyed(this.destroyRef),
+    )
       .subscribe(() => this.refreshRetentionEndDate());
 
     this.archivalForm
       .get('retentionStartDateISO')
       ?.valueChanges.pipe(
-        startWith(this.archivalForm.get('retentionStartDateISO')?.value),
-        takeUntilDestroyed(this.destroyRef),
-      )
+      startWith(this.archivalForm.get('retentionStartDateISO')?.value),
+      takeUntilDestroyed(this.destroyRef),
+    )
       .subscribe(() => this.refreshRetentionEndDate());
   }
 
@@ -423,6 +476,8 @@ export class ConservationIntakePageComponent {
   }
 
   async search(): Promise<void> {
+    this.normalizeSearchFormTextFields();
+
     this.loading.set(true);
     this.selected.set(null);
     this.duplicateState.set('NOT_CHECKED');
@@ -470,8 +525,10 @@ export class ConservationIntakePageComponent {
         documentFlow: (doc.documentFlow ||
           'PRODUCED_SENT') as FinalDocumentFlow,
 
-        producingUnit: doc.producingUnit || '',
-        keywords: Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
+        producingUnit: this.toUpperValue(doc.producingUnit || ''),
+        keywords: this.toUpperValue(
+          Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
+        ),
         accessLevel:
           (doc.accessLevel as ConfidentialityLevel | null) || 'INTERNAL',
         procedureType: null,
@@ -537,7 +594,7 @@ export class ConservationIntakePageComponent {
 
     const raw = this.archivalForm.getRawValue();
     const documentType = String(raw.documentType || '').trim();
-    const producingUnit = String(raw.producingUnit || '').trim();
+    const producingUnit = this.toUpperValue(raw.producingUnit).trim();
 
     if (!documentType) {
       this.archivalForm.patchValue({ officialCode: '' }, { emitEvent: false });
@@ -570,7 +627,7 @@ export class ConservationIntakePageComponent {
           if (!silent) {
             this.toasts.error(
               err?.error?.message ||
-                'No se pudo generar el código de referencia final.',
+              'No se pudo generar el código de referencia final.',
             );
           }
         },
@@ -615,7 +672,7 @@ export class ConservationIntakePageComponent {
         this.duplicateState.set('NOT_CHECKED');
         this.toasts.error(
           err?.error?.message ||
-            'No se pudo verificar la duplicidad del código.',
+          'No se pudo verificar la duplicidad del código.',
         );
       },
     });
@@ -789,6 +846,8 @@ export class ConservationIntakePageComponent {
   }
 
   async save(): Promise<void> {
+    this.normalizeArchivalTextFields();
+
     const doc = this.selected();
     if (!doc) {
       this.toasts.error('Seleccione primero un documento.');
@@ -889,7 +948,7 @@ export class ConservationIntakePageComponent {
       return;
     }
 
-    const keywords = csvToUniqueArray(String(raw.keywords || ''));
+    const keywords = csvToUniqueArray(this.toUpperValue(raw.keywords));
     const documentFlow = raw.documentFlow as FinalDocumentFlow;
 
     const payload: IntakePayload = {
@@ -899,7 +958,7 @@ export class ConservationIntakePageComponent {
         documentFlow,
         documentType: String(raw.documentType || '').trim(),
         title: String(raw.title || '').trim(),
-        producingUnit: String(raw.producingUnit || '').trim(),
+        producingUnit: this.toUpperValue(raw.producingUnit).trim(),
         keywords,
         accessLevel,
         procedureType: raw.procedureType || null,
@@ -924,22 +983,23 @@ export class ConservationIntakePageComponent {
       outgoing:
         documentFlow === 'PRODUCED_SENT'
           ? {
-              recipientNameRole: String(raw.recipientNameRole || '').trim(),
-              recipientInstitution: String(
-                raw.recipientInstitution || '',
-              ).trim(),
-              dispatchEmails: csvToUniqueArray(
-                String(raw.dispatchEmails || ''),
-              ).map((item) => item.toLowerCase()),
-            }
+            recipientNameRole: this.toUpperValue(raw.recipientNameRole).trim(),
+            recipientInstitution: this.toUpperValue(
+              raw.recipientInstitution,
+            ).trim(),
+            dispatchEmails: csvToUniqueArray(
+              String(raw.dispatchEmails || ''),
+            ).map((item) => item.toLowerCase()),
+          }
           : null,
       incoming:
         documentFlow === 'RECEIVED'
           ? {
-              senderNameRole: String(raw.senderNameRole || '').trim() || null,
-              senderInstitution:
-                String(raw.senderInstitution || '').trim() || null,
-            }
+            senderNameRole:
+              this.toUpperValue(raw.senderNameRole).trim() || null,
+            senderInstitution:
+              this.toUpperValue(raw.senderInstitution).trim() || null,
+          }
           : null,
     };
 
@@ -1020,7 +1080,7 @@ export class ConservationIntakePageComponent {
 
         this.toasts.error(
           err?.error?.message ||
-            'No se pudo registrar el ingreso a conservación.',
+          'No se pudo registrar el ingreso a conservación.',
         );
       },
     });
@@ -1042,7 +1102,7 @@ export class ConservationIntakePageComponent {
         this.eadDocumentsLoading.set(false);
         this.toasts.error(
           err?.error?.message ||
-            'No se pudieron cargar los documentos en conservación para exportación EAD 2002.',
+          'No se pudieron cargar los documentos en conservación para exportación EAD 2002.',
         );
       },
     });

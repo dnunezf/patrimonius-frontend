@@ -40,13 +40,24 @@ export class EditorCreateDocumentComponent implements OnInit {
     }
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onTituloInput(): void {
+    this.titulo = this.toUpperValue(this.titulo);
+  }
+
   // ✅ Crear documento (abrir modal de opciones)
   crear(): void {
     this.error = '';
-    if (!this.titulo.trim()) {
+    this.titulo = this.toUpperValue(this.titulo).trim();
+
+    if (!this.titulo) {
       this.error = 'Debe ingresar un título para el documento';
       return;
     }
+
     this.showOptionDialog = true; // mostrar modal de opciones
   }
 
@@ -78,7 +89,7 @@ export class EditorCreateDocumentComponent implements OnInit {
     this.docs
       .crearDesdePlantilla({
         plantilla_id: plantillaId,
-        titulo: this.titulo.trim(),
+        titulo: this.toUpperValue(this.titulo).trim(),
         confid_level: 'INTERNAL',
       })
       .subscribe({

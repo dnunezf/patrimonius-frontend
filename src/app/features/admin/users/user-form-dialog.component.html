@@ -42,6 +42,7 @@
             placeholder="Nombre del usuario"
             formControlName="nombre"
             maxlength="100"
+            (input)="onNombreInput()"
             [class.invalid]="showErr('nombre')"
             [attr.aria-invalid]="showErr('nombre')"
             [attr.aria-describedby]="'err-nombre'"
@@ -68,6 +69,7 @@
             placeholder="Primer apellido"
             formControlName="apellido1"
             maxlength="100"
+            (input)="onApellido1Input()"
             [class.invalid]="showErr('apellido1')"
             [attr.aria-invalid]="showErr('apellido1')"
             [attr.aria-describedby]="'err-ap1'"
@@ -98,6 +100,7 @@
             placeholder="Segundo apellido"
             formControlName="apellido2"
             maxlength="100"
+            (input)="onApellido2Input()"
           />
       </div>
 

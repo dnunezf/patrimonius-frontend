@@ -28,7 +28,7 @@
                 [(ngModel)]="userSearchTerm"
                 placeholder="Buscar usuario..."
                 name="userSearch"
-                (input)="filterUsers()"
+                (input)="onUserSearchInput()"
                 autocomplete="off"
               />
               <select [(ngModel)]="selectedRole" name="role" (change)="filterUsers()">
@@ -59,7 +59,7 @@
               [(ngModel)]="documentSearchTerm"
               placeholder="Buscar documento..."
               name="documentSearch"
-              (input)="filterDocuments()"
+              (input)="onDocumentSearchInput()"
               autocomplete="off"
             />
           </div>
@@ -113,29 +113,29 @@
           <!-- Permisos -->
           <div class="input-group">
             <label>Tipo de permiso</label>
-          <div class="permission-buttons" role="group" aria-label="Permisos a otorgar">
-            <button type="button" (click)="togglePermission('visualizar')" [class.selected]="permissions.visualizar">
-              Visualizar
-            </button>
-            <button
-              type="button"
-              (click)="togglePermission('editar')"
-              [class.selected]="permissions.editar"
-              [disabled]="!puedeEditarPorEstado(selectedDocument)"
-              [attr.title]="!puedeEditarPorEstado(selectedDocument) ? 'Solo en estados Creación o Edición' : null"
-            >
-              Editar
-            </button>
-            <button
-              type="button"
-              (click)="togglePermission('firmar')"
-              [class.selected]="permissions.firmar"
-              [disabled]="!puedeFirmarPorEstado(selectedDocument)"
-              [attr.title]="!puedeFirmarPorEstado(selectedDocument) ? 'Solo en estados Creación o Edición' : null"
-            >
-              Firmar
-            </button>
-          </div>
+            <div class="permission-buttons" role="group" aria-label="Permisos a otorgar">
+              <button type="button" (click)="togglePermission('visualizar')" [class.selected]="permissions.visualizar">
+                Visualizar
+              </button>
+              <button
+                type="button"
+                (click)="togglePermission('editar')"
+                [class.selected]="permissions.editar"
+                [disabled]="!puedeEditarPorEstado(selectedDocument)"
+                [attr.title]="!puedeEditarPorEstado(selectedDocument) ? 'Solo en estados Creación o Edición' : null"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                (click)="togglePermission('firmar')"
+                [class.selected]="permissions.firmar"
+                [disabled]="!puedeFirmarPorEstado(selectedDocument)"
+                [attr.title]="!puedeFirmarPorEstado(selectedDocument) ? 'Solo en estados Creación o Edición' : null"
+              >
+                Firmar
+              </button>
+            </div>
           </div>
 
           <!-- Motivo -->
@@ -147,6 +147,7 @@
               name="reason"
               rows="3"
               placeholder="Explique el motivo de la excepción (Obligatorio)"
+              (input)="onReasonInput()"
             ></textarea>
           </div>
 

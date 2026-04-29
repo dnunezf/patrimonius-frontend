@@ -6,11 +6,12 @@
     </a>
   </div>
 
-  <!-- 🔹 Encabezado (centrado) -->
+  <!-- 🔹 Encabezado -->
   <header class="page-header center">
     <h1>Gestión de Unidades Organizacionales</h1>
     <p class="sub">
-      Administración de unidades del sistema — creación, edición y eliminación de unidades organizacionales.
+      Administración de unidades del sistema — creación, edición y eliminación
+      de unidades organizacionales.
     </p>
   </header>
 
@@ -25,6 +26,7 @@
           [(ngModel)]="form.nombre"
           type="text"
           placeholder="Ej: Departamento de Conservación"
+          (input)="onNombreInput()"
         />
       </div>
 
@@ -34,6 +36,7 @@
           [(ngModel)]="form.descripcion"
           type="text"
           placeholder="Breve descripción de la unidad"
+          (input)="onDescripcionInput()"
         />
       </div>
     </div>
@@ -60,85 +63,117 @@
     <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
   </section>
 
-  <!-- 🔹 Listado estilo “auditoría” + paginación -->
+  <!-- 🔹 Listado -->
   <section class="card list-card">
     <div class="list-title">
       <h2>Listado de Unidades</h2>
     </div>
-    <p class="muted center-muted">Unidades actualmente registradas en el sistema.</p>
 
-    <div class="table-wrap" *ngIf="(unidades$ | async) as unidades">
-      <!-- Ajusta la página si borraste y quedaste fuera del rango -->
-      <ng-container *ngIf="ensureValidPage(unidades.length)"></ng-container>
+    <p class="muted center-muted">
+      Unidades actualmente registradas en el sistema.
+    </p>
 
-      <table class="table table--audit">
-        <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Descripción</th>
-          <th class="th-actions">Acciones</th>
-        </tr>
-        </thead>
+    <!-- 🔎 Búsqueda -->
+    <div class="form-group">
+      <label>Buscar unidad</label>
+      <input
+        [(ngModel)]="searchTerm"
+        type="text"
+        placeholder="Buscar por nombre o descripción"
+        (input)="onSearchInput()"
+      />
+    </div>
 
-        <tbody>
-        <tr *ngFor="let u of paged(unidades); trackBy: trackById">
-          <td class="td-strong">{{ u.nombre }}</td>
-          <td>{{ u.descripcion || '—' }}</td>
-          <td class="td-actions">
-            <button class="btn btn--ghost" (click)="edit(u)">Editar</button>
-            <button class="btn btn--danger" (click)="remove(u)">Eliminar</button>
-          </td>
-        </tr>
+    <div class="table-wrap" *ngIf="(unidades$ | async) as unidadesRaw">
+      <ng-container *ngIf="filteredUnidades(unidadesRaw) as unidades">
+        <!-- Ajusta la página si borraste y quedaste fuera del rango -->
+        <ng-container *ngIf="ensureValidPage(unidades.length)"></ng-container>
 
-        <tr *ngIf="unidades.length === 0">
-          <td colspan="3" class="empty">No hay unidades registradas.</td>
-        </tr>
-        </tbody>
-      </table>
+        <table class="table table--audit">
+          <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+          </thead>
 
-      <!-- Footer paginación -->
-      <div class="pagination">
-        <button
-          class="pager-btn"
-          (click)="goPrev(unidades.length)"
-          [disabled]="page === 1"
-        >
-          « Anterior
-        </button>
+          <tbody>
+          <tr *ngFor="let u of paged(unidades); trackBy: trackById">
+            <td class="td-strong">{{ u.nombre }}</td>
+            <td>{{ u.descripcion || '—' }}</td>
+            <td class="td-actions">
+              <button class="btn btn--ghost" (click)="edit(u)">
+                Editar
+              </button>
+              <button class="btn btn--danger" (click)="remove(u)">
+                Eliminar
+              </button>
+            </td>
+          </tr>
 
-        <span class="page-indicator">
-          Página {{ page }} de {{ totalPages(unidades.length) }}
-        </span>
+          <tr *ngIf="unidades.length === 0">
+            <td colspan="3" class="empty">No hay unidades registradas.</td>
+          </tr>
+          </tbody>
+        </table>
 
-        <button
-          class="pager-btn"
-          (click)="goNext(unidades.length)"
-          [disabled]="page >= totalPages(unidades.length)"
-        >
-          Siguiente »
-        </button>
-      </div>
+        <!-- Footer paginación -->
+        <div class="pagination">
+          <button
+            class="pager-btn"
+            (click)="goPrev(unidades.length)"
+            [disabled]="page === 1"
+          >
+            « Anterior
+          </button>
+
+          <span class="page-indicator">
+            Página {{ page }} de {{ totalPages(unidades.length) }}
+          </span>
+
+          <button
+            class="pager-btn"
+            (click)="goNext(unidades.length)"
+            [disabled]="page >= totalPages(unidades.length)"
+          >
+            Siguiente »
+          </button>
+        </div>
+      </ng-container>
     </div>
   </section>
 </main>
+
 <!-- Modal del sistema: Confirmar eliminación -->
-<div class="sys-modal__backdrop" *ngIf="modalOpen" (click)="closeModal()"></div>
+<div
+  class="sys-modal__backdrop"
+  *ngIf="modalOpen"
+  (click)="closeModal()"
+></div>
 
 <div class="sys-modal" *ngIf="modalOpen" role="dialog" aria-modal="true">
   <div class="card sys-modal__card" (click)="$event.stopPropagation()">
     <div class="sys-modal__header">
       <h3 class="sys-modal__title">{{ modalTitle }}</h3>
-      <button class="sys-modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
+      <button
+        class="sys-modal__close"
+        type="button"
+        (click)="closeModal()"
+        aria-label="Cerrar"
+      >
+        ×
+      </button>
     </div>
 
     <p class="sys-modal__message">{{ modalMessage }}</p>
 
     <div class="sys-modal__actions">
-      <button class="btn btn--ghost" (click)="closeModal()">
+      <button class="btn btn--ghost" type="button" (click)="closeModal()">
         {{ modalCancelText }}
       </button>
 
-      <button class="btn btn--danger" (click)="confirmDelete()">
+      <button class="btn btn--danger" type="button" (click)="confirmDelete()">
         {{ modalOkText }}
       </button>
     </div>

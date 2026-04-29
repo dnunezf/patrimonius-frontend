@@ -17,8 +17,6 @@ type ResultType = 'Permitido' | 'Denegado';
   templateUrl: './document-cycle-log.component.html',
   styleUrls: ['./document-cycle-log.component.css'],
 })
-
-
 export class DocumentCycleLogComponent implements OnInit, OnDestroy {
 
   // Backend-fed combos
@@ -72,6 +70,10 @@ export class DocumentCycleLogComponent implements OnInit, OnDestroy {
     this.clearFilterApplyDebounce();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
   private clearFilterApplyDebounce(): void {
     if (this.filterApplyTimer) {
       clearTimeout(this.filterApplyTimer);
@@ -102,12 +104,12 @@ export class DocumentCycleLogComponent implements OnInit, OnDestroy {
       sortBy: this.sortBy,
       sortDir: this.sortDir
     };
-    if (this.filters.q?.trim()) qp.q = this.filters.q.trim();
+    if (this.filters.q?.trim()) qp.q = this.toUpperValue(this.filters.q).trim();
     if (this.filters.user !== 'Todos los usuarios') qp.usuario = this.filters.user;
     const dbResult = this.mapUiResultToDbResult(this.filters.result);
     if (dbResult) qp.resultado = dbResult;
 
-    if (this.filters.document?.trim()) qp.documento = this.filters.document.trim();
+    if (this.filters.document?.trim()) qp.documento = this.toUpperValue(this.filters.document).trim();
 
     if (this.filters.state?.trim()) qp.estado = this.filters.state.trim();
 
@@ -270,8 +272,6 @@ ${rows.map(e => `  <evento>
     return new Blob([xml], { type: 'application/xml;charset=utf-8' });
   }
 
-
-
   resultClass(res: string | null | undefined) {
     const v = (res || '').trim().toLowerCase();
 
@@ -280,7 +280,6 @@ ${rows.map(e => `  <evento>
 
     return 'badge';
   }
-
 
   stateClass(state: string | null | undefined) {
     const stateClasses: Record<string, string> = {
@@ -301,19 +300,24 @@ ${rows.map(e => `  <evento>
   readonly maxWords = 5;
 
   limitWords(value: string, field: 'q' | 'document'): void {
-    if (!value) {
+    const upperValue = this.toUpperValue(value);
+
+    if (!upperValue) {
       if (field === 'q') this.filters.q = '';
       else this.filters.document = '';
       this.scheduleFilterApply(false);
       return;
     }
-    const words = value.trim().split(/\s+/);
-    const limited = words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : value;
+
+    const words = upperValue.trim().split(/\s+/);
+    const limited =
+      words.length > this.maxWords ? words.slice(0, this.maxWords).join(' ') : upperValue;
+
     if (field === 'q') this.filters.q = limited;
     else this.filters.document = limited;
+
     this.scheduleFilterApply(false);
   }
-
 
   private loadUsers() {
     this.adminUsers.listEmails().subscribe({
@@ -336,7 +340,6 @@ ${rows.map(e => `  <evento>
       }
     });
   }
-
 
   private formatToDisplay(value: string): string {
     return value
@@ -375,7 +378,6 @@ ${rows.map(e => `  <evento>
   closeDetail() {
     this.detailOpen = false;
     this.detail = null;
-    this.detailError = null;
   }
 
   documentName(e: AuditItem): string {

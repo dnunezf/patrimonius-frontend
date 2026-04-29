@@ -22,12 +22,18 @@
               type="text"
               formControlName="officialCode"
               placeholder="OFI-MNCR-..."
+              (input)="onSearchUpperInput('officialCode')"
             />
           </label>
 
           <label>
             Título / palabras clave
-            <input type="text" formControlName="q" placeholder="Buscar..." />
+            <input
+              type="text"
+              formControlName="q"
+              placeholder="Buscar..."
+              (input)="onSearchUpperInput('q')"
+            />
           </label>
         </div>
 
@@ -38,6 +44,7 @@
               type="text"
               formControlName="producingUnit"
               placeholder="Unidad..."
+              (input)="onSearchUpperInput('producingUnit')"
             />
           </label>
 
@@ -240,7 +247,11 @@
             <div class="grid2">
               <label>
                 Unidad productora *
-                <input type="text" formControlName="producingUnit" />
+                <input
+                  type="text"
+                  formControlName="producingUnit"
+                  (input)="onArchivalUpperInput('producingUnit')"
+                />
                 <div class="err" *ngIf="fieldErr('producingUnit')">
                   {{ fieldErr("producingUnit") }}
                 </div>
@@ -263,6 +274,7 @@
                 type="text"
                 formControlName="keywords"
                 placeholder="acta, consejo, museo..."
+                (input)="onArchivalUpperInput('keywords')"
               />
             </label>
           </section>
@@ -343,7 +355,11 @@
             <div class="grid2">
               <label>
                 Destinatario (nombre y cargo) *
-                <input type="text" formControlName="recipientNameRole" />
+                <input
+                  type="text"
+                  formControlName="recipientNameRole"
+                  (input)="onArchivalUpperInput('recipientNameRole')"
+                />
                 <div class="err" *ngIf="fieldErr('recipientNameRole')">
                   {{ fieldErr("recipientNameRole") }}
                 </div>
@@ -351,7 +367,11 @@
 
               <label>
                 Destinatario (institución) *
-                <input type="text" formControlName="recipientInstitution" />
+                <input
+                  type="text"
+                  formControlName="recipientInstitution"
+                  (input)="onArchivalUpperInput('recipientInstitution')"
+                />
                 <div class="err" *ngIf="fieldErr('recipientInstitution')">
                   {{ fieldErr("recipientInstitution") }}
                 </div>
@@ -382,12 +402,20 @@
             <div class="grid2">
               <label>
                 Remitente (nombre y cargo)
-                <input type="text" formControlName="senderNameRole" />
+                <input
+                  type="text"
+                  formControlName="senderNameRole"
+                  (input)="onArchivalUpperInput('senderNameRole')"
+                />
               </label>
 
               <label>
                 Remitente (institución)
-                <input type="text" formControlName="senderInstitution" />
+                <input
+                  type="text"
+                  formControlName="senderInstitution"
+                  (input)="onArchivalUpperInput('senderInstitution')"
+                />
               </label>
             </div>
 

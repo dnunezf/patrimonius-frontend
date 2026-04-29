@@ -38,6 +38,7 @@
         <input
           type="search"
           [(ngModel)]="filtroExpediente"
+          (input)="onFiltroExpedienteInput()"
           placeholder="Nombre del expediente"
         />
       </div>
@@ -47,6 +48,7 @@
         <input
           type="search"
           [(ngModel)]="filtroCodigo"
+          (input)="onFiltroCodigoInput()"
           placeholder="EXP-..."
         />
       </div>
@@ -56,6 +58,7 @@
         <input
           type="search"
           [(ngModel)]="filtroHash"
+          (input)="onFiltroHashInput()"
           placeholder="Fragmento del hash"
         />
       </div>

@@ -47,7 +47,7 @@
             class="input__control"
             type="text"
             [ngModel]="searchQuery()"
-            (ngModelChange)="searchQuery.set($event)"
+            (ngModelChange)="onDocumentSearchInput($event)"
             placeholder="Buscar por título, ID o tipo..."
           />
         </div>
@@ -246,7 +246,13 @@
   </section>
 
   <!-- MODAL: Add Authorized User -->
-  <div class="modal-backdrop" *ngIf="isAddUserOpen()" role="dialog" aria-modal="true" aria-label="Agregar Usuario Autorizado">
+  <div
+    class="modal-backdrop"
+    *ngIf="isAddUserOpen()"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Agregar Usuario Autorizado"
+  >
     <div class="modal">
       <div class="modal__head">
         <div>
@@ -267,7 +273,7 @@
               class="input__control"
               type="text"
               [ngModel]="userSearchQuery()"
-              (ngModelChange)="userSearchQuery.set($event)"
+              (ngModelChange)="onUserSearchInput($event)"
               placeholder="Buscar por nombre, correo o unidad..."
             />
           </div>
@@ -340,7 +346,13 @@
   </div>
 
   <!-- MODAL: Add Authorized Role -->
-  <div class="modal-backdrop" *ngIf="isAddRoleOpen()" role="dialog" aria-modal="true" aria-label="Agregar Rol Autorizado">
+  <div
+    class="modal-backdrop"
+    *ngIf="isAddRoleOpen()"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Agregar Rol Autorizado"
+  >
     <div class="modal">
       <div class="modal__head">
         <div>
@@ -354,6 +366,21 @@
 
       <div class="modal__body">
         <div class="field">
+          <label class="field__label">Buscar rol</label>
+          <div class="input">
+            <span class="input__icon" aria-hidden="true">🔎</span>
+            <input
+              class="input__control"
+              type="text"
+              [ngModel]="roleSearchQuery()"
+              (ngModelChange)="onRoleSearchInput($event)"
+              placeholder="Buscar por nombre del rol..."
+            />
+          </div>
+          <div class="field__hint muted2">Resultados: {{ filteredRolesCount() }}</div>
+        </div>
+
+        <div class="field">
           <label class="field__label">Seleccionar rol</label>
           <select
             class="select"
@@ -361,7 +388,7 @@
             (ngModelChange)="selectedRoleId.set($event)"
           >
             <option [ngValue]="null" disabled>Seleccionar rol</option>
-            <option *ngFor="let r of allRoles()" [ngValue]="r.id">
+            <option *ngFor="let r of filteredRoles()" [ngValue]="r.id">
               {{ r.nombre }}
             </option>
           </select>

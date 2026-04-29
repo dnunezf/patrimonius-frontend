@@ -25,6 +25,7 @@
           [(ngModel)]="form.nombreRol"
           type="text"
           placeholder="Ej: Editor, Archivista, Administrador"
+          (input)="onNombreRolInput()"
         />
       </div>
 
@@ -34,6 +35,7 @@
           [(ngModel)]="form.descripcion"
           type="text"
           placeholder="Breve descripción del rol"
+          (input)="onDescripcionInput()"
         />
       </div>
     </div>
@@ -65,63 +67,82 @@
     <div class="list-title">
       <h2>Listado de Roles</h2>
     </div>
+
     <p class="muted center-muted">Roles actualmente registrados en el sistema.</p>
 
-    <div class="table-wrap" *ngIf="(roles$ | async) as roles">
-      <!-- ✅ Ajusta página si quedaste fuera del rango (por ejemplo al borrar) -->
-      <ng-container *ngIf="ensureValidPage(roles.length)"></ng-container>
+    <!-- 🔎 Búsqueda -->
+    <div class="form-group">
+      <label>Buscar rol</label>
+      <input
+        [(ngModel)]="searchTerm"
+        type="text"
+        placeholder="Buscar por nombre o descripción"
+        (input)="onSearchInput()"
+      />
+    </div>
 
-      <table class="table table--audit">
-        <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Descripción</th>
-          <th class="th-actions">Acciones</th>
-        </tr>
-        </thead>
+    <div class="table-wrap" *ngIf="(roles$ | async) as rolesRaw">
+      <ng-container *ngIf="filteredRoles(rolesRaw) as roles">
+        <!-- ✅ Ajusta página si quedaste fuera del rango -->
+        <ng-container *ngIf="ensureValidPage(roles.length)"></ng-container>
 
-        <tbody>
-        <tr *ngFor="let rol of paged(roles); trackBy: trackById">
-          <td class="td-strong">{{ rol.nombreRol }}</td>
-          <td>{{ rol.descripcion || '—' }}</td>
-          <td class="td-actions">
-            <button class="btn btn--ghost" (click)="edit(rol)">Editar</button>
-            <button class="btn btn--danger" (click)="openDelete(rol)">Eliminar</button>
-          </td>
-        </tr>
+        <table class="table table--audit">
+          <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+          </thead>
 
-        <tr *ngIf="roles.length === 0">
-          <td colspan="3" class="empty">No hay roles registrados.</td>
-        </tr>
-        </tbody>
-      </table>
+          <tbody>
+          <tr *ngFor="let rol of paged(roles); trackBy: trackById">
+            <td class="td-strong">{{ rol.nombreRol }}</td>
+            <td>{{ rol.descripcion || '—' }}</td>
+            <td class="td-actions">
+              <button class="btn btn--ghost" (click)="edit(rol)">
+                Editar
+              </button>
+              <button class="btn btn--danger" (click)="openDelete(rol)">
+                Eliminar
+              </button>
+            </td>
+          </tr>
 
-      <!-- ✅ Footer paginación -->
-      <div class="pagination">
-        <button
-          class="pager-btn"
-          (click)="goPrev(roles.length)"
-          [disabled]="page === 1"
-        >
-          « Anterior
-        </button>
+          <tr *ngIf="roles.length === 0">
+            <td colspan="3" class="empty">No hay roles registrados.</td>
+          </tr>
+          </tbody>
+        </table>
 
-        <span class="page-indicator">
-          Página {{ page }} de {{ totalPages(roles.length) }}
-        </span>
+        <!-- ✅ Footer paginación -->
+        <div class="pagination">
+          <button
+            class="pager-btn"
+            (click)="goPrev(roles.length)"
+            [disabled]="page === 1"
+          >
+            « Anterior
+          </button>
 
-        <button
-          class="pager-btn"
-          (click)="goNext(roles.length)"
-          [disabled]="page >= totalPages(roles.length)"
-        >
-          Siguiente »
-        </button>
-      </div>
+          <span class="page-indicator">
+            Página {{ page }} de {{ totalPages(roles.length) }}
+          </span>
+
+          <button
+            class="pager-btn"
+            (click)="goNext(roles.length)"
+            [disabled]="page >= totalPages(roles.length)"
+          >
+            Siguiente »
+          </button>
+        </div>
+      </ng-container>
     </div>
   </section>
 </main>
-<!-- ✅ Modal Eliminar (estética del sistema) -->
+
+<!-- ✅ Modal Eliminar -->
 <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDelete()">
   <div class="modal" (click)="$event.stopPropagation()">
     <h3 class="modal-title">Eliminar rol</h3>
@@ -132,11 +153,19 @@
     </p>
 
     <div class="modal-actions">
-      <button class="btn btn--ghost" (click)="closeDelete()" [disabled]="deletingBusy">
+      <button
+        class="btn btn--ghost"
+        (click)="closeDelete()"
+        [disabled]="deletingBusy"
+      >
         Cancelar
       </button>
 
-      <button class="btn btn--danger" (click)="confirmDelete()" [disabled]="deletingBusy">
+      <button
+        class="btn btn--danger"
+        (click)="confirmDelete()"
+        [disabled]="deletingBusy"
+      >
         {{ deletingBusy ? 'Eliminando...' : 'Eliminar' }}
       </button>
     </div>

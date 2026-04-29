@@ -67,7 +67,11 @@ import { DocumentService, DocVersionRow } from 'core/services/document.service';
 
         <div class="vh-motivo">
           <label>Motivo de restauración</label>
-          <input [(ngModel)]="motivo" placeholder="Ej. Reversión por edición incorrecta">
+          <input
+            [(ngModel)]="motivo"
+            (input)="onMotivoInput()"
+            placeholder="Ej. Reversión por edición incorrecta"
+          >
         </div>
 
       </div>
@@ -325,6 +329,14 @@ export class VersionHistoryDialogComponent implements OnChanges {
 
   constructor(private docs: DocumentService) {}
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onMotivoInput(): void {
+    this.motivo = this.toUpperValue(this.motivo);
+  }
+
   ngOnChanges() {
     if (!this.open || !this.documentoId) return;
     this.loading = true;
@@ -345,8 +357,11 @@ export class VersionHistoryDialogComponent implements OnChanges {
 
   doRestore() {
     if (!this.selectedId) return;
+
+    const motivo = this.toUpperValue(this.motivo).trim() || 'RESTAURACIÓN HU-010';
+
     this.restoring = true;
-    this.docs.restoreVersion(this.documentoId, this.selectedId, this.motivo || 'Restauración HU-010').subscribe({
+    this.docs.restoreVersion(this.documentoId, this.selectedId, motivo).subscribe({
       next: (res) => {
         this.restoring = false;
         this.restored.emit({ newVersionId: res.newVersionId, html: res.html });
