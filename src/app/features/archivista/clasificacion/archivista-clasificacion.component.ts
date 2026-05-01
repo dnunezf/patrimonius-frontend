@@ -469,7 +469,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
       `¿Deseas reabrir el expediente "${expediente.nombre}"?`,
       () => {
         this.http
-          .put(`${this.apiUrl}/api/admin/expedientes/${expediente.id}`, {
+          .put(`${this.apiUrl}/api/expedientes/${expediente.id}`, {
             codigo: expediente.codigo,
             nombre: expediente.nombre,
             descripcion: expediente.descripcion ?? null,
