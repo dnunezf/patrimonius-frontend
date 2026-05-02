@@ -18,7 +18,6 @@ import { environment } from '../../../../environments/environment';
 export class EditorDashboardComponent implements OnInit {
   overviewCards = [
     { title: 'Crear Documento', description: 'Crear un nuevo documento', icon: 'document-create' },
-    { title: 'Firmas', description: 'Ver pendientes de firma', icon: 'signature' },
     { title: 'Consultas', description: 'Revisar documentos', icon: 'catalogo' },
   ];
 
@@ -94,12 +93,21 @@ export class EditorDashboardComponent implements OnInit {
     this.router.navigate(['/editor/document/create']);
   }
 
+
   onCardClick(card: any, ev: MouseEvent) {
     ev.stopPropagation();
     if (card?.title === 'Crear Documento') {
       this.goToCreate();
     }
+    if (card?.title === 'Consultas') {
+      this.gotoConsultas();
+    }
   }
+
+  gotoConsultas(): void {
+    this.router.navigate(['/consulta/aprobados']);
+  }
+
 
   editarDocumento(id: number): void {
     this.router.navigate([`/editor/document/${id}/edit`]);
@@ -275,31 +283,6 @@ export class EditorDashboardComponent implements OnInit {
     this.selectedPdf = f;
   }
 
-  // confirmSign(): void {
-  //   if (!this.signDocId) return;
-  //
-  //   if (!this.selectedPdf) {
-  //     this.signError = 'Adjunta el PDF firmado antes de confirmar.';
-  //     return;
-  //   }
-  //
-  //   this.signLoading = true;
-  //   this.signError = '';
-  //
-  //   this.docs.confirmSignature(this.signDocId, this.selectedPdf).subscribe({
-  //     next: () => {
-  //       this.signLoading = false;
-  //       this.selectedPdf = null;
-  //       this.loadDocuments();
-  //       this.reloadSignatureInfo();
-  //       this.loadAnexos();
-  //     },
-  //     error: (e) => {
-  //       this.signLoading = false;
-  //       this.signError = e?.error?.message || 'No se pudo confirmar la firma.';
-  //     },
-  //   });
-  // }
 
   confirmSign(): void {
     if (!this.signDocId) return;
@@ -310,8 +293,6 @@ export class EditorDashboardComponent implements OnInit {
     }
 
     this.signError = '';
-    // HU-20 simplificada:
-    // se elimina la validación previa de firma digital y se confirma directo.
     this.executeRealSignatureConfirm(this.selectedPdf);
   }
 

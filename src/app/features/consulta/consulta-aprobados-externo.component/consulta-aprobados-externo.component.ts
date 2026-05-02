@@ -1060,7 +1060,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
 
 
     this.router.navigate(
-      ['/archivista/clasificacion-documento', this.previewDocId],
+      ['/consulta/clasificacion-documento', this.previewDocId],
       {
         state: {
           expedienteNombre: this.previewDocContext?.expediente_nombre || '',

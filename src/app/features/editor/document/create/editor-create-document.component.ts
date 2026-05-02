@@ -7,8 +7,6 @@ import { TemplateSelectorComponent } from '../template/template-selector.compone
 import { PlantillaModel } from '../../../../../core/services/plantilla.service';
 import { CreateOptionDialogComponent } from './create-option-dialog.component';
 
-const DEFAULT_TEMPLATE_ID = 1; // documento en blanco
-
 @Component({
   standalone: true,
   selector: 'app-editor-create-document',
@@ -68,7 +66,7 @@ export class EditorCreateDocumentComponent implements OnInit {
     if (option === 'plantilla') {
       this.showTemplateSelector = true; // abrir selector de plantillas
     } else if (option === 'sin') {
-      this.crearDocumento(DEFAULT_TEMPLATE_ID); // crear sin plantilla
+      this.crearDocumento(null); // sin plantilla: contenido vacío en backend
     } else {
       this.cancelar(); // volver al dashboard
     }
@@ -83,15 +81,18 @@ export class EditorCreateDocumentComponent implements OnInit {
     }
   }
 
-  // ✅ Crear documento (con o sin plantilla)
-  private crearDocumento(plantillaId: number): void {
+  // ✅ Crear documento (con plantilla o en blanco)
+  private crearDocumento(plantillaId: number | null): void {
     this.loading = true;
+    const body: Parameters<DocumentService['crearDesdePlantilla']>[0] = {
+      titulo: this.toUpperValue(this.titulo).trim(),
+      confid_level: 'INTERNAL',
+    };
+    if (plantillaId != null) {
+      body.plantilla_id = plantillaId;
+    }
     this.docs
-      .crearDesdePlantilla({
-        plantilla_id: plantillaId,
-        titulo: this.toUpperValue(this.titulo).trim(),
-        confid_level: 'INTERNAL',
-      })
+      .crearDesdePlantilla(body)
       .subscribe({
         next: (res) => {
           this.loading = false;

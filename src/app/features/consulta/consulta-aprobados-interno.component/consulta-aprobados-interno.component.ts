@@ -1005,7 +1005,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.cerrarPreview();
 
     this.router.navigate(
-      ['/archivista/clasificacion-documento', docId],
+      ['/consulta/clasificacion-documento', docId],
       {
         state: {
           expedienteNombre: context?.expediente_nombre || '',
