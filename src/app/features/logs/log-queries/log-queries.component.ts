@@ -2,6 +2,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../../../core/services/auth.service';
 
 
 @Component({
@@ -12,6 +13,22 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['./log-queries.component.css']
 })
 export class LogQueriesComponent {
+  constructor(private auth: AuthService) {}
+
+  get bitacorasVisibles() {
+    const user = this.auth.currentUser();
+    const actor = user as
+      | { rolId?: number; rol_id?: number; isMaster?: boolean }
+      | null
+      | undefined;
+    const rolId = Number(actor?.rolId ?? actor?.rol_id ?? 0);
+    const isMaster = user?.isMaster === true;
+    const esAdmin = isMaster || rolId === 1;
+    return this.bitacoras.filter(
+      (b) => esAdmin || b.link !== '/logs/security'
+    );
+  }
+
   // Datos de las tarjetas de bitácoras (iconos y funciones)
   bitacoras = [
     {

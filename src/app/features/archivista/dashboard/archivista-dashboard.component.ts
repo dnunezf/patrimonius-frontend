@@ -34,6 +34,23 @@ export class ArchivistaDashboardComponent {
       link: '/archivista/gestion-plazos',
     },
 
+    {
+      title: 'Consulta de Bitácoras',
+      description:
+        'Acceso al historial de auditoría: ' +
+        'ciclo documental, permisos, actividad de usuario ' +
+        'y expedientes.',
+      badge: '',
+      features: [
+        'Bitácora de Ciclo Documental',
+        'Bitácora de Permisos y Accesos',
+        'Bitácora de Actividad de Usuario',
+        'Bitácora de Expedientes',
+      ],
+      icon: 'document-signed',
+      iconClass: 'soft-blue',
+      link: '/logs/queries',
+    },
   ];
 
   goTo(link?: string): void {
@@ -49,6 +66,7 @@ export class ArchivistaDashboardComponent {
       clock: '🕘',
       activity: '∿',
       'file-text': '📄',
+      'document-signed': '📄',
       settings: '⚙️',
     };
 
