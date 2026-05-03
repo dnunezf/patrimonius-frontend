@@ -60,11 +60,24 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
   gap: 20px;
-  align-items: end;
+  align-items: start;
+  overflow: visible;
+  position: relative;
 }
 
 .filters-grid .form__group {
   min-width: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.filters-grid select {
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
 .filters-grid .form__control {
@@ -263,6 +276,9 @@
 
   .filters-grid .form__group {
     min-width: 0;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
   }
 
   .filters-grid .form__control {

@@ -301,6 +301,47 @@ export class AuditService {
       observe: 'response',
     });
   }
+
+  exportSecurityEvents(
+    format: 'csv' | 'xml',
+    opts: Record<string, any>,
+  ): Observable<HttpResponse<Blob>> {
+    let params = new HttpParams();
+    Object.entries(opts || {}).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+        params = params.set(k, String(v));
+      }
+    });
+
+    const endpoint =
+      format === 'csv' ? 'security/events/csv' : 'security/events/xml';
+    return this.http.get(`${this.base}/${endpoint}`, {
+      params,
+      responseType: 'blob',
+      observe: 'response',
+    });
+  }
+
+  exportActividadUsuario(
+    format: 'csv' | 'xml',
+    opts: Record<string, any>,
+  ): Observable<HttpResponse<Blob>> {
+    let params = new HttpParams();
+    Object.entries(opts || {}).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && `${v}`.trim() !== '') {
+        params = params.set(k, String(v));
+      }
+    });
+
+    const endpoint =
+      format === 'csv' ? 'bitacora-actividad/csv' : 'bitacora-actividad/xml';
+    return this.http.get(`${this.base}/${endpoint}`, {
+      params,
+      responseType: 'blob',
+      observe: 'response',
+    });
+  }
+
   /** Fetch a single audit event detail. */
   getEventDetail(id: number): Observable<AuditDetail> {
     return this.http

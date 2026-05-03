@@ -1,11 +1,13 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpResponse } from '@angular/common/http';
 import { AuditService, SecurityDetail, SecurityItem } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 import { SecurityDetailModalComponent } from './security-detail-modal/security-detail-modal.component';
 import { BITACORA_FILTER_TYPING_DEBOUNCE_MS } from '../bitacora-list-filter.util';
+import { ToastService } from '../../../shared/ui/toast.service';
 
 @Component({
   selector: 'app-security-log',
@@ -44,6 +46,8 @@ export class SecurityLogComponent implements OnInit, OnDestroy {
   detail: SecurityDetail | null = null;
 
   private filterApplyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly toast = inject(ToastService);
 
   constructor(private audit: AuditService, private adminUsers: AdminUsersService) {}
 
@@ -96,6 +100,19 @@ export class SecurityLogComponent implements OnInit, OnDestroy {
     if (this.filters.accion !== 'Todas las acciones') qp.accion = this.filters.accion;
 
     if (this.filters.result !== 'Todos los resultados') qp.resultado = this.filters.result;
+
+    return qp;
+  }
+
+  private buildExportFilterParams(): Record<string, string> {
+    const qp: Record<string, string> = {
+      sortBy: this.sortBy,
+      sortDir: this.sortDir,
+    };
+    if (this.filters.q?.trim()) qp['q'] = this.toUpperValue(this.filters.q).trim();
+    if (this.filters.user !== 'Todos los usuarios') qp['usuario'] = this.filters.user;
+    if (this.filters.accion !== 'Todas las acciones') qp['accion'] = this.filters.accion;
+    if (this.filters.result !== 'Todos los resultados') qp['resultado'] = this.filters.result;
 
     return qp;
   }
@@ -178,60 +195,71 @@ export class SecurityLogComponent implements OnInit, OnDestroy {
   }
 
   downloadCSV() {
-    const rows = this.events || [];
-    const headers = ['fecha_hora','usuario','accion','resultado','ip'];
-
-    const escape = (val: any) => {
-      const s = String(val ?? '');
-      const mustQuote = /[",\n]/.test(s);
-      const safe = s.replace(/"/g, '""');
-      return mustQuote ? `"${safe}"` : safe;
-    };
-
-    const csv = [
-      headers.join(','),
-      ...rows.map(r => headers.map(h => escape((r as any)[h])).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    this.triggerDownload(blob, `bitacora_seguridad_${new Date().toISOString().slice(0,10)}.csv`);
+    this.downloadExport('csv');
   }
 
   downloadXML() {
-    const rows = this.events || [];
-
-    const escXml = (s: any) =>
-      String(s ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<bitacoraSeguridad>
-${rows.map(r => `
-  <evento>
-    <fecha_hora>${escXml((r as any).fecha_hora)}</fecha_hora>
-    <usuario>${escXml((r as any).usuario)}</usuario>
-    <accion>${escXml((r as any).accion)}</accion>
-    <resultado>${escXml((r as any).resultado)}</resultado>
-    <ip>${escXml((r as any).ip)}</ip>
-  </evento>`).join('')}
-</bitacoraSeguridad>
-`.trim();
-
-    const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
-    this.triggerDownload(blob, `bitacora_seguridad_${new Date().toISOString().slice(0,10)}.xml`);
+    this.downloadExport('xml');
   }
 
-  private triggerDownload(blob: Blob, filename: string) {
+  private downloadExport(format: 'csv' | 'xml'): void {
+    this.error = null;
+    const fallback =
+      format === 'csv'
+        ? `eventos_seguridad_${new Date().toISOString().slice(0, 10)}.csv`
+        : `eventos_seguridad_${new Date().toISOString().slice(0, 10)}.xml`;
+    this.audit.exportSecurityEvents(format, this.buildExportFilterParams()).subscribe({
+      next: (resp) => {
+        void this.finishBlobExport(resp, fallback);
+      },
+      error: (err) => {
+        console.error(err);
+        this.error = 'Error al exportar.';
+      },
+    });
+  }
+
+  private async finishBlobExport(
+    resp: HttpResponse<Blob>,
+    fallbackFilename: string,
+  ): Promise<void> {
+    const blob = resp.body;
+    if (!blob || blob.size === 0) {
+      this.error = 'No hay datos disponibles para exportar.';
+      return;
+    }
+
+    const ct = (resp.headers.get('Content-Type') || '').toLowerCase();
+    if (ct.includes('application/json')) {
+      try {
+        const text = await blob.text();
+        const parsed = JSON.parse(text) as { message?: string };
+        this.error = parsed.message || 'Error al exportar.';
+      } catch {
+        this.error = 'Error al exportar.';
+      }
+      return;
+    }
+
+    let filename = fallbackFilename;
+    const cd = resp.headers.get('Content-Disposition');
+    if (cd) {
+      const match = /filename\*?=(?:UTF-8''|"?)([^";\r\n]+)/i.exec(cd);
+      if (match?.[1]) {
+        filename = decodeURIComponent(match[1].replace(/^"|"$/g, ''));
+      }
+    }
+
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
     URL.revokeObjectURL(url);
+
+    this.toast.success('Exportación completada correctamente');
   }
 
   openDetail(row: SecurityItem) {

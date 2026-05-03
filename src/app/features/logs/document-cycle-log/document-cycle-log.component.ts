@@ -1,12 +1,13 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpResponse } from '@angular/common/http';
 import { AuditService, AuditItem, AuditDetail } from '../../../../core/services/audit.service';
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 import { DocumentCycleDetailModalComponent } from './document-cycle-detail-modal/document-cycle-detail-modal.component';
-import { catchError, forkJoin, of } from 'rxjs';
 import { BITACORA_FILTER_TYPING_DEBOUNCE_MS } from '../bitacora-list-filter.util';
+import { ToastService } from '../../../shared/ui/toast.service';
 
 type ResultType = 'Permitido' | 'Denegado';
 
@@ -54,6 +55,8 @@ export class DocumentCycleLogComponent implements OnInit, OnDestroy {
   detail: AuditDetail | null = null;
 
   private filterApplyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly toast = inject(ToastService);
 
   constructor(
     private audit: AuditService,
@@ -116,6 +119,25 @@ export class DocumentCycleLogComponent implements OnInit, OnDestroy {
     return qp;
   }
 
+  /** Parámetros de exportación CSV/XML sin paginación. */
+  private buildExportFilterParams(): Record<string, string> {
+    const qp: Record<string, string> = {
+      sortBy: this.sortBy,
+      sortDir: this.sortDir,
+    };
+    if (this.filters.q?.trim()) qp['q'] = this.toUpperValue(this.filters.q).trim();
+    if (this.filters.user !== 'Todos los usuarios') qp['usuario'] = this.filters.user;
+    const dbResult = this.mapUiResultToDbResult(this.filters.result);
+    if (dbResult) qp['resultado'] = dbResult;
+
+    if (this.filters.document?.trim())
+      qp['documento'] = this.toUpperValue(this.filters.document).trim();
+
+    if (this.filters.state?.trim()) qp['estado'] = this.filters.state.trim();
+
+    return qp;
+  }
+
   // Fetch data with pagination
   fetch() {
     this.loading = true;
@@ -165,111 +187,62 @@ export class DocumentCycleLogComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Export with current filters using detail payload per event.
   export(format: 'csv' | 'xml') {
-    const params = { ...this.buildQuery(), page: 1, pageSize: 10000 };
     this.error = null;
-    this.audit.listEvents(params).subscribe({
-      next: (res) => {
-        const rows = res.items || [];
-        const detailRequests = rows.map((r) =>
-          this.audit.getEventDetail(r.id_evento).pipe(catchError(() => of(null)))
-        );
-        forkJoin(detailRequests).subscribe({
-          next: (details) => {
-            const validDetails = details.filter((d): d is AuditDetail => !!d);
-            const filename = format === 'csv' ? 'eventos_auditoria.csv' : 'eventos_auditoria.xml';
-            const blob = format === 'csv' ? this.buildCsvBlob(validDetails) : this.buildXmlBlob(validDetails);
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-          },
-          error: (err) => {
-            this.error = 'Error al exportar.';
-            console.error(err);
-          }
-        });
+    const fallback =
+      format === 'csv' ? 'eventos_auditoria.csv' : 'eventos_auditoria.xml';
+    this.audit.exportEvents(format, this.buildExportFilterParams()).subscribe({
+      next: (resp) => {
+        void this.finishBlobExport(resp, fallback);
       },
       error: (err) => {
-        this.error = 'Error al exportar.';
         console.error(err);
-      }
+        this.error = 'Error al exportar.';
+      },
     });
   }
 
-  private buildCsvBlob(rows: AuditDetail[]): Blob {
-    const escape = (val: unknown) => {
-      const s = String(val ?? '');
-      const mustQuote = /[",\n]/.test(s);
-      return mustQuote ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const headers = [
-      'ID evento',
-      'Fecha del evento',
-      'Título actual',
-      'Título (snapshot)',
-      'Nombre actual',
-      'Nombre (snapshot)',
-      'Estado actual',
-      'Estado (snapshot)',
-      'Correo usuario',
-      'Nombre completo',
-      'Acción',
-      'Evento ciclo',
-      'Acción solicitada',
-      'Resultado',
-      'Motivo'
-    ];
-    const line = (e: AuditDetail) => [
-      e.id_evento,
-      e.fecha_evento ?? '',
-      e.documento_titulo_actual ?? '',
-      e.documento_titulo ?? '',
-      e.documento_nombre_actual ?? '',
-      e.documento_nombre ?? e.documento_codigo ?? '',
-      e.documento_estado_actual ?? '',
-      e.documento_estado ?? '',
-      e.usuario_email ?? '',
-      this.fullNameFromDetail(e),
-      e.accion ?? '',
-      e.evento_ciclo ?? '',
-      e.accion_solicitada ?? '',
-      e.resultado ?? '',
-      e.motivo ?? ''
-    ].map(escape).join(',');
-    const csv = [headers.join(','), ...rows.map(line)].join('\n');
-    return new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-  }
+  private async finishBlobExport(
+    resp: HttpResponse<Blob>,
+    fallbackFilename: string,
+  ): Promise<void> {
+    const blob = resp.body;
+    if (!blob || blob.size === 0) {
+      this.error = 'No hay datos disponibles para exportar.';
+      return;
+    }
 
-  private buildXmlBlob(rows: AuditDetail[]): Blob {
-    const esc = (s: unknown) => String(s ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<eventos_auditoria>
-${rows.map(e => `  <evento>
-    <id_evento>${esc(e.id_evento)}</id_evento>
-    <fecha_hora>${esc(e.fecha_evento)}</fecha_hora>
-    <titulo_actual>${esc(e.documento_titulo_actual)}</titulo_actual>
-    <titulo_snapshot>${esc(e.documento_titulo)}</titulo_snapshot>
-    <nombre_actual>${esc(e.documento_nombre_actual)}</nombre_actual>
-    <nombre_snapshot>${esc(e.documento_nombre ?? e.documento_codigo)}</nombre_snapshot>
-    <estado_documento_actual>${esc(e.documento_estado_actual)}</estado_documento_actual>
-    <estado_documento_snapshot>${esc(e.documento_estado)}</estado_documento_snapshot>
-    <usuario>${esc(e.usuario_email)}</usuario>
-    <usuario_nombre_completo>${esc(this.fullNameFromDetail(e))}</usuario_nombre_completo>
-    <accion>${esc(e.accion)}</accion>
-    <evento_ciclo>${esc(e.evento_ciclo)}</evento_ciclo>
-    <accion_solicitada>${esc(e.accion_solicitada)}</accion_solicitada>
-    <resultado>${esc(e.resultado)}</resultado>
-    <motivo>${esc(e.motivo)}</motivo>
-  </evento>`).join('\n')}
-</eventos_auditoria>`;
-    return new Blob([xml], { type: 'application/xml;charset=utf-8' });
+    const ct = (resp.headers.get('Content-Type') || '').toLowerCase();
+    if (ct.includes('application/json')) {
+      try {
+        const text = await blob.text();
+        const parsed = JSON.parse(text) as { message?: string };
+        this.error = parsed.message || 'Error al exportar.';
+      } catch {
+        this.error = 'Error al exportar.';
+      }
+      return;
+    }
+
+    let filename = fallbackFilename;
+    const cd = resp.headers.get('Content-Disposition');
+    if (cd) {
+      const match = /filename\*?=(?:UTF-8''|"?)([^";\r\n]+)/i.exec(cd);
+      if (match?.[1]) {
+        filename = decodeURIComponent(match[1].replace(/^"|"$/g, ''));
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    this.toast.success('Exportación completada correctamente');
   }
 
   resultClass(res: string | null | undefined) {
