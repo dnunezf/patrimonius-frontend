@@ -271,7 +271,10 @@
                 Descargar
               </button>
             </ng-container>
-            <ng-container *ngIf="!tieneAccesoAlDocumento(row)">
+            <ng-container *ngIf="!tieneAccesoAlDocumento(row) && row.hasPendingRequest">
+              <span class="pill sm">Solicitud pendiente</span>
+            </ng-container>
+            <ng-container *ngIf="!tieneAccesoAlDocumento(row) && !row.hasPendingRequest">
               <button
                 type="button"
                 class="btn sm outline"

@@ -174,7 +174,7 @@ export class MainDashboardComponent {
 
   get canSeeConservationIntakeCard(): boolean {
     const roles = new Set(this.userRoleKeys);
-    return roles.has('ADMINISTRADOR') || roles.has('ARCHIVISTA');
+    return roles.has('EDITOR') || roles.has('ARCHIVISTA');
   }
 
   get visibleCards(): DashboardCard[] {

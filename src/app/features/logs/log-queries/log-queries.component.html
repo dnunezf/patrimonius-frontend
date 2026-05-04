@@ -10,7 +10,7 @@
   <div class="logs-cards">
     <a
       class="log-card"
-      *ngFor="let log of bitacoras"
+      *ngFor="let log of bitacorasVisibles"
       [routerLink]="log.link"
       [class.is-disabled]="!log.link"
       tabindex="0"

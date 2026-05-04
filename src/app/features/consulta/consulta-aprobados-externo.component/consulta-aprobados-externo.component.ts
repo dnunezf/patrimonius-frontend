@@ -902,7 +902,13 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   }
 
   solicitudCreada(): void {
+    const docId = this.selectedDocumento?.id;
     this.cerrarSolicitud();
+    if (docId != null) {
+      this.rows = this.rows.map((r) =>
+        r.id === docId ? { ...r, hasPendingRequest: true } : r,
+      );
+    }
   }
 
   volver(): void {
@@ -969,7 +975,13 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   }
 
   solicitudExpedienteCreada(): void {
+    const expId = this.selectedExpediente?.id;
     this.cerrarSolicitudExpediente();
+    if (expId != null) {
+      this.expedientesRows = this.expedientesRows.map((r) =>
+        r.id === expId ? { ...r, has_pending_request: true } : r,
+      );
+    }
   }
   totalElegiblesExpediente(row: ConsultaExpedienteRow): number | string {
     return row.total_documentos_elegibles ?? '—';
@@ -1060,7 +1072,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
 
 
     this.router.navigate(
-      ['/archivista/clasificacion-documento', this.previewDocId],
+      ['/consulta/clasificacion-documento', this.previewDocId],
       {
         state: {
           expedienteNombre: this.previewDocContext?.expediente_nombre || '',

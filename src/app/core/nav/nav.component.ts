@@ -29,7 +29,7 @@ import { Notificacion } from '../../shared/models/notificacion.model';
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, NgIf, NgFor],
   templateUrl: './nav.component.html',
-  styleUrls: ['./nav.component.css']
+  styleUrls: ['./nav.component.css'],
 })
 export class NavComponent {
   @Input() brandTitle = 'Patrimonius';
@@ -40,7 +40,8 @@ export class NavComponent {
 
   @Input() set items(value: NavItem[]) {
     this._items = (value || []).filter(
-      it => (it.label ?? '').trim().toLowerCase() !== 'inicio' && it.path !== '/'
+      (it) =>
+        (it.label ?? '').trim().toLowerCase() !== 'inicio' && it.path !== '/',
     );
   }
 
@@ -91,11 +92,12 @@ export class NavComponent {
       .subscribe(() => this.close());
   }
 
-  private readonly currentUser = computed(() =>
-    this.auth.currentUser?.() ??
-    this.auth.currentUser?.() ??
-    this.auth.currentUser?.call?.(this.auth) ??
-    this.auth.currentUser?.()
+  private readonly currentUser = computed(
+    () =>
+      this.auth.currentUser?.() ??
+      this.auth.currentUser?.() ??
+      this.auth.currentUser?.call?.(this.auth) ??
+      this.auth.currentUser?.(),
   );
 
   isLoggedIn = () => !!this.auth.currentUser?.();
@@ -120,7 +122,7 @@ export class NavComponent {
       'Editor',
       'Archivista',
       'Usuario',
-      'Usuario Externo'
+      'Usuario Externo',
     ];
 
     const id = Number((u as any).rolId);
@@ -136,7 +138,7 @@ export class NavComponent {
       .trim()
       .replace(/_/g, ' ')
       .toLowerCase()
-      .replace(/\b\w/g, c => c.toUpperCase());
+      .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   roleDisplay(role: string): string {
@@ -208,17 +210,19 @@ export class NavComponent {
       next: (r) => this.store.setCount(r.unread ?? 0),
       error: () => {},
     });
-    this.notiSvc.listMine({ unreadOnly: true, limit: 40, offset: 0 }).subscribe({
-      next: (r) => {
-        this.notifItems = r.items ?? [];
-        this.notifDropdownLoading = false;
-      },
-      error: () => {
-        this.notifDropdownError = 'No se pudieron cargar las notificaciones.';
-        this.notifItems = [];
-        this.notifDropdownLoading = false;
-      },
-    });
+    this.notiSvc
+      .listMine({ unreadOnly: true, limit: 40, offset: 0 })
+      .subscribe({
+        next: (r) => {
+          this.notifItems = r.items ?? [];
+          this.notifDropdownLoading = false;
+        },
+        error: () => {
+          this.notifDropdownError = 'No se pudieron cargar las notificaciones.';
+          this.notifItems = [];
+          this.notifDropdownLoading = false;
+        },
+      });
   }
 
   isUnreadNotif(n: Notificacion): boolean {
@@ -286,8 +290,12 @@ export class NavComponent {
   }
 
   drawerOpen = signal(false);
-  openDrawer() { this.drawerOpen.set(true); }
-  closeDrawer() { this.drawerOpen.set(false); }
+  openDrawer() {
+    this.drawerOpen.set(true);
+  }
+  closeDrawer() {
+    this.drawerOpen.set(false);
+  }
 
   roleIcon(role: string): string {
     const r = role?.toUpperCase().replace(/\s+/g, '_');
@@ -311,7 +319,7 @@ export class NavComponent {
   }
 
   toggleDrawer() {
-    this.drawerOpen.update(v => !v);
+    this.drawerOpen.update((v) => !v);
   }
 
   signOut(): void {
@@ -373,15 +381,15 @@ export class NavComponent {
 
   /**
    * HU-019 conservation intake action.
-   * Recommended visibility: ADMINISTRADOR and rol archivo (ARCHIVADOR / ARCHIVISTA).
+   * Acceso permitido únicamente para Editor y Archivista.
    */
   canSeeConservationIntake = (): boolean => {
     const roles = this.rolesList.map((role) =>
-      role.trim().toUpperCase().replace(/\s+/g, '_')
+      role.trim().toUpperCase().replace(/\s+/g, '_'),
     );
 
     return (
-      roles.includes('ADMINISTRADOR') ||
+      roles.includes('EDITOR') ||
       roles.includes('ARCHIVADOR') ||
       roles.includes('ARCHIVISTA')
     );

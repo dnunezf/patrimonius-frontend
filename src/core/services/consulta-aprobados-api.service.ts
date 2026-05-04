@@ -27,6 +27,7 @@ export type ConsultaDocumentoRow = {
   canDownload?: boolean;
   canView?: boolean;
   estadoEtiqueta?: string;
+  hasPendingRequest?: boolean;
 };
 
 export type ConsultaSearchResponse = {

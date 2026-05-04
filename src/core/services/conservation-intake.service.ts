@@ -161,7 +161,7 @@ export class ConservationIntakeService {
   }
 
   getSeries(): Observable<ArchivalSeries[]> {
-    return this.http.get<any>(`${this.apiRoot}/api/admin/series`).pipe(
+    return this.http.get<any>(`${this.apiRoot}/api/series`).pipe(
       map((raw) =>
         extractArray(raw).map((item: any) => ({
           id: Number(item.id),
@@ -183,7 +183,7 @@ export class ConservationIntakeService {
   }
 
   getSubseries(): Observable<ArchivalSubseries[]> {
-    return this.http.get<any>(`${this.apiRoot}/api/admin/subseries`).pipe(
+    return this.http.get<any>(`${this.apiRoot}/subseries`).pipe(
       map((raw) =>
         extractArray(raw).map((item: any) => ({
           id: Number(item.id),
@@ -196,7 +196,7 @@ export class ConservationIntakeService {
   }
 
   getExpedientes(): Observable<ArchivalExpediente[]> {
-    return this.http.get<any>(`${this.apiRoot}/api/admin/expedientes`).pipe(
+    return this.http.get<any>(`${this.apiRoot}/api/expedientes`).pipe(
       map((raw) =>
         extractArray(raw).map((item: any) => ({
           id: Number(item.id),
@@ -337,8 +337,8 @@ export class ConservationIntakeService {
   }
 
   /* =========================
- * HU-036 · Despacho por correo
- * ========================= */
+   * HU-036 · Despacho por correo
+   * ========================= */
 
   /**
    * Returns the document data, default recipients and available attachments
@@ -360,15 +360,15 @@ export class ConservationIntakeService {
             document: {
               id: Number(
                 documentRaw.id ??
-                documentRaw.documento_id ??
-                documentRaw.documentId ??
-                documentId,
+                  documentRaw.documento_id ??
+                  documentRaw.documentId ??
+                  documentId,
               ),
               officialCode: String(
                 documentRaw.officialCode ??
-                documentRaw.official_code ??
-                documentRaw.numero_serie ??
-                '',
+                  documentRaw.official_code ??
+                  documentRaw.numero_serie ??
+                  '',
               ),
               title: String(documentRaw.title ?? documentRaw.titulo ?? ''),
               state: String(documentRaw.state ?? documentRaw.estado ?? ''),
@@ -384,19 +384,19 @@ export class ConservationIntakeService {
                 null,
               dispatchEmails: extractArray<string>(
                 documentRaw.dispatchEmails ??
-                documentRaw.dispatch_emails ??
-                documentRaw.correos_despacho ??
-                [],
+                  documentRaw.dispatch_emails ??
+                  documentRaw.correos_despacho ??
+                  [],
               ),
             },
             attachments: attachmentsRaw.map((item: any) => ({
               id: Number(item.id ?? item.attachmentId ?? item.anexo_id ?? 0),
               fileName: String(
                 item.fileName ??
-                item.file_name ??
-                item.nombre_archivo ??
-                item.nombre ??
-                '',
+                  item.file_name ??
+                  item.nombre_archivo ??
+                  item.nombre ??
+                  '',
               ),
               mimeType:
                 item.mimeType ?? item.mime_type ?? item.tipo_mime ?? null,

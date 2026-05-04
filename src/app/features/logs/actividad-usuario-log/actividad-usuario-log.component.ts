@@ -1,7 +1,8 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpResponse } from '@angular/common/http';
 import {
   AuditService,
   UserActivityBitacoraDetail,
@@ -10,6 +11,7 @@ import {
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 import { ActividadUsuarioDetailModalComponent } from './actividad-usuario-detail-modal/actividad-usuario-detail-modal.component';
 import { BITACORA_FILTER_TYPING_DEBOUNCE_MS } from '../bitacora-list-filter.util';
+import { ToastService } from '../../../shared/ui/toast.service';
 
 @Component({
   selector: 'app-actividad-usuario-log',
@@ -62,6 +64,8 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
   private filterApplyTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly maxWords = 5;
+
+  private readonly toast = inject(ToastService);
 
   constructor(
     private audit: AuditService,
@@ -120,6 +124,27 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
     if (this.filters.documento?.trim()) qp.documento = this.toUpperValue(this.filters.documento).trim();
     if (this.filters.from?.trim()) qp.from = this.filters.from.trim();
     if (this.filters.to?.trim()) qp.to = this.filters.to.trim();
+
+    return qp;
+  }
+
+  private buildExportFilterParams(): Record<string, string> {
+    const qp: Record<string, string> = {
+      sortBy: this.sortBy,
+      sortDir: this.sortDir,
+    };
+    if (this.filters.q?.trim()) qp['q'] = this.toUpperValue(this.filters.q).trim();
+    if (this.filters.user !== 'Todos los usuarios') qp['usuario'] = this.filters.user;
+    if (this.filters.actividad !== 'Todas las actividades')
+      qp['actividad'] = this.filters.actividad;
+    if (this.filters.recurso !== 'Todos los recursos')
+      qp['recurso'] = this.filters.recurso;
+    if (this.filters.result !== 'Todos los resultados')
+      qp['resultado'] = this.filters.result;
+    if (this.filters.documento?.trim())
+      qp['documento'] = this.toUpperValue(this.filters.documento).trim();
+    if (this.filters.from?.trim()) qp['from'] = this.filters.from.trim();
+    if (this.filters.to?.trim()) qp['to'] = this.filters.to.trim();
 
     return qp;
   }
@@ -226,78 +251,71 @@ export class ActividadUsuarioLogComponent implements OnInit, OnDestroy {
   }
 
   downloadCSV() {
-    const rows = this.events || [];
-    const headers = [
-      'fecha_hora',
-      'usuario',
-      'accion',
-      'resultado',
-      'actividad',
-      'recurso',
-      'documento_titulo',
-      'documento_codigo_unico',
-    ];
-
-    const escape = (val: unknown) => {
-      const s = String(val ?? '');
-      const mustQuote = /[",\n]/.test(s);
-      const safe = s.replace(/"/g, '""');
-      return mustQuote ? `"${safe}"` : safe;
-    };
-
-    const csv = [
-      headers.join(','),
-      ...rows.map((r) => headers.map((h) => escape((r as any)[h])).join(',')),
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    this.triggerDownload(blob, `bitacora_actividad_usuario_${new Date().toISOString().slice(0, 10)}.csv`);
+    this.downloadExport('csv');
   }
 
   downloadXML() {
-    const rows = this.events || [];
-
-    const escXml = (s: unknown) =>
-      String(s ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<bitacoraActividadUsuario>
-${rows
-      .map(
-        (r) => `
-  <evento>
-    <fecha_hora>${escXml(r.fecha_hora)}</fecha_hora>
-    <usuario>${escXml(r.usuario)}</usuario>
-    <accion>${escXml(r.accion)}</accion>
-    <resultado>${escXml(r.resultado)}</resultado>
-    <actividad>${escXml(r.actividad)}</actividad>
-    <recurso>${escXml(r.recurso)}</recurso>
-    <documento_titulo>${escXml(r.documento_titulo)}</documento_titulo>
-    <documento_codigo_unico>${escXml(r.documento_codigo_unico)}</documento_codigo_unico>
-  </evento>`,
-      )
-      .join('')}
-</bitacoraActividadUsuario>
-`.trim();
-
-    const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
-    this.triggerDownload(blob, `bitacora_actividad_usuario_${new Date().toISOString().slice(0, 10)}.xml`);
+    this.downloadExport('xml');
   }
 
-  private triggerDownload(blob: Blob, filename: string) {
+  private downloadExport(format: 'csv' | 'xml'): void {
+    this.error = null;
+    const fallback =
+      format === 'csv'
+        ? `bitacora_actividad_usuario_${new Date().toISOString().slice(0, 10)}.csv`
+        : `bitacora_actividad_usuario_${new Date().toISOString().slice(0, 10)}.xml`;
+    this.audit.exportActividadUsuario(format, this.buildExportFilterParams()).subscribe({
+      next: (resp) => {
+        void this.finishBlobExport(resp, fallback);
+      },
+      error: (err) => {
+        console.error(err);
+        this.error = 'Error al exportar.';
+      },
+    });
+  }
+
+  private async finishBlobExport(
+    resp: HttpResponse<Blob>,
+    fallbackFilename: string,
+  ): Promise<void> {
+    const blob = resp.body;
+    if (!blob || blob.size === 0) {
+      this.error = 'No hay datos disponibles para exportar.';
+      return;
+    }
+
+    const ct = (resp.headers.get('Content-Type') || '').toLowerCase();
+    if (ct.includes('application/json')) {
+      try {
+        const text = await blob.text();
+        const parsed = JSON.parse(text) as { message?: string };
+        this.error = parsed.message || 'Error al exportar.';
+      } catch {
+        this.error = 'Error al exportar.';
+      }
+      return;
+    }
+
+    let filename = fallbackFilename;
+    const cd = resp.headers.get('Content-Disposition');
+    if (cd) {
+      const match = /filename\*?=(?:UTF-8''|"?)([^";\r\n]+)/i.exec(cd);
+      if (match?.[1]) {
+        filename = decodeURIComponent(match[1].replace(/^"|"$/g, ''));
+      }
+    }
+
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-
-    a.href = url;
-    a.download = filename;
-    a.click();
-
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
     URL.revokeObjectURL(url);
+
+    this.toast.success('Exportación completada correctamente');
   }
 
   openDetail(row: UserActivityBitacoraItem) {

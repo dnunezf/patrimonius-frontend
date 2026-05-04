@@ -294,7 +294,8 @@ export class DocumentService {
    * Creates a new draft from a template.
    */
   crearDesdePlantilla(body: {
-    plantilla_id: number;
+    /** Si se omite o es null, el documento se crea sin contenido de plantilla. */
+    plantilla_id?: number | null;
     titulo: string;
     categoria_id?: number | null;
     confid_level?: MetadataAccessLevel;

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -11,6 +11,7 @@ import {
 import { AdminUsersService } from '../../../../core/services/admin-users.service';
 import { UserActivityDetailModalComponent } from './user-activity-detail-modal/user-activity-detail-modal.component';
 import { BITACORA_FILTER_TYPING_DEBOUNCE_MS } from '../bitacora-list-filter.util';
+import { ToastService } from '../../../shared/ui/toast.service';
 
 @Component({
   selector: 'app-user-activity-log',
@@ -65,6 +66,8 @@ export class UserActivityLogComponent implements OnInit, OnDestroy {
   private filterApplyTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly maxWords = 5;
+
+  private readonly toast = inject(ToastService);
 
   constructor(
     private audit: AuditService,
@@ -271,6 +274,8 @@ export class UserActivityLogComponent implements OnInit, OnDestroy {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+
+    this.toast.success('Exportación completada correctamente');
   }
 
   private buildCsvBlob(rows: PermissionBitacoraItem[]): Blob {

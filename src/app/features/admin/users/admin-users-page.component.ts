@@ -138,13 +138,13 @@ export class AdminUsersPageComponent {
   /** Delete flow now asks confirmation and toasts the result (no window.confirm/alert). */
   async delete(u: AdminUser): Promise<void> {
     const ok = await this.confirm.ask(
-      `Eliminar al usuario ${u.nombre} ${u.apellido1}?`,
-      'Confirmar eliminación',
+      '¿Desea desactivar este usuario? Su cuenta quedará inactiva y no podrá iniciar sesión, pero sus registros se conservarán.',
+      'Confirmar desactivación',
     );
     if (!ok) return;
     this.api.remove(u.id).subscribe({
       next: () => {
-        this.toast.success('Usuario eliminado');
+        this.toast.success('Usuario desactivado');
         this.load();
       },
       error: (e) => {

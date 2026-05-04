@@ -55,6 +55,22 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(180px, 1fr));
   gap: 16px;
+  align-items: start;
+  overflow: visible;
+  position: relative;
+}
+.filters-grid .form__group {
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+.filters-grid select {
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 .filters-grid .actions {
   grid-column: 1 / -1;

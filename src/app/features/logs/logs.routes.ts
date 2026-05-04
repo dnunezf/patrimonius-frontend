@@ -1,5 +1,6 @@
-
 import { Routes } from '@angular/router';
+import { AuthGuard } from '../../../core/services/auth.guard';
+import { RoleGuard } from '../../core/guards/role.guard';
 import { LogQueriesComponent } from './log-queries/log-queries.component';
 import { DocumentCycleLogComponent } from './document-cycle-log/document-cycle-log.component';
 import { SecurityLogComponent } from './security-log/security-log.component';
@@ -13,7 +14,13 @@ export const LOGS_ROUTES: Routes = [
     children: [
       { path: 'queries', component: LogQueriesComponent, title: 'Patrimonius | Consultas de Bitácora' },
       { path: 'document-cycle', component: DocumentCycleLogComponent, title: 'Patrimonius | Bitácora de Ciclo Documental' },
-      { path: 'security', component: SecurityLogComponent, title: 'Patrimonius | Bitácora de Seguridad' },
+      {
+        path: 'security',
+        component: SecurityLogComponent,
+        title: 'Patrimonius | Bitácora de Seguridad',
+        canActivate: [AuthGuard, RoleGuard],
+        data: { allowedRoles: [1] },
+      },
       {
         path: 'user-activity',
         component: UserActivityLogComponent,
