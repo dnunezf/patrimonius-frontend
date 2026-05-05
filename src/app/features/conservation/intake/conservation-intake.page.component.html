@@ -654,6 +654,7 @@
               </button>
 
               <button
+                *ngIf="canExportToEAD()"
                 type="button"
                 class="btn btn-small primary"
                 (click)="openEadDialog(row, 'export')"

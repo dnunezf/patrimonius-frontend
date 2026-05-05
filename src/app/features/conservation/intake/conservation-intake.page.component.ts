@@ -14,6 +14,8 @@ import { startWith } from 'rxjs/operators';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConservationIntakeService } from '../../../../core/services/conservation-intake.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { EDITOR_ID } from '../../../shared/data/catalogs';
 
 import {
   ArchivalExpediente,
@@ -90,6 +92,7 @@ export class ConservationIntakePageComponent {
   private readonly confirm = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
 
   readonly loading = signal(false);
   readonly referenceCodeLoading = signal(false);
@@ -1112,6 +1115,11 @@ export class ConservationIntakePageComponent {
     row: ConservationEadDocumentRow,
     source: 'view' | 'export' = 'view',
   ): void {
+    if (source === 'export' && !this.canExportToEAD()) {
+      this.toasts.error('No tiene permisos para exportar a EAD 2002.');
+      return;
+    }
+
     this.eadDialogDocument.set(row);
     this.eadDialogOpen.set(true);
 
@@ -1217,4 +1225,31 @@ export class ConservationIntakePageComponent {
       return 'Ingrese correos válidos separados por coma.';
     return 'Valor inválido.';
   }
+
+  /**
+   * Check if current user has Editor role (role ID 2)
+   */
+  isEditor(): boolean {
+    const user = this.auth.currentUser();
+    if (!user) return false;
+
+    // Check single role (rolId) or multiple roles (rolIds)
+    const singleRoleId = Number(user.rolId ?? 0);
+    const multipleRoleIds = Array.isArray(user.rolIds) ? user.rolIds.map(id => Number(id)) : [];
+
+    return singleRoleId === EDITOR_ID || multipleRoleIds.includes(EDITOR_ID);
+  }
+
+  canExportToEAD(): boolean {
+    const user = this.auth.currentUser();
+    if (!user) return false;
+
+    const roles = (user.roles || [])
+      .filter(Boolean)
+      .map((role: string) => String(role).trim().toUpperCase());
+
+    return roles.includes('ARCHIVADOR');
+  }
+
+
 }
