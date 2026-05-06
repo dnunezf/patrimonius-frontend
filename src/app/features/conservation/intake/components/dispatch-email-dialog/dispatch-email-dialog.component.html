@@ -4,10 +4,12 @@
 
     <header class="modal-header">
       <div class="title-row">
-        <span class="mail-icon">✉</span>
-        <h2>Enviar Documento por Correo Electrónico</h2>
+        <span class="mail-icon">MAIL</span>
+        <h2>Enviar documento por correo</h2>
       </div>
-      <p>Envío de documento oficial con trazabilidad completa.</p>
+      <p>
+        Despacho oficial con adjuntos, trazabilidad y registro de auditoría.
+      </p>
     </header>
 
     <div class="loading-box" *ngIf="loading(); else contentTpl">
@@ -18,12 +20,16 @@
       <ng-container *ngIf="detail() as data">
         <div class="modal-body">
           <section class="doc-card">
-            <h3>📄 Documento a Enviar</h3>
+            <h3>Documento a enviar</h3>
 
             <div class="doc-grid">
               <div>
                 <span class="label">Código</span>
-                <strong>{{ data.document.officialCode || document?.officialCode || "—" }}</strong>
+                <strong>
+                  {{
+                    data.document.officialCode || document?.officialCode || "—"
+                  }}
+                </strong>
               </div>
 
               <div>
@@ -35,7 +41,9 @@
 
               <div class="wide">
                 <span class="label">Título</span>
-                <strong>{{ data.document.title || document?.title || "—" }}</strong>
+                <strong>{{
+                  data.document.title || document?.title || "—"
+                }}</strong>
               </div>
 
               <div>
@@ -52,40 +60,40 @@
 
           <form [formGroup]="dispatchForm" class="mail-form">
             <section class="form-section">
-              <h3>Datos del Correo Electrónico</h3>
+              <h3>Datos del correo electrónico</h3>
 
               <label>
-                Destinatario(s) <span class="required">*</span>
+                <span>Destinatario(s) <em>*</em></span>
                 <input
                   type="text"
                   formControlName="to"
                   placeholder="ejemplo@dominio.com"
                 />
-                <small>
-                  Puede agregar múltiples correos separados por coma.
-                </small>
+                <small
+                  >Puede agregar múltiples correos separados por coma.</small
+                >
                 <div class="err" *ngIf="fieldErr('to')">
                   {{ fieldErr("to") }}
                 </div>
               </label>
 
               <label>
-                CC (Con Copia) <span class="optional">- Opcional</span>
+                <span>CC <small>Opcional</small></span>
                 <input
                   type="text"
                   formControlName="cc"
                   placeholder="persona1@ejemplo.com, persona2@ejemplo.com"
                 />
-                <small>
-                  Puede agregar múltiples correos separados por coma.
-                </small>
+                <small
+                  >Puede agregar múltiples correos separados por coma.</small
+                >
                 <div class="err" *ngIf="fieldErr('cc')">
                   {{ fieldErr("cc") }}
                 </div>
               </label>
 
               <label>
-                Asunto <span class="required">*</span>
+                <span>Asunto <em>*</em></span>
                 <input type="text" formControlName="subject" />
                 <div class="err" *ngIf="fieldErr('subject')">
                   {{ fieldErr("subject") }}
@@ -93,7 +101,7 @@
               </label>
 
               <label>
-                Mensaje <span class="required">*</span>
+                <span>Mensaje <em>*</em></span>
                 <textarea rows="8" formControlName="message"></textarea>
                 <div class="err" *ngIf="fieldErr('message')">
                   {{ fieldErr("message") }}
@@ -102,18 +110,18 @@
             </section>
 
             <section class="form-section">
-              <h3>📎 Archivos Adjuntos</h3>
+              <h3>Archivos adjuntos</h3>
               <p class="section-help">
                 Seleccione los archivos que desea incluir en el envío.
               </p>
 
               <div class="attachment main" *ngIf="mainDocument() as main">
-                <div class="file-icon">📄</div>
+                <div class="file-icon">PDF</div>
 
                 <div class="file-info">
                   <strong>{{ main.fileName }}</strong>
                   <span>
-                    Documento principal (obligatorio) ·
+                    Documento principal obligatorio ·
                     {{ attachmentSizeText(main) }}
                   </span>
                 </div>
@@ -121,15 +129,17 @@
                 <span class="included-badge">Incluido</span>
               </div>
 
-              <div class="attachments-title" *ngIf="optionalAttachments().length">
-                Anexos disponibles:
+              <div
+                class="attachments-title"
+                *ngIf="optionalAttachments().length"
+              >
+                Anexos disponibles
               </div>
 
               <div class="no-attachments" *ngIf="!optionalAttachments().length">
-                Este documento no tiene anexos opcionales registrados. Se enviará únicamente
-                el documento principal.
+                Este documento no tiene anexos opcionales registrados. Se
+                enviará únicamente el documento principal.
               </div>
-
 
               <div
                 class="attachment optional"
@@ -144,7 +154,7 @@
                   readonly
                 />
 
-                <div class="file-icon">📄</div>
+                <div class="file-icon">FILE</div>
 
                 <div class="file-info">
                   <strong>{{ attachment.fileName }}</strong>
@@ -154,19 +164,29 @@
                   </span>
                 </div>
 
-                <span class="selected-badge" *ngIf="isAttachmentSelected(attachment)">
+                <span
+                  class="selected-badge"
+                  *ngIf="isAttachmentSelected(attachment)"
+                >
                   Seleccionado
                 </span>
               </div>
 
               <div class="summary-box">
-                <div class="summary-icon">ⓘ</div>
-                <div>
-                  <strong>Total de archivos:</strong>
-                  <p>{{ totalSelectedFiles() }} archivo(s)</p>
+                <div class="summary-icon">INFO</div>
 
-                  <strong>Tamaño total:</strong>
-                  <p>{{ totalSelectedSize() }}</p>
+                <div>
+                  <div class="summary-grid">
+                    <div>
+                      <strong>Total de archivos</strong>
+                      <p>{{ totalSelectedFiles() }} archivo(s)</p>
+                    </div>
+
+                    <div>
+                      <strong>Tamaño total</strong>
+                      <p>{{ totalSelectedSize() }}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -175,17 +195,17 @@
               <h3>Vista previa del correo</h3>
 
               <div class="preview-line">
-                <strong>Para:</strong>
+                <strong>Para</strong>
                 <span>{{ dispatchForm.getRawValue().to || "—" }}</span>
               </div>
 
               <div class="preview-line" *ngIf="dispatchForm.getRawValue().cc">
-                <strong>CC:</strong>
+                <strong>CC</strong>
                 <span>{{ dispatchForm.getRawValue().cc }}</span>
               </div>
 
               <div class="preview-line">
-                <strong>Asunto:</strong>
+                <strong>Asunto</strong>
                 <span>{{ dispatchForm.getRawValue().subject || "—" }}</span>
               </div>
 
