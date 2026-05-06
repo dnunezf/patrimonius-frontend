@@ -89,6 +89,83 @@ function parseDispositionFileName(headerValue: string | null): string | null {
   return plainMatch?.[1] || null;
 }
 
+function normalizeText(value: any): string {
+  return String(value ?? '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function isActiveCatalogRow(item: any): boolean {
+  const activeRaw =
+    item?.activa ??
+    item?.active ??
+    item?.activo ??
+    item?.isActive ??
+    item?.enabled;
+
+  if (activeRaw !== undefined && activeRaw !== null && activeRaw !== '') {
+    if (typeof activeRaw === 'boolean') return activeRaw;
+
+    const normalized = normalizeText(activeRaw);
+    return (
+      normalized === '1' ||
+      normalized === 'TRUE' ||
+      normalized === 'ACTIVO' ||
+      normalized === 'ACTIVE'
+    );
+  }
+
+  const stateRaw = item?.estado ?? item?.state ?? item?.status;
+  if (stateRaw !== undefined && stateRaw !== null && stateRaw !== '') {
+    const normalized = normalizeText(stateRaw);
+    return normalized === 'ACTIVO' || normalized === 'ACTIVE';
+  }
+
+  return true;
+}
+
+function isSelectableExpedienteRow(item: any): boolean {
+  const state = normalizeText(item?.estado ?? item?.state ?? item?.status);
+  const isActive = state === 'ACTIVO' || state === 'ACTIVE';
+
+  const fechaCierre =
+    item?.fecha_cierre ??
+    item?.fechaCierre ??
+    item?.fechaCierreISO ??
+    item?.closedAt ??
+    null;
+
+  const isOpenByCloseDate =
+    fechaCierre === null ||
+    fechaCierre === undefined ||
+    String(fechaCierre).trim() === '';
+
+  const aperturaRaw =
+    item?.situacion ??
+    item?.apertura ??
+    item?.estado_apertura ??
+    item?.situacion_apertura ??
+    item?.openingState ??
+    null;
+
+  if (
+    aperturaRaw !== null &&
+    aperturaRaw !== undefined &&
+    String(aperturaRaw).trim() !== ''
+  ) {
+    const apertura = normalizeText(aperturaRaw);
+    return (
+      isActive &&
+      isOpenByCloseDate &&
+      ['ABIERTO', 'ABIERTA', 'OPEN'].includes(apertura)
+    );
+  }
+
+  return isActive && isOpenByCloseDate;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ConservationIntakeService {
   private readonly apiRoot = environment.apiUrl;
@@ -163,21 +240,24 @@ export class ConservationIntakeService {
   getSeries(): Observable<ArchivalSeries[]> {
     return this.http.get<any>(`${this.apiRoot}/api/series`).pipe(
       map((raw) =>
-        extractArray(raw).map((item: any) => ({
-          id: Number(item.id),
-          code: String(item.codigo ?? item.code ?? ''),
-          name: String(item.nombre ?? item.name ?? ''),
-          unitId:
-            item.unidad_id != null
-              ? Number(item.unidad_id)
-              : item.unitId != null
-                ? Number(item.unitId)
+        extractArray(raw)
+          .filter((item: any) => isActiveCatalogRow(item))
+          .map((item: any) => ({
+            id: Number(item.id),
+            code: String(item.codigo ?? item.code ?? ''),
+            name: String(item.nombre ?? item.name ?? ''),
+            unitId:
+              item.unidad_id != null
+                ? Number(item.unidad_id)
+                : item.unitId != null
+                  ? Number(item.unitId)
+                  : null,
+            plazo_conservacion_anios:
+              item.plazo_conservacion_anios != null
+                ? Number(item.plazo_conservacion_anios)
                 : null,
-          plazo_conservacion_anios:
-            item.plazo_conservacion_anios != null
-              ? Number(item.plazo_conservacion_anios)
-              : null,
-        })),
+            active: true,
+          })),
       ),
     );
   }
@@ -185,44 +265,60 @@ export class ConservationIntakeService {
   getSubseries(): Observable<ArchivalSubseries[]> {
     return this.http.get<any>(`${this.apiRoot}/subseries`).pipe(
       map((raw) =>
-        extractArray(raw).map((item: any) => ({
-          id: Number(item.id),
-          code: String(item.codigo ?? item.code ?? ''),
-          name: String(item.nombre ?? item.name ?? ''),
-          serieId: Number(item.serie_id ?? item.serieId ?? 0),
-        })),
+        extractArray(raw)
+          .filter((item: any) => isActiveCatalogRow(item))
+          .map((item: any) => ({
+            id: Number(item.id),
+            code: String(item.codigo ?? item.code ?? ''),
+            name: String(item.nombre ?? item.name ?? ''),
+            serieId: Number(item.serie_id ?? item.serieId ?? 0),
+            active: true,
+          })),
       ),
     );
   }
 
   getExpedientes(): Observable<ArchivalExpediente[]> {
-    return this.http.get<any>(`${this.apiRoot}/api/expedientes`).pipe(
-      map((raw) =>
-        extractArray(raw).map((item: any) => ({
-          id: Number(item.id),
-          code: String(item.codigo ?? item.code ?? ''),
-          name: String(item.nombre ?? item.name ?? ''),
-          serieId: Number(item.serie_id ?? item.serieId ?? 0),
-          subserieId:
-            item.subserie_id != null
-              ? Number(item.subserie_id)
-              : item.subserieId != null
-                ? Number(item.subserieId)
-                : null,
-          unitId:
-            item.unidad_id != null
-              ? Number(item.unidad_id)
-              : item.unitId != null
-                ? Number(item.unitId)
-                : null,
-          latestDocumentDateISO:
-            item.latestDocumentDateISO ??
-            item.latest_document_date_iso ??
-            item.latest_document_date ??
-            null,
-        })),
-      ),
-    );
+    const params = new HttpParams().set('estado', 'ACTIVO');
+
+    return this.http
+      .get<any>(`${this.apiRoot}/api/expedientes`, { params })
+      .pipe(
+        map((raw) =>
+          extractArray(raw)
+            .filter((item: any) => isSelectableExpedienteRow(item))
+            .map((item: any) => ({
+              id: Number(item.id),
+              code: String(item.codigo ?? item.code ?? ''),
+              name: String(item.nombre ?? item.name ?? ''),
+              serieId: Number(item.serie_id ?? item.serieId ?? 0),
+              subserieId:
+                item.subserie_id != null
+                  ? Number(item.subserie_id)
+                  : item.subserieId != null
+                    ? Number(item.subserieId)
+                    : null,
+              unitId:
+                item.unidad_id != null
+                  ? Number(item.unidad_id)
+                  : item.unitId != null
+                    ? Number(item.unitId)
+                    : null,
+              state: String(item.estado ?? item.state ?? 'ACTIVO'),
+              fechaCierreISO:
+                item.fecha_cierre ??
+                item.fechaCierre ??
+                item.fechaCierreISO ??
+                null,
+              open: true,
+              latestDocumentDateISO:
+                item.latestDocumentDateISO ??
+                item.latest_document_date_iso ??
+                item.latest_document_date ??
+                null,
+            })),
+        ),
+      );
   }
 
   /* =========================

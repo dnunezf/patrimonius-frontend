@@ -54,6 +54,7 @@ export type ArchivalSeries = {
   name: string;
   unitId?: number | null;
   plazo_conservacion_anios?: number | null;
+  active?: boolean;
 };
 
 export type ArchivalSubseries = {
@@ -61,6 +62,7 @@ export type ArchivalSubseries = {
   code: string;
   name: string;
   serieId: number;
+  active?: boolean;
 };
 
 export type ArchivalExpediente = {
@@ -70,6 +72,9 @@ export type ArchivalExpediente = {
   serieId: number;
   subserieId?: number | null;
   unitId?: number | null;
+  state?: string | null;
+  open?: boolean;
+  fechaCierreISO?: string | null;
   latestDocumentDateISO?: string | null;
 };
 
@@ -112,10 +117,6 @@ export type IntakePayload = {
     senderInstitution?: string | null;
   } | null;
 };
-
-/* =========================
- * HU-035 · EAD 2002 export
- * ========================= */
 
 export type EadExportStatus = 'NO_EXPORTADO' | 'EXPORTADO';
 

@@ -31,11 +31,11 @@ import {
   ProcedureType,
 } from './models';
 import { EadExportDialogComponent } from './components/ead-export-dialog/ead-export-dialog.component';
-
 import { DispatchEmailDialogComponent } from './components/dispatch-email-dialog/dispatch-email-dialog.component';
 
 function humanSize(bytes: number | null | undefined): string {
   if (bytes == null || Number.isNaN(bytes)) return '—';
+
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let value = bytes;
   let index = 0;
@@ -65,6 +65,7 @@ function commaEmailsValidator(): ValidatorFn {
     if (!emails.length) return { required: true };
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     return emails.every((email) => emailRegex.test(email))
       ? null
       : { emails: true };
@@ -140,10 +141,12 @@ export class ConservationIntakePageComponent {
    * ========================= */
 
   readonly dispatchDialogOpen = signal(false);
-  readonly dispatchDialogDocument =
-    signal<ConservationEadDocumentRow | null>(null);
+  readonly dispatchDialogDocument = signal<ConservationEadDocumentRow | null>(
+    null,
+  );
 
   readonly totalEadDocuments = computed(() => this.eadDocuments().length);
+
   readonly procedureOptions: Array<{
     value: ProcedureType;
     label: string;
@@ -204,7 +207,9 @@ export class ConservationIntakePageComponent {
     const serieId = Number(this.archivalForm.get('serieId')?.value || 0);
     if (!serieId) return [];
 
-    return this.subseries().filter((item) => Number(item.serieId) === serieId);
+    return this.subseries().filter(
+      (item) => item.active !== false && Number(item.serieId) === serieId,
+    );
   }
 
   filteredExpedientes(): ArchivalExpediente[] {
@@ -212,15 +217,34 @@ export class ConservationIntakePageComponent {
     const subserieValue = this.archivalForm.get('subserieId')?.value as
       | number
       | null;
+
     const subserieId = subserieValue != null ? Number(subserieValue) : null;
 
     return this.expedientes().filter((item) => {
+      if (!this.isSelectableExpediente(item)) return false;
       if (serieId && Number(item.serieId) !== serieId) return false;
+
       if (subserieId != null) {
         return Number(item.subserieId ?? 0) === subserieId;
       }
+
       return true;
     });
+  }
+
+  private isSelectableExpediente(
+    item: ArchivalExpediente | null | undefined,
+  ): boolean {
+    if (!item) return false;
+
+    const state = String(item.state || '')
+      .trim()
+      .toUpperCase();
+
+    const isActive = !state || state === 'ACTIVO' || state === 'ACTIVE';
+    const isOpen = item.open !== false && !item.fechaCierreISO;
+
+    return isActive && isOpen;
   }
 
   readonly eligibility = computed<EligibilityState>(() => {
@@ -256,6 +280,7 @@ export class ConservationIntakePageComponent {
 
   readonly formErrorSummary = computed<string | null>(() => {
     if (!this.archivalForm.touched) return null;
+
     const missing: string[] = [];
 
     if (!this.hasCompleteOfficialCode()) {
@@ -266,6 +291,7 @@ export class ConservationIntakePageComponent {
       if (!this.archivalForm.getRawValue().producingUnit?.trim()) {
         missing.push('Unidad productora');
       }
+
       if (!this.archivalForm.getRawValue().accessLevel) {
         missing.push('Nivel de acceso');
       }
@@ -285,9 +311,11 @@ export class ConservationIntakePageComponent {
         if (!this.archivalForm.get('recipientNameRole')?.value?.trim()) {
           missing.push('Destinatario (nombre y cargo)');
         }
+
         if (!this.archivalForm.get('recipientInstitution')?.value?.trim()) {
           missing.push('Destinatario (institución)');
         }
+
         if (!this.archivalForm.get('dispatchEmails')?.value?.trim()) {
           missing.push('Correos para despacho');
         }
@@ -295,6 +323,7 @@ export class ConservationIntakePageComponent {
     }
 
     const unique = Array.from(new Set(missing));
+
     return unique.length
       ? `Campos obligatorios pendientes: ${unique.join(', ')}.`
       : null;
@@ -332,7 +361,9 @@ export class ConservationIntakePageComponent {
     });
   }
 
-  onSearchUpperInput(controlName: 'q' | 'officialCode' | 'producingUnit'): void {
+  onSearchUpperInput(
+    controlName: 'q' | 'officialCode' | 'producingUnit',
+  ): void {
     this.setSearchControlUpperValue(controlName);
   }
 
@@ -406,17 +437,17 @@ export class ConservationIntakePageComponent {
     this.archivalForm
       .get('serieId')
       ?.valueChanges.pipe(
-      startWith(this.archivalForm.get('serieId')?.value),
-      takeUntilDestroyed(this.destroyRef),
-    )
+        startWith(this.archivalForm.get('serieId')?.value),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(() => this.refreshRetentionEndDate());
 
     this.archivalForm
       .get('retentionStartDateISO')
       ?.valueChanges.pipe(
-      startWith(this.archivalForm.get('retentionStartDateISO')?.value),
-      takeUntilDestroyed(this.destroyRef),
-    )
+        startWith(this.archivalForm.get('retentionStartDateISO')?.value),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(() => this.refreshRetentionEndDate());
   }
 
@@ -630,7 +661,7 @@ export class ConservationIntakePageComponent {
           if (!silent) {
             this.toasts.error(
               err?.error?.message ||
-              'No se pudo generar el código de referencia final.',
+                'No se pudo generar el código de referencia final.',
             );
           }
         },
@@ -661,10 +692,12 @@ export class ConservationIntakePageComponent {
       next: async (result) => {
         if (result.status === 'DUPLICATE') {
           this.duplicateState.set('DUPLICATE');
+
           await this.confirm.ask(
             `Se detectó un código duplicado. Documento existente ID: ${result.existingId}.`,
             'Código duplicado',
           );
+
           return;
         }
 
@@ -673,9 +706,10 @@ export class ConservationIntakePageComponent {
       },
       error: (err) => {
         this.duplicateState.set('NOT_CHECKED');
+
         this.toasts.error(
           err?.error?.message ||
-          'No se pudo verificar la duplicidad del código.',
+            'No se pudo verificar la duplicidad del código.',
         );
       },
     });
@@ -690,18 +724,32 @@ export class ConservationIntakePageComponent {
 
   selectedSerie(): ArchivalSeries | null {
     const id = Number(this.archivalForm.get('serieId')?.value || 0);
-    return this.series().find((item) => item.id === id) || null;
+
+    return (
+      this.series().find((item) => item.id === id && item.active !== false) ||
+      null
+    );
   }
 
   selectedSubserie(): ArchivalSubseries | null {
     const id = Number(this.archivalForm.get('subserieId')?.value || 0);
     if (!id) return null;
-    return this.subseries().find((item) => item.id === id) || null;
+
+    return (
+      this.subseries().find(
+        (item) => item.id === id && item.active !== false,
+      ) || null
+    );
   }
 
   selectedExpediente(): ArchivalExpediente | null {
     const id = Number(this.archivalForm.get('expedienteId')?.value || 0);
-    return this.expedientes().find((item) => item.id === id) || null;
+
+    return (
+      this.expedientes().find(
+        (item) => item.id === id && this.isSelectableExpediente(item),
+      ) || null
+    );
   }
 
   buildClassificationCode(): string {
@@ -731,6 +779,7 @@ export class ConservationIntakePageComponent {
     const code = String(
       this.archivalForm.getRawValue().officialCode || '',
     ).trim();
+
     return code.length >= 8 && !code.startsWith('TMP');
   }
 
@@ -790,11 +839,13 @@ export class ConservationIntakePageComponent {
         { retentionEndDateISO: '' },
         { emitEvent: false },
       );
+
       return;
     }
 
     const date = new Date(`${start}T00:00:00`);
     date.setFullYear(date.getFullYear() + years);
+
     this.archivalForm.patchValue(
       { retentionEndDateISO: date.toISOString().slice(0, 10) },
       { emitEvent: false },
@@ -821,6 +872,7 @@ export class ConservationIntakePageComponent {
 
   signersText(doc: CandidateDoc | null): string {
     if (!doc?.signers?.length) return '—';
+
     return doc.signers.join(', ');
   }
 
@@ -839,6 +891,7 @@ export class ConservationIntakePageComponent {
 
   formatDateTime(value: string | null | undefined): string {
     if (!value) return '—';
+
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '—';
 
@@ -852,6 +905,7 @@ export class ConservationIntakePageComponent {
     this.normalizeArchivalTextFields();
 
     const doc = this.selected();
+
     if (!doc) {
       this.toasts.error('Seleccione primero un documento.');
       return;
@@ -930,6 +984,7 @@ export class ConservationIntakePageComponent {
         'Se seleccionó un nivel de acceso sensible. ¿Desea continuar?',
         'Advertencia',
       );
+
       if (!accepted) return;
     }
 
@@ -937,6 +992,7 @@ export class ConservationIntakePageComponent {
       '¿Confirma el ingreso del documento a conservación?',
       'Confirmar ingreso',
     );
+
     if (!confirmed) {
       this.api.audit('INTAKE_CANCELLED', { id: doc.id }).subscribe();
       return;
@@ -986,28 +1042,31 @@ export class ConservationIntakePageComponent {
       outgoing:
         documentFlow === 'PRODUCED_SENT'
           ? {
-            recipientNameRole: this.toUpperValue(raw.recipientNameRole).trim(),
-            recipientInstitution: this.toUpperValue(
-              raw.recipientInstitution,
-            ).trim(),
-            dispatchEmails: csvToUniqueArray(
-              String(raw.dispatchEmails || ''),
-            ).map((item) => item.toLowerCase()),
-          }
+              recipientNameRole: this.toUpperValue(
+                raw.recipientNameRole,
+              ).trim(),
+              recipientInstitution: this.toUpperValue(
+                raw.recipientInstitution,
+              ).trim(),
+              dispatchEmails: csvToUniqueArray(
+                String(raw.dispatchEmails || ''),
+              ).map((item) => item.toLowerCase()),
+            }
           : null,
       incoming:
         documentFlow === 'RECEIVED'
           ? {
-            senderNameRole:
-              this.toUpperValue(raw.senderNameRole).trim() || null,
-            senderInstitution:
-              this.toUpperValue(raw.senderInstitution).trim() || null,
-          }
+              senderNameRole:
+                this.toUpperValue(raw.senderNameRole).trim() || null,
+              senderInstitution:
+                this.toUpperValue(raw.senderInstitution).trim() || null,
+            }
           : null,
     };
 
     this.loading.set(true);
     console.log('Payload conservación:', payload);
+
     this.api.registerIntake(payload).subscribe({
       next: (response) => {
         this.loading.set(false);
@@ -1083,7 +1142,7 @@ export class ConservationIntakePageComponent {
 
         this.toasts.error(
           err?.error?.message ||
-          'No se pudo registrar el ingreso a conservación.',
+            'No se pudo registrar el ingreso a conservación.',
         );
       },
     });
@@ -1103,9 +1162,10 @@ export class ConservationIntakePageComponent {
       },
       error: (err) => {
         this.eadDocumentsLoading.set(false);
+
         this.toasts.error(
           err?.error?.message ||
-          'No se pudieron cargar los documentos en conservación para exportación EAD 2002.',
+            'No se pudieron cargar los documentos en conservación para exportación EAD 2002.',
         );
       },
     });
@@ -1148,8 +1208,8 @@ export class ConservationIntakePageComponent {
   }
 
   /* =========================
- * HU-036 · Despacho por correo
- * ========================= */
+   * HU-036 · Despacho por correo
+   * ========================= */
 
   openDispatchDialog(row: ConservationEadDocumentRow): void {
     this.dispatchDialogDocument.set(row);
@@ -1197,6 +1257,7 @@ export class ConservationIntakePageComponent {
     }
 
     if (!normalized) return '—';
+
     return normalized.toLowerCase();
   }
 
@@ -1216,26 +1277,27 @@ export class ConservationIntakePageComponent {
 
   fieldErr(name: string): string | null {
     const control = this.archivalForm.get(name);
+
     if (!control || !control.touched || !control.errors) return null;
 
     if (control.errors['required']) return 'Obligatorio.';
     if (control.errors['requiredTrue']) return 'Debe activar el seguimiento.';
     if (control.errors['minlength']) return 'Muy corto.';
-    if (control.errors['emails'])
+    if (control.errors['emails']) {
       return 'Ingrese correos válidos separados por coma.';
+    }
+
     return 'Valor inválido.';
   }
 
-  /**
-   * Check if current user has Editor role (role ID 2)
-   */
   isEditor(): boolean {
     const user = this.auth.currentUser();
     if (!user) return false;
 
-    // Check single role (rolId) or multiple roles (rolIds)
     const singleRoleId = Number(user.rolId ?? 0);
-    const multipleRoleIds = Array.isArray(user.rolIds) ? user.rolIds.map(id => Number(id)) : [];
+    const multipleRoleIds = Array.isArray(user.rolIds)
+      ? user.rolIds.map((id) => Number(id))
+      : [];
 
     return singleRoleId === EDITOR_ID || multipleRoleIds.includes(EDITOR_ID);
   }
@@ -1250,6 +1312,4 @@ export class ConservationIntakePageComponent {
 
     return roles.includes('ARCHIVADOR');
   }
-
-
 }

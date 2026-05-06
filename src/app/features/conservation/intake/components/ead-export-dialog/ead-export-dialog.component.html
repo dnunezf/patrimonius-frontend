@@ -9,7 +9,7 @@
 >
   <header class="ead-header">
     <div class="ead-header__left">
-      <div class="ead-header__icon">📄</div>
+      <div class="ead-header__icon">XML</div>
 
       <div>
         <div class="ead-header__title-row">
@@ -21,25 +21,28 @@
               loading: state === 'loading' || state === 'exporting',
               ready: state === 'ready',
               done: state === 'done',
+              error: state === 'error',
             }"
           >
             {{
               state === "loading"
-                ? "Validando..."
+                ? "Validando"
                 : state === "exporting"
-                  ? "Exportando..."
+                  ? "Exportando"
                   : state === "done"
                     ? "Completado"
                     : state === "ready"
                       ? "Listo"
-                      : "Preparando"
+                      : state === "error"
+                        ? "Error"
+                        : "Preparando"
             }}
           </span>
         </div>
 
         <p class="ead-header__subtitle">
-          Exportación de documento archivado conforme al estándar EAD 2002 (ISO
-          639-2b)
+          Generación de archivo XML conforme al estándar EAD 2002 para
+          interoperabilidad archivística.
         </p>
       </div>
     </div>
@@ -64,8 +67,8 @@
         <strong>
           {{
             state === "exporting"
-              ? "Generando exportación EAD 2002..."
-              : "Validando requisitos EAD 2002..."
+              ? "Generando exportación EAD 2002"
+              : "Validando requisitos de exportación"
           }}
         </strong>
 
@@ -82,18 +85,18 @@
       <ul class="ead-loading-list">
         <li>
           <span class="ead-loading-dot done"></span>
-          Validando estado del documento...
+          Validando estado del documento
         </li>
         <li>
           <span class="ead-loading-dot done"></span>
-          Verificando metadatos completos...
+          Verificando metadatos descriptivos, técnicos y de gestión
         </li>
         <li>
           <span
             class="ead-loading-dot"
             [ngClass]="state === 'exporting' ? 'done' : 'active'"
           ></span>
-          Validando estructura archivística...
+          Validando estructura archivística
         </li>
       </ul>
 
@@ -101,7 +104,7 @@
     </div>
 
     <div class="ead-error" *ngIf="errorMessage && state !== 'exporting'">
-      <strong>No se pudo completar la operación.</strong>
+      <strong>No se pudo completar la operación</strong>
       <span>{{ errorMessage }}</span>
 
       <div class="ead-error__actions" *ngIf="document?.id">
@@ -113,20 +116,20 @@
 
     <ng-container *ngIf="canShowReadyContent() && preview as data">
       <div class="ead-success-banner" *ngIf="exportCompleted">
-        <div class="ead-success-banner__icon">✓</div>
+        <div class="ead-success-banner__icon">OK</div>
 
         <div>
           <strong>Archivo EAD 2002 generado correctamente</strong>
           <p>
-            El documento ha sido exportado exitosamente en formato XML conforme
-            al estándar EAD 2002.
+            El documento fue exportado exitosamente en formato XML y la acción
+            quedó registrada en bitácora.
           </p>
         </div>
       </div>
 
       <section class="ead-section">
         <div class="ead-section__head">
-          <h4>Información del Documento</h4>
+          <h4>Información del documento</h4>
         </div>
 
         <div class="ead-info-grid">
@@ -171,7 +174,7 @@
 
       <section class="ead-section">
         <div class="ead-section__head">
-          <h4>Validaciones Previas a Exportación</h4>
+          <h4>Validaciones previas</h4>
         </div>
 
         <div class="ead-validation-list">
@@ -201,53 +204,53 @@
 
       <section class="ead-section">
         <div class="ead-section__head">
-          <h4>Metadatos a Incluir en EAD 2002</h4>
+          <h4>Metadatos incluidos</h4>
         </div>
 
         <div class="ead-meta-group">
           <div class="ead-meta-group__title-row">
-            <h5>Metadatos Descriptivos</h5>
+            <h5>Metadatos descriptivos</h5>
             <span class="ead-status-pill ok">Completo</span>
           </div>
 
           <div class="ead-meta-box">
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Título:</span>
+              <span class="ead-meta-line__label">Título</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.descriptive.title || "—" }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Autor:</span>
+              <span class="ead-meta-line__label">Autor</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.descriptive.author || "—" }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Tipo documental:</span>
+              <span class="ead-meta-line__label">Tipo documental</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.descriptive.documentType || "—" }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Serie:</span>
+              <span class="ead-meta-line__label">Serie</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.descriptive.serie || "—" }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Subserie:</span>
+              <span class="ead-meta-line__label">Subserie</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.descriptive.subserie || "—" }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Expediente:</span>
+              <span class="ead-meta-line__label">Expediente</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.descriptive.expediente || "—" }}
               </span>
@@ -257,27 +260,27 @@
 
         <div class="ead-meta-group">
           <div class="ead-meta-group__title-row">
-            <h5>Metadatos Técnicos</h5>
+            <h5>Metadatos técnicos</h5>
             <span class="ead-status-pill ok">Completo</span>
           </div>
 
           <div class="ead-meta-box">
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Formato:</span>
+              <span class="ead-meta-line__label">Formato</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.technical.format || "—" }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Tamaño:</span>
+              <span class="ead-meta-line__label">Tamaño</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.technical.sizeHuman || "—" }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Código:</span>
+              <span class="ead-meta-line__label">Código</span>
               <span class="ead-meta-line__value mono">
                 {{ data.metadata.technical.code || "—" }}
               </span>
@@ -287,27 +290,27 @@
 
         <div class="ead-meta-group">
           <div class="ead-meta-group__title-row">
-            <h5>Metadatos de Gestión</h5>
+            <h5>Metadatos de gestión</h5>
             <span class="ead-status-pill ok">Completo</span>
           </div>
 
           <div class="ead-meta-box">
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Estado:</span>
+              <span class="ead-meta-line__label">Estado</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.management.state || "—" }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Fecha de creación:</span>
+              <span class="ead-meta-line__label">Fecha de creación</span>
               <span class="ead-meta-line__value">
                 {{ formatShortDate(data.metadata.management.createdAtISO) }}
               </span>
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Plazo de retención:</span>
+              <span class="ead-meta-line__label">Plazo de retención</span>
               <span class="ead-meta-line__value">
                 {{
                   data.metadata.management.retentionYears != null
@@ -318,7 +321,7 @@
             </div>
 
             <div class="ead-meta-line">
-              <span class="ead-meta-line__label">Unidad responsable:</span>
+              <span class="ead-meta-line__label">Unidad responsable</span>
               <span class="ead-meta-line__value">
                 {{ data.metadata.management.unitResponsible || "—" }}
               </span>
@@ -330,10 +333,8 @@
       <section class="ead-section">
         <div class="ead-structure-row">
           <div>
-            <h4>Estructura EAD 2002 (Preview)</h4>
-            <p>
-              Representación jerárquica de la estructura XML que se generará
-            </p>
+            <h4>Estructura EAD 2002</h4>
+            <p>Vista jerárquica de la estructura XML que se generará.</p>
           </div>
 
           <button
@@ -341,7 +342,7 @@
             class="btn btn--ghost"
             (click)="toggleStructure()"
           >
-            {{ showStructure ? "Ocultar" : "Ver Estructura" }}
+            {{ showStructure ? "Ocultar" : "Ver estructura" }}
           </button>
         </div>
 
@@ -357,7 +358,7 @@
 
       <section class="ead-section" *ngIf="exportCompleted">
         <div class="ead-section__head">
-          <h4>Información del Archivo Generado</h4>
+          <h4>Archivo generado</h4>
         </div>
 
         <div class="ead-info-grid">
@@ -379,7 +380,7 @@
 
       <section class="ead-section" *ngIf="exportCompleted || data.xmlPreview">
         <div class="ead-section__head">
-          <h4>Vista Previa del XML</h4>
+          <h4>Vista previa XML</h4>
         </div>
 
         <div class="ead-code-preview">
@@ -409,7 +410,7 @@
           (click)="exportXml()"
           [disabled]="!data.canExport || state === 'exporting'"
         >
-          Confirmar Exportación
+          Confirmar exportación
         </button>
 
         <button
