@@ -59,6 +59,44 @@ export interface UpdateExpedienteDto {
   fecha_cierre?: string | null;
 }
 
+function normalizeText(value: any): string {
+  return String(value ?? '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function isActiveCatalogRow(item: any): boolean {
+  const activeRaw =
+    item?.activa ??
+    item?.active ??
+    item?.activo ??
+    item?.isActive ??
+    item?.enabled;
+
+  if (activeRaw !== undefined && activeRaw !== null && activeRaw !== '') {
+    if (typeof activeRaw === 'boolean') return activeRaw;
+
+    const normalized = normalizeText(activeRaw);
+    return (
+      normalized === '1' ||
+      normalized === 'TRUE' ||
+      normalized === 'ACTIVO' ||
+      normalized === 'ACTIVE'
+    );
+  }
+
+  const stateRaw = item?.estado ?? item?.state ?? item?.status;
+
+  if (stateRaw !== undefined && stateRaw !== null && stateRaw !== '') {
+    const normalized = normalizeText(stateRaw);
+    return normalized === 'ACTIVO' || normalized === 'ACTIVE';
+  }
+
+  return true;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ExpedienteService {
   private http = inject(HttpClient);
@@ -114,14 +152,26 @@ export class ExpedienteService {
       params = params.set('unidad_id', unidadId);
     }
 
-    return this.http.get<SerieLite[]>(this.seriesUrl, { params });
+    return this.http
+      .get<SerieLite[]>(this.seriesUrl, { params })
+      .pipe(
+        map((rows: any[]) =>
+          (rows || []).filter((row) => isActiveCatalogRow(row)),
+        ),
+      );
   }
 
   getSubseries(serieId?: number): Observable<SubserieLite[]> {
-    return this.http.get<SubserieLite[]>(this.subseriesUrl).pipe(
-      map((rows) =>
-        serieId != null ? rows.filter((s) => s.serie_id === serieId) : rows
-      )
-    );
+    return this.http
+      .get<SubserieLite[]>(this.subseriesUrl)
+      .pipe(
+        map((rows: any[]) =>
+          (rows || [])
+            .filter((row) => isActiveCatalogRow(row))
+            .filter((s) =>
+              serieId != null ? Number(s.serie_id) === Number(serieId) : true,
+            ),
+        ),
+      );
   }
 }
