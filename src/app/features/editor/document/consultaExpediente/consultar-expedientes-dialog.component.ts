@@ -30,6 +30,9 @@ export class ConsultarExpedientesDialogComponent implements OnChanges {
 
   expedientes: ExpedienteRow[] = [];
   filteredExpedientes: ExpedienteRow[] = [];
+  expedientesPage = 1;
+  expedientesPageSize = 5;
+  pagedExpedientes: ExpedienteRow[] = [];
   searchExpedientes = '';
 
   constructor(private expedienteService: ExpedienteService) {}
@@ -56,6 +59,7 @@ export class ConsultarExpedientesDialogComponent implements OnChanges {
     this.expedienteService.getExpedientes().subscribe({
       next: (rows: ExpedienteRow[]) => {
         this.expedientes = rows ?? [];
+        this.expedientesPage = 1;
         this.aplicarFiltroExpedientes();
         this.loading = false;
       },
@@ -81,6 +85,54 @@ export class ConsultarExpedientesDialogComponent implements OnChanges {
         String(e.estado || '').toLowerCase().includes(q)
       );
     });
+
+    this.expedientesPage = 1;
+    this.updatePagedExpedientes();
+  }
+
+  get totalExpedientesPages(): number {
+    return Math.max(Math.ceil(this.filteredExpedientes.length / this.expedientesPageSize), 1);
+  }
+
+  get expedientesRangeStart(): number {
+    if (this.filteredExpedientes.length === 0) return 0;
+    return (this.expedientesPage - 1) * this.expedientesPageSize + 1;
+  }
+
+  get expedientesRangeEnd(): number {
+    return Math.min(
+      this.expedientesPage * this.expedientesPageSize,
+      this.filteredExpedientes.length,
+    );
+  }
+
+  private updatePagedExpedientes(): void {
+    const totalPages = this.totalExpedientesPages;
+
+    if (this.expedientesPage > totalPages) {
+      this.expedientesPage = totalPages;
+    }
+
+    if (this.expedientesPage < 1) {
+      this.expedientesPage = 1;
+    }
+
+    const start = (this.expedientesPage - 1) * this.expedientesPageSize;
+    const end = start + this.expedientesPageSize;
+
+    this.pagedExpedientes = this.filteredExpedientes.slice(start, end);
+  }
+
+  prevExpedientesPage(): void {
+    if (this.expedientesPage <= 1) return;
+    this.expedientesPage--;
+    this.updatePagedExpedientes();
+  }
+
+  nextExpedientesPage(): void {
+    if (this.expedientesPage >= this.totalExpedientesPages) return;
+    this.expedientesPage++;
+    this.updatePagedExpedientes();
   }
 
   crearExpedienteOpen = false;
@@ -95,6 +147,7 @@ export class ConsultarExpedientesDialogComponent implements OnChanges {
 
   close(): void {
     this.open = false;
+    this.expedientesPage = 1;
     this.closed.emit();
   }
 }

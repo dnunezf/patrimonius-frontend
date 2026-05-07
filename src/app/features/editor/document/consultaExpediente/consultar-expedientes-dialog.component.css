@@ -201,3 +201,39 @@
   color: #fff;
   box-shadow: 0 10px 18px rgba(37, 99, 235, 0.22);
 }
+
+.ce-pager {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.ce-muted {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.ce-btn--ghost {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.ce-btn--ghost:hover {
+  background: #e2e8f0;
+}
+
+.ce-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .ce-pager {
+    justify-content: center;
+  }
+}

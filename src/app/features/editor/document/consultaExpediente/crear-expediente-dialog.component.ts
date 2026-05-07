@@ -22,13 +22,16 @@ export class CrearExpedienteDialogComponent implements OnChanges {
   loading = false;
   saving = false;
   error = '';
+  success = '';
 
+  codigo = '';
   nombre = '';
   serieId: number | null = null;
   subserieId: number | null = null;
 
   series: SerieLite[] = [];
   subseries: SubserieLite[] = [];
+
 
   constructor(private expedienteService: ExpedienteService) {}
 
@@ -39,10 +42,25 @@ export class CrearExpedienteDialogComponent implements OnChanges {
     }
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+
+  onCodigoInput(): void {
+    this.codigo = this.toUpperValue(this.codigo);
+  }
+
+  onNombreInput(): void {
+    this.nombre = this.toUpperValue(this.nombre);
+  }
+
   resetForm(): void {
     this.loading = false;
     this.saving = false;
     this.error = '';
+    this.success = '';
+    this.codigo = '';
     this.nombre = '';
     this.serieId = null;
     this.subserieId = null;
@@ -84,9 +102,17 @@ export class CrearExpedienteDialogComponent implements OnChanges {
 
   guardar(): void {
     this.error = '';
+    this.success = '';
 
-    const nombre = this.nombre.trim();
-    if (!nombre) {
+    this.codigo = this.toUpperValue(this.codigo).trim();
+    this.nombre = this.toUpperValue(this.nombre).trim();
+
+    if (!this.codigo) {
+      this.error = 'El código del expediente es obligatorio.';
+      return;
+    }
+
+    if (!this.nombre) {
       this.error = 'El nombre del expediente es obligatorio.';
       return;
     }
@@ -96,7 +122,10 @@ export class CrearExpedienteDialogComponent implements OnChanges {
       return;
     }
 
-    const serieSeleccionada = this.series.find((s) => s.id === this.serieId);
+    const serieSeleccionada = this.series.find(
+      (s) => Number(s.id) === Number(this.serieId),
+    );
+
     if (!serieSeleccionada?.unidad_id) {
       this.error = 'La serie seleccionada no tiene unidad organizacional válida.';
       return;
@@ -104,24 +133,30 @@ export class CrearExpedienteDialogComponent implements OnChanges {
 
     this.saving = true;
 
-    const codigoGenerado = `EXP-${Date.now()}`;
-
     this.expedienteService.createExpediente({
-      codigo: codigoGenerado,
-      nombre,
-      unidad_id: serieSeleccionada.unidad_id,
-      serie_id: this.serieId,
-      subserie_id: this.subserieId,
+      codigo: this.codigo,
+      nombre: this.nombre,
+      unidad_id: Number(serieSeleccionada.unidad_id),
+      serie_id: Number(this.serieId),
+      subserie_id: this.subserieId ? Number(this.subserieId) : null,
       estado: 'ACTIVO',
     }).subscribe({
       next: () => {
         this.saving = false;
+        this.success = 'Expediente creado correctamente.';
+
         this.created.emit();
-        this.close();
+
+        setTimeout(() => {
+          this.close();
+        }, 900);
       },
       error: (e) => {
         this.saving = false;
-        this.error = e?.error?.message || 'No se pudo crear el expediente';
+        this.error =
+          e?.error?.message ||
+          e?.error?.error ||
+          'No se pudo crear el expediente';
       },
     });
   }

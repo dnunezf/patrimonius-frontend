@@ -24,15 +24,16 @@
       ×
     </button>
   </header>
-
   <section class="ce-body">
     <div *ngIf="loading" class="ce-info">Cargando expedientes…</div>
     <div *ngIf="!loading && error" class="ce-error">{{ error }}</div>
 
     <ng-container *ngIf="!loading && !error">
-      <button type="button" class="ce-btn ce-btn--primary" (click)="openCrearExpediente()">
-        Crear expediente
-      </button>
+      <p>
+        <button type="button" class="ce-btn ce-btn--primary" (click)="openCrearExpediente()">
+          Crear expediente
+        </button>
+      </p>
 
       <div class="ce-toolbar-search">
         <div class="ce-search-input-wrap">
@@ -62,7 +63,7 @@
           </thead>
 
           <tbody>
-          <tr *ngFor="let e of filteredExpedientes">
+          <tr *ngFor="let e of pagedExpedientes">
             <td>{{ e.codigo }}</td>
             <td>{{ e.nombre }}</td>
             <td>{{ e.serie_nombre || '—' }}</td>
@@ -71,9 +72,39 @@
           </tbody>
         </table>
       </div>
+      <div class="ce-pager" *ngIf="filteredExpedientes.length > 0">
+        <span class="ce-muted">
+        Registros {{ expedientesRangeStart }}–{{ expedientesRangeEnd }}
+        de {{ filteredExpedientes.length }}
+        </span>
+
+        <button
+          type="button"
+          class="ce-btn ce-btn--ghost"
+          (click)="prevExpedientesPage()"
+          [disabled]="expedientesPage <= 1"
+        >
+          Anterior
+        </button>
+
+        <span class="ce-muted">
+        Página {{ expedientesPage }} / {{ totalExpedientesPages }}
+        </span>
+
+        <button
+          type="button"
+          class="ce-btn ce-btn--ghost"
+          (click)="nextExpedientesPage()"
+          [disabled]="expedientesPage >= totalExpedientesPages"
+        >
+          Siguiente
+        </button>
+      </div>
     </ng-container>
   </section>
 </div>
+
+
 
 <app-crear-expediente-dialog
   [open]="crearExpedienteOpen"

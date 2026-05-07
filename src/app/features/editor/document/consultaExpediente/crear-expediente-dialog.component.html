@@ -11,7 +11,7 @@
     <div>
       <h3 id="cedTitle">Crear expediente</h3>
       <p class="ced-header__text">
-        Complete el nombre del expediente y asígnelo a una serie y subserie.
+        Complete el código, nombre del expediente y asígnelo a una serie y subserie.
       </p>
     </div>
 
@@ -23,15 +23,27 @@
   <section class="ced-body">
     <div *ngIf="loading" class="ced-info">Cargando series…</div>
     <div *ngIf="error" class="ced-error">{{ error }}</div>
+    <div *ngIf="success" class="ced-success">{{ success }}</div>
 
     <ng-container *ngIf="!loading">
       <div class="ced-form-grid">
-        <div class="ced-field ced-field--full">
+        <div class="ced-field">
+          <label>Código del expediente</label>
+          <input
+            type="text"
+            [(ngModel)]="codigo"
+            placeholder="Ej: EXP-001"
+            (input)="onCodigoInput()"
+          />
+        </div>
+
+        <div class="ced-field">
           <label>Nombre del expediente</label>
           <input
             type="text"
             [(ngModel)]="nombre"
             placeholder="Ingrese el nombre del expediente"
+            (input)="onNombreInput()"
           />
         </div>
 
