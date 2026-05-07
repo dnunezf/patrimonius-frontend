@@ -1,5 +1,4 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, EventEmitter, OnInit, Output} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -20,7 +19,10 @@ export class ArchivistaSerieDialogComponent implements OnInit {
   /** Años de conservación en archivo (requerido para ingreso a conservación). */
   plazo_conservacion_anios = 5;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  @Output() closed = new EventEmitter<void>();
+  @Output() created = new EventEmitter<void>();
+
+  constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
     this.http.get<any[]>('http://localhost:3000/api/unidades').subscribe({
@@ -56,6 +58,7 @@ export class ArchivistaSerieDialogComponent implements OnInit {
     this.descripcion = this.toUpperValue(this.descripcion).trim();
 
     const plazo = Number(this.plazo_conservacion_anios);
+
     if (
       this.codigo &&
       this.nombre &&
@@ -74,11 +77,11 @@ export class ArchivistaSerieDialogComponent implements OnInit {
       this.http.post('http://localhost:3000/api/series', serieData).subscribe({
         next: (response) => {
           console.log('Serie creada:', response);
-          this.router.navigate(['/archivista/clasificacion']);
+          this.created.emit();
         },
         error: (error) => {
           console.error('Error al crear la serie:', error);
-        }
+        },
       });
     } else {
       alert(
@@ -88,6 +91,6 @@ export class ArchivistaSerieDialogComponent implements OnInit {
   }
 
   cancelar(): void {
-    this.router.navigate(['/archivista/clasificacion']);
+    this.closed.emit();
   }
 }

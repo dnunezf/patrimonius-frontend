@@ -20,12 +20,6 @@
     </header>
   </section>
 
-  <section class="top-actions">
-    <button class="btn primary" (click)="crearSerie()">Crear Serie</button>
-    <button class="btn primary" (click)="crearSubserie()">Crear Subserie</button>
-    <button class="btn primary" (click)="verIndices()">Consultar índices</button>
-  </section>
-
   <!-- SERIES -->
   <section class="panel-block">
     <div class="panel-head">
@@ -34,6 +28,10 @@
         <p class="muted">Catálogo de series disponibles para clasificación.</p>
       </div>
     </div>
+
+    <section class="top-actions">
+    <button class="btn primary" (click)="crearSerie()">Crear Serie</button>
+    </section>
 
     <section class="panel filtros">
       <div class="field">
@@ -86,6 +84,7 @@
           <th>Código</th>
           <th>Serie</th>
           <th>Unidad</th>
+          <th>Editar</th>
           <th>Eliminar</th>
         </tr>
         </thead>
@@ -94,6 +93,11 @@
           <td class="mono">{{ serie.codigo }}</td>
           <td>{{ serie.nombre }}</td>
           <td>{{ serie.unidad_nombre || '—' }}</td>
+          <td>
+            <button class="btn sm ghost" type="button" (click)="editarSerie(serie)">
+              Editar
+            </button>
+          </td>
           <td>
             <button class="btn sm danger" (click)="eliminarSerie(serie.id, serie.nombre)">
               Eliminar
@@ -143,6 +147,10 @@
         <p class="muted">Subseries relacionadas con las series documentales.</p>
       </div>
     </div>
+
+    <section class="top-actions">
+      <button class="btn primary" (click)="crearSubserie()">Crear Subserie</button>
+    </section>
 
     <section class="panel filtros">
       <div class="field">
@@ -195,6 +203,7 @@
           <th>Código</th>
           <th>Subserie</th>
           <th>Serie</th>
+          <th>Editar</th>
           <th>Eliminar</th>
         </tr>
         </thead>
@@ -203,6 +212,11 @@
           <td class="mono">{{ subserie.codigo }}</td>
           <td>{{ subserie.nombre }}</td>
           <td>{{ subserie.serie_nombre || '—' }}</td>
+          <td>
+            <button class="btn sm ghost" type="button" (click)="editarSubserie(subserie)">
+              Editar
+            </button>
+          </td>
           <td>
             <button
               class="btn sm danger"
@@ -253,13 +267,21 @@
       <div>
         <h3>Lista de Expedientes</h3>
         <p class="muted">
-          Desde aquí puede revisar expedientes existentes y abrir/cerrar su estado.
+          - Expedientes existentes con la función de abrir/cerrar su estado.
         </p>
         <p class="muted">
-          La creación de expedientes está asignado solo a editores y administradores
+          - Consultar los índices electrónicos generados al cerrar un expediente.
+        </p>
+        <p class="muted">
+          - La creación de expedientes está asignado solo a editores y administradores
         </p>
       </div>
     </div>
+
+    <section class="top-actions">
+      <button class="btn primary" (click)="crearExpediente()">Crear Expediente</button>
+      <button class="btn primary" (click)="verIndices()">Consultar índices</button>
+    </section>
 
     <section class="panel filtros">
       <div class="field">
@@ -372,6 +394,19 @@
           <td class="actions-cell">
             <button
               class="btn sm ghost"
+              type="button"
+              (click)="editarExpediente(expediente)"
+              [disabled]="expediente.estado !== 'ACTIVO'"
+              [title]="
+              expediente.estado === 'ACTIVO'
+              ? 'Editar expediente'
+               : 'Solo se pueden editar expedientes activos'"
+              >
+              Editar
+            </button>
+
+            <button
+              class="btn sm ghost"
               (click)="verDocumentosExpediente(expediente)"
               title="Ver documentos asignados al expediente"
             >
@@ -448,6 +483,45 @@
     (closed)="cerrarDocumentosExpediente()"
     (clasificar)="clasificarDocumento($event)"
   ></app-expediente-documentos-dialog>
+
+  <app-archivista-serie-dialog
+    *ngIf="serieDialogOpen"
+    (closed)="cerrarSerieDialog()"
+    (created)="serieCreada()"
+  ></app-archivista-serie-dialog>
+
+  <app-archivista-serie-edit-dialog
+    *ngIf="serieEditDialogOpen"
+    [serie]="serieToEdit"
+    (closed)="cerrarSerieEditDialog()"
+    (updated)="serieEditada()"
+  ></app-archivista-serie-edit-dialog>
+
+  <app-archivista-subserie-dialog
+    *ngIf="subserieDialogOpen"
+    (closed)="cerrarSubserieDialog()"
+    (created)="subserieCreada()"
+  ></app-archivista-subserie-dialog>
+
+  <app-archivista-subserie-edit-dialog
+    *ngIf="subserieEditDialogOpen"
+    [subserie]="subserieToEdit"
+    (closed)="cerrarSubserieEditDialog()"
+    (updated)="subserieEditada()"
+  ></app-archivista-subserie-edit-dialog>
+
+  <app-archivista-expediente-dialog
+    *ngIf="expedienteDialogOpen"
+    (closed)="cerrarExpedienteDialog()"
+    (created)="expedienteCreado()"
+  ></app-archivista-expediente-dialog>
+
+  <app-archivista-expediente-edit-dialog
+    *ngIf="expedienteEditDialogOpen"
+    [expediente]="expedienteToEdit"
+    (closed)="cerrarExpedienteEditDialog()"
+    (updated)="expedienteEditado()"
+  ></app-archivista-expediente-edit-dialog>
 
   <!-- Confirmación in-app (reemplaza window.confirm del navegador) -->
   <div

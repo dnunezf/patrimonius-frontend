@@ -1,0 +1,92 @@
+<div class="overlay">
+  <div class="modal">
+    <header>
+      <div>
+        <h3>Editar serie</h3>
+        <p class="muted">Actualice los datos de la serie documental seleccionada.</p>
+      </div>
+
+      <button type="button" class="btn ghost close-btn" (click)="cancelar()">
+        X
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <p class="toolbar-error" *ngIf="errorMsg">
+        {{ errorMsg }}
+      </p>
+
+      <form class="form-grid" (ngSubmit)="guardarCambios()">
+        <div class="form-group">
+          <label for="codigo">Código *</label>
+          <input
+            type="text"
+            id="codigo"
+            [(ngModel)]="codigo"
+            name="codigo"
+            required
+            (input)="onCodigoInput()"
+            placeholder="Ej: SER-001"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="nombre">Serie *</label>
+          <input
+            type="text"
+            id="nombre"
+            [(ngModel)]="nombre"
+            name="nombre"
+            required
+            (input)="onNombreInput()"
+            placeholder="Nombre de la serie"
+          />
+        </div>
+
+        <div class="form-group full">
+          <label for="descripcion">Descripción</label>
+          <textarea
+            id="descripcion"
+            [(ngModel)]="descripcion"
+            name="descripcion"
+            (input)="onDescripcionInput()"
+            placeholder="Descripción breve de la serie"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="plazo">Plazo de conservación (años) *</label>
+          <input
+            type="number"
+            id="plazo"
+            name="plazo"
+            min="1"
+            step="1"
+            [(ngModel)]="plazo_conservacion_anios"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="unidad">Unidad organizacional *</label>
+          <select id="unidad" [(ngModel)]="unidad_id" name="unidad" required>
+            <option [ngValue]="0" disabled>Seleccione una unidad organizacional</option>
+            <option *ngFor="let unidad of unidades" [ngValue]="unidad.id">
+              {{ unidad.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-actions full">
+          <button type="submit" class="btn primary" [disabled]="loading">
+            {{ loading ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+
+          <button type="button" class="btn ghost" (click)="cancelar()" [disabled]="loading">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -4,6 +4,12 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ExpedienteDocumentosDialogComponent } from './expediente-documentos-dialog.component';
+import { ArchivistaSerieDialogComponent } from '../seriecrear/archivista-serie-dialog.component';
+import { ArchivistaSubserieDialogComponent } from '../subseriecrear/archivista-subserie-dialog.component';
+import { ArchivistaExpedienteDialogComponent } from '../expedientecrear/archivista-expediente-dialog.component';
+import { ArchivistaSerieEditDialogComponent } from '../seriecrear/archivista-serie-edit-dialog.component';
+import { ArchivistaSubserieEditDialogComponent } from '../subseriecrear/archivista-subserie-edit-dialog.component';
+import { ArchivistaExpedienteEditDialogComponent } from '../expedientecrear/archivista-expediente-edit-dialog.component';
 
 interface SerieRow {
   id: number;
@@ -64,7 +70,8 @@ interface CerrarExpedienteResponse {
   templateUrl: './archivista-clasificacion.component.html',
   styleUrls: ['./archivista-clasificacion.component.css'],
   standalone: true,
-  imports: [FormsModule, CommonModule, ExpedienteDocumentosDialogComponent],
+  imports: [FormsModule, CommonModule, ExpedienteDocumentosDialogComponent,ArchivistaSerieDialogComponent,
+    ArchivistaSubserieDialogComponent, ArchivistaExpedienteDialogComponent,ArchivistaSerieEditDialogComponent,ArchivistaSubserieEditDialogComponent,ArchivistaExpedienteEditDialogComponent,],
 })
 export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   private readonly apiUrl = 'http://localhost:3000';
@@ -72,6 +79,10 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   series: SerieRow[] = [];
   subseries: SubserieRow[] = [];
   expedientes: ExpedienteRow[] = [];
+
+  serieDialogOpen = false;
+  subserieDialogOpen = false;
+  expedienteDialogOpen = false;
 
   filteredSeries: SerieRow[] = [];
   filteredSubseries: SubserieRow[] = [];
@@ -118,6 +129,17 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   expedientesPage = 1;
   expedientesPageSize = 5;
   pagedExpedientes: ExpedienteRow[] = [];
+
+  serieEditing: any | null = null;
+  subserieEditing: any | null = null;
+  expedienteEditing: any | null = null;
+
+  serieEditDialogOpen = false;
+  serieToEdit: any | null = null;
+  subserieEditDialogOpen = false;
+  subserieToEdit: any | null = null;
+  expedienteEditDialogOpen = false;
+  expedienteToEdit: any | null = null;
 
   confirmDialogOpen = false;
   confirmDialogTitle = '';
@@ -308,11 +330,117 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   }
 
   crearSerie(): void {
-    this.router.navigate(['/archivista/crear-serie']);
+    this.serieEditing = null;
+    this.serieDialogOpen = true;
+  }
+
+  cerrarSerieDialog(): void {
+    this.serieDialogOpen = false;
+    this.serieEditing = null;
+  }
+
+  serieCreada(): void {
+    this.serieDialogOpen = false;
+    this.cargarSeries();
+    this.cargarSubseries();
+    this.showToast('Serie creada correctamente', 'success');
+  }
+
+  editarSerie(serie: any): void {
+    this.serieToEdit = { ...serie };
+    this.serieEditDialogOpen = true;
+  }
+
+  cerrarSerieEditDialog(): void {
+    this.serieEditDialogOpen = false;
+    this.serieToEdit = null;
+  }
+
+  serieEditada(): void {
+    this.serieEditDialogOpen = false;
+    this.serieToEdit = null;
+
+    this.cargarSeries();
+    this.cargarSubseries();
+    this.cargarExpedientes();
+
+    this.showToast('Serie actualizada correctamente', 'success');
   }
 
   crearSubserie(): void {
-    this.router.navigate(['/archivista/crear-subserie']);
+    this.subserieEditing = null;
+    this.subserieDialogOpen = true;
+  }
+
+  cerrarSubserieDialog(): void {
+    this.subserieDialogOpen = false;
+    this.subserieEditing = null;
+  }
+
+  subserieCreada(): void {
+    this.subserieDialogOpen = false;
+    this.cargarSubseries();
+    this.showToast('Subserie creada correctamente', 'success');
+  }
+
+  editarSubserie(subserie: any): void {
+    this.subserieToEdit = { ...subserie };
+    this.subserieEditDialogOpen = true;
+  }
+
+  cerrarSubserieEditDialog(): void {
+    this.subserieEditDialogOpen = false;
+    this.subserieToEdit = null;
+  }
+
+  subserieEditada(): void {
+    this.subserieEditDialogOpen = false;
+    this.subserieToEdit = null;
+
+    this.cargarSubseries();
+    this.cargarExpedientes();
+
+    this.showToast('Subserie actualizada correctamente', 'success');
+  }
+
+  crearExpediente(): void {
+    this.expedienteEditing = null;
+    this.expedienteDialogOpen = true;
+  }
+
+  cerrarExpedienteDialog(): void {
+    this.expedienteDialogOpen = false;
+    this.expedienteEditing = null;
+  }
+
+  expedienteCreado(): void {
+    this.expedienteDialogOpen = false;
+    this.cargarExpedientes();
+    this.showToast('Expediente creado correctamente', 'success');
+  }
+
+  editarExpediente(expediente: any): void {
+    if (String(expediente?.estado || '').toUpperCase() !== 'ACTIVO') {
+      this.showToast('Solo se pueden editar expedientes en estado ACTIVO', 'error');
+      return;
+    }
+
+    this.expedienteToEdit = { ...expediente };
+    this.expedienteEditDialogOpen = true;
+  }
+
+  cerrarExpedienteEditDialog(): void {
+    this.expedienteEditDialogOpen = false;
+    this.expedienteToEdit = null;
+  }
+
+  expedienteEditado(): void {
+    this.expedienteEditDialogOpen = false;
+    this.expedienteToEdit = null;
+
+    this.cargarExpedientes();
+
+    this.showToast('Expediente actualizado correctamente', 'success');
   }
 
   verIndices(): void {

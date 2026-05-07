@@ -1,0 +1,129 @@
+<div class="overlay">
+  <div class="modal">
+    <header>
+      <div>
+        <h3>Editar expediente</h3>
+        <p class="muted">Actualice los datos del expediente archivístico seleccionado.</p>
+      </div>
+
+      <button type="button" class="btn ghost close-btn" (click)="cancelar()">
+        X
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <p class="toolbar-error" *ngIf="errorMsg">
+        {{ errorMsg }}
+      </p>
+
+      <p class="toolbar-error" *ngIf="estado && estado !== 'ACTIVO'">
+        Este expediente no se puede editar porque su estado actual es {{ estado }}.
+      </p>
+
+      <form class="form-grid" (ngSubmit)="guardarCambios()">
+        <div class="form-group">
+          <label for="codigo">Código *</label>
+          <input
+            type="text"
+            id="codigo"
+            [(ngModel)]="codigo"
+            name="codigo"
+            required
+            (input)="onCodigoInput()"
+            placeholder="Ej: EXP-001"
+            [disabled]="estado !== 'ACTIVO' || loading"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="nombre">Expediente *</label>
+          <input
+            type="text"
+            id="nombre"
+            [(ngModel)]="nombre"
+            name="nombre"
+            required
+            (input)="onNombreInput()"
+            placeholder="Nombre del expediente"
+            [disabled]="estado !== 'ACTIVO' || loading"
+          />
+        </div>
+
+        <div class="form-group full">
+          <label for="descripcion">Descripción</label>
+          <textarea
+            id="descripcion"
+            [(ngModel)]="descripcion"
+            name="descripcion"
+            (input)="onDescripcionInput()"
+            placeholder="Descripción breve del expediente"
+            [disabled]="estado !== 'ACTIVO' || loading"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="unidad">Unidad organizacional *</label>
+          <select
+            id="unidad"
+            [(ngModel)]="unidad_id"
+            name="unidad"
+            required
+            (ngModelChange)="onUnidadChange()"
+            [disabled]="estado !== 'ACTIVO' || loading"
+          >
+            <option [ngValue]="0" disabled>Seleccione una unidad organizacional</option>
+            <option *ngFor="let unidad of unidades" [ngValue]="unidad.id">
+              {{ unidad.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="serie">Serie *</label>
+          <select
+            id="serie"
+            [(ngModel)]="serie_id"
+            name="serie"
+            required
+            (ngModelChange)="onSerieChange()"
+            [disabled]="estado !== 'ACTIVO' || loading"
+          >
+            <option [ngValue]="0" disabled>Seleccione una serie</option>
+            <option *ngFor="let serie of seriesFiltradas" [ngValue]="serie.id">
+              {{ serie.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label for="subserie">Subserie</label>
+          <select
+            id="subserie"
+            [(ngModel)]="subserie_id"
+            name="subserie"
+            [disabled]="!serie_id || estado !== 'ACTIVO' || loading"
+          >
+            <option [ngValue]="null">Sin subserie</option>
+            <option *ngFor="let subserie of subseriesFiltradas" [ngValue]="subserie.id">
+              {{ subserie.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-actions full">
+          <button
+            type="submit"
+            class="btn primary"
+            [disabled]="loading || estado !== 'ACTIVO'"
+          >
+            {{ loading ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+
+          <button type="button" class="btn ghost" (click)="cancelar()" [disabled]="loading">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

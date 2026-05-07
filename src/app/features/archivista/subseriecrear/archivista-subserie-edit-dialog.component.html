@@ -1,0 +1,84 @@
+<div class="overlay">
+  <div class="modal">
+    <header>
+      <div>
+        <h3>Editar subserie</h3>
+        <p class="muted">Actualice los datos de la subserie documental seleccionada.</p>
+      </div>
+
+      <button type="button" class="btn ghost close-btn" (click)="cancelar()">
+        X
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <p class="toolbar-error" *ngIf="errorMsg">
+        {{ errorMsg }}
+      </p>
+
+      <form class="form-grid" (ngSubmit)="guardarCambios()">
+        <div class="form-group">
+          <label for="codigo">Código *</label>
+          <input
+            type="text"
+            id="codigo"
+            [(ngModel)]="codigo"
+            name="codigo"
+            required
+            (input)="onCodigoInput()"
+            placeholder="Ej: SUB-001"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="nombre">Subserie *</label>
+          <input
+            type="text"
+            id="nombre"
+            [(ngModel)]="nombre"
+            name="nombre"
+            required
+            (input)="onNombreInput()"
+            placeholder="Nombre de la subserie"
+          />
+        </div>
+
+        <div class="form-group full">
+          <label for="descripcion">Descripción</label>
+          <textarea
+            id="descripcion"
+            [(ngModel)]="descripcion"
+            name="descripcion"
+            (input)="onDescripcionInput()"
+            placeholder="Descripción breve de la subserie"
+          ></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label for="serie">Serie *</label>
+          <select
+            id="serie"
+            [(ngModel)]="serie_id"
+            name="serie"
+            required
+          >
+            <option [ngValue]="0" disabled>Seleccione una serie</option>
+            <option *ngFor="let serie of series" [ngValue]="serie.id">
+              {{ serie.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-actions full">
+          <button type="submit" class="btn primary" [disabled]="loading">
+            {{ loading ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+
+          <button type="button" class="btn ghost" (click)="cancelar()" [disabled]="loading">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

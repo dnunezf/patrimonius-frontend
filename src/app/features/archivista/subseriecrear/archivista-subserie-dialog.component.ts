@@ -1,5 +1,4 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, EventEmitter, OnInit, Output} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -19,7 +18,10 @@ export class ArchivistaSubserieDialogComponent implements OnInit {
   descripcion = '';
   serie_id = 0;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  @Output() closed = new EventEmitter<void>();
+  @Output() created = new EventEmitter<void>();
+
+  constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
     this.http.get<any[]>('http://localhost:3000/api/series').subscribe({
@@ -59,17 +61,17 @@ export class ArchivistaSubserieDialogComponent implements OnInit {
         codigo: this.codigo,
         nombre: this.nombre,
         descripcion: this.descripcion,
-        serie_id: this.serie_id
+        serie_id: this.serie_id,
       };
 
       this.http.post('http://localhost:3000/subseries', subserieData).subscribe({
         next: (response) => {
           console.log('Subserie creada:', response);
-          this.router.navigate(['/archivista/clasificacion']);
+          this.created.emit();
         },
         error: (error) => {
           console.error('Error al crear la subserie:', error);
-        }
+        },
       });
     } else {
       alert('Por favor complete todos los campos obligatorios.');
@@ -77,6 +79,6 @@ export class ArchivistaSubserieDialogComponent implements OnInit {
   }
 
   cancelar(): void {
-    this.router.navigate(['/archivista/clasificacion']);
+    this.closed.emit();
   }
 }
