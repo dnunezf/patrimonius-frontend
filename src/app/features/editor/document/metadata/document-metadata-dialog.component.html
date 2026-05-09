@@ -199,6 +199,10 @@
             </div>
           </div>
 
+          <div *ngIf="success" class="md-success md-success--footer">
+            {{ success }}
+          </div>
+
           <div class="md-footer">
             <button type="button" class="btn btn--ghost" (click)="close()">
               Cancelar

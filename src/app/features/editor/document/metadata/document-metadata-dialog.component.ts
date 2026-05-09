@@ -57,6 +57,7 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
   loading = false;
   saving = false;
   error: string | null = null;
+  success: string | null = null;
 
   meta: DocumentMetadata | null = null;
   form!: FormGroup;
@@ -130,6 +131,7 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
 
     this.loading = true;
     this.error = null;
+    this.success = null;
 
     this.docs.getMetadata(this.documentId).subscribe({
       next: (m) => {
@@ -163,6 +165,7 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
 
     this.saving = true;
     this.error = null;
+    this.success = null;
 
     const v = this.form.value;
 
@@ -182,15 +185,21 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     this.docs.saveDescriptiveMetadata(this.documentId, payload).subscribe({
       next: () => {
         this.saving = false;
-        this.saved.emit();
-        this.close();
+        this.success = 'Metadatos guardados correctamente.';
+
+        setTimeout(() => {
+          this.saved.emit();
+          this.close();
+        }, 1500);
       },
       error: (e) => {
         const msg =
           e?.status === 422
             ? 'Revise los campos obligatorios.'
             : e?.error?.message || 'No se pudieron guardar los metadatos';
+
         this.error = msg;
+        this.success = null;
         this.saving = false;
       },
     });
@@ -198,6 +207,8 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
 
   close(): void {
     this.open = false;
+    this.error = null;
+    this.success = null;
     this.closed.emit();
   }
 
