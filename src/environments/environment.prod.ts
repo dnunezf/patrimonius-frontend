@@ -1,6 +1,13 @@
-export const environment = {
+/*export const environment = {
   production: true,
   api: 'http://localhost:3000',
   apiUrl: 'http://localhost:3000',
+  wsPath: '/ws'
+};*/
+
+export const environment = {
+  production: false,
+  api: 'https://patrimonius-backend.onrender.com',
+  apiUrl: 'https://patrimonius-backend.onrender.com', // <- alias para servicios antiguos
   wsPath: '/ws'
 };
