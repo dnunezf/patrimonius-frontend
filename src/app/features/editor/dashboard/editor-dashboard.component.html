@@ -182,6 +182,7 @@
     <div class="modal-body">
       <p class="muted" *ngIf="signInfo">
         <strong>Documento:</strong> {{ signInfo.titulo }} <br />
+        <strong>Código:</strong> {{ signInfo.codigo || '—' }} <br />
         <strong>Estado:</strong> {{ signInfo.estado | formatState }} <br />
         <strong>Firmas:</strong> {{ signInfo.firmas_obtenidas }} / {{ signInfo.firmas_requeridas }}
       </p>

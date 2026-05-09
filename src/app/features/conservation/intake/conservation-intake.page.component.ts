@@ -175,7 +175,7 @@ export class ConservationIntakePageComponent {
 
     producingUnit: ['', [Validators.required]],
     keywords: [''],
-    accessLevel: ['INTERNAL' as ConfidentialityLevel, [Validators.required]],
+    accessLevel: ['PUBLIC' as ConfidentialityLevel, [Validators.required]],
     procedureType: [null as ProcedureType | null],
 
     sizeBytes: [{ value: null as number | null, disabled: true }],
@@ -564,7 +564,7 @@ export class ConservationIntakePageComponent {
           Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
         ),
         accessLevel:
-          (doc.accessLevel as ConfidentialityLevel | null) || 'INTERNAL',
+          (doc.accessLevel as ConfidentialityLevel | null) || 'PUBLIC',
         procedureType: null,
 
         sizeBytes: doc.sizeBytes ?? null,
@@ -979,7 +979,7 @@ export class ConservationIntakePageComponent {
     const raw = this.archivalForm.getRawValue();
     const accessLevel = raw.accessLevel as ConfidentialityLevel;
 
-    if (accessLevel === 'HIGH' || accessLevel === 'RESTRICTED') {
+    if (accessLevel === 'RESTRICTED') {
       const accepted = await this.confirm.ask(
         'Se seleccionó un nivel de acceso sensible. ¿Desea continuar?',
         'Advertencia',
