@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 interface UnidadRow {
   id: number;
@@ -78,7 +79,7 @@ export class ArchivistaSerieEditDialogComponent implements OnChanges {
   }
 
   cargarUnidades(): void {
-    this.http.get<UnidadRow[]>('http://localhost:3000/api/unidades').subscribe({
+    this.http.get<UnidadRow[]>(`${environment.apiUrl}/api/unidades`).subscribe({
       next: (response) => {
         this.unidades = response ?? [];
       },
@@ -124,7 +125,7 @@ export class ArchivistaSerieEditDialogComponent implements OnChanges {
 
     this.loading = true;
 
-    this.http.put(`http://localhost:3000/api/series/${this.serie.id}`, serieData).subscribe({
+    this.http.put(`${environment.apiUrl}/api/series/${this.serie.id}`, serieData).subscribe({
       next: (response) => {
         console.log('Serie actualizada:', response);
         this.loading = false;

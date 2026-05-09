@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 interface SerieRow {
   id: number;
@@ -80,7 +81,7 @@ export class ArchivistaSubserieEditDialogComponent implements OnInit, OnChanges 
   }
 
   cargarSeries(): void {
-    this.http.get<SerieRow[]>('http://localhost:3000/api/series').subscribe({
+    this.http.get<SerieRow[]>(`${environment.apiUrl}/api/series`).subscribe({
       next: (response) => {
         this.series = response ?? [];
       },
@@ -116,7 +117,7 @@ export class ArchivistaSubserieEditDialogComponent implements OnInit, OnChanges 
 
     this.loading = true;
 
-    this.http.put(`http://localhost:3000/subseries/${this.subserie.id}`, subserieData).subscribe({
+    this.http.put(`${environment.apiUrl}/subseries/${this.subserie.id}`, subserieData).subscribe({
       next: (response) => {
         console.log('Subserie actualizada:', response);
         this.loading = false;

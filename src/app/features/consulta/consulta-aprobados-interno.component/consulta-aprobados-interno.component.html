@@ -233,8 +233,7 @@
 
   <p class="consulta-hint" *ngIf="aplicaFiltroUnidad && filtroUnidadUsuario != null && !loading && vistaActual === 'documentos'">
     Solo se listan documentos en estado <strong>aprobado</strong>, <strong>archivado</strong> o
-    <strong>conservación</strong> cuya <strong>unidad organizacional</strong> coincide con la suya
-    <span class="mono">(unidad_id = {{ filtroUnidadUsuario }})</span>, según confidencialidad.
+    <strong>conservación</strong> cuya <strong>unidad organizacional</strong> coincide con la suya, según confidencialidad.
   </p>
 
   <section class="panel tabla tabla-wrap" *ngIf="!loading && vistaActual === 'documentos'">

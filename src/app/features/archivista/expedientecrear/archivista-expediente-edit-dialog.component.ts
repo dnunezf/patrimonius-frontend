@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 interface UnidadRow {
   id: number;
@@ -33,7 +34,7 @@ interface SubserieRow {
   styleUrls: ['./archivista-expediente-edit-dialog.component.css'],
 })
 export class ArchivistaExpedienteEditDialogComponent implements OnInit, OnChanges {
-  private readonly apiUrl = 'http://localhost:3000';
+  private readonly apiUrl = environment.apiUrl;
 
   @Input() expediente: any | null = null;
 

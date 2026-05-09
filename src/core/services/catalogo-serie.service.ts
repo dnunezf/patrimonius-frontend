@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Serie {
   id: number;
@@ -37,7 +38,7 @@ export interface UpdateSerieDto {
 export class CatalogoSerieService {
   private http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:3000/api/admin/series';
+  private readonly baseUrl = `${environment.apiUrl}/api/admin/series`;
 
   getSeries(unidadId?: number): Observable<Serie[]> {
     let params = new HttpParams();

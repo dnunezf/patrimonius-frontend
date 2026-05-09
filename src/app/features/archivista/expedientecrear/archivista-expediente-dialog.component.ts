@@ -2,6 +2,7 @@ import { Component, EventEmitter, OnInit, Output} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../../environments/environment';
 
 interface UnidadRow {
   id: number;
@@ -33,7 +34,7 @@ interface SubserieRow {
   imports: [FormsModule, CommonModule],
 })
 export class ArchivistaExpedienteDialogComponent implements OnInit{
-  private readonly apiUrl = 'http://localhost:3000';
+  private readonly apiUrl = environment.apiUrl;
 
   unidades: UnidadRow[] = [];
   series: SerieRow[] = [];

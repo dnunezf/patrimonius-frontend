@@ -10,6 +10,7 @@ import { DocumentService } from '../../../../../core/services/document.service';
 type SignatureInfo = {
   documento_id: number;
   titulo: string;
+  codigo?: string | null;
   estado: string;
   firmas_requeridas: number;
   firmas_obtenidas: number;

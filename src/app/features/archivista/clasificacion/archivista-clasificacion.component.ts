@@ -10,6 +10,7 @@ import { ArchivistaExpedienteDialogComponent } from '../expedientecrear/archivis
 import { ArchivistaSerieEditDialogComponent } from '../seriecrear/archivista-serie-edit-dialog.component';
 import { ArchivistaSubserieEditDialogComponent } from '../subseriecrear/archivista-subserie-edit-dialog.component';
 import { ArchivistaExpedienteEditDialogComponent } from '../expedientecrear/archivista-expediente-edit-dialog.component';
+import { environment } from '../../../../environments/environment';
 
 interface SerieRow {
   id: number;
@@ -74,7 +75,7 @@ interface CerrarExpedienteResponse {
     ArchivistaSubserieDialogComponent, ArchivistaExpedienteDialogComponent,ArchivistaSerieEditDialogComponent,ArchivistaSubserieEditDialogComponent,ArchivistaExpedienteEditDialogComponent,],
 })
 export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
-  private readonly apiUrl = 'http://localhost:3000';
+  private readonly apiUrl = environment.apiUrl;
 
   series: SerieRow[] = [];
   subseries: SubserieRow[] = [];

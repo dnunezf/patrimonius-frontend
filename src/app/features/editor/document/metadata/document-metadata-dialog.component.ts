@@ -67,8 +67,6 @@ export class DocumentMetadataDialogComponent implements OnInit, OnChanges {
     label: string;
   }> = [
     { value: 'PUBLIC', label: 'Público' },
-    { value: 'INTERNAL', label: 'Interno' },
-    { value: 'HIGH', label: 'Alto' },
     { value: 'RESTRICTED', label: 'Restringido' },
   ];
 
