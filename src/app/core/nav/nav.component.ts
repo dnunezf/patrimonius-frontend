@@ -366,13 +366,15 @@ export class NavComponent {
   }
 
   /**
-   * HU-21 upload action.
-   * Temporary rule: any authenticated user can see it.
+   * HU-21 upload action (nav): solo EDITOR (2), ARCHIVADOR (3) o master.
    */
   canSeeUpload = (): boolean => {
     const user: any = this.auth.currentUser?.();
     if (!user) return false;
-    return true;
+    const rolId = Number(user?.rolId ?? user?.rol_id ?? 0);
+    const isMaster = user?.isMaster === true;
+    // Solo EDITOR (2) y ARCHIVADOR (3)
+    return isMaster || rolId === 2 || rolId === 3;
   };
 
   uploadLink(): string {

@@ -3,6 +3,7 @@ import { HomeComponent } from './features/home/home.component';
 import { AccessExceptionsComponent } from './features/admin/access-exceptions/access-exceptions.component';
 import { ActivateComponent } from './auth/activate.component';
 import { AuthGuard } from '../core/services/auth.guard';
+import { RoleGuard } from './core/guards/role.guard';
 import {ArchivistaDashboardComponent} from './features/archivista/dashboard/archivista-dashboard.component';
 import {ArchivistaClasificacionComponent} from './features/archivista/clasificacion/archivista-clasificacion.component';
 import { ArchivistaSerieDialogComponent } from './features/archivista/seriecrear/archivista-serie-dialog.component';
@@ -15,44 +16,53 @@ export const routes: Routes = [
 
   {
     path: 'admin',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [1] },
     loadChildren: () =>
       import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
   },
   {
     path: 'logs',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [1, 3] },
     loadChildren: () =>
       import('./features/logs/logs.routes').then((m) => m.LOGS_ROUTES),
   },
   {
     path: 'editor',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [2] },
     loadChildren: () =>
       import('./features/editor/editor.routes').then((m) => m.EDITOR_ROUTES),
   },
   {
     path: 'archivista/dashboard',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [3] },
     component: ArchivistaDashboardComponent,
   },
   {
     path: 'archivista/clasificacion',
     component: ArchivistaClasificacionComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [3] },
   },
   {
     path: 'archivista/crear-serie',
     component: ArchivistaSerieDialogComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [3] },
   },
   {
     path: 'archivista/crear-subserie',
     component: ArchivistaSubserieDialogComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [3] },
   },
   {
     path: 'archivista/indices',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [3] },
     loadComponent: () =>
       import('./features/archivista/indices/archivista-indices.component').then(
         (m) => m.ArchivistaIndicesComponent,
@@ -60,7 +70,8 @@ export const routes: Routes = [
   },
   {
     path: 'archivista/clasificacion-documento/:id',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [3] },
     loadComponent: () =>
       import('./features/archivista/clasificacion/archivista-clasificacion-documento.component').then(
         (m) => m.ArchivistaClasificacionDocumentoComponent,
@@ -78,13 +89,15 @@ export const routes: Routes = [
   {
     path: 'archivista/gestion-plazos',
     component: GestionPlazosComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [3] },
   },
 
   // ✅ HU-21: Carga masiva de documentos
   {
     path: 'documentos/carga-masiva',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [2, 3] },
     loadComponent: () =>
       import('./features/documents/carga-masiva.component').then(
         (m) => m.CargaMasivaPageComponent,
@@ -93,7 +106,8 @@ export const routes: Routes = [
 
   {
     path: 'conservacion/ingreso',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [2, 3] },
     loadComponent: () =>
       import('./features/conservation/intake/conservation-intake.page.component').then(
         (m) => m.ConservationIntakePageComponent,
@@ -125,7 +139,8 @@ export const routes: Routes = [
 
   {
     path: 'usuario/dashboard',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [4] },
     loadComponent: () =>
       import('./features/consulta/usuario-consulta-hub.component/usuario-consulta-hub.component').then(
         (m) => m.UsuarioConsultaHubComponent,
@@ -133,13 +148,16 @@ export const routes: Routes = [
   },
   {
     path: 'externo/dashboard',
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [5] },
     redirectTo: '/consulta/aprobados-externo',
     pathMatch: 'full',
   },
 
   {
     path: 'consulta/aprobados',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [4] },
     loadComponent: () =>
       import('./features/consulta/consulta-aprobados-interno.component/consulta-aprobados-interno.component').then(
         (m) => m.ConsultaAprobadosInternoComponent,
@@ -147,7 +165,8 @@ export const routes: Routes = [
   },
   {
     path: 'consulta/aprobados-externo',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [5] },
     loadComponent: () =>
       import('./features/consulta/consulta-aprobados-externo.component/consulta-aprobados-externo.component').then(
         (m) => m.ConsultaAprobadosExternoComponent,
@@ -155,7 +174,8 @@ export const routes: Routes = [
   },
   {
     path: 'consulta/historial',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [4] },
     loadComponent: () =>
       import('./features/consulta/consulta-historial.component/consulta-historial.component').then(
         (m) => m.ConsultaHistorialComponent,
@@ -163,7 +183,8 @@ export const routes: Routes = [
   },
   {
     path: 'consulta/recientes',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [4] },
     loadComponent: () =>
       import('./features/consulta/consulta-recientes.component/consulta-recientes.component').then(
         (m) => m.ConsultaRecientesComponent,
@@ -171,7 +192,8 @@ export const routes: Routes = [
   },
   {
     path: 'consulta/novedades',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [4] },
     loadComponent: () =>
       import('./features/consulta/consulta-novedades.component/consulta-novedades.component').then(
         (m) => m.ConsultaNovedadesComponent,
@@ -179,7 +201,8 @@ export const routes: Routes = [
   },
   {
     path: 'consulta/favoritos',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [4] },
     loadComponent: () =>
       import('./features/consulta/consulta-favoritos.component/consulta-favoritos.component').then(
         (m) => m.ConsultaFavoritosComponent,
@@ -194,7 +217,12 @@ export const routes: Routes = [
       ),
   },*/
 
-  { path: 'access-exceptions', component: AccessExceptionsComponent, canActivate: [AuthGuard] },
+  {
+    path: 'access-exceptions',
+    component: AccessExceptionsComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { allowedRoles: [1] },
+  },
   { path: 'activate', component: ActivateComponent },
   { path: '**', redirectTo: '' },
 ];
