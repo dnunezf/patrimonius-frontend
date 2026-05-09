@@ -51,6 +51,7 @@ export class EditorDashboardComponent implements OnInit {
   signInfo: {
     documento_id: number;
     titulo: string;
+    codigo?: string | null;
     estado: string;
     firmas_requeridas: number;
     firmas_obtenidas: number;

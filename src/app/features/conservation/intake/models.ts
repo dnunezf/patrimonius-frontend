@@ -1,7 +1,5 @@
 export type ConfidentialityLevel =
   | 'PUBLIC'
-  | 'INTERNAL'
-  | 'HIGH'
   | 'RESTRICTED';
 
 export type FinalDocumentFlow = 'PRODUCED_SENT' | 'RECEIVED';

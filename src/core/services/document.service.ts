@@ -207,10 +207,10 @@ export class DocumentService {
   // =========================================================
 
   /**
-   * Returns the admin user list, used by the signer-selection flow.
+   * Usuarios elegibles como firmantes (backend: GET /users/signers; editor y admin).
    */
   listUsers(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.api}/admin/users`);
+    return this.http.get<any[]>(`${this.api}/users/signers`);
   }
 
   // =========================================================
@@ -542,6 +542,7 @@ export class DocumentService {
   getSignatureInfo(id: number): Observable<{
     documento_id: number;
     titulo: string;
+    codigo?: string | null;
     estado: string;
     firmas_requeridas: number;
     firmas_obtenidas: number;
@@ -552,6 +553,7 @@ export class DocumentService {
     return this.http.get<{
       documento_id: number;
       titulo: string;
+      codigo?: string | null;
       estado: string;
       firmas_requeridas: number;
       firmas_obtenidas: number;

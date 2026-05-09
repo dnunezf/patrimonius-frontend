@@ -41,7 +41,7 @@ type PerDocumentMetadata = {
   palabrasClave: string;
   nombreProductores: string;
   fechaDocumento: string;
-  nivelAcceso: 'PUBLIC' | 'INTERNAL' | 'HIGH' | 'RESTRICTED';
+  nivelAcceso: 'PUBLIC' |  'RESTRICTED';
   serieId: number | null;
   subserieId: number | null;
   expedienteId: number | null;
@@ -219,7 +219,9 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
 
     this.documentService.getNivelesAccesoCatalogo().subscribe({
       next: (rows) => {
-        this.nivelesAcceso = rows || [];
+        this.nivelesAcceso = (rows || []).filter(
+          (nivel) => nivel.value === 'PUBLIC' || nivel.value === 'RESTRICTED'
+        );
       },
       error: () => {
         this.nivelesAcceso = [];
@@ -619,7 +621,7 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
       palabrasClave: '',
       nombreProductores: '',
       fechaDocumento: '',
-      nivelAcceso: 'INTERNAL',
+      nivelAcceso: 'PUBLIC',
       serieId: null,
       subserieId: null,
       expedienteId: null,
