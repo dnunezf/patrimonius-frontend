@@ -174,7 +174,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     this.loadingSeries = true;
     this.errorSeries = '';
 
-    this.http.get<SerieRow[]>(`${this.apiUrl}/api/series`).subscribe({
+    this.http.get<SerieRow[]>(`${this.apiUrl}/api/series?all=1`).subscribe({
       next: (response) => {
         this.series = response ?? [];
         this.aplicarFiltroSeries();
@@ -192,7 +192,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     this.loadingSubseries = true;
     this.errorSubseries = '';
 
-    this.http.get<SubserieRow[]>(`${this.apiUrl}/subseries`).subscribe({
+    this.http.get<SubserieRow[]>(`${this.apiUrl}/subseries?all=1`).subscribe({
       next: (response) => {
         this.subseries = response ?? [];
         this.aplicarFiltroSubseries();
@@ -210,7 +210,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     this.loadingExpedientes = true;
     this.errorExpedientes = '';
 
-    this.http.get<ExpedienteRow[]>(`${this.apiUrl}/api/expedientes`).subscribe({
+    this.http.get<ExpedienteRow[]>(`${this.apiUrl}/api/expedientes?all=1`).subscribe({
       next: (response) => {
         this.expedientes = response ?? [];
         this.aplicarFiltroExpedientes();
