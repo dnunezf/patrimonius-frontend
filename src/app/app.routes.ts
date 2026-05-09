@@ -148,8 +148,6 @@ export const routes: Routes = [
   },
   {
     path: 'externo/dashboard',
-    canActivate: [AuthGuard, RoleGuard],
-    data: { allowedRoles: [5] },
     redirectTo: '/consulta/aprobados-externo',
     pathMatch: 'full',
   },
