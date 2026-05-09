@@ -2,6 +2,7 @@ import { Component, EventEmitter, OnInit, Output} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-archivista-serie-dialog',
@@ -25,7 +26,7 @@ export class ArchivistaSerieDialogComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.http.get<any[]>('http://localhost:3000/api/unidades').subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/api/unidades`).subscribe({
       next: (response) => {
         this.unidades = response;
         console.log('Unidades:', response);
@@ -74,7 +75,7 @@ export class ArchivistaSerieDialogComponent implements OnInit {
         plazo_conservacion_anios: plazo,
       };
 
-      this.http.post('http://localhost:3000/api/series', serieData).subscribe({
+      this.http.post(`${environment.apiUrl}/api/series`, serieData).subscribe({
         next: (response) => {
           console.log('Serie creada:', response);
           this.created.emit();

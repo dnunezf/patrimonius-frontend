@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface SerieLite {
   id: number;
@@ -43,8 +44,8 @@ export interface UpdateSubserieDto {
 export class CatalogoSubserieService {
   private http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:3000/api/admin/subseries';
-  private readonly seriesUrl = 'http://localhost:3000/api/admin/series';
+  private readonly baseUrl = `${environment.apiUrl}/api/admin/subseries`;
+  private readonly seriesUrl = `${environment.apiUrl}/api/admin/series`;
 
   getSubseries(serieId?: number): Observable<Subserie[]> {
     let params = new HttpParams();

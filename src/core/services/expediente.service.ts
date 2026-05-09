@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface SerieLite {
   id: number;
@@ -101,9 +102,9 @@ function isActiveCatalogRow(item: any): boolean {
 export class ExpedienteService {
   private http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:3000/api/expedientes';
-  private readonly seriesUrl = 'http://localhost:3000/api/series';
-  private readonly subseriesUrl = 'http://localhost:3000/subseries';
+  private readonly baseUrl = `${environment.apiUrl}/api/expedientes`;
+  private readonly seriesUrl = `${environment.apiUrl}/api/series`;
+  private readonly subseriesUrl = `${environment.apiUrl}/subseries`;
 
   getExpedientes(filters?: {
     unidad_id?: number;
