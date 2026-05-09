@@ -25,6 +25,111 @@
       placeholder="Ej. Acta de reunión 2025"
     />
 
+    <label for="accessLevel">Nivel de acceso</label>
+    <select
+      id="accessLevel"
+      name="accessLevel"
+      [(ngModel)]="selectedAccessLevel"
+      class="access-select">
+      <option value="PUBLIC">Público</option>
+      <option value="RESTRICTED">Restringido</option>
+    </select>
+    <small class="access-hint">
+      El nivel "Restringido" limita el acceso a usuarios
+    </small>
+
+    <!-- User Selection Section - Only show when RESTRICTED -->
+    <!-- Temporarily disabled: Participant selection requires admin privileges for permission assignment
+    <div class="participants-section" *ngIf="selectedAccessLevel === 'RESTRICTED'">
+      <h3>Participantes del Documento</h3>
+      <p class="section-subtitle">Seleccione los usuarios que participarán en este documento y sus permisos</p>
+      
+      <div class="user-chips-container">
+        <div class="search-section">
+          <input
+            type="text"
+            class="search-input"
+            [(ngModel)]="userSearchTerm"
+            name="userSearch"
+            placeholder="Buscar usuario por nombre o email..."
+            (input)="onUserSearchInput()"
+            (focus)="onUserSearchFocus()"
+            autocomplete="off"
+          />
+          
+          <button 
+            type="button" 
+            class="show-all-btn"
+            (click)="showAllUsers()"
+            title="Mostrar todos los usuarios">
+            👥
+          </button>
+        </div>
+
+        <div class="selected-users-section" *ngIf="selectedParticipants.length > 0">
+          <h4>Usuarios seleccionados:</h4>
+          <div class="chips-list">
+            <div class="chip" *ngFor="let participant of selectedParticipants; let i = index">
+              <span class="chip-text">{{ participant.user.fullName }}</span>
+              <button 
+                type="button" 
+                class="chip-remove"
+                (click)="removeParticipant(i)"
+                title="Eliminar {{ participant.user.fullName }}">
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="user-dropdown" *ngIf="showUserDropdown && filteredUsers.length > 0">
+          <div 
+            class="user-option" 
+            *ngFor="let user of filteredUsers" 
+            (click)="selectUser(user)">
+            <div class="user-option-info">
+              <strong>{{ user.fullName }}</strong>
+              <span class="user-option-email">{{ user.email }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="permissions-section" *ngIf="selectedParticipants.length > 0">
+        <h4>Configurar permisos:</h4>
+        <div class="participant-permission-item" *ngFor="let participant of selectedParticipants; let i = index">
+          <div class="participant-header">
+            <strong>{{ participant.user.fullName }}</strong>
+            <span class="participant-email">{{ participant.user.email }}</span>
+          </div>
+          <div class="permission-buttons" role="group">
+            <button 
+              type="button" 
+              class="permission-btn" 
+              [class.selected]="participant.permissions.visualizar"
+              (click)="toggleParticipantPermission(i, 'visualizar')">
+              Visualizar
+            </button>
+            <button 
+              type="button" 
+              class="permission-btn" 
+              [class.selected]="participant.permissions.editar"
+              (click)="toggleParticipantPermission(i, 'editar')">
+              Editar
+            </button>
+            <button 
+              type="button" 
+              class="permission-btn" 
+              [class.selected]="participant.permissions.firmar"
+              (click)="toggleParticipantPermission(i, 'firmar')">
+              Firmar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    -->
+
     <button type="submit" [disabled]="loading" class="btn">
       {{ loading ? 'Creando…' : 'Crear documento' }}
     </button>
