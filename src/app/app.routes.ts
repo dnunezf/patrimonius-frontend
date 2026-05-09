@@ -97,7 +97,7 @@ export const routes: Routes = [
   {
     path: 'documentos/carga-masiva',
     canActivate: [AuthGuard, RoleGuard],
-    data: { allowedRoles: [2, 3] },
+    data: { allowedRoles: [1, 2, 3] },
     loadComponent: () =>
       import('./features/documents/carga-masiva.component').then(
         (m) => m.CargaMasivaPageComponent,
