@@ -347,22 +347,24 @@ export class NavComponent {
     );
   };
 
-  /** HU-025: acceso rápido al hub o listado externo (mismas rutas que en ROLES). */
+  /** HU-025: consulta interna de documentos aprobados (roles 1–4); externo usa otro flujo. */
   canSeeConsultaDocumentos = (): boolean => {
     const normalized = this.rolesList.map((role) =>
       role.trim().toUpperCase().replace(/\s+/g, '_'),
     );
-    return normalized.some((r) => r === 'USUARIO' || r === 'USUARIO_EXTERNO');
+    return normalized.some(
+      (r) =>
+        r === 'ADMINISTRADOR' ||
+        r === 'ADMIN' ||
+        r === 'EDITOR' ||
+        r === 'ARCHIVADOR' ||
+        r === 'ARCHIVISTA' ||
+        r === 'USUARIO',
+    );
   };
 
   consultaDocumentosLink(): string {
-    const normalized = this.rolesList.map((role) =>
-      role.trim().toUpperCase().replace(/\s+/g, '_'),
-    );
-    if (normalized.includes('USUARIO_EXTERNO')) {
-      return '/consulta/aprobados-externo';
-    }
-    return '/usuario/dashboard';
+    return '/consulta/aprobados';
   }
 
   /**
