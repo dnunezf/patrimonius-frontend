@@ -88,6 +88,29 @@
   color: #b91c1c;
 }
 
+.md-success {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.md-success--footer {
+  margin-top: 18px;
+  margin-bottom: 0;
+}
+
+.md-info,
+.md-error,
+.md-success {
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
 .md-section {
   background: #fff;
   border: 1px solid #e5e7eb;

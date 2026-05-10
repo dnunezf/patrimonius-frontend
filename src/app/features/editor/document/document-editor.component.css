@@ -852,3 +852,46 @@ button:disabled, .btn:disabled{
   border-radius: 999px;
   padding: 4px 12px;
 }
+
+
+/* =========================================================
+  dar más espacio al área editable del documento
+   ========================================================= */
+
+.sheet.sheet--word {
+  height: calc(100vh - 130px);
+  min-height: 760px;
+}
+
+/* El área que contiene Quill debe ocupar más espacio */
+.editor-page-shell {
+  flex: 1 1 auto;
+  min-height: 440px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* El host de Quill debe estirarse dentro del espacio disponible */
+.editor-page-shell .quill-host {
+  flex: 1 1 auto;
+  min-height: 440px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Toolbar arriba, contenido editable debajo */
+:host ::ng-deep .quill-host .ql-toolbar {
+  flex: 0 0 auto;
+}
+
+/* Contenedor del editor más alto */
+:host ::ng-deep .quill-host .ql-container {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 380px;
+}
+
+/* Área real donde se escribe */
+:host ::ng-deep .quill-host .ql-editor {
+  min-height: 380px;
+}
