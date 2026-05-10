@@ -96,6 +96,7 @@ export class ArchivistaClasificacionDocumentoComponent implements OnInit {
     serieNombre: '',
     subserieNombre: '',
     expedienteNombre: '',
+    expedienteCodigo: '',
   };
 
 
@@ -107,6 +108,7 @@ export class ArchivistaClasificacionDocumentoComponent implements OnInit {
       serieNombre: state.serieNombre || '',
       subserieNombre: state.subserieNombre || '',
       expedienteNombre: state.expedienteNombre || '',
+      expedienteCodigo: state.expedienteCodigo || '',
     };
 
     this.origenRuta = state.origen || '';
@@ -245,7 +247,6 @@ export class ArchivistaClasificacionDocumentoComponent implements OnInit {
 
     const expediente =
       automatic.expedienteNombre ||
-      automatic.expedienteCodigo ||
       automatic.expediente ||
       this.contextoRuta.expedienteNombre ||
       'Sin expediente';

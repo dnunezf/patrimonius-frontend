@@ -32,7 +32,6 @@
           <tr>
             <th>Código</th>
             <th>Título</th>
-            <th>Categoría</th>
             <th>Unidad</th>
             <th>Fecha</th>
             <th>Estado</th>
@@ -42,7 +41,6 @@
           <tr *ngFor="let row of novedades">
             <td class="mono">{{ row.codigo }}</td>
             <td>{{ row.titulo }}</td>
-            <td>{{ row.categoria_nombre || '—' }}</td>
             <td>{{ row.unidad_nombre || '—' }}</td>
             <td>{{ formatDate(row.fecha_aprobacion) }}</td>
             <td><span class="badge">{{ row.estado }}</span></td>

@@ -71,7 +71,7 @@ export class CatalogosModulePageComponent {
         'Mantener la estructura archivística principal'
       ],
       statsValue: 'Catálogo archivístico',
-      icon: 'series',
+      icon: 'catalogo',
     },
     {
       title: 'Subseries',
@@ -84,7 +84,7 @@ export class CatalogosModulePageComponent {
         'Mantener subdivisiones archivísticas'
       ],
       statsValue: 'Catálogo archivístico',
-      icon: 'subseries',
+      icon: 'catalogo',
     },
     {
       title: 'Expedientes',
@@ -97,7 +97,7 @@ export class CatalogosModulePageComponent {
         'Gestionar carpetas documentales'
       ],
       statsValue: 'Gestión documental',
-      icon: 'expedientes',
+      icon: 'catalogo',
     },
   ];
 }
