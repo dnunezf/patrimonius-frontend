@@ -77,7 +77,7 @@ export class AdminModulePageComponent {
       status: 'available',
       link: '/admin/solicitudes-documentos',
       bullets: ['Ver solicitudes', 'Aprobar o rechazar', 'Registrar motivo de resolución'],
-      icon: 'documentos'
+      icon: 'confidencialidad'
     },
   ];
 }

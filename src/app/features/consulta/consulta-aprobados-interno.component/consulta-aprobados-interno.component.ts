@@ -997,24 +997,37 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   }
 
   abrirClasificacionDesdePreview(): void {
-    const docId = this.previewDocId;
+    if (!this.previewDocId) return;
+
     const context = this.previewDocContext;
 
-    if (!docId) return;
-
-    this.cerrarPreview();
-
     this.router.navigate(
-      ['/consulta/clasificacion-documento', docId],
+      ['/consulta/clasificacion-documento', this.previewDocId],
       {
         state: {
-          expedienteNombre: context?.expediente_nombre || '',
-          serieNombre: context?.serie_nombre || '',
-          subserieNombre: context?.subserie_nombre || '',
+          expedienteNombre:
+            context?.expediente_nombre ||
+            context?.expedienteNombre ||
+            context?.expediente ||
+            '',
+          expedienteCodigo:
+            context?.expediente_codigo ||
+            context?.expedienteCodigo ||
+            '',
+          serieNombre:
+            context?.serie_nombre ||
+            context?.serieNombre ||
+            '',
+          subserieNombre:
+            context?.subserie_nombre ||
+            context?.subserieNombre ||
+            '',
           soloLectura: true,
-          origen: 'consulta-interno',
+          origen: 'preview-consulta',
         },
       }
     );
+
+    this.cerrarPreview();
   }
 }

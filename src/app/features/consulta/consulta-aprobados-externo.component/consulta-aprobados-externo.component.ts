@@ -503,7 +503,9 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.previewHtml = null;
     this.previewMode = null;
     this.previewDocId = row.id;
-    this.previewDocContext = row;
+    if (!this.previewDocContext || this.previewDocContext.id !== row.id) {
+      this.previewDocContext = row;
+    }
     this.pdfPreviewTruncated = false;
     this.clearPdfHost();
     this.api.getPreviewPdf(row.id).subscribe({
@@ -1069,20 +1071,35 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
   abrirClasificacionDesdePreview(): void {
     if (!this.previewDocId) return;
 
-
+    const context = this.previewDocContext;
 
     this.router.navigate(
       ['/consulta/clasificacion-documento', this.previewDocId],
       {
         state: {
-          expedienteNombre: this.previewDocContext?.expediente_nombre || '',
-          serieNombre: this.previewDocContext?.serie_nombre || '',
-          subserieNombre: this.previewDocContext?.subserie_nombre || '',
+          expedienteNombre:
+            context?.expediente_nombre ||
+            context?.expedienteNombre ||
+            context?.expediente ||
+            '',
+          expedienteCodigo:
+            context?.expediente_codigo ||
+            context?.expedienteCodigo ||
+            '',
+          serieNombre:
+            context?.serie_nombre ||
+            context?.serieNombre ||
+            '',
+          subserieNombre:
+            context?.subserie_nombre ||
+            context?.subserieNombre ||
+            '',
           soloLectura: true,
           origen: 'preview-consulta',
         },
       }
     );
+
     this.cerrarPreview();
   }
 }
