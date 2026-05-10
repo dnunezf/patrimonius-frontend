@@ -155,7 +155,7 @@ export const routes: Routes = [
   {
     path: 'consulta/aprobados',
     canActivate: [AuthGuard, RoleGuard],
-    data: { allowedRoles: [4] },
+    data: { allowedRoles: [1, 2, 3, 4] },
     loadComponent: () =>
       import('./features/consulta/consulta-aprobados-interno.component/consulta-aprobados-interno.component').then(
         (m) => m.ConsultaAprobadosInternoComponent,

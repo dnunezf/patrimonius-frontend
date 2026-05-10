@@ -272,6 +272,12 @@ export class AccessControlComponent implements OnInit {
     );
   }
 
+  /** Botón «Abrir»: lleva al listado de consulta de documentos aprobados. */
+  openConsultaAprobados(doc: DocumentRow): void {
+    if (!this.canOpen(doc)) return;
+    this.router.navigate(['/consulta/aprobados']);
+  }
+
   onRowKeydown(ev: KeyboardEvent, doc: DocumentRow) {
     if (ev.key === 'Enter' || ev.key === ' ') {
       ev.preventDefault();
