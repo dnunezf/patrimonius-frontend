@@ -134,6 +134,7 @@
           </button>
 
           <button
+            *ngIf="document.documento_estado !== 'FIRMA_PARCIAL'"
             class="btn btn--gray"
             type="button"
             (click)="verDocumento(document.id); $event.stopPropagation()"
