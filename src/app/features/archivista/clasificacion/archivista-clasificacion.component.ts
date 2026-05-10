@@ -71,8 +71,17 @@ interface CerrarExpedienteResponse {
   templateUrl: './archivista-clasificacion.component.html',
   styleUrls: ['./archivista-clasificacion.component.css'],
   standalone: true,
-  imports: [FormsModule, CommonModule, ExpedienteDocumentosDialogComponent,ArchivistaSerieDialogComponent,
-    ArchivistaSubserieDialogComponent, ArchivistaExpedienteDialogComponent,ArchivistaSerieEditDialogComponent,ArchivistaSubserieEditDialogComponent,ArchivistaExpedienteEditDialogComponent,],
+  imports: [
+    FormsModule,
+    CommonModule,
+    ExpedienteDocumentosDialogComponent,
+    ArchivistaSerieDialogComponent,
+    ArchivistaSubserieDialogComponent,
+    ArchivistaExpedienteDialogComponent,
+    ArchivistaSerieEditDialogComponent,
+    ArchivistaSubserieEditDialogComponent,
+    ArchivistaExpedienteEditDialogComponent,
+  ],
 })
 export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   private readonly apiUrl = environment.apiUrl;
@@ -137,8 +146,10 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
   serieEditDialogOpen = false;
   serieToEdit: any | null = null;
+
   subserieEditDialogOpen = false;
   subserieToEdit: any | null = null;
+
   expedienteEditDialogOpen = false;
   expedienteToEdit: any | null = null;
 
@@ -224,6 +235,26 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     });
   }
 
+  private reiniciarSubserieDialogSiEstaAbierto(): void {
+    if (!this.subserieDialogOpen) return;
+
+    this.subserieDialogOpen = false;
+
+    setTimeout(() => {
+      this.subserieDialogOpen = true;
+    }, 0);
+  }
+
+  private reiniciarExpedienteDialogSiEstaAbierto(): void {
+    if (!this.expedienteDialogOpen) return;
+
+    this.expedienteDialogOpen = false;
+
+    setTimeout(() => {
+      this.expedienteDialogOpen = true;
+    }, 0);
+  }
+
   aplicarFiltroSeries(): void {
     const codigoQ = this.filtroSerieCodigo.trim().toLowerCase();
     const nombreQ = this.filtroSerieNombre.trim().toLowerCase();
@@ -241,6 +272,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
       return matchCodigo && matchNombre && matchUnidad;
     });
+
     this.seriesPage = 1;
     this.repaginarSeries();
   }
@@ -262,6 +294,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
       return matchCodigo && matchNombre && matchSerie;
     });
+
     this.subseriesPage = 1;
     this.repaginarSubseries();
   }
@@ -302,6 +335,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
         matchEstado
       );
     });
+
     this.expedientesPage = 1;
     this.repaginarExpedientes();
   }
@@ -342,8 +376,13 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
   serieCreada(): void {
     this.serieDialogOpen = false;
+
     this.cargarSeries();
     this.cargarSubseries();
+
+    this.reiniciarSubserieDialogSiEstaAbierto();
+    this.reiniciarExpedienteDialogSiEstaAbierto();
+
     this.showToast('Serie creada correctamente', 'success');
   }
 
@@ -365,12 +404,20 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     this.cargarSubseries();
     this.cargarExpedientes();
 
+    this.reiniciarSubserieDialogSiEstaAbierto();
+    this.reiniciarExpedienteDialogSiEstaAbierto();
+
     this.showToast('Serie actualizada correctamente', 'success');
   }
 
   crearSubserie(): void {
     this.subserieEditing = null;
-    this.subserieDialogOpen = true;
+
+    this.subserieDialogOpen = false;
+
+    setTimeout(() => {
+      this.subserieDialogOpen = true;
+    }, 0);
   }
 
   cerrarSubserieDialog(): void {
@@ -380,7 +427,11 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
   subserieCreada(): void {
     this.subserieDialogOpen = false;
+
     this.cargarSubseries();
+
+    this.reiniciarExpedienteDialogSiEstaAbierto();
+
     this.showToast('Subserie creada correctamente', 'success');
   }
 
@@ -401,12 +452,19 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     this.cargarSubseries();
     this.cargarExpedientes();
 
+    this.reiniciarExpedienteDialogSiEstaAbierto();
+
     this.showToast('Subserie actualizada correctamente', 'success');
   }
 
   crearExpediente(): void {
     this.expedienteEditing = null;
-    this.expedienteDialogOpen = true;
+
+    this.expedienteDialogOpen = false;
+
+    setTimeout(() => {
+      this.expedienteDialogOpen = true;
+    }, 0);
   }
 
   cerrarExpedienteDialog(): void {
@@ -416,7 +474,9 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
   expedienteCreado(): void {
     this.expedienteDialogOpen = false;
+
     this.cargarExpedientes();
+
     this.showToast('Expediente creado correctamente', 'success');
   }
 
@@ -483,9 +543,11 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
       clearTimeout(this.toastClearId);
       this.toastClearId = null;
     }
+
     this.toastMessage = message;
     this.toastKind = kind;
     this.toastVisible = true;
+
     this.toastClearId = setTimeout(() => {
       this.toastVisible = false;
       this.toastClearId = null;
@@ -501,6 +563,13 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
           next: () => {
             this.series = this.series.filter((s) => s.id !== id);
             this.aplicarFiltroSeries();
+
+            this.cargarSubseries();
+            this.cargarExpedientes();
+
+            this.reiniciarSubserieDialogSiEstaAbierto();
+            this.reiniciarExpedienteDialogSiEstaAbierto();
+
             this.showToast('Serie eliminada correctamente', 'success');
           },
           error: (error) => {
@@ -508,6 +577,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
               error?.error?.error ||
               error?.error?.message ||
               'No se pudo eliminar la serie';
+
             this.showToast(mensaje, 'error');
             console.error('Error al eliminar serie:', error);
           },
@@ -525,6 +595,11 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
           next: () => {
             this.subseries = this.subseries.filter((s) => s.id !== id);
             this.aplicarFiltroSubseries();
+
+            this.cargarExpedientes();
+
+            this.reiniciarExpedienteDialogSiEstaAbierto();
+
             this.showToast('Subserie eliminada correctamente', 'success');
           },
           error: (error) => {
@@ -532,6 +607,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
               error?.error?.error ||
               error?.error?.message ||
               'No se pudo eliminar la subserie';
+
             this.showToast(mensaje, 'error');
             console.error('Error al eliminar subserie:', error);
           },
@@ -550,7 +626,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
         this.http
           .post<CerrarExpedienteResponse>(
             `${this.apiUrl}/indices/cerrar-expediente/${expediente.id}`,
-            {}
+            {},
           )
           .subscribe({
             next: (response) => {
@@ -565,7 +641,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
                 this.showToast(
                   `Expediente cerrado correctamente. Vigencia: ${this.formatDate(
-                    expediente.fecha_inicio_vigencia
+                    expediente.fecha_inicio_vigencia,
                   )} a ${this.formatDate(expediente.fecha_vencimiento)}.`,
                   'success',
                 );
@@ -582,6 +658,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
               const mensaje =
                 error?.error?.message ||
                 'No se pudo cerrar el expediente ni generar el índice.';
+
               this.showToast(mensaje, 'error');
               console.error('Error al cerrar expediente:', error);
             },
@@ -621,6 +698,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
             error: (error) => {
               const mensaje =
                 error?.error?.message || 'No se pudo reabrir el expediente.';
+
               this.showToast(mensaje, 'error');
               console.error('Error al abrir expediente:', error);
             },
@@ -631,16 +709,20 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
   estadoClass(estado: string | null | undefined): string {
     const e = String(estado || '').toUpperCase();
+
     if (e === 'ACTIVO') return 'pill ok';
     if (e === 'CERRADO') return 'pill warn';
     if (e === 'TRANSFERIDO') return 'pill info';
     if (e === 'ELIMINADO') return 'pill danger';
+
     return 'pill';
   }
 
   formatDate(value: string | null | undefined): string {
     if (!value) return '—';
+
     const d = new Date(value);
+
     if (Number.isNaN(d.getTime())) return String(value);
 
     return d.toLocaleDateString('es-CR', {
@@ -653,17 +735,15 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
   verDocumentosExpediente(expediente: ExpedienteRow): void {
     this.expedienteSeleccionado = expediente;
 
-
     this.expedienteDocsOpen = true;
     this.expedienteDocsTitle = expediente.nombre ?? 'Expediente';
     this.expedienteDocsLoading = true;
     this.expedienteDocsError = '';
     this.expedienteDocsRows = [];
-    this.expedienteDocsTitle = expediente.nombre;
 
     this.http
       .get<ExpedienteDocumentoRow[]>(
-        `${this.apiUrl}/documentos/expediente/${expediente.id}`
+        `${this.apiUrl}/documentos/expediente/${expediente.id}`,
       )
       .subscribe({
         next: (response) => {
@@ -675,6 +755,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
           this.expedienteDocsError =
             error?.error?.message ||
             'No se pudieron cargar los documentos del expediente.';
+
           console.error('Error al cargar documentos del expediente:', error);
         },
       });
@@ -701,10 +782,6 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     return 'pill';
   }
 
-  /*clasificarDocumento(doc: { id: number }): void {
-    this.cerrarDocumentosExpediente();
-    this.router.navigate(['/archivista/clasificacion-documento', doc.id]);
-  }*/
   clasificarDocumento(doc: any): void {
     this.cerrarDocumentosExpediente();
 
@@ -716,7 +793,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
           serieNombre: this.expedienteSeleccionado?.serie_nombre ?? '',
           subserieNombre: this.expedienteSeleccionado?.subserie_nombre ?? '',
         },
-      }
+      },
     );
   }
 
@@ -734,6 +811,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
   get seriesRangeStart(): number {
     if (this.filteredSeries.length === 0) return 0;
+
     return (this.seriesPage - 1) * this.seriesPageSize + 1;
   }
 
@@ -743,6 +821,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
   get subseriesRangeStart(): number {
     if (this.filteredSubseries.length === 0) return 0;
+
     return (this.subseriesPage - 1) * this.subseriesPageSize + 1;
   }
 
@@ -752,6 +831,7 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
 
   get expedientesRangeStart(): number {
     if (this.filteredExpedientes.length === 0) return 0;
+
     return (this.expedientesPage - 1) * this.expedientesPageSize + 1;
   }
 

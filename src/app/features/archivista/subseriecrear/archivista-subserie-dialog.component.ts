@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output} from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -25,13 +25,18 @@ export class ArchivistaSubserieDialogComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.http.get<any[]>(`${environment.apiUrl}/api/series`).subscribe({
+    this.cargarSeries();
+  }
+
+  cargarSeries(): void {
+    this.http.get<any[]>(`${environment.apiUrl}/api/series?all=1`).subscribe({
       next: (response) => {
-        this.series = response;
-        console.log('Series:', response);
+        this.series = response ?? [];
+        console.log('Series actualizadas en ComboBox:', this.series);
       },
       error: (error) => {
         console.error('Error al obtener las series:', error);
+        this.series = [];
       }
     });
   }

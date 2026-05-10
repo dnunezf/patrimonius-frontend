@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output} from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -33,7 +33,7 @@ interface SubserieRow {
   standalone: true,
   imports: [FormsModule, CommonModule],
 })
-export class ArchivistaExpedienteDialogComponent implements OnInit{
+export class ArchivistaExpedienteDialogComponent implements OnInit {
   private readonly apiUrl = environment.apiUrl;
 
   unidades: UnidadRow[] = [];
@@ -53,10 +53,13 @@ export class ArchivistaExpedienteDialogComponent implements OnInit{
   @Output() closed = new EventEmitter<void>();
   @Output() created = new EventEmitter<void>();
 
-
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    this.cargarCatalogos();
+  }
+
+  cargarCatalogos(): void {
     this.cargarUnidades();
     this.cargarSeries();
     this.cargarSubseries();
@@ -89,28 +92,33 @@ export class ArchivistaExpedienteDialogComponent implements OnInit{
       },
       error: (error) => {
         console.error('Error al obtener unidades:', error);
+        this.unidades = [];
       },
     });
   }
 
   cargarSeries(): void {
-    this.http.get<SerieRow[]>(`${this.apiUrl}/api/series`).subscribe({
+    this.http.get<SerieRow[]>(`${this.apiUrl}/api/series?all=1`).subscribe({
       next: (response) => {
         this.series = response ?? [];
+        console.log('Series actualizadas en expediente:', this.series);
       },
       error: (error) => {
         console.error('Error al obtener series:', error);
+        this.series = [];
       },
     });
   }
 
   cargarSubseries(): void {
-    this.http.get<SubserieRow[]>(`${this.apiUrl}/subseries`).subscribe({
+    this.http.get<SubserieRow[]>(`${this.apiUrl}/subseries?all=1`).subscribe({
       next: (response) => {
         this.subseries = response ?? [];
+        console.log('Subseries actualizadas en expediente:', this.subseries);
       },
       error: (error) => {
         console.error('Error al obtener subseries:', error);
+        this.subseries = [];
       },
     });
   }
@@ -120,7 +128,9 @@ export class ArchivistaExpedienteDialogComponent implements OnInit{
       return this.series;
     }
 
-    return this.series.filter((serie) => Number(serie.unidad_id) === Number(this.unidad_id));
+    return this.series.filter(
+      (serie) => Number(serie.unidad_id) === Number(this.unidad_id)
+    );
   }
 
   get subseriesFiltradas(): SubserieRow[] {
@@ -129,7 +139,7 @@ export class ArchivistaExpedienteDialogComponent implements OnInit{
     }
 
     return this.subseries.filter(
-      (subserie) => Number(subserie.serie_id) === Number(this.serie_id),
+      (subserie) => Number(subserie.serie_id) === Number(this.serie_id)
     );
   }
 
