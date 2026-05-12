@@ -45,7 +45,7 @@
 }
 
 /* --- Barra superior (donde están Importar/Guardar/etc) --- */
-.topbar, .editor-topbar, .toolbar, .header-actions, .actions-bar{
+.topbar, .editor-topbar, .header-actions, .actions-bar{
   display:flex;
   align-items:flex-end;
   justify-content:space-between;
@@ -58,14 +58,92 @@
   margin-bottom: 12px;
 }
 
+/* --- Toolbar específica para Editor Colaborativo (layout vertical) --- */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #fbfbfe);
+  border: 1px solid #eef2f7;
+  box-shadow: 0 8px 18px rgba(17,24,39,.05);
+  margin-bottom: 12px;
+}
+
+/* --- Font selector styles --- */
+.font-selector {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #dbe5ff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.font-selector .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.font-select, .scope-select {
+  padding: 6px 8px;
+  border: 1px solid #dbe5ff;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.font-select:focus, .scope-select:focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+
+/* --- Títulos de la toolbar --- */
+.toolbar__title h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.toolbar__subtitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.3;
+}
+
 .topbar__left, .topbar__right,
 .toolbar-left, .toolbar-right,
-.actions, .action-group,
+.actions, .action-group{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
 .toolbar .buttons{
   display:flex;
   align-items:center;
   gap:10px;
   flex-wrap:wrap;
+  width: 100%;
 }
 
 /* --- Botón "Importar DOCX" (label + input file): mismo estilo que el resto --- */

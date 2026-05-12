@@ -8,58 +8,6 @@
       </button>
     </div>
 
-    <div class="toolbar">
-      <div class="toolbar__title">
-        <h2>{{ isReadOnly ? 'Visualizador de Documento' : 'Editor Colaborativo' }}</h2>
-        <p class="toolbar__hint">
-          {{
-            isReadOnly
-              ? 'Modo lectura • Sin edición'
-              : 'Cambios en tiempo real • Guardado por versiones • Comentarios'
-          }}
-        </p>
-      </div>
-
-      <div class="buttons" *ngIf="!isReadOnly">
-        <label class="btn-primary" title="Importar un archivo .docx">
-          Importar DOCX
-          <input type="file" accept=".docx" (change)="importDocx($event)" />
-        </label>
-
-        <button class="btn-save" type="button" (click)="save()" [disabled]="saving">
-          {{ saving ? 'Guardando…' : 'Guardar' }}
-        </button>
-
-        <button
-          class="btn-save"
-          type="button"
-          (click)="openHistory()"
-          [disabled]="restoring"
-          title="Restaurar una versión anterior"
-        >
-          Restaurar versión
-        </button>
-
-        <button type="button" class="btn-secondary" (click)="openConsultaExpedientes()">
-          Consultar expedientes
-        </button>
-
-        <button type="button" class="btn-secondary" (click)="openMetadata()">
-          Metadatos
-        </button>
-
-        <button type="button" class="btn-accent" (click)="openRequestSignatureModal()">
-          Solicitar Firma
-        </button>
-      </div>
-
-      <div class="status">
-        <span *ngIf="info" class="muted">{{ info }}</span>
-        <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
-        <span *ngIf="error" class="err">{{ error }}</span>
-        <span *ngIf="isReadOnly" class="muted">🔒 Solo lectura</span>
-      </div>
-    </div>
 
     <div class="page-layout-panel" *ngIf="showPageLayoutPanel && !isReadOnly">
       <label class="layout-toggle">
@@ -234,6 +182,81 @@
   </div>
 
   <aside class="editor-sidebar">
+    <div class="card" *ngIf="!isReadOnly">
+      <div class="toolbar">
+        <div class="font-selector">
+          <h5 class="section-title">Formato de Texto</h5>
+          <label class="field">
+            Fuente:
+            <select [(ngModel)]="selectedFont" (change)="onFontChange()" class="font-select">
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Calibri">Calibri</option>
+              <option value="Verdana">Verdana</option>
+            </select>
+          </label>
+
+          <label class="field">
+            Tamaño:
+            <select [(ngModel)]="selectedFontSize" (change)="onFontSizeChange()" class="font-select">
+              <option value="12px">Pequeño (12px)</option>
+              <option value="14px">Normal (14px)</option>
+              <option value="16px">Mediano (16px)</option>
+              <option value="18px">Grande (18px)</option>
+              <option value="20px">Muy grande (20px)</option>
+              <option value="24px">Extra grande (24px)</option>
+            </select>
+          </label>
+        </div>
+
+        <h4 class="card-title">
+          <img src="assets/icons/document-create.png" width="18" alt="" />
+          {{ isReadOnly ? 'Visualizador de Documento' : 'Editor Colaborativo' }}
+        </h4>
+
+        <div class="buttons">
+
+          <label class="btn-primary" title="Importar un archivo .docx">
+            Importar DOCX
+            <input type="file" accept=".docx" (change)="importDocx($event)" />
+          </label>
+
+          <button class="btn-save" type="button" (click)="save()" [disabled]="saving">
+            {{ saving ? 'Guardando…' : 'Guardar' }}
+          </button>
+
+          <button
+            class="btn-save"
+            type="button"
+            (click)="openHistory()"
+            [disabled]="restoring"
+            title="Restaurar una versión anterior"
+          >
+            Restaurar versión
+          </button>
+
+          <button type="button" class="btn-secondary" (click)="openConsultaExpedientes()">
+            Consultar expedientes
+          </button>
+
+          <button type="button" class="btn-secondary" (click)="openMetadata()">
+            Metadatos
+          </button>
+
+          <button type="button" class="btn-accent" (click)="openRequestSignatureModal()">
+            Solicitar Firma
+          </button>
+        </div>
+
+        <div class="status">
+          <span *ngIf="info" class="muted">{{ info }}</span>
+          <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
+          <span *ngIf="error" class="err">{{ error }}</span>
+          <span *ngIf="isReadOnly" class="muted">🔒 Solo lectura</span>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h4 class="card-title">
         <img src="assets/icons/activeUser.png" width="18" alt="" />

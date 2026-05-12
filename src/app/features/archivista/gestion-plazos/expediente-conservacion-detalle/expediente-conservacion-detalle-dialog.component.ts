@@ -22,6 +22,7 @@ import { ToastService } from '../../../../shared/ui/toast.service';
   selector: 'app-expediente-conservacion-detalle-dialog',
   standalone: true,
   imports: [CommonModule],
+  providers: [ToastService],
   templateUrl: './expediente-conservacion-detalle-dialog.component.html',
   styleUrls: ['./expediente-conservacion-detalle-dialog.component.css'],
 })

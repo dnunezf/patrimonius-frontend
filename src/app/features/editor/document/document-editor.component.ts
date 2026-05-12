@@ -11,15 +11,17 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import Quill from 'quill';
-import { interval, Subscription } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { interval, of, Subscription } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 
 import { DocumentService, VersionDoc } from 'core/services/document.service';
+import { ConservationIntakeService } from 'core/services/conservation-intake.service';
 import { RealtimeService } from 'core/services/realtime.service';
 import { CommentPanelComponent } from './comment/comment-panel.component';
 import { VersionHistoryDialogComponent } from './version-history-dialog.component';
 import { DocumentMetadataDialogComponent } from './metadata/document-metadata-dialog.component';
 import { ConsultarExpedientesDialogComponent } from './consultaExpediente/consultar-expedientes-dialog.component';
+import { ToastService } from '../../../shared/ui/toast.service';
 
 type UiUser = { id: number; label: string };
 
@@ -76,6 +78,24 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   consultaExpedientesOpen = false;
   showPageLayoutPanel = false;
+
+  // Font selection properties
+  selectedFont = 'Arial';
+  selectedFontSize = '14px'; // Default font size
+  availableFonts = [
+    { value: 'Arial', label: 'Arial' },
+    { value: 'Times New Roman', label: 'Times New Roman' },
+    { value: 'Calibri', label: 'Calibri' },
+    { value: 'Verdana', label: 'Verdana' }
+  ];
+  availableFontSizes = [
+    { value: '12px', label: 'Pequeño (12px)' },
+    { value: '14px', label: 'Normal (14px)' },
+    { value: '16px', label: 'Mediano (16px)' },
+    { value: '18px', label: 'Grande (18px)' },
+    { value: '20px', label: 'Muy grande (20px)' },
+    { value: '24px', label: 'Extra grande (24px)' }
+  ];
   useDifferentFirstPage = false;
   autoPageNumberInFooter = false;
   docxHeaderFirstHtml = '';
@@ -112,7 +132,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     private docs: DocumentService,
     private rt: RealtimeService,
     private cdr: ChangeDetectorRef,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private toast: ToastService,
+    private conservation: ConservationIntakeService,
   ) {}
 
   ngOnInit(): void {
@@ -122,10 +144,26 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const ro = qp.get('readonly');
     this.isReadOnly = ro === '1' || ro === 'true';
 
+    // Load saved font preference
+    const savedFont = localStorage.getItem('preferred-font');
+    if (savedFont) {
+      this.selectedFont = savedFont;
+    }
+
+    // Load saved font size preference
+    const savedFontSize = localStorage.getItem('preferred-font-size');
+    if (savedFontSize) {
+      this.selectedFontSize = savedFontSize;
+    }
+
     this.quill = new Quill(this.editorRef.nativeElement, {
       theme: 'snow',
       readOnly: this.isReadOnly,
     });
+
+    // Apply initial font and size
+    this.applyFontToEditor(this.selectedFont);
+    this.applyFontSizeToEditor(this.selectedFontSize);
 
     if (this.isReadOnly) {
       this.quill.enable(false);
@@ -412,6 +450,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           from: this.clientId,
         });
 
+        this.toast.success('Documento guardado correctamente');
         this.info = 'Documento guardado con éxito.';
         setTimeout(() => (this.info = ''), 4000);
       },
@@ -425,8 +464,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
           this.error =
             'Hay una versión más reciente del documento. Actualice o revise los cambios antes de guardar.';
+          this.toast.error('Hay una versión más reciente del documento');
         } else {
           this.error = e?.error?.message || 'No se pudo guardar';
+          this.toast.error('No se pudo guardar el documento');
         }
       },
     });
@@ -807,10 +848,39 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         firmantesIds,
         fecha_limite: null,
       })
+      .pipe(
+        switchMap((r) =>
+          this.docs.getMetadata(this.documentoId).pipe(
+            switchMap((meta) =>
+              this.conservation
+                .previewReferenceCode({
+                  candidateId: this.documentoId,
+                  documentType:
+                    meta.manual.documentType?.trim() || undefined,
+                  producingUnit: (
+                    meta.automatic.producerUnitName ?? ''
+                  ).trim()
+                    ? (meta.automatic.producerUnitName ?? '')
+                        .trim()
+                        .toUpperCase()
+                    : undefined,
+                })
+                .pipe(
+                  map((preview) =>
+                    (preview.referenceCode || '').trim() ||
+                    r.numero_serie_oficial,
+                  ),
+                  catchError(() => of(r.numero_serie_oficial)),
+                ),
+            ),
+            catchError(() => of(r.numero_serie_oficial)),
+          ),
+        ),
+      )
       .subscribe({
-        next: (r: any) => {
+        next: (officialCode: string) => {
           this.requestSigLoading = false;
-          this.sigMsg = `Índice oficial asignado: ${r.numero_serie_oficial}`;
+          this.sigMsg = `Índice oficial asignado: ${officialCode}`;
           this.closeRequestSignatureModal();
         },
         error: (e: any) => {
@@ -1182,6 +1252,42 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       .replace(/'/g, '&#39;');
   }
 
+  // Font selection methods
+  onFontChange(): void {
+    console.log('Font changed to:', this.selectedFont);
+    this.applyFontToEditor(this.selectedFont, 'all');
+    // Save font preference to localStorage
+    localStorage.setItem('preferred-font', this.selectedFont);
+  }
+
+  applyFontToEditor(font: string, scope: string = 'all'): void {
+    if (!this.quill) return;
+
+    const fontMap: { [key: string]: string } = {
+      'Arial': 'Arial, sans-serif',
+      'Times New Roman': 'Times New Roman, serif',
+      'Calibri': 'Calibri, sans-serif',
+      'Verdana': 'Verdana, sans-serif'
+    };
+
+    const fontFamily = fontMap[font] || fontMap['Arial'];
+    
+    if (scope === 'all') {
+      // Apply font to entire document
+      this.quill.format('font', fontFamily);
+      const editorContainer = this.quill.root;
+      if (editorContainer) {
+        editorContainer.style.fontFamily = fontFamily;
+      }
+    } else if (scope === 'selected') {
+      // Apply font only to selected text
+      const selection = this.quill.getSelection();
+      if (selection) {
+        this.quill.formatText(selection.index, selection.length, 'font', fontFamily);
+      }
+    }
+  }
+
   private fallbackUuid(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
@@ -1233,17 +1339,42 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             this.pasteHtml(res.html);
           }
 
-          const end = Math.max(0, this.quill.getLength() - 1);
-          this.quill.setSelection(end, 0, 'silent');
+          if (this.quill) {
+            const end = Math.max(0, this.quill.getLength() - 1);
+            this.quill.setSelection(end, 0, 'silent');
+          }
 
           this.baseVersionId = res?.newVersionId ?? this.baseVersionId;
 
           alert('Versión restaurada con éxito.');
         },
-        error: (e) => {
+        error: (e: { error?: { message?: string } }) => {
           this.restoring = false;
           this.error = e?.error?.message || 'Error al restaurar versión';
         },
       });
+  }
+
+  onFontSizeChange(): void {
+    console.log('Font size changed to:', this.selectedFontSize);
+    this.applyFontSizeToEditor(this.selectedFontSize);
+    // Save font size preference to localStorage
+    localStorage.setItem('preferred-font-size', this.selectedFontSize);
+  }
+
+  applyFontSizeToEditor(fontSize: string): void {
+    if (!this.quill) return;
+
+    // Apply font size to entire document
+    const parsed = parseInt(fontSize.replace('px', ''), 10);
+    const sizeInPixels = Number.isNaN(parsed) ? 14 : parsed;
+    this.quill.root.style.fontSize = sizeInPixels + 'px';
+
+    const sel = this.quill.getSelection(true);
+    const fmt = sel ? this.quill.getFormat(sel) : this.quill.getFormat(0, 1);
+    const currentFont = (fmt['font'] as string | undefined) || 'Arial';
+    if (currentFont) {
+      this.quill.format('font', currentFont);
+    }
   }
 }
