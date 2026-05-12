@@ -84,12 +84,15 @@
         <div class="row">
           <label>
             <span>Unidad productora</span>
-            <input
-              type="text"
-              formControlName="producingUnit"
-              placeholder="Unidad..."
-              (input)="onSearchUpperInput('producingUnit')"
-            />
+            <select formControlName="producingUnit">
+              <option value="">Todas las unidades</option>
+              <option 
+                *ngFor="let unit of producingUnits()" 
+                [value]="unit.name"
+              >
+                {{ unit.name }}
+              </option>
+            </select>
           </label>
 
           <label>
@@ -115,6 +118,14 @@
         </div>
 
         <div class="actions">
+          <button
+            class="btn ghost"
+            type="button"
+            (click)="clearFilters()"
+            [disabled]="loading()"
+          >
+            Limpiar filtros
+          </button>
           <button
             class="btn primary-soft"
             type="submit"
@@ -177,7 +188,7 @@
         <button
           type="button"
           class="candidate-row"
-          *ngFor="let d of candidates()"
+          *ngFor="let d of paginatedCandidates()"
           [class.selected]="selected()?.id === d.id"
           (click)="selectDoc(d)"
         >
@@ -199,6 +210,66 @@
             </span>
           </div>
         </button>
+      </div>
+
+      <!-- Controles de paginación -->
+      <div class="pagination-controls" *ngIf="totalPages() > 1">
+        <div class="pagination-info">
+          <span>
+            Página {{ currentPage() }} de {{ totalPages() }} 
+            ({{ totalCandidates() }} documentos totales)
+          </span>
+        </div>
+        
+        <div class="pagination-buttons">
+          <button 
+            class="btn btn-small ghost" 
+            (click)="firstPage()" 
+            [disabled]="currentPage() === 1"
+            title="Primera página"
+          >
+            «
+          </button>
+          
+          <button 
+            class="btn btn-small ghost" 
+            (click)="prevPage()" 
+            [disabled]="currentPage() === 1"
+            title="Página anterior"
+          >
+            ‹
+          </button>
+          
+          <div class="page-numbers">
+            <button 
+              *ngFor="let page of getPageNumbers()" 
+              class="btn btn-small"
+              [class.primary]="page === currentPage()"
+              [class.ghost]="page !== currentPage()"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button 
+            class="btn btn-small ghost" 
+            (click)="nextPage()" 
+            [disabled]="currentPage() === totalPages()"
+            title="Página siguiente"
+          >
+            ›
+          </button>
+          
+          <button 
+            class="btn btn-small ghost" 
+            (click)="lastPage()" 
+            [disabled]="currentPage() === totalPages()"
+            title="Última página"
+          >
+            »
+          </button>
+        </div>
       </div>
 
       <ng-template #noCandidates>
@@ -329,7 +400,8 @@
           {{ msg }}
         </div>
 
-        <form [formGroup]="archivalForm" class="form">
+        <div class="registration-form-scroll">
+          <form [formGroup]="archivalForm" class="form">
           <section class="section">
             <div class="section-title-row">
               <h3 class="section-title">Identificación final del documento</h3>
@@ -362,11 +434,15 @@
             <div class="grid2">
               <label>
                 <span>Unidad productora *</span>
-                <input
-                  type="text"
-                  formControlName="producingUnit"
-                  (input)="onArchivalUpperInput('producingUnit')"
-                />
+                <select formControlName="producingUnit">
+                  <option value="">Seleccione una unidad...</option>
+                  <option 
+                    *ngFor="let unit of producingUnits()" 
+                    [value]="unit.name"
+                  >
+                    {{ unit.name }}
+                  </option>
+                </select>
                 <div class="err" *ngIf="fieldErr('producingUnit')">
                   {{ fieldErr("producingUnit") }}
                 </div>
@@ -716,6 +792,7 @@
             </div>
           </section>
         </form>
+        </div>
       </div>
     </ng-container>
 

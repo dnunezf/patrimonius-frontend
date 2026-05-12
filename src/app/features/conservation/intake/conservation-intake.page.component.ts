@@ -15,6 +15,7 @@ import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConservationIntakeService } from '../../../../core/services/conservation-intake.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { UnidadService, OrgUnit } from '../../../../core/services/unidad.service';
 import { EDITOR_ID } from '../../../shared/data/catalogs';
 
 import {
@@ -114,20 +115,35 @@ export class ConservationIntakePageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
+  private readonly unidadService = inject(UnidadService);
 
   readonly loading = signal(false);
   readonly referenceCodeLoading = signal(false);
   readonly candidates = signal<CandidateDoc[]>([]);
   readonly selected = signal<CandidateDoc | null>(null);
+  
+  // Paginación
+  readonly currentPage = signal(1);
+  readonly pageSize = 6;
+  readonly totalCandidates = signal(0);
 
   readonly series = signal<ArchivalSeries[]>([]);
   readonly subseries = signal<ArchivalSubseries[]>([]);
   readonly expedientes = signal<ArchivalExpediente[]>([]);
+  readonly producingUnits = signal<OrgUnit[]>([]);
 
   readonly duplicateState =
     signal<EligibilityState['duplicateChecked']>('NOT_CHECKED');
 
-  readonly totalCandidates = computed(() => this.candidates().length);
+  readonly totalPages = computed(() => 
+    Math.ceil(this.totalCandidates() / this.pageSize)
+  );
+  
+  readonly paginatedCandidates = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.candidates().slice(start, end);
+  });
 
   readonly selectedCandidatePosition = computed(() => {
     const current = this.selected();
@@ -403,14 +419,13 @@ export class ConservationIntakePageComponent {
   }
 
   onSearchUpperInput(
-    controlName: 'q' | 'officialCode' | 'producingUnit',
+    controlName: 'q' | 'officialCode',
   ): void {
     this.setSearchControlUpperValue(controlName);
   }
 
   onArchivalUpperInput(
     controlName:
-      | 'producingUnit'
       | 'keywords'
       | 'recipientNameRole'
       | 'recipientInstitution'
@@ -423,7 +438,6 @@ export class ConservationIntakePageComponent {
   private normalizeSearchFormTextFields(): void {
     this.setSearchControlUpperValue('q');
     this.setSearchControlUpperValue('officialCode');
-    this.setSearchControlUpperValue('producingUnit');
   }
 
   private matchesEadListFilters(
@@ -462,7 +476,6 @@ export class ConservationIntakePageComponent {
   }
 
   private normalizeArchivalTextFields(): void {
-    this.setArchivalControlUpperValue('producingUnit');
     this.setArchivalControlUpperValue('keywords');
     this.setArchivalControlUpperValue('recipientNameRole');
     this.setArchivalControlUpperValue('recipientInstitution');
@@ -585,6 +598,87 @@ export class ConservationIntakePageComponent {
       });
   }
 
+  clearFilters(): void {
+    this.searchForm.reset({
+      q: '',
+      officialCode: '',
+      producingUnit: '',
+      dateFrom: '',
+      dateTo: '',
+      signatureState: 'ALL',
+    });
+    
+    this.eadFilterCriteria.set(defaultConservationSearchFilterSnapshot());
+    this.currentPage.set(1);
+    this.search();
+  }
+
+  // Métodos de paginación
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages()) return;
+    this.currentPage.set(page);
+  }
+
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
+
+  prevPage(): void {
+    this.goToPage(this.currentPage() - 1);
+  }
+
+  firstPage(): void {
+    this.goToPage(1);
+  }
+
+  lastPage(): void {
+    this.goToPage(this.totalPages());
+  }
+
+  private findMatchingUnit(docUnit: string): string {
+    if (!docUnit) return '';
+    
+    const docUnitUpper = docUnit.toUpperCase().trim();
+    
+    // Buscar coincidencia exacta primero
+    const exactMatch = this.producingUnits().find(unit => 
+      unit.name.toUpperCase() === docUnitUpper
+    );
+    if (exactMatch) return exactMatch.name;
+    
+    // Buscar coincidencia parcial (contiene)
+    const partialMatch = this.producingUnits().find(unit => 
+      unit.name.toUpperCase().includes(docUnitUpper) || 
+      docUnitUpper.includes(unit.name.toUpperCase())
+    );
+    if (partialMatch) return partialMatch.name;
+    
+    // Si no hay coincidencia, devolver el valor original (el select lo mostrará como vacío)
+    return '';
+  }
+
+  getPageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const pages: number[] = [];
+    
+    // Mostrar máximo 5 páginas
+    const maxVisible = 5;
+    let start = Math.max(1, current - Math.floor(maxVisible / 2));
+    let end = Math.min(total, start + maxVisible - 1);
+    
+    // Ajustar el inicio si estamos cerca del final
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
+
   async search(): Promise<void> {
     this.normalizeSearchFormTextFields();
     const raw = this.searchForm.getRawValue();
@@ -607,10 +701,12 @@ export class ConservationIntakePageComponent {
     this.loading.set(true);
     this.selected.set(null);
     this.duplicateState.set('NOT_CHECKED');
+    this.currentPage.set(1);
 
     this.api.searchCandidates(raw).subscribe({
       next: (rows) => {
         this.candidates.set(rows);
+        this.totalCandidates.set(rows.length);
         this.loading.set(false);
       },
       error: (err) => {
@@ -639,6 +735,9 @@ export class ConservationIntakePageComponent {
     this.selected.set(doc);
     this.duplicateState.set('NOT_CHECKED');
 
+    // Buscar la unidad productora que coincida exactamente con las opciones disponibles
+    const matchedUnit = this.findMatchingUnit(doc.producingUnit || '');
+
     this.archivalForm.reset(
       {
         officialCode: '',
@@ -647,7 +746,7 @@ export class ConservationIntakePageComponent {
         documentFlow: (doc.documentFlow ||
           'PRODUCED_SENT') as FinalDocumentFlow,
 
-        producingUnit: this.toUpperValue(doc.producingUnit || ''),
+        producingUnit: matchedUnit,
         keywords: this.toUpperValue(
           Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
         ),
@@ -707,6 +806,15 @@ export class ConservationIntakePageComponent {
     this.api.getExpedientes().subscribe({
       next: (rows) => this.expedientes.set(rows),
       error: () => this.toasts.error('No se pudieron cargar los expedientes.'),
+    });
+
+    this.loadProducingUnits();
+  }
+
+  private loadProducingUnits(): void {
+    this.unidadService.list().subscribe({
+      next: (rows) => this.producingUnits.set(rows),
+      error: () => this.toasts.error('No se pudieron cargar las unidades productoras.'),
     });
   }
 
