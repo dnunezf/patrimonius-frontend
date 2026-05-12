@@ -879,7 +879,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         const blob = response.body;
         if (!blob) {
           this.downloadErrorTitle = 'No se pudo descargar';
-          this.downloadErrorMessage = 'La descarga no devolvio contenido.';
+          this.downloadErrorMessage = 'La descarga no devolvió contenido.';
           this.downloadErrorOpen = true;
           return;
         }

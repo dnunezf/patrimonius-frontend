@@ -825,7 +825,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
       next: (response) => {
         const blob = response.body;
         if (!blob) {
-          this.abrirErrorDescarga('La descarga no devolvio contenido.');
+          this.abrirErrorDescarga('La descarga no devolvió contenido.');
           return;
         }
         const filename =

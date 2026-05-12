@@ -24,7 +24,7 @@ export class AccessExceptionsComponent implements OnInit {
   /** Estados que no deben aparecer en los desplegables de filtro (formulario y listado). */
   private static readonly excludedStatesForFilterUi = new Set([
     'archivado',
-    'eliminacion',
+    'eliminación',
     'transferencia',
   ]);
 

@@ -16,7 +16,7 @@ export class ArchivistaDashboardComponent {
     {
       title: 'Clasificación Archivistica',
       description:
-        'Modulo de visualización para la clasificación de documentos',
+        'Módulo de visualización para la clasificación de documentos',
       badge: '',
       features: ['Crear Series y Subseries', 'Muestra la lista de Clasificaciones [Serie/Subserie/Expediente] existentes', 'Permite el cierre de expedientes','Lista de Índices Electrónicos'],
       icon: 'folder-open',
@@ -24,7 +24,7 @@ export class ArchivistaDashboardComponent {
       link: '/archivista/clasificacion',
     },
     {
-      title: 'Seguimiento de Conservación ',
+      title: 'Seguimiento de Conservación',
       description:
         'Control de vigencia y disposición final de documentos archivados',
       badge: '',

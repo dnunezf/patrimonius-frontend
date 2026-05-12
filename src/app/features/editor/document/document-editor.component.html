@@ -37,7 +37,7 @@
             [innerHTML]="trustHtml(docxHeaderFirstHtml)"
             (input)="onLayoutHtmlChange('headerFirst', $event)"
           ></div>
-          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <label class="layout-size-label">Tamaño imagen (alto px)</label>
           <input type="range" min="40" max="320" [value]="imageSizeByTarget.headerFirst" (input)="setHeaderFooterImageSize('headerFirst', $event)" />
           <div class="layout-actions-row">
             <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerFirst', 25)">25%</button>
@@ -61,7 +61,7 @@
             [innerHTML]="trustHtml(docxHeaderHtml)"
             (input)="onLayoutHtmlChange('headerDefault', $event)"
           ></div>
-          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <label class="layout-size-label">Tamaño imagen (alto px)</label>
           <input type="range" min="40" max="320" [value]="imageSizeByTarget.headerDefault" (input)="setHeaderFooterImageSize('headerDefault', $event)" />
           <div class="layout-actions-row">
             <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerDefault', 25)">25%</button>
@@ -85,7 +85,7 @@
             [innerHTML]="trustHtml(docxFooterFirstHtml)"
             (input)="onLayoutHtmlChange('footerFirst', $event)"
           ></div>
-          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <label class="layout-size-label">Tamaño imagen (alto px)</label>
           <input type="range" min="40" max="320" [value]="imageSizeByTarget.footerFirst" (input)="setHeaderFooterImageSize('footerFirst', $event)" />
           <div class="layout-actions-row">
             <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerFirst', 25)">25%</button>
@@ -109,7 +109,7 @@
             [innerHTML]="trustHtml(docxFooterHtml)"
             (input)="onLayoutHtmlChange('footerDefault', $event)"
           ></div>
-          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <label class="layout-size-label">Tamaño imagen (alto px)</label>
           <input type="range" min="40" max="320" [value]="imageSizeByTarget.footerDefault" (input)="setHeaderFooterImageSize('footerDefault', $event)" />
           <div class="layout-actions-row">
             <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerDefault', 25)">25%</button>
@@ -344,7 +344,7 @@
 
   <div class="modal__body">
     <p class="muted">
-      Seleccioná los firmantes que deben firmar este documento. Luego confirmá la solicitud.
+      Selecciona los firmantes que deben firmar este documento. Luego confirma la solicitud.
     </p>
 
     <div *ngIf="requestSigLoading" class="muted">Cargando usuarios…</div>

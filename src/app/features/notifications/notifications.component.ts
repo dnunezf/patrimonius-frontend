@@ -69,7 +69,7 @@ export class NotificationsComponent implements OnInit {
     return new Date(raw).toLocaleString('es-CR');
   }
 
-  /** Recordatorio semestral archivista / expedientes ACTIVO. */
+  /** Recordatorio semanal archivista / expedientes ACTIVO. */
   isRevisionExpedientesActivos(tipo?: string | null): boolean {
     return !!tipo && tipo.startsWith('ARCHIVISTA_EXP_ACTIVOS_');
   }

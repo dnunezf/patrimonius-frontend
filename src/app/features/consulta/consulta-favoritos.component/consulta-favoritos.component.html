@@ -21,16 +21,9 @@
         <input
           type="search"
           [(ngModel)]="q"
-          placeholder="Título, código, categoría…"
+          placeholder="Título, código…"
           (keyup.enter)="buscarParaFavoritos()"
         />
-      </div>
-      <div>
-        <label>Categoría</label>
-        <select [(ngModel)]="categoriaId">
-          <option value="">Todas</option>
-          <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
-        </select>
       </div>
       <div class="filtros__btn">
         <button type="button" class="btn primary" (click)="buscarParaFavoritos()" [disabled]="searchLoading">
@@ -46,7 +39,6 @@
             <th class="data-table__star-head" scope="col"><span class="visually-hidden">Favorito</span></th>
             <th>Código</th>
             <th>Título</th>
-            <th>Categoría</th>
             <th>Fecha</th>
           </tr>
         </thead>
@@ -67,13 +59,12 @@
             </td>
             <td class="mono">{{ row.codigo }}</td>
             <td>{{ row.titulo }}</td>
-            <td>{{ row.categoria_nombre || '—' }}</td>
             <td>{{ formatDate(row.fecha_aprobacion) }}</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="muted" *ngIf="!searchLoading && searchRows.length === 0 && (q || categoriaId)">
+    <p class="muted" *ngIf="!searchLoading && searchRows.length === 0 && q">
       Sin resultados. Ajuste la búsqueda.
     </p>
   </section>
@@ -96,7 +87,7 @@
         type="search"
         [(ngModel)]="filtroFav"
         (ngModelChange)="favPage = 1"
-        placeholder="Filtrar por código, título, categoría o unidad…"
+        placeholder="Filtrar por código, título…"
       />
     </div>
     <p class="muted" *ngIf="!loadingFav && favRows.length === 0">
@@ -109,7 +100,6 @@
             <th class="data-table__star-head" scope="col"><span class="visually-hidden">Favorito</span></th>
             <th>Código</th>
             <th>Título</th>
-            <th>Unidad</th>
             <th>Fecha</th>
           </tr>
         </thead>
@@ -128,7 +118,6 @@
             </td>
             <td class="mono">{{ row.codigo }}</td>
             <td>{{ row.titulo }}</td>
-            <td>{{ row.unidad_nombre || '—' }}</td>
             <td>{{ formatDate(row.fecha_aprobacion) }}</td>
           </tr>
         </tbody>

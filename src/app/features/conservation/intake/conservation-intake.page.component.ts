@@ -9,7 +9,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs/operators';
+import { distinctUntilChanged, startWith } from 'rxjs/operators';
 
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ToastService } from '../../../shared/ui/toast.service';
@@ -131,6 +131,7 @@ export class ConservationIntakePageComponent {
   readonly subseries = signal<ArchivalSubseries[]>([]);
   readonly expedientes = signal<ArchivalExpediente[]>([]);
   readonly producingUnits = signal<OrgUnit[]>([]);
+  private lastKnownUnitIdForCatalog: number | null = null;
 
   readonly duplicateState =
     signal<EligibilityState['duplicateChecked']>('NOT_CHECKED');
@@ -775,12 +776,18 @@ export class ConservationIntakePageComponent {
         senderNameRole: '',
         senderInstitution: '',
       },
-      { emitEvent: true },
+      { emitEvent: false },
     );
 
     this.archivalForm.markAsUntouched();
     this.refreshRetentionEndDate();
     this.refreshReferenceCodePreview(false);
+
+    if (this.producingUnits().length) {
+      const next = this.resolveSelectedUnitId();
+      this.lastKnownUnitIdForCatalog = next;
+      this.fetchArchivalLists(next);
+    }
 
     this.api
       .audit('CANDIDATE_SELECTED', {
@@ -791,30 +798,101 @@ export class ConservationIntakePageComponent {
   }
 
   private loadArchivalStructure(): void {
-    this.api.getSeries().subscribe({
-      next: (rows) => this.series.set(rows),
+    this.setupArchivalCatalogOnUnitChange();
+    this.loadProducingUnits();
+  }
+
+  private setupArchivalCatalogOnUnitChange(): void {
+    this.archivalForm
+      .get('producingUnit')
+      ?.valueChanges.pipe(
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        if (!this.producingUnits().length) return;
+
+        const next = this.resolveSelectedUnitId();
+        const shouldReset =
+          this.lastKnownUnitIdForCatalog !== null &&
+          next !== this.lastKnownUnitIdForCatalog;
+
+        this.lastKnownUnitIdForCatalog = next;
+
+        if (shouldReset) {
+          this.archivalForm.patchValue(
+            {
+              serieId: null,
+              subserieId: null,
+              expedienteId: null,
+              retentionStartDateISO: '',
+              retentionEndDateISO: '',
+            },
+            { emitEvent: false },
+          );
+        }
+
+        this.fetchArchivalLists(next);
+      });
+  }
+
+  private resolveSelectedUnitId(): number | null {
+    const raw = String(
+      this.archivalForm.get('producingUnit')?.value || '',
+    ).trim();
+    if (!raw) return null;
+
+    const docUnitUpper = raw.toUpperCase();
+    const units = this.producingUnits();
+    const exact = units.find((u) => u.name.toUpperCase() === docUnitUpper);
+    if (exact) return exact.id;
+
+    const partial = units.find(
+      (u) =>
+        u.name.toUpperCase().includes(docUnitUpper) ||
+        docUnitUpper.includes(u.name.toUpperCase()),
+    );
+    return partial?.id ?? null;
+  }
+
+  private fetchArchivalLists(unitId: number | null): void {
+    const filter = unitId != null ? { unitId } : undefined;
+
+    this.api.getSeries(filter).subscribe({
+      next: (rows) => {
+        this.series.set(rows);
+        const serieIds = rows.map((r) => r.id);
+        const subFilter =
+          unitId != null ? { allowedSerieIds: serieIds } : undefined;
+
+        this.api.getSubseries(subFilter).subscribe({
+          next: (subRows) => this.subseries.set(subRows),
+          error: () =>
+            this.toasts.error(
+              'No se pudieron cargar las subseries archivísticas.',
+            ),
+        });
+      },
       error: () =>
         this.toasts.error('No se pudieron cargar las series archivísticas.'),
     });
 
-    this.api.getSubseries().subscribe({
-      next: (rows) => this.subseries.set(rows),
-      error: () =>
-        this.toasts.error('No se pudieron cargar las subseries archivísticas.'),
-    });
-
-    this.api.getExpedientes().subscribe({
+    this.api.getExpedientes(filter).subscribe({
       next: (rows) => this.expedientes.set(rows),
       error: () => this.toasts.error('No se pudieron cargar los expedientes.'),
     });
-
-    this.loadProducingUnits();
   }
 
   private loadProducingUnits(): void {
     this.unidadService.list().subscribe({
-      next: (rows) => this.producingUnits.set(rows),
-      error: () => this.toasts.error('No se pudieron cargar las unidades productoras.'),
+      next: (rows) => {
+        this.producingUnits.set(rows);
+        const next = this.resolveSelectedUnitId();
+        this.lastKnownUnitIdForCatalog = next;
+        this.fetchArchivalLists(next);
+      },
+      error: () =>
+        this.toasts.error('No se pudieron cargar las unidades productoras.'),
     });
   }
 
