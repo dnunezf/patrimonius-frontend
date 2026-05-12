@@ -124,6 +124,9 @@ export type ConservationEadDocumentRow = {
   title: string;
   state: string;
   accessLevel?: ConfidentialityLevel | null;
+  unitId?: number | null;
+  unitName?: string | null;
+  documentDate?: string | null;
 
   serieId?: number | null;
   serieCode?: string | null;

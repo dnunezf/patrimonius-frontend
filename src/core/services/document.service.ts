@@ -522,14 +522,18 @@ export class DocumentService {
     fecha_limite?: string | null;
     estado?: string;
   }> {
-    return this.http.put<{
+    return this.http.post<{
       ok?: boolean;
       documento_id: number;
       numero_serie_oficial: string;
       firmantes?: number[];
       fecha_limite?: string | null;
       estado?: string;
-    }>(`${this.api}/documentos/${id}/preparar-firma`, body ?? {});
+    }>(`${this.api}/admin/conservation/prepare-signature`, {
+      candidateId: id,
+      firmantesIds: body?.firmantesIds ?? [],
+      fecha_limite: body?.fecha_limite ?? null,
+    });
   }
 
   // =========================================================

@@ -11,11 +11,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import Quill from 'quill';
-import { interval, of, Subscription } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { interval, Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { DocumentService, VersionDoc } from 'core/services/document.service';
-import { ConservationIntakeService } from 'core/services/conservation-intake.service';
 import { RealtimeService } from 'core/services/realtime.service';
 import { CommentPanelComponent } from './comment/comment-panel.component';
 import { VersionHistoryDialogComponent } from './version-history-dialog.component';
@@ -134,7 +133,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private sanitizer: DomSanitizer,
     private toast: ToastService,
-    private conservation: ConservationIntakeService,
   ) {}
 
   ngOnInit(): void {
@@ -848,51 +846,31 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         firmantesIds,
         fecha_limite: null,
       })
-      .pipe(
-        switchMap((r) =>
-          this.docs.getMetadata(this.documentoId).pipe(
-            switchMap((meta) =>
-              this.conservation
-                .previewReferenceCode({
-                  candidateId: this.documentoId,
-                  documentType:
-                    meta.manual.documentType?.trim() || undefined,
-                  producingUnit: (
-                    meta.automatic.producerUnitName ?? ''
-                  ).trim()
-                    ? (meta.automatic.producerUnitName ?? '')
-                        .trim()
-                        .toUpperCase()
-                    : undefined,
-                })
-                .pipe(
-                  map((preview) =>
-                    (preview.referenceCode || '').trim() ||
-                    r.numero_serie_oficial,
-                  ),
-                  catchError(() => of(r.numero_serie_oficial)),
-                ),
-            ),
-            catchError(() => of(r.numero_serie_oficial)),
-          ),
-        ),
-      )
       .subscribe({
-        next: (officialCode: string) => {
+        next: (r) => {
           this.requestSigLoading = false;
-          this.sigMsg = `Índice oficial asignado: ${officialCode}`;
+          this.sigMsg = `Índice oficial asignado: ${r.numero_serie_oficial}`;
           this.closeRequestSignatureModal();
         },
         error: (e: any) => {
           this.requestSigLoading = false;
 
-          if (e?.error?.error === 'missing_required_metadata') {
-            this.requestSigError = 'Faltan metadatos requeridos. Complete “Metadatos”.';
+          const errKey = e?.error?.error;
+          const msg =
+            (typeof e?.error?.message === 'string' && e.error.message.trim()
+              ? e.error.message
+              : null) || 'No se pudo preparar la firma.';
+
+          this.requestSigError = msg;
+
+          if (
+            errKey === 'missing_required_metadata' ||
+            errKey === 'incomplete_archival_metadata'
+          ) {
             this.metadataOpen = true;
-            return;
           }
 
-          this.requestSigError = e?.error?.message || 'No se pudo preparar la firma';
+          this.toast.error(msg);
         },
       });
   }

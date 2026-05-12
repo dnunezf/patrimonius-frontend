@@ -1,38 +1,61 @@
-<header class="page-header">
+<header
+  class="page-header"
+  [class.page-header--full-bleed]="conservationOnlyView()"
+>
   <div class="page-header__eyebrow">Patrimonius · Conservación documental</div>
 
   <div class="page-header__content">
     <div>
       <h1>Gestión Documental</h1>
-      <p class="sub">
+      <p class="sub" *ngIf="!conservationOnlyView()">
         Seleccione un documento final, complete su registro archivístico y
         gestione exportaciones EAD 2002 o despacho oficial por correo.
+      </p>
+      <p class="sub" *ngIf="conservationOnlyView()">
+        Documentos ya en conservación: exportación EAD 2002 y despacho por
+        correo. Use «Pendientes» para volver al registro de nuevos ingresos.
       </p>
     </div>
 
     <div class="page-header__stats">
-      <div class="stat-card">
+      <button
+        type="button"
+        class="stat-card stat-card--action"
+        [class.stat-card--active]="!conservationOnlyView()"
+        (click)="showFullIntakeWorkflow()"
+        aria-label="Mostrar gestión documental completa y documentos pendientes"
+      >
         <span class="stat-card__label">Pendientes</span>
         <strong>{{ totalCandidates() }}</strong>
-      </div>
+      </button>
 
-      <div class="stat-card">
+      <button
+        type="button"
+        class="stat-card stat-card--action"
+        [class.stat-card--active]="conservationOnlyView()"
+        (click)="showConservationDocumentsOnly()"
+        aria-label="Mostrar solo documentos ya en conservación"
+      >
         <span class="stat-card__label">En conservación</span>
         <strong>{{ totalEadDocuments() }}</strong>
-      </div>
+      </button>
     </div>
   </div>
-</header>
 
-<section class="layout">
-  <aside class="left">
-    <div class="card">
-      <div class="card-header">
+  <div class="page-header__filters">
+    <div class="page-header__filters-inner">
+      <div class="page-header__filters-head">
         <div>
-          <span class="section-kicker">Paso 1</span>
-          <h2>Búsqueda de candidatos</h2>
+          <span class="section-kicker">Gestión documental</span>
+          <h2 class="page-header__filters-title">Búsqueda y filtros</h2>
         </div>
-        <span class="hint">Documentos finales listos para revisión</span>
+        <span class="hint" *ngIf="!conservationOnlyView()">
+          Documentos finales listos para revisión
+        </span>
+        <span class="hint" *ngIf="conservationOnlyView()">
+          Mismos criterios para acotar el listado en conservación (el estado de
+          firmas solo aplica a pendientes).
+        </span>
       </div>
 
       <form class="filters" [formGroup]="searchForm" (ngSubmit)="search()">
@@ -92,11 +115,38 @@
         </div>
 
         <div class="actions">
-          <button class="btn primary-soft" type="submit" [disabled]="loading()">
-            {{ loading() ? "Buscando..." : "Buscar candidatos" }}
+          <button
+            class="btn primary-soft"
+            type="submit"
+            [disabled]="loading() && !conservationOnlyView()"
+          >
+            {{
+              conservationOnlyView()
+                ? "Aplicar filtros"
+                : loading()
+                  ? "Buscando..."
+                  : "Buscar candidatos"
+            }}
           </button>
         </div>
       </form>
+    </div>
+  </div>
+</header>
+
+<section
+  class="layout"
+  [class.layout--ead-only]="conservationOnlyView()"
+>
+  <aside class="left" *ngIf="!conservationOnlyView()">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <span class="section-kicker">Listado</span>
+          <h2>Candidatos</h2>
+        </div>
+        <span class="hint">Resultado de la búsqueda superior</span>
+      </div>
 
       <div class="list-toolbar">
         <div>
@@ -253,8 +303,9 @@
     </div>
   </aside>
 
-  <main class="right">
-    <ng-container *ngIf="selected() as doc; else intakeEmptyState">
+  <main class="right" [class.right--ead-only]="conservationOnlyView()">
+    <ng-container *ngIf="!conservationOnlyView()">
+      <ng-container *ngIf="selected() as doc; else intakeEmptyState">
       <div class="card registration-card">
         <div class="card-header card-header--sticky">
           <div>
@@ -677,8 +728,9 @@
         </div>
       </div>
     </ng-template>
+    </ng-container>
 
-    <div class="card ead-list-card">
+    <div class="card ead-list-card" *ngIf="conservationOnlyView()">
       <div class="card-header">
         <div>
           <span class="section-kicker">Conservación</span>
@@ -689,7 +741,7 @@
           </p>
         </div>
 
-        <span class="hint">{{ totalEadDocuments() }} documento(s)</span>
+        <span class="hint">{{ eadListHintText() }}</span>
       </div>
 
       <div
@@ -698,7 +750,7 @@
       >
         <div
           class="ead-list-table"
-          *ngIf="eadDocuments().length; else noEadDocsTpl"
+          *ngIf="filteredEadDocuments().length; else noEadDocsTpl"
         >
           <div class="ead-list-head">
             <div>Código</div>
@@ -710,7 +762,7 @@
 
           <div
             class="ead-list-row"
-            *ngFor="let row of eadDocuments(); trackBy: trackEadRow"
+            *ngFor="let row of filteredEadDocuments(); trackBy: trackEadRow"
           >
             <div class="ead-code mono" [title]="row.officialCode || '—'">
               {{ row.officialCode || "—" }}
@@ -778,8 +830,14 @@
       </ng-template>
 
       <ng-template #noEadDocsTpl>
-        <div class="ead-list-empty">
+        <div class="ead-list-empty" *ngIf="!eadDocuments().length">
           No hay documentos en conservación listos para exportación EAD 2002.
+        </div>
+        <div
+          class="ead-list-empty"
+          *ngIf="eadDocuments().length && !filteredEadDocuments().length"
+        >
+          Ningún documento coincide con los filtros activos.
         </div>
       </ng-template>
 

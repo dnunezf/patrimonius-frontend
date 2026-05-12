@@ -340,6 +340,16 @@ export class ConservationIntakeService {
           state: String(item.state ?? item.estado ?? ''),
           accessLevel:
             item.accessLevel ?? item.access_level ?? item.confid_level ?? null,
+          unitId:
+            item.unitId != null
+              ? Number(item.unitId)
+              : item.unit_id != null
+                ? Number(item.unit_id)
+                : null,
+          unitName:
+            item.unitName ?? item.unit_name ?? item.unidad_nombre ?? null,
+          documentDate:
+            item.documentDate ?? item.document_date ?? null,
 
           serieId:
             item.serieId != null

@@ -52,6 +52,14 @@
   padding: 30px 22px 12px;
 }
 
+.page-header.page-header--full-bleed {
+  max-width: none;
+  width: 100%;
+  padding-left: max(22px, 3vw);
+  padding-right: max(22px, 3vw);
+  box-sizing: border-box;
+}
+
 .page-header__eyebrow {
   display: inline-flex;
   align-items: center;
@@ -92,6 +100,49 @@
   line-height: 1.55;
 }
 
+.page-header__filters {
+  max-width: 1480px;
+  margin: 16px auto 0;
+  padding: 0 22px 8px;
+}
+
+.page-header.page-header--full-bleed .page-header__filters {
+  max-width: none;
+  padding-left: max(22px, 3vw);
+  padding-right: max(22px, 3vw);
+}
+
+.page-header__filters-inner {
+  padding: 20px 22px 22px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.page-header__filters-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.page-header__filters-title {
+  margin: 6px 0 0;
+  font-family: "Neutraface Text", Verdana, Arial, sans-serif;
+  font-size: 1.12rem;
+  font-weight: 950;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.page-header__filters-head .hint {
+  max-width: 340px;
+  margin: 0;
+  text-align: right;
+}
+
 .page-header__stats {
   display: flex;
   gap: 12px;
@@ -123,6 +174,34 @@
   line-height: 1;
 }
 
+button.stat-card {
+  font-family: inherit;
+  color: inherit;
+}
+
+.stat-card--action {
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.stat-card--action:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.1);
+}
+
+.stat-card--action:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.stat-card--action.stat-card--active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
 .layout {
   max-width: 1480px;
   margin: 0 auto;
@@ -131,6 +210,17 @@
   grid-template-columns: minmax(380px, 520px) minmax(0, 1fr);
   gap: 28px;
   align-items: start;
+}
+
+.layout.layout--ead-only {
+  grid-template-columns: 1fr;
+  max-width: none;
+  width: 100%;
+}
+
+.right--ead-only {
+  width: 100%;
+  max-width: 100%;
 }
 
 .left,
@@ -778,6 +868,10 @@ label.chk input {
 
 .ead-list-card {
   overflow: hidden;
+}
+
+.layout.layout--ead-only .ead-list-card {
+  width: 100%;
 }
 
 .ead-list-subtitle {

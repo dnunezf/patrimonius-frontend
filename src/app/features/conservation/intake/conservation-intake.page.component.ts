@@ -56,6 +56,26 @@ function csvToUniqueArray(value: string): string[] {
     .filter((item, index, arr) => arr.indexOf(item) === index);
 }
 
+type ConservationSearchFilterSnapshot = {
+  q: string;
+  officialCode: string;
+  producingUnit: string;
+  dateFrom: string;
+  dateTo: string;
+  signatureState: string;
+};
+
+function defaultConservationSearchFilterSnapshot(): ConservationSearchFilterSnapshot {
+  return {
+    q: '',
+    officialCode: '',
+    producingUnit: '',
+    dateFrom: '',
+    dateTo: '',
+    signatureState: 'ALL',
+  };
+}
+
 function commaEmailsValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const value = String(control.value || '').trim();
@@ -133,6 +153,24 @@ export class ConservationIntakePageComponent {
 
   readonly eadDocumentsLoading = signal(false);
   readonly eadDocuments = signal<ConservationEadDocumentRow[]>([]);
+  /** Criterios del último envío del formulario de búsqueda (también filtran el listado EAD). */
+  readonly eadFilterCriteria = signal<ConservationSearchFilterSnapshot>(
+    defaultConservationSearchFilterSnapshot(),
+  );
+  readonly filteredEadDocuments = computed(() => {
+    const rows = this.eadDocuments();
+    const criteria = this.eadFilterCriteria();
+    return rows.filter((row) => this.matchesEadListFilters(row, criteria));
+  });
+
+  readonly eadListHintText = computed(() => {
+    const total = this.eadDocuments().length;
+    const shown = this.filteredEadDocuments().length;
+    if (!total) return '0 documento(s)';
+    if (shown === total) return `${total} documento(s)`;
+    return `${shown} de ${total} documento(s)`;
+  });
+
   readonly eadDialogOpen = signal(false);
   readonly eadDialogDocument = signal<ConservationEadDocumentRow | null>(null);
 
@@ -146,6 +184,9 @@ export class ConservationIntakePageComponent {
   );
 
   readonly totalEadDocuments = computed(() => this.eadDocuments().length);
+
+  /** Solo tabla «Documentos en Conservación» (p. ej. al pulsar la estadística). */
+  readonly conservationOnlyView = signal(false);
 
   readonly procedureOptions: Array<{
     value: ProcedureType;
@@ -385,6 +426,41 @@ export class ConservationIntakePageComponent {
     this.setSearchControlUpperValue('producingUnit');
   }
 
+  private matchesEadListFilters(
+    row: ConservationEadDocumentRow,
+    f: ConservationSearchFilterSnapshot,
+  ): boolean {
+    const code = (f.officialCode || '').trim();
+    if (code) {
+      const hay = (row.officialCode || '').toUpperCase();
+      if (!hay.includes(code)) return false;
+    }
+
+    const q = (f.q || '').trim();
+    if (q) {
+      const hay = (row.title || '').toUpperCase();
+      if (!hay.includes(q)) return false;
+    }
+
+    const unit = (f.producingUnit || '').trim();
+    if (unit) {
+      const hay = (row.unitName || '').toUpperCase();
+      if (!hay.includes(unit)) return false;
+    }
+
+    const docRaw = (row.documentDate || row.createdAtISO || '').trim();
+    const docDate = docRaw ? docRaw.slice(0, 10) : null;
+
+    if (f.dateFrom) {
+      if (!docDate || docDate < f.dateFrom) return false;
+    }
+    if (f.dateTo) {
+      if (!docDate || docDate > f.dateTo) return false;
+    }
+
+    return true;
+  }
+
   private normalizeArchivalTextFields(): void {
     this.setArchivalControlUpperValue('producingUnit');
     this.setArchivalControlUpperValue('keywords');
@@ -511,16 +587,28 @@ export class ConservationIntakePageComponent {
 
   async search(): Promise<void> {
     this.normalizeSearchFormTextFields();
+    const raw = this.searchForm.getRawValue();
+
+    this.eadFilterCriteria.set({
+      q: String(raw.q ?? ''),
+      officialCode: String(raw.officialCode ?? ''),
+      producingUnit: String(raw.producingUnit ?? ''),
+      dateFrom: String(raw.dateFrom ?? ''),
+      dateTo: String(raw.dateTo ?? ''),
+      signatureState: String(raw.signatureState ?? 'ALL'),
+    });
+
+    this.api.audit('SEARCH_PERFORMED', raw).subscribe();
+
+    if (this.conservationOnlyView()) {
+      return;
+    }
 
     this.loading.set(true);
     this.selected.set(null);
     this.duplicateState.set('NOT_CHECKED');
 
-    this.api
-      .audit('SEARCH_PERFORMED', this.searchForm.getRawValue())
-      .subscribe();
-
-    this.api.searchCandidates(this.searchForm.getRawValue()).subscribe({
+    this.api.searchCandidates(raw).subscribe({
       next: (rows) => {
         this.candidates.set(rows);
         this.loading.set(false);
@@ -1151,6 +1239,17 @@ export class ConservationIntakePageComponent {
   /* =========================
    * HU-035 · helpers y flujo
    * ========================= */
+
+  /** Solo listado EAD / despacho (oculta búsqueda y registro). */
+  showConservationDocumentsOnly(): void {
+    this.conservationOnlyView.set(true);
+    this.loadEadDocuments();
+  }
+
+  /** Vuelve a candidatos + registro archivístico. */
+  showFullIntakeWorkflow(): void {
+    this.conservationOnlyView.set(false);
+  }
 
   loadEadDocuments(): void {
     this.eadDocumentsLoading.set(true);
