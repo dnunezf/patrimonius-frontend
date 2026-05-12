@@ -9,6 +9,7 @@ import {
   ExceptionRow
 } from '../../../../core/services/access-exception.service';
 import { AuditService } from '../../../../core/services/audit.service';
+import { ToastService } from '../../../shared/ui/toast.service';
 
 type UiUser = { id: number; email: string; fullName: string; rol: string };
 
@@ -45,10 +46,6 @@ export class AccessExceptionsComponent implements OnInit {
   filteredUsers: UiUser[] = [];
   selectedUser: UiUser | null = null;
 
-  // ✅ roles SIEMPRE en este shape
-  roles: Array<{ label: string; value: string }> = [];
-  selectedRole: string = 'todos';
-
   states: string[] = [];
   selectedDocumentStatusForm: string = 'todos';
 
@@ -81,7 +78,8 @@ export class AccessExceptionsComponent implements OnInit {
 
   constructor(
     private service: AccessExceptionService,
-    private auditService: AuditService
+    private auditService: AuditService,
+    private toast: ToastService
   ) {
   }
 
@@ -127,18 +125,9 @@ export class AccessExceptionsComponent implements OnInit {
           .map((name: string) => String(name).trim())
           .filter((x: string) => x.length > 0);
 
-        this.roles = list.map((name: string) => ({
-          value: name.toLowerCase(),
-          label: name
-            .replace(/_/g, ' ')
-            .toLowerCase()
-            .replace(/\b\w/g, c => c.toUpperCase())
-        }));
+
       },
-      error: (err) => {
-        console.log('ERROR ROLES =>', err);
-        this.roles = [];
-      }
+
     });
   }
 
@@ -162,21 +151,6 @@ export class AccessExceptionsComponent implements OnInit {
         });
 
         this.filteredUsers = this.users.slice();
-
-        // ❌ YA NO recalculamos roles desde users (eso te los pisaba en vacío)
-        // si querés, podés dejar esto SOLO como fallback:
-        if (!this.roles.length) {
-          const uniqueRoles = Array.from(
-            new Set(this.users.map(u => String(u.rol || '').trim()).filter(Boolean))
-          );
-          this.roles = uniqueRoles.map(r => ({
-            value: r.toLowerCase(),
-            label: r
-              .replace(/_/g, ' ')
-              .toLowerCase()
-              .replace(/\b\w/g, c => c.toUpperCase())
-          }));
-        }
       },
       error: (err) => {
         console.log('ERROR USERS =>', err);
@@ -308,13 +282,10 @@ export class AccessExceptionsComponent implements OnInit {
   // Formulario: filtros locales
   // =======================
   filterUsers() {
-    const roleNorm = this.selectedRole === 'todos' ? null : this.selectedRole;
     const q = this.userSearchTerm.toLowerCase();
 
     this.filteredUsers = this.users.filter(u => {
       const matchQ = (u.fullName + ' ' + u.email).toLowerCase().includes(q);
-      const matchR = !roleNorm || String(u.rol || '').toLowerCase() === roleNorm;
-      return matchQ && matchR;
     });
   }
 
@@ -474,23 +445,20 @@ export class AccessExceptionsComponent implements OnInit {
       next: () => {
         this.formError = null;
         this.error = null;
-        this.applySuccess =
-          'Excepción registrada correctamente. Actualizando el listado…';
+        this.toast.success('Excepción aplicada correctamente');
         this.resetForm();
         this.page = 1;
         // Quitar filtros de fecha del panel derecho para que la fila nueva no quede oculta
         this.filters.dateFrom = '';
         this.filters.dateTo = '';
         this.fetch();
-        setTimeout(() => {
-          this.applySuccess = null;
-        }, 6000);
       },
       error: (err) => {
         console.error('APPLY EXCEPTION ERROR =>', err);
         this.formError =
           err?.error?.message ||
           `No se pudo aplicar la excepción (${err?.status ?? 'error'})`;
+        this.toast.error('No se pudo aplicar la excepción');
       }
     });
   }

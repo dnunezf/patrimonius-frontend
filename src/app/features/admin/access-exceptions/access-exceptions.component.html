@@ -21,23 +21,15 @@
           <!-- Usuario -->
           <div class="input-group">
             <label for="userSearch">Buscar usuario (nombre o email)</label>
-            <div class="select-container">
-              <input
-                id="userSearch"
-                type="text"
-                [(ngModel)]="userSearchTerm"
-                placeholder="Buscar usuario..."
-                name="userSearch"
-                (input)="onUserSearchInput()"
-                autocomplete="off"
-              />
-              <select [(ngModel)]="selectedRole" name="role" (change)="filterUsers()">
-                <option value="todos">Todos los roles</option>
-                <option *ngFor="let role of roles" [value]="role.value">
-                  {{ role.label }}
-                </option>
-              </select>
-            </div>
+            <input
+              id="userSearch"
+              type="text"
+              [(ngModel)]="userSearchTerm"
+              placeholder="Buscar usuario..."
+              name="userSearch"
+              (input)="onUserSearchInput()"
+              autocomplete="off"
+            />
           </div>
 
           <div class="input-group">
@@ -298,3 +290,4 @@
     </div>
   </div>
 </div>
+

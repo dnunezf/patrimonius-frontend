@@ -34,7 +34,7 @@
 /* ===== Small row layout used inside the form (search + role) ===== */
 .select-container {
   display: grid;
-  grid-template-columns: 1fr 220px;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   align-items: end;
 }
