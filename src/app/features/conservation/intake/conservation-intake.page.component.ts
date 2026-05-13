@@ -127,6 +127,10 @@ export class ConservationIntakePageComponent {
   readonly pageSize = 6;
   readonly totalCandidates = signal(0);
 
+  // Paginación para documentos en conservación (EAD)
+  readonly currentPageEad = signal(1);
+  readonly pageSizeEad = 10;
+
   readonly series = signal<ArchivalSeries[]>([]);
   readonly subseries = signal<ArchivalSubseries[]>([]);
   readonly expedientes = signal<ArchivalExpediente[]>([]);
@@ -136,14 +140,24 @@ export class ConservationIntakePageComponent {
   readonly duplicateState =
     signal<EligibilityState['duplicateChecked']>('NOT_CHECKED');
 
-  readonly totalPages = computed(() => 
+  readonly totalPages = computed(() =>
     Math.ceil(this.totalCandidates() / this.pageSize)
   );
-  
+
   readonly paginatedCandidates = computed(() => {
     const start = (this.currentPage() - 1) * this.pageSize;
     const end = start + this.pageSize;
     return this.candidates().slice(start, end);
+  });
+
+  readonly totalPagesEad = computed(() =>
+    Math.ceil(this.filteredEadDocuments().length / this.pageSizeEad)
+  );
+
+  readonly paginatedEadDocuments = computed(() => {
+    const start = (this.currentPageEad() - 1) * this.pageSizeEad;
+    const end = start + this.pageSizeEad;
+    return this.filteredEadDocuments().slice(start, end);
   });
 
   readonly selectedCandidatePosition = computed(() => {
@@ -608,9 +622,10 @@ export class ConservationIntakePageComponent {
       dateTo: '',
       signatureState: 'ALL',
     });
-    
+
     this.eadFilterCriteria.set(defaultConservationSearchFilterSnapshot());
     this.currentPage.set(1);
+    this.currentPageEad.set(1);
     this.search();
   }
 
@@ -662,21 +677,65 @@ export class ConservationIntakePageComponent {
     const total = this.totalPages();
     const current = this.currentPage();
     const pages: number[] = [];
-    
+
     // Mostrar máximo 5 páginas
     const maxVisible = 5;
     let start = Math.max(1, current - Math.floor(maxVisible / 2));
     let end = Math.min(total, start + maxVisible - 1);
-    
+
     // Ajustar el inicio si estamos cerca del final
     if (end - start + 1 < maxVisible) {
       start = Math.max(1, end - maxVisible + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
+
+    return pages;
+  }
+
+  // Métodos de paginación para documentos en conservación (EAD)
+  goToPageEad(page: number): void {
+    if (page < 1 || page > this.totalPagesEad()) return;
+    this.currentPageEad.set(page);
+  }
+
+  nextPageEad(): void {
+    this.goToPageEad(this.currentPageEad() + 1);
+  }
+
+  prevPageEad(): void {
+    this.goToPageEad(this.currentPageEad() - 1);
+  }
+
+  firstPageEad(): void {
+    this.goToPageEad(1);
+  }
+
+  lastPageEad(): void {
+    this.goToPageEad(this.totalPagesEad());
+  }
+
+  getPageNumbersEad(): number[] {
+    const total = this.totalPagesEad();
+    const current = this.currentPageEad();
+    const pages: number[] = [];
+
+    // Mostrar máximo 5 páginas
+    const maxVisible = 5;
+    let start = Math.max(1, current - Math.floor(maxVisible / 2));
+    let end = Math.min(total, start + maxVisible - 1);
+
+    // Ajustar el inicio si estamos cerca del final
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
     return pages;
   }
 
@@ -696,6 +755,7 @@ export class ConservationIntakePageComponent {
     this.api.audit('SEARCH_PERFORMED', raw).subscribe();
 
     if (this.conservationOnlyView()) {
+      this.currentPageEad.set(1);
       return;
     }
 

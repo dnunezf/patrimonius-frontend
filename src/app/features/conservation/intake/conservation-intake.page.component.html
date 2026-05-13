@@ -839,7 +839,7 @@
 
           <div
             class="ead-list-row"
-            *ngFor="let row of filteredEadDocuments(); trackBy: trackEadRow"
+            *ngFor="let row of paginatedEadDocuments(); trackBy: trackEadRow"
           >
             <div class="ead-code mono" [title]="row.officialCode || '—'">
               {{ row.officialCode || "—" }}
@@ -899,6 +899,66 @@
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Controles de paginación para documentos en conservación -->
+      <div class="pagination-controls" *ngIf="totalPagesEad() > 1">
+        <div class="pagination-info">
+          <span>
+            Página {{ currentPageEad() }} de {{ totalPagesEad() }}
+            ({{ filteredEadDocuments().length }} documentos totales)
+          </span>
+        </div>
+
+        <div class="pagination-buttons">
+          <button
+            class="btn btn-small ghost"
+            (click)="firstPageEad()"
+            [disabled]="currentPageEad() === 1"
+            title="Primera página"
+          >
+            «
+          </button>
+
+          <button
+            class="btn btn-small ghost"
+            (click)="prevPageEad()"
+            [disabled]="currentPageEad() === 1"
+            title="Página anterior"
+          >
+            ‹
+          </button>
+
+          <div class="page-numbers">
+            <button
+              *ngFor="let page of getPageNumbersEad()"
+              class="btn btn-small"
+              [class.primary]="page === currentPageEad()"
+              [class.ghost]="page !== currentPageEad()"
+              (click)="goToPageEad(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <button
+            class="btn btn-small ghost"
+            (click)="nextPageEad()"
+            [disabled]="currentPageEad() === totalPagesEad()"
+            title="Página siguiente"
+          >
+            ›
+          </button>
+
+          <button
+            class="btn btn-small ghost"
+            (click)="lastPageEad()"
+            [disabled]="currentPageEad() === totalPagesEad()"
+            title="Última página"
+          >
+            »
+          </button>
         </div>
       </div>
 
