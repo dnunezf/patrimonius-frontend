@@ -2,12 +2,6 @@
 
 <div class="editor-grid">
   <div class="editor-main">
-    <div class="top-bar">
-      <button class="btn-back" type="button" (click)="goBack()">
-        ← Volver al Dashboard
-      </button>
-    </div>
-
 
     <div class="page-layout-panel" *ngIf="showPageLayoutPanel && !isReadOnly">
       <label class="layout-toggle">
@@ -128,18 +122,6 @@
     </div>
 
     <div class="sheet sheet--word">
-      <div class="doc-structure-actions" *ngIf="!isReadOnly">
-        <button type="button" class="btn-secondary" (click)="createOrUpdateIndex()">
-          Crear índice
-        </button>
-        <button type="button" class="btn-secondary" (click)="togglePageLayoutPanel()">
-          {{ showPageLayoutPanel ? 'Ocultar encabezado/pie' : 'Encabezado y pie' }}
-        </button>
-        <span class="page-current-indicator">
-          Página actual: {{ currentVisualPage }} de {{ estimatedPages }}
-        </span>
-      </div>
-
       <div
         class="word-fixed-header word-fixed-header--first"
         *ngIf="useDifferentFirstPage && currentVisualPage === 1 && docxHeaderFirstHtml"
@@ -182,6 +164,31 @@
   </div>
 
   <aside class="editor-sidebar">
+    <div class="card sidebar-quick card--sticky">
+      <button type="button" class="btn-back btn-back--sidebar" (click)="goBack()">
+        ← Volver al dashboard
+      </button>
+
+      <ng-container *ngIf="!isReadOnly">
+        <div class="sidebar-doc-actions">
+          <button type="button" class="btn-secondary btn-full" (click)="createOrUpdateIndex()">
+            Crear índice
+          </button>
+          <button type="button" class="btn-secondary btn-full" (click)="togglePageLayoutPanel()">
+            {{ showPageLayoutPanel ? 'Ocultar encabezado/pie' : 'Encabezado y pie' }}
+          </button>
+        </div>
+
+      </ng-container>
+
+      <div class="page-indicators page-indicators--sidebar">
+        <span class="page-current-indicator">
+          Página: {{ currentVisualPage }} / {{ estimatedPages }}
+        </span>
+        <span class="page-scroll-hint" *ngIf="!isReadOnly">Alt + rueda: por página</span>
+      </div>
+    </div>
+
     <div class="card" *ngIf="!isReadOnly">
       <div class="toolbar">
         <div class="font-selector">
@@ -199,12 +206,7 @@
           <label class="field">
             Tamaño:
             <select [(ngModel)]="selectedFontSize" (change)="onFontSizeChange()" class="font-select">
-              <option value="12px">Pequeño (12px)</option>
-              <option value="14px">Normal (14px)</option>
-              <option value="16px">Mediano (16px)</option>
-              <option value="18px">Grande (18px)</option>
-              <option value="20px">Muy grande (20px)</option>
-              <option value="24px">Extra grande (24px)</option>
+              <option *ngFor="let s of availableFontSizes" [value]="s.value">{{ s.label }}</option>
             </select>
           </label>
         </div>

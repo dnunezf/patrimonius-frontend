@@ -1,16 +1,17 @@
 import {
+  AfterViewInit,
+  ChangeDetectorRef,
   Component,
   ElementRef,
   OnDestroy,
   OnInit,
   ViewChild,
-  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import Quill from 'quill';
+import Quill, { type EmitterSource } from 'quill';
 import { interval, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -21,6 +22,32 @@ import { VersionHistoryDialogComponent } from './version-history-dialog.componen
 import { DocumentMetadataDialogComponent } from './metadata/document-metadata-dialog.component';
 import { ConsultarExpedientesDialogComponent } from './consultaExpediente/consultar-expedientes-dialog.component';
 import { ToastService } from '../../../shared/ui/toast.service';
+
+/** Tamaños permitidos en el editor y en Quill (estilos inline en PDF/DOCX). */
+const FONT_SIZE_MIN_PX = 10;
+const FONT_SIZE_MAX_PX = 36;
+const QUILL_FONT_SIZE_WHITELIST = Array.from(
+  { length: FONT_SIZE_MAX_PX - FONT_SIZE_MIN_PX + 1 },
+  (_, i) => `${FONT_SIZE_MIN_PX + i}px`
+);
+
+/** Fuentes y tamaños como estilos inline para que PDF/DOCX (sin CSS de Quill) respeten el formato. */
+type WhitelistAttr = { whitelist?: string[] | null };
+const quillFontStyle = Quill.import('attributors/style/font') as WhitelistAttr;
+const quillSizeStyle = Quill.import('attributors/style/size') as WhitelistAttr;
+quillFontStyle.whitelist = [
+  'serif',
+  'monospace',
+  'Arial, sans-serif',
+  'Times New Roman, serif',
+  'Calibri, sans-serif',
+  'Verdana, sans-serif',
+];
+quillSizeStyle.whitelist = QUILL_FONT_SIZE_WHITELIST;
+Quill.register(
+  { 'formats/font': quillFontStyle, 'formats/size': quillSizeStyle },
+  true
+);
 
 type UiUser = { id: number; label: string };
 
@@ -38,7 +65,7 @@ type UiUser = { id: number; label: string };
   templateUrl: './document-editor.component.html',
   styleUrls: ['./document-editor.component.css'],
 })
-export class DocumentEditorComponent implements OnInit, OnDestroy {
+export class DocumentEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('editor', { static: true }) editorRef!: ElementRef<HTMLDivElement>;
   quill!: Quill;
 
@@ -87,14 +114,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { value: 'Calibri', label: 'Calibri' },
     { value: 'Verdana', label: 'Verdana' }
   ];
-  availableFontSizes = [
-    { value: '12px', label: 'Pequeño (12px)' },
-    { value: '14px', label: 'Normal (14px)' },
-    { value: '16px', label: 'Mediano (16px)' },
-    { value: '18px', label: 'Grande (18px)' },
-    { value: '20px', label: 'Muy grande (20px)' },
-    { value: '24px', label: 'Extra grande (24px)' }
-  ];
+  availableFontSizes = QUILL_FONT_SIZE_WHITELIST.map((value) => ({
+    value,
+    label: `${parseInt(value, 10)} px`,
+  }));
   useDifferentFirstPage = false;
   autoPageNumberInFooter = false;
   docxHeaderFirstHtml = '';
@@ -114,6 +137,15 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   currentEditorScrollTop = 0;
 
   private onEditorScroll = () => this.updateCurrentPageFromScroll();
+
+  /** Alt + rueda: desplaza ~una página visual (alto A4 del fondo rayado). */
+  private readonly onEditorWheel = (e: WheelEvent): void => {
+    if (this.isReadOnly || !this.quill?.root) return;
+    if (!e.altKey) return;
+    e.preventDefault();
+    const step = this.pageVisualHeightPx * (e.deltaY > 0 ? 1 : -1);
+    this.quill.root.scrollBy({ top: step, behavior: 'smooth' });
+  };
 
   imageSizeByTarget: Record<
     'headerFirst' | 'headerDefault' | 'footerFirst' | 'footerDefault',
@@ -150,29 +182,37 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     // Load saved font size preference
     const savedFontSize = localStorage.getItem('preferred-font-size');
-    if (savedFontSize) {
+    if (savedFontSize && QUILL_FONT_SIZE_WHITELIST.includes(savedFontSize)) {
       this.selectedFontSize = savedFontSize;
     }
 
+    if (!this.isReadOnly) {
+      this.subs.push(
+        interval(20000)
+          .pipe(switchMap(() => this.docs.touchSession(this.documentoId)))
+          .subscribe()
+      );
+    }
+
+    this.loadComentarios();
+  }
+
+  ngAfterViewInit(): void {
     this.quill = new Quill(this.editorRef.nativeElement, {
       theme: 'snow',
       readOnly: this.isReadOnly,
+      modules: {
+        toolbar: !this.isReadOnly,
+      },
     });
 
-    // Apply initial font and size
-    this.applyFontToEditor(this.selectedFont);
-    this.applyFontSizeToEditor(this.selectedFontSize);
+    this.applyFontToEditor(this.selectedFont, 'all', Quill.sources.SILENT);
+    this.applyFontSizeToEditor(this.selectedFontSize, Quill.sources.SILENT);
 
     if (this.isReadOnly) {
       this.quill.enable(false);
     }
 
-    /**
-     * IMPORTANTE:
-     * Para colaboración en vivo solo enviamos DELTA.
-     * No enviamos content:patch por cada tecla porque eso reemplaza todo el HTML
-     * y puede provocar saltos de cursor/foco entre usuarios.
-     */
     if (!this.isReadOnly) {
       this.quill.on('text-change', (delta, _oldDelta, source) => {
         if (source !== 'user') return;
@@ -190,6 +230,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     this.quill.on('selection-change', () => this.updateCurrentPageFromSelection());
     this.quill.root.addEventListener('scroll', this.onEditorScroll);
+    this.quill.root.addEventListener('wheel', this.onEditorWheel, { passive: false });
 
     this.docs.getContenido(this.documentoId).subscribe({
       next: (d) => {
@@ -212,29 +253,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    /**
-     * Aplica cambios remotos sin reemplazar todo el HTML.
-     * Esto evita que un usuario le quite el cursor al otro.
-     */
     this.rt.on('delta', (m: any) => {
       if (!m?.delta) return;
       if (m.from === this.clientId) return;
 
       this.quill.updateContents(m.delta as any, 'api');
     });
-
-    /**
-     * IMPORTANTE:
-     * Ya no escuchamos content:patch para edición en vivo.
-     * content:patch solo debería usarse para casos especiales como restaurar,
-     * recargar todo el documento o sincronización completa controlada.
-     */
-    /*
-    this.rt.on('content:patch', (m: any) => {
-      if (!m?.content || m.from === this.clientId) return;
-      this.setHtmlPreservingCaretAndScroll(m.content);
-    });
-    */
 
     this.rt.on('editor:conflict', (_: any) => {
       this.docs
@@ -268,16 +292,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       );
       this.cdr.detectChanges();
     });
-
-    if (!this.isReadOnly) {
-      this.subs.push(
-        interval(20000)
-          .pipe(switchMap(() => this.docs.touchSession(this.documentoId)))
-          .subscribe()
-      );
-    }
-
-    this.loadComentarios();
   }
 
   openHistory(): void {
@@ -920,6 +934,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.subs.forEach((s) => s.unsubscribe());
 
     this.quill?.root?.removeEventListener('scroll', this.onEditorScroll);
+    this.quill?.root?.removeEventListener('wheel', this.onEditorWheel);
 
     /**
      * Limpieza de listeners para evitar duplicados si se entra y sale del editor.
@@ -1238,7 +1253,11 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     localStorage.setItem('preferred-font', this.selectedFont);
   }
 
-  applyFontToEditor(font: string, scope: string = 'all'): void {
+  applyFontToEditor(
+    font: string,
+    scope: string = 'all',
+    source: EmitterSource = Quill.sources.USER
+  ): void {
     if (!this.quill) return;
 
     const fontMap: { [key: string]: string } = {
@@ -1251,17 +1270,19 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const fontFamily = fontMap[font] || fontMap['Arial'];
     
     if (scope === 'all') {
-      // Apply font to entire document
-      this.quill.format('font', fontFamily);
       const editorContainer = this.quill.root;
       if (editorContainer) {
         editorContainer.style.fontFamily = fontFamily;
+      }
+      const fullLen = this.quill.getLength();
+      if (fullLen > 1) {
+        this.quill.formatText(0, fullLen - 1, 'font', fontFamily, source);
       }
     } else if (scope === 'selected') {
       // Apply font only to selected text
       const selection = this.quill.getSelection();
       if (selection) {
-        this.quill.formatText(selection.index, selection.length, 'font', fontFamily);
+        this.quill.formatText(selection.index, selection.length, 'font', fontFamily, source);
       }
     }
   }
@@ -1340,19 +1361,17 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     localStorage.setItem('preferred-font-size', this.selectedFontSize);
   }
 
-  applyFontSizeToEditor(fontSize: string): void {
+  applyFontSizeToEditor(fontSize: string, source: EmitterSource = Quill.sources.USER): void {
     if (!this.quill) return;
 
-    // Apply font size to entire document
     const parsed = parseInt(fontSize.replace('px', ''), 10);
     const sizeInPixels = Number.isNaN(parsed) ? 14 : parsed;
-    this.quill.root.style.fontSize = sizeInPixels + 'px';
+    const sizePx = `${sizeInPixels}px`;
+    this.quill.root.style.fontSize = sizePx;
 
-    const sel = this.quill.getSelection(true);
-    const fmt = sel ? this.quill.getFormat(sel) : this.quill.getFormat(0, 1);
-    const currentFont = (fmt['font'] as string | undefined) || 'Arial';
-    if (currentFont) {
-      this.quill.format('font', currentFont);
+    const fullLen = this.quill.getLength();
+    if (fullLen > 1) {
+      this.quill.formatText(0, fullLen - 1, 'size', sizePx, source);
     }
   }
 }
