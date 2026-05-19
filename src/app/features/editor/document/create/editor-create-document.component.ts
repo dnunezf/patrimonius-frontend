@@ -9,6 +9,7 @@ import { TemplateSelectorComponent } from '../template/template-selector.compone
 import { PlantillaModel } from '../../../../../core/services/plantilla.service';
 import { CreateOptionDialogComponent } from './create-option-dialog.component';
 import { ExceptionPermission, AccessExceptionService } from '../../../../../core/services/access-exception.service';
+import { ToastService } from '../../../../shared/ui/toast.service';
 
 type UiUser = { id: number; email: string; fullName: string; rol: string };
 type DocumentParticipant = {
@@ -20,6 +21,7 @@ type DocumentParticipant = {
   standalone: true,
   selector: 'app-editor-create-document',
   imports: [CommonModule, FormsModule, TemplateSelectorComponent, CreateOptionDialogComponent],
+  providers: [ToastService],
   templateUrl: './editor-create-document.component.html',
   styleUrls: ['./editor-create-document.component.css'],
 })
@@ -50,8 +52,9 @@ export class EditorCreateDocumentComponent implements OnInit {
     private docs: DocumentService, 
     private router: Router,
     private http: HttpClient,
-    private accessExceptionService: AccessExceptionService
-  ) {}
+    private accessExceptionService: AccessExceptionService,
+    private toast: ToastService
+) {}
 
   ngOnInit(): void {
     const userData = localStorage.getItem('user');
@@ -236,11 +239,13 @@ export class EditorCreateDocumentComponent implements OnInit {
             // }
             
             this.loading = false;
+            this.toast.success('Documento creado correctamente');
             this.router.navigate(['/editor/document', res.documento_id, 'edit']);
         },
         error: (err: any) => {
           this.loading = false;
           this.error = err?.error?.message || 'No se pudo crear el documento';
+          this.toast.error('No se pudo crear el documento');
         },
       });
   }

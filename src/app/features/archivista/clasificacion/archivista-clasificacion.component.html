@@ -30,7 +30,7 @@
     </div>
 
     <section class="top-actions">
-    <button class="btn primary" (click)="crearSerie()">Crear Serie</button>
+      <button class="btn primary" (click)="crearSerie()">Crear Serie</button>
     </section>
 
     <section class="panel filtros">
@@ -39,6 +39,7 @@
         <input
           type="search"
           [(ngModel)]="filtroSerieCodigo"
+          (input)="onFiltroSerieCodigoInput()"
           placeholder="Código"
         />
       </div>
@@ -48,6 +49,7 @@
         <input
           type="search"
           [(ngModel)]="filtroSerieNombre"
+          (input)="onFiltroSerieNombreInput()"
           placeholder="Nombre de la serie"
         />
       </div>
@@ -57,6 +59,7 @@
         <input
           type="search"
           [(ngModel)]="filtroSerieUnidad"
+          (input)="onFiltroSerieUnidadInput()"
           placeholder="Unidad organizacional"
         />
       </div>
@@ -158,6 +161,7 @@
         <input
           type="search"
           [(ngModel)]="filtroSubserieCodigo"
+          (input)="onFiltroSubserieCodigoInput()"
           placeholder="Código"
         />
       </div>
@@ -167,6 +171,7 @@
         <input
           type="search"
           [(ngModel)]="filtroSubserieNombre"
+          (input)="onFiltroSubserieNombreInput()"
           placeholder="Nombre de la subserie"
         />
       </div>
@@ -176,6 +181,7 @@
         <input
           type="search"
           [(ngModel)]="filtroSubserieSerie"
+          (input)="onFiltroSubserieSerieInput()"
           placeholder="Serie relacionada"
         />
       </div>
@@ -289,6 +295,7 @@
         <input
           type="search"
           [(ngModel)]="filtroExpedienteCodigo"
+          (input)="onFiltroExpedienteCodigoInput()"
           placeholder="Código"
         />
       </div>
@@ -298,6 +305,7 @@
         <input
           type="search"
           [(ngModel)]="filtroExpedienteNombre"
+          (input)="onFiltroExpedienteNombreInput()"
           placeholder="Nombre del expediente"
         />
       </div>
@@ -307,6 +315,7 @@
         <input
           type="search"
           [(ngModel)]="filtroExpedienteUnidad"
+          (input)="onFiltroExpedienteUnidadInput()"
           placeholder="Unidad"
         />
       </div>
@@ -316,6 +325,7 @@
         <input
           type="search"
           [(ngModel)]="filtroExpedienteSerie"
+          (input)="onFiltroExpedienteSerieInput()"
           placeholder="Serie"
         />
       </div>
@@ -325,6 +335,7 @@
         <input
           type="search"
           [(ngModel)]="filtroExpedienteSubserie"
+          (input)="onFiltroExpedienteSubserieInput()"
           placeholder="Subserie"
         />
       </div>
@@ -334,6 +345,7 @@
         <input
           type="search"
           [(ngModel)]="filtroExpedienteEstado"
+          (input)="onFiltroExpedienteEstadoInput()"
           placeholder="ACTIVO, CERRADO..."
         />
       </div>
@@ -398,10 +410,11 @@
               (click)="editarExpediente(expediente)"
               [disabled]="expediente.estado !== 'ACTIVO'"
               [title]="
-              expediente.estado === 'ACTIVO'
-              ? 'Editar expediente'
-               : 'Solo se pueden editar expedientes activos'"
-              >
+                  expediente.estado === 'ACTIVO'
+                    ? 'Editar expediente'
+                    : 'Solo se pueden editar expedientes activos'
+                "
+            >
               Editar
             </button>
 
@@ -412,15 +425,16 @@
             >
               Ver documentos
             </button>
+
             <button
               class="btn sm primary"
               (click)="cerrarExpediente(expediente)"
               [disabled]="expediente.estado !== 'ACTIVO'"
               [title]="
-                expediente.estado === 'ACTIVO'
-                  ? 'Cerrar expediente y generar índice electrónico'
-                  : 'Solo los expedientes activos se pueden cerrar'
-              "
+                  expediente.estado === 'ACTIVO'
+                    ? 'Cerrar expediente y generar índice electrónico'
+                    : 'Solo los expedientes activos se pueden cerrar'
+                "
             >
               Cerrar
             </button>
@@ -430,10 +444,10 @@
               (click)="abrirExpediente(expediente)"
               [disabled]="expediente.estado !== 'CERRADO'"
               [title]="
-                expediente.estado === 'CERRADO'
-                  ? 'Reabrir expediente'
-                  : 'Solo los expedientes cerrados se pueden reabrir'
-              "
+                  expediente.estado === 'CERRADO'
+                    ? 'Reabrir expediente'
+                    : 'Solo los expedientes cerrados se pueden reabrir'
+                "
             >
               Abrir
             </button>

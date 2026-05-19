@@ -203,8 +203,8 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
       .searchExterno({
         vista: 'documentos',
         //q: qCompuesta || undefined,
-        codigo: this.codigoDocumentoFiltro || undefined,
-        titulo: this.nombreDocumentoFiltro || undefined,
+        codigo: this.codigoDocumentoFiltro.trim() || undefined,
+        titulo: this.nombreDocumentoFiltro.trim() || undefined,
         page: this.page,
         pageSize: this.pageSize,
         sortBy: 'fecha_aprobacion',
@@ -278,26 +278,32 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
 
     if (vista === 'documentos') {
       this.codigoDocumentoFiltro = filtros['codigo']
-        ? String(filtros['codigo'])
+        ? this.toUpperValue(String(filtros['codigo']))
         : '';
+
       this.nombreDocumentoFiltro = filtros['titulo']
-        ? String(filtros['titulo'])
+        ? this.toUpperValue(String(filtros['titulo']))
         : '';
+
       this.dateFrom = filtros['dateFrom'] ? String(filtros['dateFrom']) : '';
       this.dateTo = filtros['dateTo'] ? String(filtros['dateTo']) : '';
     } else {
       this.codigoExpedienteFiltro = filtros['codigo']
-        ? String(filtros['codigo'])
+        ? this.toUpperValue(String(filtros['codigo']))
         : '';
+
       this.nombreExpedienteFiltro = filtros['nombre']
-        ? String(filtros['nombre'])
+        ? this.toUpperValue(String(filtros['nombre']))
         : '';
+
       this.serieId = filtros['serieId']
         ? String(filtros['serieId'])
         : '';
+
       this.subserieId = filtros['subserieId']
         ? String(filtros['subserieId'])
         : '';
+
       this.soloConElegiblesFiltro = filtros['soloConElegibles']
         ? String(filtros['soloConElegibles'])
         : '';
@@ -306,7 +312,6 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.page = 1;
     this.expedientePage = 1;
     this.mostrarSugerenciasHistorial = false;
-    //this.load();
   }
 
   toggleHistorialBusquedas(): void {
@@ -619,6 +624,26 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     }
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onCodigoDocumentoFiltroInput(): void {
+    this.codigoDocumentoFiltro = this.toUpperValue(this.codigoDocumentoFiltro);
+  }
+
+  onNombreDocumentoFiltroInput(): void {
+    this.nombreDocumentoFiltro = this.toUpperValue(this.nombreDocumentoFiltro);
+  }
+
+  onCodigoExpedienteFiltroInput(): void {
+    this.codigoExpedienteFiltro = this.toUpperValue(this.codigoExpedienteFiltro);
+  }
+
+  onNombreExpedienteFiltroInput(): void {
+    this.nombreExpedienteFiltro = this.toUpperValue(this.nombreExpedienteFiltro);
+  }
+
   private cargarVistaPreviaHtmlDesdeIdGuardado(): void {
     const id = this.previewDocumentoId;
     if (id == null) {
@@ -825,7 +850,7 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
       next: (response) => {
         const blob = response.body;
         if (!blob) {
-          this.abrirErrorDescarga('La descarga no devolvio contenido.');
+          this.abrirErrorDescarga('La descarga no devolvió contenido.');
           return;
         }
         const filename =
@@ -923,8 +948,8 @@ export class ConsultaAprobadosExternoComponent implements OnInit {
     this.api
       .searchExpedientesExternos({
         vista: 'expedientes',
-        codigo: this.codigoExpedienteFiltro || undefined,
-        nombre: this.nombreExpedienteFiltro || undefined,
+        codigo: this.codigoExpedienteFiltro.trim() || undefined,
+        nombre: this.nombreExpedienteFiltro.trim() || undefined,
         page: this.expedientePage,
         pageSize: this.expedientePageSize,
         sortBy: 'nombre',

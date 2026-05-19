@@ -93,6 +93,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     if (this.filtroUnidadId == null) {
       return this.series;
     }
+
     return this.series.filter((s) => s.unidad_id === this.filtroUnidadId);
   }
 
@@ -100,6 +101,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     if (this.vistaPlazos === 'alertas') {
       return this.expedientesListaAlertasVencimiento;
     }
+
     return this.expedientesCargados;
   }
 
@@ -114,14 +116,17 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   get expedientesPagina(): ExpedientePlazoRow[] {
     const lista = this.expedientesListaActiva;
     const start = (this.paginaActual - 1) * this.pageSize;
+
     return lista.slice(start, start + this.pageSize);
   }
 
   get totalPaginas(): number {
     const n = this.expedientesListaActiva.length;
+
     if (n === 0) {
       return 1;
     }
+
     return Math.ceil(n / this.pageSize);
   }
 
@@ -129,6 +134,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     if (this.expedientesListaActiva.length === 0) {
       return 0;
     }
+
     return (this.paginaActual - 1) * this.pageSize + 1;
   }
 
@@ -155,6 +161,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const v = this.route.snapshot.queryParamMap.get('v');
+
     if (v === 'alertas') {
       this.vistaPlazos = 'alertas';
     }
@@ -186,11 +193,17 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     }
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
   aplicarFiltros(): void {
     this.cargarPlazos();
   }
 
-  onFiltroTextoChange(): void {
+  onFiltroTextoChange(value?: string): void {
+    this.filtroTexto = this.toUpperValue(value ?? this.filtroTexto);
+
     if (this.textoDebounceTimer != null) {
       clearTimeout(this.textoDebounceTimer);
     }
@@ -234,7 +247,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
 
     this.plazosService
       .listarPlazos({
-        texto: this.filtroTexto || undefined,
+        texto: this.filtroTexto.trim() || undefined,
         estado: this.filtroEstadoExpediente || undefined,
         unidad_id: this.filtroUnidadId ?? undefined,
         serie_id: this.filtroSerieId ?? undefined,
@@ -284,32 +297,39 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     if (!this.puedeDisposicion(ex)) {
       return;
     }
+
     this.expedienteDisposicion = ex;
     this.disposicionAbierta = true;
   }
 
   puedeDisposicion(ex: ExpedientePlazoRow): boolean {
-    if (ex.estado !== 'CERRADO') {
+    const estado = this.toUpperValue(ex.estado).trim();
+
+    if (estado !== 'CERRADO') {
       return false;
     }
 
     const raw = ex.fecha_vencimiento;
+
     if (raw == null || raw === '') {
       return false;
     }
 
     const v = new Date(raw);
+
     if (Number.isNaN(v.getTime())) {
       return false;
     }
 
     const ymdV = this.fechaALocalYmd(v);
     const ymdHoy = this.fechaALocalYmd(new Date());
+
     if (ymdV > ymdHoy) {
       return false;
     }
 
-    const st = String(ex.disposicion_estado ?? '').trim();
+    const st = this.toUpperValue(ex.disposicion_estado).trim();
+
     if (!st || st === 'DISPOSICION_RECHAZADA') {
       return true;
     }
@@ -318,33 +338,38 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   puedeRevisionDisposicion(ex: ExpedientePlazoRow): boolean {
-    const tipo = String(ex.disposicion_tipo ?? '')
-      .trim()
-      .toUpperCase();
+    const estado = this.toUpperValue(ex.estado).trim();
+    const tipo = this.toUpperValue(ex.disposicion_tipo).trim();
+    const disposicionEstado = this.toUpperValue(ex.disposicion_estado).trim();
+
     return (
-      ex.estado === 'CERRADO' &&
-      String(ex.disposicion_estado ?? '').trim() === DIS_REV_PEND &&
+      estado === 'CERRADO' &&
+      disposicionEstado === DIS_REV_PEND &&
       tipo === 'ELIMINACION'
     );
   }
 
   puedeAprobarDisposicion(ex: ExpedientePlazoRow): boolean {
-    const tipo = String(ex.disposicion_tipo ?? '')
-      .trim()
-      .toUpperCase();
+    const estado = this.toUpperValue(ex.estado).trim();
+    const tipo = this.toUpperValue(ex.disposicion_tipo).trim();
+    const disposicionEstado = this.toUpperValue(ex.disposicion_estado).trim();
+
     return (
-      ex.estado === 'CERRADO' &&
-      String(ex.disposicion_estado ?? '').trim() === DIS_REV_OK &&
+      estado === 'CERRADO' &&
+      disposicionEstado === DIS_REV_OK &&
       tipo === 'ELIMINACION'
     );
   }
 
   puedeRechazarDisposicion(ex: ExpedientePlazoRow): boolean {
-    if (ex.estado !== 'CERRADO') {
+    const estado = this.toUpperValue(ex.estado).trim();
+
+    if (estado !== 'CERRADO') {
       return false;
     }
 
-    const st = String(ex.disposicion_estado ?? '').trim();
+    const st = this.toUpperValue(ex.disposicion_estado).trim();
+
     if (!st || st === 'DISPOSICION_RECHAZADA') {
       return false;
     }
@@ -357,7 +382,8 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   private disposicionEstaEjecutada(disposicionEstado: string): boolean {
-    const s = disposicionEstado.trim().toUpperCase();
+    const s = this.toUpperValue(disposicionEstado).trim();
+
     return (
       s === 'DISPOSICION_EJECUTADA_TRANSFERENCIA' ||
       s === 'DISPOSICION_EJECUTADA_ELIMINACION' ||
@@ -370,6 +396,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     if (!this.puedeRevisionDisposicion(ex)) {
       return;
     }
+
     this.expedienteRevision = ex;
     this.revisionAbierta = true;
   }
@@ -383,6 +410,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     if (!this.puedeAprobarDisposicion(ex)) {
       return;
     }
+
     this.expedienteAprobar = ex;
     this.aprobarAbierto = true;
   }
@@ -396,6 +424,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     if (!this.puedeRechazarDisposicion(ex)) {
       return;
     }
+
     this.expedienteRechazar = ex;
     this.rechazarAbierto = true;
   }
@@ -409,6 +438,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
+
     return `${y}-${m}-${day}`;
   }
 
@@ -425,6 +455,7 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
     if (!this.puedeExtenderVigencia(ex)) {
       return;
     }
+
     this.expedienteExtender = ex;
     this.extenderAbierto = true;
   }
@@ -435,19 +466,18 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   muestraBotonExtender(ex: ExpedientePlazoRow): boolean {
-    return (
-      String(ex.estado ?? '')
-        .trim()
-        .toUpperCase() === 'CERRADO'
-    );
+    return this.toUpperValue(ex.estado).trim() === 'CERRADO';
   }
 
   puedeExtenderVigencia(ex: ExpedientePlazoRow): boolean {
     const raw = ex.fecha_vencimiento;
+
     if (raw == null || raw === '') {
       return false;
     }
+
     const v = new Date(raw);
+
     return !Number.isNaN(v.getTime());
   }
 
@@ -470,7 +500,9 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
         if (payload.abrirRevisionTrasCargar === false) {
           return;
         }
+
         const ex = rows.find((e) => e.id === payload.expedienteId);
+
         if (ex && this.puedeRevisionDisposicion(ex)) {
           this.abrirRevision(ex);
         }
@@ -491,7 +523,9 @@ export class GestionPlazosComponent implements OnInit, OnDestroy {
   }
 
   getEstadoExpedienteClass(estado: string | null): string {
-    switch (estado) {
+    switch (this.toUpperValue(estado).trim()) {
+      case 'ACTIVO':
+        return 'badge exp-activo';
       case 'CERRADO':
         return 'badge exp-cerrado';
       case 'TRANSFERIDO':

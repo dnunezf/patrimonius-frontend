@@ -3,6 +3,7 @@ import { CommonModule, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ConsultaAprobadosApiService } from '../../../../core/services/consulta-aprobados-api.service';
+import { ToastService } from '../../../shared/ui/toast.service';
 
 type EstadoSolicitud = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
 
@@ -77,6 +78,7 @@ type SolicitudExpedienteRow = {
 })
 export class AdminSolicitudesDocumentosPageComponent implements OnInit {
   private readonly api = inject(ConsultaAprobadosApiService);
+  private readonly toast = inject(ToastService);
 
   loading = false;
   errorMsg = '';
@@ -164,6 +166,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
         this.loading = false;
         this.errorMsg =
           e?.error?.message || 'No se pudieron cargar las solicitudes.';
+        this.toast.error('No se pudieron cargar las solicitudes de documentos');
       },
     });
   }
@@ -182,6 +185,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
         this.loading = false;
         this.errorMsg =
           e?.error?.message || 'No se pudieron cargar las solicitudes de expediente.';
+        this.toast.error('No se pudieron cargar las solicitudes de expedientes');
       },
     });
   }
@@ -338,6 +342,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.resolving = false;
+          this.toast.success(`Solicitud ${estado.toLowerCase()}a correctamente`);
           this.closeDetalle();
           this.load();
         },
@@ -345,6 +350,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
           this.resolving = false;
           this.accionError =
             e?.error?.message || 'No se pudo resolver la solicitud.';
+          this.toast.error('No se pudo resolver la solicitud');
         },
       });
   }
@@ -435,6 +441,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.resolving = false;
+          this.toast.success(`Solicitud de expediente ${estado.toLowerCase()}a correctamente`);
           this.closeDetalleExpediente();
           this.loadExpedientes();
         },
@@ -442,6 +449,7 @@ export class AdminSolicitudesDocumentosPageComponent implements OnInit {
           this.resolving = false;
           this.accionError =
             e?.error?.message || 'No se pudo resolver la solicitud de expediente.';
+          this.toast.error('No se pudo resolver la solicitud de expediente');
         },
       });
   }

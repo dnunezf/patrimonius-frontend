@@ -9,12 +9,13 @@ import {
   Validators,
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs/operators';
+import { distinctUntilChanged, startWith } from 'rxjs/operators';
 
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConservationIntakeService } from '../../../../core/services/conservation-intake.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { UnidadService, OrgUnit } from '../../../../core/services/unidad.service';
 import { EDITOR_ID } from '../../../shared/data/catalogs';
 
 import {
@@ -56,6 +57,26 @@ function csvToUniqueArray(value: string): string[] {
     .filter((item, index, arr) => arr.indexOf(item) === index);
 }
 
+type ConservationSearchFilterSnapshot = {
+  q: string;
+  officialCode: string;
+  producingUnit: string;
+  dateFrom: string;
+  dateTo: string;
+  signatureState: string;
+};
+
+function defaultConservationSearchFilterSnapshot(): ConservationSearchFilterSnapshot {
+  return {
+    q: '',
+    officialCode: '',
+    producingUnit: '',
+    dateFrom: '',
+    dateTo: '',
+    signatureState: 'ALL',
+  };
+}
+
 function commaEmailsValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const value = String(control.value || '').trim();
@@ -94,20 +115,50 @@ export class ConservationIntakePageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
+  private readonly unidadService = inject(UnidadService);
 
   readonly loading = signal(false);
   readonly referenceCodeLoading = signal(false);
   readonly candidates = signal<CandidateDoc[]>([]);
   readonly selected = signal<CandidateDoc | null>(null);
+  
+  // Paginación
+  readonly currentPage = signal(1);
+  readonly pageSize = 6;
+  readonly totalCandidates = signal(0);
+
+  // Paginación para documentos en conservación (EAD)
+  readonly currentPageEad = signal(1);
+  readonly pageSizeEad = 10;
 
   readonly series = signal<ArchivalSeries[]>([]);
   readonly subseries = signal<ArchivalSubseries[]>([]);
   readonly expedientes = signal<ArchivalExpediente[]>([]);
+  readonly producingUnits = signal<OrgUnit[]>([]);
+  private lastKnownUnitIdForCatalog: number | null = null;
 
   readonly duplicateState =
     signal<EligibilityState['duplicateChecked']>('NOT_CHECKED');
 
-  readonly totalCandidates = computed(() => this.candidates().length);
+  readonly totalPages = computed(() =>
+    Math.ceil(this.totalCandidates() / this.pageSize)
+  );
+
+  readonly paginatedCandidates = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.candidates().slice(start, end);
+  });
+
+  readonly totalPagesEad = computed(() =>
+    Math.ceil(this.filteredEadDocuments().length / this.pageSizeEad)
+  );
+
+  readonly paginatedEadDocuments = computed(() => {
+    const start = (this.currentPageEad() - 1) * this.pageSizeEad;
+    const end = start + this.pageSizeEad;
+    return this.filteredEadDocuments().slice(start, end);
+  });
 
   readonly selectedCandidatePosition = computed(() => {
     const current = this.selected();
@@ -133,6 +184,24 @@ export class ConservationIntakePageComponent {
 
   readonly eadDocumentsLoading = signal(false);
   readonly eadDocuments = signal<ConservationEadDocumentRow[]>([]);
+  /** Criterios del último envío del formulario de búsqueda (también filtran el listado EAD). */
+  readonly eadFilterCriteria = signal<ConservationSearchFilterSnapshot>(
+    defaultConservationSearchFilterSnapshot(),
+  );
+  readonly filteredEadDocuments = computed(() => {
+    const rows = this.eadDocuments();
+    const criteria = this.eadFilterCriteria();
+    return rows.filter((row) => this.matchesEadListFilters(row, criteria));
+  });
+
+  readonly eadListHintText = computed(() => {
+    const total = this.eadDocuments().length;
+    const shown = this.filteredEadDocuments().length;
+    if (!total) return '0 documento(s)';
+    if (shown === total) return `${total} documento(s)`;
+    return `${shown} de ${total} documento(s)`;
+  });
+
   readonly eadDialogOpen = signal(false);
   readonly eadDialogDocument = signal<ConservationEadDocumentRow | null>(null);
 
@@ -146,6 +215,9 @@ export class ConservationIntakePageComponent {
   );
 
   readonly totalEadDocuments = computed(() => this.eadDocuments().length);
+
+  /** Solo tabla «Documentos en Conservación» (p. ej. al pulsar la estadística). */
+  readonly conservationOnlyView = signal(false);
 
   readonly procedureOptions: Array<{
     value: ProcedureType;
@@ -362,14 +434,13 @@ export class ConservationIntakePageComponent {
   }
 
   onSearchUpperInput(
-    controlName: 'q' | 'officialCode' | 'producingUnit',
+    controlName: 'q' | 'officialCode',
   ): void {
     this.setSearchControlUpperValue(controlName);
   }
 
   onArchivalUpperInput(
     controlName:
-      | 'producingUnit'
       | 'keywords'
       | 'recipientNameRole'
       | 'recipientInstitution'
@@ -382,11 +453,44 @@ export class ConservationIntakePageComponent {
   private normalizeSearchFormTextFields(): void {
     this.setSearchControlUpperValue('q');
     this.setSearchControlUpperValue('officialCode');
-    this.setSearchControlUpperValue('producingUnit');
+  }
+
+  private matchesEadListFilters(
+    row: ConservationEadDocumentRow,
+    f: ConservationSearchFilterSnapshot,
+  ): boolean {
+    const code = (f.officialCode || '').trim();
+    if (code) {
+      const hay = (row.officialCode || '').toUpperCase();
+      if (!hay.includes(code)) return false;
+    }
+
+    const q = (f.q || '').trim();
+    if (q) {
+      const hay = (row.title || '').toUpperCase();
+      if (!hay.includes(q)) return false;
+    }
+
+    const unit = (f.producingUnit || '').trim();
+    if (unit) {
+      const hay = (row.unitName || '').toUpperCase();
+      if (!hay.includes(unit)) return false;
+    }
+
+    const docRaw = (row.documentDate || row.createdAtISO || '').trim();
+    const docDate = docRaw ? docRaw.slice(0, 10) : null;
+
+    if (f.dateFrom) {
+      if (!docDate || docDate < f.dateFrom) return false;
+    }
+    if (f.dateTo) {
+      if (!docDate || docDate > f.dateTo) return false;
+    }
+
+    return true;
   }
 
   private normalizeArchivalTextFields(): void {
-    this.setArchivalControlUpperValue('producingUnit');
     this.setArchivalControlUpperValue('keywords');
     this.setArchivalControlUpperValue('recipientNameRole');
     this.setArchivalControlUpperValue('recipientInstitution');
@@ -509,20 +613,161 @@ export class ConservationIntakePageComponent {
       });
   }
 
+  clearFilters(): void {
+    this.searchForm.reset({
+      q: '',
+      officialCode: '',
+      producingUnit: '',
+      dateFrom: '',
+      dateTo: '',
+      signatureState: 'ALL',
+    });
+
+    this.eadFilterCriteria.set(defaultConservationSearchFilterSnapshot());
+    this.currentPage.set(1);
+    this.currentPageEad.set(1);
+    this.search();
+  }
+
+  // Métodos de paginación
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages()) return;
+    this.currentPage.set(page);
+  }
+
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
+
+  prevPage(): void {
+    this.goToPage(this.currentPage() - 1);
+  }
+
+  firstPage(): void {
+    this.goToPage(1);
+  }
+
+  lastPage(): void {
+    this.goToPage(this.totalPages());
+  }
+
+  private findMatchingUnit(docUnit: string): string {
+    if (!docUnit) return '';
+    
+    const docUnitUpper = docUnit.toUpperCase().trim();
+    
+    // Buscar coincidencia exacta primero
+    const exactMatch = this.producingUnits().find(unit => 
+      unit.name.toUpperCase() === docUnitUpper
+    );
+    if (exactMatch) return exactMatch.name;
+    
+    // Buscar coincidencia parcial (contiene)
+    const partialMatch = this.producingUnits().find(unit => 
+      unit.name.toUpperCase().includes(docUnitUpper) || 
+      docUnitUpper.includes(unit.name.toUpperCase())
+    );
+    if (partialMatch) return partialMatch.name;
+    
+    // Si no hay coincidencia, devolver el valor original (el select lo mostrará como vacío)
+    return '';
+  }
+
+  getPageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const pages: number[] = [];
+
+    // Mostrar máximo 5 páginas
+    const maxVisible = 5;
+    let start = Math.max(1, current - Math.floor(maxVisible / 2));
+    let end = Math.min(total, start + maxVisible - 1);
+
+    // Ajustar el inicio si estamos cerca del final
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }
+
+  // Métodos de paginación para documentos en conservación (EAD)
+  goToPageEad(page: number): void {
+    if (page < 1 || page > this.totalPagesEad()) return;
+    this.currentPageEad.set(page);
+  }
+
+  nextPageEad(): void {
+    this.goToPageEad(this.currentPageEad() + 1);
+  }
+
+  prevPageEad(): void {
+    this.goToPageEad(this.currentPageEad() - 1);
+  }
+
+  firstPageEad(): void {
+    this.goToPageEad(1);
+  }
+
+  lastPageEad(): void {
+    this.goToPageEad(this.totalPagesEad());
+  }
+
+  getPageNumbersEad(): number[] {
+    const total = this.totalPagesEad();
+    const current = this.currentPageEad();
+    const pages: number[] = [];
+
+    // Mostrar máximo 5 páginas
+    const maxVisible = 5;
+    let start = Math.max(1, current - Math.floor(maxVisible / 2));
+    let end = Math.min(total, start + maxVisible - 1);
+
+    // Ajustar el inicio si estamos cerca del final
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }
+
   async search(): Promise<void> {
     this.normalizeSearchFormTextFields();
+    const raw = this.searchForm.getRawValue();
+
+    this.eadFilterCriteria.set({
+      q: String(raw.q ?? ''),
+      officialCode: String(raw.officialCode ?? ''),
+      producingUnit: String(raw.producingUnit ?? ''),
+      dateFrom: String(raw.dateFrom ?? ''),
+      dateTo: String(raw.dateTo ?? ''),
+      signatureState: String(raw.signatureState ?? 'ALL'),
+    });
+
+    this.api.audit('SEARCH_PERFORMED', raw).subscribe();
+
+    if (this.conservationOnlyView()) {
+      this.currentPageEad.set(1);
+      return;
+    }
 
     this.loading.set(true);
     this.selected.set(null);
     this.duplicateState.set('NOT_CHECKED');
+    this.currentPage.set(1);
 
-    this.api
-      .audit('SEARCH_PERFORMED', this.searchForm.getRawValue())
-      .subscribe();
-
-    this.api.searchCandidates(this.searchForm.getRawValue()).subscribe({
+    this.api.searchCandidates(raw).subscribe({
       next: (rows) => {
         this.candidates.set(rows);
+        this.totalCandidates.set(rows.length);
         this.loading.set(false);
       },
       error: (err) => {
@@ -551,6 +796,9 @@ export class ConservationIntakePageComponent {
     this.selected.set(doc);
     this.duplicateState.set('NOT_CHECKED');
 
+    // Buscar la unidad productora que coincida exactamente con las opciones disponibles
+    const matchedUnit = this.findMatchingUnit(doc.producingUnit || '');
+
     this.archivalForm.reset(
       {
         officialCode: '',
@@ -559,7 +807,7 @@ export class ConservationIntakePageComponent {
         documentFlow: (doc.documentFlow ||
           'PRODUCED_SENT') as FinalDocumentFlow,
 
-        producingUnit: this.toUpperValue(doc.producingUnit || ''),
+        producingUnit: matchedUnit,
         keywords: this.toUpperValue(
           Array.isArray(doc.keywords) ? doc.keywords.join(', ') : '',
         ),
@@ -588,12 +836,18 @@ export class ConservationIntakePageComponent {
         senderNameRole: '',
         senderInstitution: '',
       },
-      { emitEvent: true },
+      { emitEvent: false },
     );
 
     this.archivalForm.markAsUntouched();
     this.refreshRetentionEndDate();
     this.refreshReferenceCodePreview(false);
+
+    if (this.producingUnits().length) {
+      const next = this.resolveSelectedUnitId();
+      this.lastKnownUnitIdForCatalog = next;
+      this.fetchArchivalLists(next);
+    }
 
     this.api
       .audit('CANDIDATE_SELECTED', {
@@ -604,21 +858,101 @@ export class ConservationIntakePageComponent {
   }
 
   private loadArchivalStructure(): void {
-    this.api.getSeries().subscribe({
-      next: (rows) => this.series.set(rows),
+    this.setupArchivalCatalogOnUnitChange();
+    this.loadProducingUnits();
+  }
+
+  private setupArchivalCatalogOnUnitChange(): void {
+    this.archivalForm
+      .get('producingUnit')
+      ?.valueChanges.pipe(
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        if (!this.producingUnits().length) return;
+
+        const next = this.resolveSelectedUnitId();
+        const shouldReset =
+          this.lastKnownUnitIdForCatalog !== null &&
+          next !== this.lastKnownUnitIdForCatalog;
+
+        this.lastKnownUnitIdForCatalog = next;
+
+        if (shouldReset) {
+          this.archivalForm.patchValue(
+            {
+              serieId: null,
+              subserieId: null,
+              expedienteId: null,
+              retentionStartDateISO: '',
+              retentionEndDateISO: '',
+            },
+            { emitEvent: false },
+          );
+        }
+
+        this.fetchArchivalLists(next);
+      });
+  }
+
+  private resolveSelectedUnitId(): number | null {
+    const raw = String(
+      this.archivalForm.get('producingUnit')?.value || '',
+    ).trim();
+    if (!raw) return null;
+
+    const docUnitUpper = raw.toUpperCase();
+    const units = this.producingUnits();
+    const exact = units.find((u) => u.name.toUpperCase() === docUnitUpper);
+    if (exact) return exact.id;
+
+    const partial = units.find(
+      (u) =>
+        u.name.toUpperCase().includes(docUnitUpper) ||
+        docUnitUpper.includes(u.name.toUpperCase()),
+    );
+    return partial?.id ?? null;
+  }
+
+  private fetchArchivalLists(unitId: number | null): void {
+    const filter = unitId != null ? { unitId } : undefined;
+
+    this.api.getSeries(filter).subscribe({
+      next: (rows) => {
+        this.series.set(rows);
+        const serieIds = rows.map((r) => r.id);
+        const subFilter =
+          unitId != null ? { allowedSerieIds: serieIds } : undefined;
+
+        this.api.getSubseries(subFilter).subscribe({
+          next: (subRows) => this.subseries.set(subRows),
+          error: () =>
+            this.toasts.error(
+              'No se pudieron cargar las subseries archivísticas.',
+            ),
+        });
+      },
       error: () =>
         this.toasts.error('No se pudieron cargar las series archivísticas.'),
     });
 
-    this.api.getSubseries().subscribe({
-      next: (rows) => this.subseries.set(rows),
-      error: () =>
-        this.toasts.error('No se pudieron cargar las subseries archivísticas.'),
-    });
-
-    this.api.getExpedientes().subscribe({
+    this.api.getExpedientes(filter).subscribe({
       next: (rows) => this.expedientes.set(rows),
       error: () => this.toasts.error('No se pudieron cargar los expedientes.'),
+    });
+  }
+
+  private loadProducingUnits(): void {
+    this.unidadService.list().subscribe({
+      next: (rows) => {
+        this.producingUnits.set(rows);
+        const next = this.resolveSelectedUnitId();
+        this.lastKnownUnitIdForCatalog = next;
+        this.fetchArchivalLists(next);
+      },
+      error: () =>
+        this.toasts.error('No se pudieron cargar las unidades productoras.'),
     });
   }
 
@@ -1151,6 +1485,17 @@ export class ConservationIntakePageComponent {
   /* =========================
    * HU-035 · helpers y flujo
    * ========================= */
+
+  /** Solo listado EAD / despacho (oculta búsqueda y registro). */
+  showConservationDocumentsOnly(): void {
+    this.conservationOnlyView.set(true);
+    this.loadEadDocuments();
+  }
+
+  /** Vuelve a candidatos + registro archivístico. */
+  showFullIntakeWorkflow(): void {
+    this.conservationOnlyView.set(false);
+  }
 
   loadEadDocuments(): void {
     this.eadDocumentsLoading.set(true);

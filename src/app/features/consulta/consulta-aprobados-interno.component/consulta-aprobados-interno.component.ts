@@ -99,6 +99,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   public previewAnexos: any[] = [];
   public previewAnexosLoading = false;
   public previewAnexosError = '';
+
   /** Si el documento en vista previa tiene anexos (tras consultar la API de consulta). */
   public previewTieneAnexos = false;
   private previewAnexosMetaRows: any[] | null = null;
@@ -131,17 +132,45 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.load();
   }
 
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  public onCodigoDocumentoFiltroInput(): void {
+    this.codigoDocumentoFiltro = this.toUpperValue(this.codigoDocumentoFiltro);
+  }
+
+  public onNombreDocumentoFiltroInput(): void {
+    this.nombreDocumentoFiltro = this.toUpperValue(this.nombreDocumentoFiltro);
+  }
+
+  public onCodigoExpedienteFiltroInput(): void {
+    this.codigoExpedienteFiltro = this.toUpperValue(this.codigoExpedienteFiltro);
+  }
+
+  public onNombreExpedienteFiltroInput(): void {
+    this.nombreExpedienteFiltro = this.toUpperValue(this.nombreExpedienteFiltro);
+  }
+
   public get subseriesFiltradas() {
     const list = this.filtros?.subseries ?? [];
     const sid = Number(this.serieId);
-    if (!Number.isFinite(sid) || sid <= 0) return list;
+
+    if (!Number.isFinite(sid) || sid <= 0) {
+      return list;
+    }
+
     return list.filter((s) => Number(s.serie_id) === sid);
   }
 
   public get subseriesFiltradasExp() {
     const list = this.filtros?.subseries ?? [];
     const sid = Number(this.serieIdExp);
-    if (!Number.isFinite(sid) || sid <= 0) return list;
+
+    if (!Number.isFinite(sid) || sid <= 0) {
+      return list;
+    }
+
     return list.filter((s) => Number(s.serie_id) === sid);
   }
 
@@ -157,8 +186,8 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.api
       .searchInterno({
         vista: 'documentos',
-        codigo: this.codigoDocumentoFiltro || undefined,
-        titulo: this.nombreDocumentoFiltro || undefined,
+        codigo: this.codigoDocumentoFiltro.trim() || undefined,
+        titulo: this.nombreDocumentoFiltro.trim() || undefined,
         page: this.page,
         pageSize: this.pageSize,
         sortBy: this.sortBy,
@@ -196,8 +225,8 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.api
       .searchExpedientesInternos({
         vista: 'expedientes',
-        codigo: this.codigoExpedienteFiltro || undefined,
-        nombre: this.nombreExpedienteFiltro || undefined,
+        codigo: this.codigoExpedienteFiltro.trim() || undefined,
+        nombre: this.nombreExpedienteFiltro.trim() || undefined,
         page: this.expedientePage,
         pageSize: this.expedientePageSize,
         sortBy: 'nombre',
@@ -226,13 +255,16 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public cambiarVista(vista: 'documentos' | 'expedientes'): void {
     if (this.vistaActual === vista) return;
+
     this.vistaActual = vista;
     this.errorMsg = '';
+
     if (vista === 'documentos') {
       this.page = 1;
       this.load();
       return;
     }
+
     this.expedientePage = 1;
     this.loadExpedientes();
   }
@@ -327,7 +359,9 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public descargarZipExpediente(row: ConsultaExpedienteRow): void {
     if (this.zipDownloading) return;
+
     this.zipDownloading = true;
+
     this.api.downloadExpedienteZip(row.id, false).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
@@ -349,11 +383,13 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     if (row.total_documentos_consulta != null) {
       return Number(row.total_documentos_consulta);
     }
+
     return row.total_documentos ?? '—';
   }
 
   public get expedienteRangeStart(): number {
     if (this.totalExpedientes === 0) return 0;
+
     return (this.expedientePage - 1) * this.expedientePageSize + 1;
   }
 
@@ -418,38 +454,48 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
     if (vista === 'documentos') {
       this.codigoDocumentoFiltro = filtros['codigo']
-        ? String(filtros['codigo'])
+        ? this.toUpperValue(String(filtros['codigo']))
         : '';
+
       this.nombreDocumentoFiltro = filtros['titulo']
-        ? String(filtros['titulo'])
+        ? this.toUpperValue(String(filtros['titulo']))
         : '';
+
       this.serieId = filtros['serieId']
         ? String(filtros['serieId'])
         : '';
+
       this.subserieId = filtros['subserieId']
         ? String(filtros['subserieId'])
         : '';
+
       this.expedienteId = filtros['expedienteId']
         ? String(filtros['expedienteId'])
         : '';
+
       this.dateFrom = filtros['dateFrom'] ? String(filtros['dateFrom']) : '';
       this.dateTo = filtros['dateTo'] ? String(filtros['dateTo']) : '';
     } else {
       this.codigoExpedienteFiltro = filtros['codigo']
-        ? String(filtros['codigo'])
+        ? this.toUpperValue(String(filtros['codigo']))
         : '';
+
       this.nombreExpedienteFiltro = filtros['nombre']
-        ? String(filtros['nombre'])
+        ? this.toUpperValue(String(filtros['nombre']))
         : '';
+
       this.serieIdExp = filtros['serieId']
         ? String(filtros['serieId'])
         : '';
+
       this.subserieIdExp = filtros['subserieId']
         ? String(filtros['subserieId'])
         : '';
+
       this.expedienteDateFrom = filtros['dateFrom']
         ? String(filtros['dateFrom'])
         : '';
+
       this.expedienteDateTo = filtros['dateTo']
         ? String(filtros['dateTo'])
         : '';
@@ -458,6 +504,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     if (filtros['sortBy']) {
       this.sortBy = String(filtros['sortBy']);
     }
+
     if (filtros['sortDir'] === 'asc' || filtros['sortDir'] === 'desc') {
       this.sortDir = filtros['sortDir'];
     }
@@ -496,8 +543,11 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   /** ===== NUEVO ===== */
   public formatDateTime(iso: string | null | undefined): string {
     if (!iso) return '—';
+
     const d = new Date(iso);
+
     if (Number.isNaN(d.getTime())) return String(iso);
+
     return d.toLocaleString('es-CR', {
       day: 'numeric',
       month: 'short',
@@ -515,12 +565,14 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public onSort(col: string): void {
     if (this.vistaActual !== 'documentos') return;
+
     if (this.sortBy === col) {
       this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
     } else {
       this.sortBy = col;
       this.sortDir = 'desc';
     }
+
     this.page = 1;
     this.load();
   }
@@ -531,8 +583,10 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         this.page--;
         this.load();
       }
+
       return;
     }
+
     if (this.expedientePage > 1) {
       this.expedientePage--;
       this.loadExpedientes();
@@ -545,8 +599,10 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         this.page++;
         this.load();
       }
+
       return;
     }
+
     if (this.expedientePage < this.totalExpedientesPages) {
       this.expedientePage++;
       this.loadExpedientes();
@@ -573,8 +629,11 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public formatDate(iso: string | null | undefined): string {
     if (!iso) return '—';
+
     const d = new Date(iso);
+
     if (Number.isNaN(d.getTime())) return String(iso);
+
     return d.toLocaleDateString('es-CR', {
       day: 'numeric',
       month: 'long',
@@ -584,6 +643,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public ver(row: ConsultaDocumentoRow): void {
     if (row.canDownload === false) return;
+
     this.resetPreviewAnexos();
     this.previewDocId = row.id;
 
@@ -604,6 +664,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       next: (blob) => void this.handlePreviewPdfBlob(blob, row),
       error: () => this.cargarVistaPreviaHtml(row),
     });
+
     this.loadPreviewAnexosMeta(row.id);
   }
 
@@ -615,36 +676,47 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       this.cargarVistaPreviaHtml(row);
       return;
     }
+
     const mime = (blob.type || '').toLowerCase();
+
     if (mime.includes('json')) {
       this.cargarVistaPreviaHtml(row);
       return;
     }
+
     const isPdfMime =
       mime.includes('pdf') || mime.includes('octet-stream') || mime === '';
+
     if (!isPdfMime && !(await this.blobStartsWithPdfSignature(blob))) {
       this.cargarVistaPreviaHtml(row);
       return;
     }
+
     this.previewMode = 'pdf';
     this.previewLoading = false;
     this.cdr.detectChanges();
+
     setTimeout(() => void this.renderPdfIntoHost(blob), 0);
   }
 
   private async blobStartsWithPdfSignature(blob: Blob): Promise<boolean> {
     if (blob.size < 4) return false;
+
     const buf = await blob.slice(0, 4).arrayBuffer();
     const u = new Uint8Array(buf);
+
     return u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46;
   }
 
   private cargarVistaPreviaHtml(row: ConsultaDocumentoRow): void {
     this.previewMode = 'html';
+
     this.api.getPreview(row.id).subscribe({
       next: (p) => {
         this.previewTitle = p.titulo || this.previewTitle;
+
         const html = String(p.contenido || '').trim();
+
         this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(html);
         this.previewLoading = false;
         this.cdr.markForCheck();
@@ -661,22 +733,28 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   private clearPdfHost(): void {
     const el = this.pdfHost?.nativeElement;
+
     if (el) el.innerHTML = '';
   }
 
   private async renderPdfIntoHost(blob: Blob, attempt = 0): Promise<void> {
     const host = this.pdfHost?.nativeElement;
+
     if (!host) {
       if (attempt < 8) {
         setTimeout(() => void this.renderPdfIntoHost(blob, attempt + 1), 40);
         return;
       }
+
       this.cargarVistaPreviaHtmlDesdeIdGuardado();
       return;
     }
+
     host.innerHTML = '';
+
     try {
       const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist');
+
       GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
 
       const data = await blob.arrayBuffer();
@@ -684,21 +762,27 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       const total = pdf.numPages;
       const max = ConsultaAprobadosInternoComponent.PDF_MAX_PAGES;
       const pagesToRender = Math.min(total, max);
+
       this.pdfPreviewTruncated = total > max;
       this.cdr.markForCheck();
 
       const scale = 1.35;
+
       for (let i = 1; i <= pagesToRender; i++) {
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale });
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d', { alpha: false });
+
         if (!ctx) continue;
+
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         canvas.className = 'consulta-pdf-canvas';
         canvas.setAttribute('draggable', 'false');
+
         const task = page.render({ canvasContext: ctx, viewport });
+
         await task.promise;
         host.appendChild(canvas);
       }
@@ -713,6 +797,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   private cargarVistaPreviaHtmlDesdeIdGuardado(): void {
     const id = this.previewDocumentoId;
+
     if (id == null) {
       this.previewLoading = false;
       this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(
@@ -721,7 +806,12 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       this.cdr.markForCheck();
       return;
     }
-    this.cargarVistaPreviaHtml({ id, codigo: '', titulo: this.previewTitle } as ConsultaDocumentoRow);
+
+    this.cargarVistaPreviaHtml({
+      id,
+      codigo: '',
+      titulo: this.previewTitle,
+    } as ConsultaDocumentoRow);
   }
 
   public cerrarPreview(): void {
@@ -738,13 +828,17 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public togglePreviewAnexos(): void {
     const docId = Number(this.previewDocId ?? this.previewDocumentoId);
+
     if (!Number.isFinite(docId) || docId <= 0) return;
+
     this.previewAnexosOpen = !this.previewAnexosOpen;
+
     if (this.previewAnexosOpen) {
       this.cargarPreviewAnexos();
     } else {
       this.previewAnexosError = '';
     }
+
     this.cdr.markForCheck();
   }
 
@@ -759,20 +853,27 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   private loadPreviewAnexosMeta(docId: number): void {
     if (!Number.isFinite(docId) || docId <= 0) return;
+
     this.previewTieneAnexos = false;
     this.previewAnexosMetaRows = null;
+
     this.api.listAnexosConsulta(docId).subscribe({
       next: (rows) => {
         const actual = Number(this.previewDocId ?? this.previewDocumentoId);
+
         if (actual !== docId) return;
+
         const list = rows ?? [];
+
         this.previewAnexosMetaRows = list;
         this.previewTieneAnexos = list.length > 0;
         this.cdr.markForCheck();
       },
       error: () => {
         const actual = Number(this.previewDocId ?? this.previewDocumentoId);
+
         if (actual !== docId) return;
+
         this.previewAnexosMetaRows = [];
         this.previewTieneAnexos = false;
         this.cdr.markForCheck();
@@ -782,7 +883,9 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   private cargarPreviewAnexos(): void {
     const id = Number(this.previewDocId ?? this.previewDocumentoId);
+
     if (!Number.isFinite(id) || id <= 0) return;
+
     if (this.previewAnexosMetaRows != null && this.previewAnexosMetaRows.length > 0) {
       this.previewAnexosLoading = false;
       this.previewAnexos = [...this.previewAnexosMetaRows];
@@ -790,9 +893,11 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       this.cdr.markForCheck();
       return;
     }
+
     this.previewAnexosLoading = true;
     this.previewAnexosError = '';
     this.previewAnexos = [];
+
     this.api.listAnexosConsulta(id).subscribe({
       next: (rows) => {
         this.previewAnexosLoading = false;
@@ -811,13 +916,19 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public descargarPreviewAnexo(anexo: any): void {
     const docId = Number(this.previewDocId ?? this.previewDocumentoId);
+
     if (!Number.isFinite(docId) || docId <= 0) return;
+
     const anexoId = Number(anexo?.id ?? anexo?.anexo_id);
+
     if (!Number.isFinite(anexoId) || anexoId <= 0) return;
+
     const nombre =
       String(anexo?.nombre_original ?? anexo?.nombre ?? `anexo_${anexoId}`).trim() ||
       `anexo_${anexoId}`;
+
     this.previewAnexosError = '';
+
     this.api.downloadAnexoConsulta(docId, anexoId).subscribe({
       next: (blob) => void this.handleAnexoDownloadBlob(blob, nombre),
       error: (err: unknown) => void this.handleAnexoDownloadError(err),
@@ -826,6 +937,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   private async handleAnexoDownloadBlob(blob: Blob, filename: string): Promise<void> {
     const mime = (blob.type || '').toLowerCase();
+
     if (mime.includes('json')) {
       try {
         const t = await blob.text();
@@ -835,22 +947,27 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
       } catch {
         this.previewAnexosError = 'No se pudo descargar el anexo.';
       }
+
       this.cdr.markForCheck();
       return;
     }
+
     this.guardarBlobAnexo(blob, filename);
   }
 
   private async handleAnexoDownloadError(err: unknown): Promise<void> {
     let msg = 'No se pudo descargar el anexo.';
+
     const e = err as {
       error?: Blob | { message?: string };
       message?: string;
     };
+
     if (e.error instanceof Blob) {
       try {
         const t = await e.error.text();
         const j = JSON.parse(t) as { message?: string };
+
         if (j.message?.trim()) msg = j.message.trim();
       } catch {
         /* mantener msg */
@@ -858,6 +975,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     } else if (e.error && typeof e.error === 'object' && 'message' in e.error) {
       msg = String((e.error as { message?: string }).message || msg);
     }
+
     this.previewAnexosError = msg;
     this.cdr.markForCheck();
   }
@@ -865,9 +983,11 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
   private guardarBlobAnexo(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
+
     a.href = url;
     a.download = filename;
     a.click();
+
     URL.revokeObjectURL(url);
   }
 
@@ -877,20 +997,25 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     this.api.downloadConsulta(row.id).subscribe({
       next: (response) => {
         const blob = response.body;
+
         if (!blob) {
           this.downloadErrorTitle = 'No se pudo descargar';
-          this.downloadErrorMessage = 'La descarga no devolvio contenido.';
+          this.downloadErrorMessage = 'La descarga no devolvió contenido.';
           this.downloadErrorOpen = true;
           return;
         }
+
         const filename =
           this.getFilenameFromContentDisposition(response.headers.get('content-disposition')) ||
           this.getDefaultDownloadName(row, blob.type);
+
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
+
         a.href = url;
         a.download = filename;
         a.click();
+
         URL.revokeObjectURL(url);
       },
       error: (err: unknown) => {
@@ -901,7 +1026,9 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   private getFilenameFromContentDisposition(value: string | null): string | null {
     if (!value) return null;
+
     const utf8 = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(value);
+
     if (utf8?.[1]) {
       try {
         return decodeURIComponent(utf8[1]).replace(/^["']|["']$/g, '').trim() || null;
@@ -909,27 +1036,33 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
         return utf8[1].replace(/^["']|["']$/g, '').trim() || null;
       }
     }
+
     const plain = /filename\s*=\s*("?)([^";]+)\1/i.exec(value);
+
     return plain?.[2]?.trim() || null;
   }
 
   private getDefaultDownloadName(row: ConsultaDocumentoRow, mimeType: string): string {
     const base = String(row.codigo || 'documento').trim() || 'documento';
     const ext = String(mimeType || '').toLowerCase().includes('zip') ? 'zip' : 'pdf';
+
     return `${base}.${ext}`;
   }
 
   private async handleDownloadHttpError(err: unknown): Promise<void> {
     let msg =
       'No se pudo descargar el documento. Intente de nuevo o contacte a soporte.';
+
     const e = err as {
       error?: Blob | { message?: string };
       message?: string;
     };
+
     if (e.error instanceof Blob) {
       try {
         const t = await e.error.text();
         const j = JSON.parse(t) as { message?: string };
+
         if (j.message) msg = j.message;
       } catch {
         /* mantener mensaje por defecto */
@@ -937,6 +1070,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
     } else if (e.error && typeof e.error === 'object' && 'message' in e.error) {
       msg = String((e.error as { message?: string }).message || msg);
     }
+
     this.downloadErrorTitle = 'No se pudo descargar';
     this.downloadErrorMessage = msg;
     this.downloadErrorOpen = true;
@@ -953,11 +1087,13 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
 
   public get rangeStart(): number {
     if (this.totalItems === 0) return 0;
+
     return (this.page - 1) * this.pageSize + 1;
   }
 
   public get rangeEnd(): number {
     if (this.totalItems === 0) return 0;
+
     return Math.min(this.page * this.pageSize, this.totalItems);
   }
 
@@ -1025,7 +1161,7 @@ export class ConsultaAprobadosInternoComponent implements OnInit {
           soloLectura: true,
           origen: 'preview-consulta',
         },
-      }
+      },
     );
 
     this.cerrarPreview();

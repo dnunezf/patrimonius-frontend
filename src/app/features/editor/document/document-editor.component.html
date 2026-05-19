@@ -2,64 +2,6 @@
 
 <div class="editor-grid">
   <div class="editor-main">
-    <div class="top-bar">
-      <button class="btn-back" type="button" (click)="goBack()">
-        ← Volver al Dashboard
-      </button>
-    </div>
-
-    <div class="toolbar">
-      <div class="toolbar__title">
-        <h2>{{ isReadOnly ? 'Visualizador de Documento' : 'Editor Colaborativo' }}</h2>
-        <p class="toolbar__hint">
-          {{
-            isReadOnly
-              ? 'Modo lectura • Sin edición'
-              : 'Cambios en tiempo real • Guardado por versiones • Comentarios'
-          }}
-        </p>
-      </div>
-
-      <div class="buttons" *ngIf="!isReadOnly">
-        <label class="btn-primary" title="Importar un archivo .docx">
-          Importar DOCX
-          <input type="file" accept=".docx" (change)="importDocx($event)" />
-        </label>
-
-        <button class="btn-save" type="button" (click)="save()" [disabled]="saving">
-          {{ saving ? 'Guardando…' : 'Guardar' }}
-        </button>
-
-        <button
-          class="btn-save"
-          type="button"
-          (click)="openHistory()"
-          [disabled]="restoring"
-          title="Restaurar una versión anterior"
-        >
-          Restaurar versión
-        </button>
-
-        <button type="button" class="btn-secondary" (click)="openConsultaExpedientes()">
-          Consultar expedientes
-        </button>
-
-        <button type="button" class="btn-secondary" (click)="openMetadata()">
-          Metadatos
-        </button>
-
-        <button type="button" class="btn-accent" (click)="openRequestSignatureModal()">
-          Solicitar Firma
-        </button>
-      </div>
-
-      <div class="status">
-        <span *ngIf="info" class="muted">{{ info }}</span>
-        <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
-        <span *ngIf="error" class="err">{{ error }}</span>
-        <span *ngIf="isReadOnly" class="muted">🔒 Solo lectura</span>
-      </div>
-    </div>
 
     <div class="page-layout-panel" *ngIf="showPageLayoutPanel && !isReadOnly">
       <label class="layout-toggle">
@@ -89,7 +31,7 @@
             [innerHTML]="trustHtml(docxHeaderFirstHtml)"
             (input)="onLayoutHtmlChange('headerFirst', $event)"
           ></div>
-          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <label class="layout-size-label">Tamaño imagen (alto px)</label>
           <input type="range" min="40" max="320" [value]="imageSizeByTarget.headerFirst" (input)="setHeaderFooterImageSize('headerFirst', $event)" />
           <div class="layout-actions-row">
             <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerFirst', 25)">25%</button>
@@ -113,7 +55,7 @@
             [innerHTML]="trustHtml(docxHeaderHtml)"
             (input)="onLayoutHtmlChange('headerDefault', $event)"
           ></div>
-          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <label class="layout-size-label">Tamaño imagen (alto px)</label>
           <input type="range" min="40" max="320" [value]="imageSizeByTarget.headerDefault" (input)="setHeaderFooterImageSize('headerDefault', $event)" />
           <div class="layout-actions-row">
             <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('headerDefault', 25)">25%</button>
@@ -137,7 +79,7 @@
             [innerHTML]="trustHtml(docxFooterFirstHtml)"
             (input)="onLayoutHtmlChange('footerFirst', $event)"
           ></div>
-          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <label class="layout-size-label">Tamaño imagen (alto px)</label>
           <input type="range" min="40" max="320" [value]="imageSizeByTarget.footerFirst" (input)="setHeaderFooterImageSize('footerFirst', $event)" />
           <div class="layout-actions-row">
             <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerFirst', 25)">25%</button>
@@ -161,7 +103,7 @@
             [innerHTML]="trustHtml(docxFooterHtml)"
             (input)="onLayoutHtmlChange('footerDefault', $event)"
           ></div>
-          <label class="layout-size-label">Tamano imagen (alto px)</label>
+          <label class="layout-size-label">Tamaño imagen (alto px)</label>
           <input type="range" min="40" max="320" [value]="imageSizeByTarget.footerDefault" (input)="setHeaderFooterImageSize('footerDefault', $event)" />
           <div class="layout-actions-row">
             <button type="button" class="btn-secondary mini" (click)="setHeaderFooterImageSizePreset('footerDefault', 25)">25%</button>
@@ -180,18 +122,6 @@
     </div>
 
     <div class="sheet sheet--word">
-      <div class="doc-structure-actions" *ngIf="!isReadOnly">
-        <button type="button" class="btn-secondary" (click)="createOrUpdateIndex()">
-          Crear índice
-        </button>
-        <button type="button" class="btn-secondary" (click)="togglePageLayoutPanel()">
-          {{ showPageLayoutPanel ? 'Ocultar encabezado/pie' : 'Encabezado y pie' }}
-        </button>
-        <span class="page-current-indicator">
-          Página actual: {{ currentVisualPage }} de {{ estimatedPages }}
-        </span>
-      </div>
-
       <div
         class="word-fixed-header word-fixed-header--first"
         *ngIf="useDifferentFirstPage && currentVisualPage === 1 && docxHeaderFirstHtml"
@@ -234,6 +164,101 @@
   </div>
 
   <aside class="editor-sidebar">
+    <div class="card sidebar-quick card--sticky">
+      <button type="button" class="btn-back btn-back--sidebar" (click)="goBack()">
+        ← Volver al dashboard
+      </button>
+
+      <ng-container *ngIf="!isReadOnly">
+        <div class="sidebar-doc-actions">
+          <button type="button" class="btn-secondary btn-full" (click)="createOrUpdateIndex()">
+            Crear índice
+          </button>
+          <button type="button" class="btn-secondary btn-full" (click)="togglePageLayoutPanel()">
+            {{ showPageLayoutPanel ? 'Ocultar encabezado/pie' : 'Encabezado y pie' }}
+          </button>
+        </div>
+
+      </ng-container>
+
+      <div class="page-indicators page-indicators--sidebar">
+        <span class="page-current-indicator">
+          Página: {{ currentVisualPage }} / {{ estimatedPages }}
+        </span>
+        <span class="page-scroll-hint" *ngIf="!isReadOnly">Alt + rueda: por página</span>
+      </div>
+    </div>
+
+    <div class="card" *ngIf="!isReadOnly">
+      <div class="toolbar">
+        <div class="font-selector">
+          <h5 class="section-title">Formato de Texto</h5>
+          <label class="field">
+            Fuente:
+            <select [(ngModel)]="selectedFont" (change)="onFontChange()" class="font-select">
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Calibri">Calibri</option>
+              <option value="Verdana">Verdana</option>
+            </select>
+          </label>
+
+          <label class="field">
+            Tamaño:
+            <select [(ngModel)]="selectedFontSize" (change)="onFontSizeChange()" class="font-select">
+              <option *ngFor="let s of availableFontSizes" [value]="s.value">{{ s.label }}</option>
+            </select>
+          </label>
+        </div>
+
+        <h4 class="card-title">
+          <img src="assets/icons/document-create.png" width="18" alt="" />
+          {{ isReadOnly ? 'Visualizador de Documento' : 'Editor Colaborativo' }}
+        </h4>
+
+        <div class="buttons">
+
+          <label class="btn-primary" title="Importar un archivo .docx">
+            Importar DOCX
+            <input type="file" accept=".docx" (change)="importDocx($event)" />
+          </label>
+
+          <button class="btn-save" type="button" (click)="save()" [disabled]="saving">
+            {{ saving ? 'Guardando…' : 'Guardar' }}
+          </button>
+
+          <button
+            class="btn-save"
+            type="button"
+            (click)="openHistory()"
+            [disabled]="restoring"
+            title="Restaurar una versión anterior"
+          >
+            Restaurar versión
+          </button>
+
+          <button type="button" class="btn-secondary" (click)="openConsultaExpedientes()">
+            Consultar expedientes
+          </button>
+
+          <button type="button" class="btn-secondary" (click)="openMetadata()">
+            Metadatos
+          </button>
+
+          <button type="button" class="btn-accent" (click)="openRequestSignatureModal()">
+            Solicitar Firma
+          </button>
+        </div>
+
+        <div class="status">
+          <span *ngIf="info" class="muted">{{ info }}</span>
+          <span *ngIf="sigMsg" class="ok">{{ sigMsg }}</span>
+          <span *ngIf="error" class="err">{{ error }}</span>
+          <span *ngIf="isReadOnly" class="muted">🔒 Solo lectura</span>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h4 class="card-title">
         <img src="assets/icons/activeUser.png" width="18" alt="" />
@@ -321,7 +346,7 @@
 
   <div class="modal__body">
     <p class="muted">
-      Seleccioná los firmantes que deben firmar este documento. Luego confirmá la solicitud.
+      Selecciona los firmantes que deben firmar este documento. Luego confirma la solicitud.
     </p>
 
     <div *ngIf="requestSigLoading" class="muted">Cargando usuarios…</div>

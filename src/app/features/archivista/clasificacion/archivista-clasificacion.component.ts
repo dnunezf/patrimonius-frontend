@@ -181,6 +181,54 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     }
   }
 
+  onFiltroSerieCodigoInput(): void {
+    this.filtroSerieCodigo = this.toUpperValue(this.filtroSerieCodigo);
+  }
+
+  onFiltroSerieNombreInput(): void {
+    this.filtroSerieNombre = this.toUpperValue(this.filtroSerieNombre);
+  }
+
+  onFiltroSerieUnidadInput(): void {
+    this.filtroSerieUnidad = this.toUpperValue(this.filtroSerieUnidad);
+  }
+
+  onFiltroSubserieCodigoInput(): void {
+    this.filtroSubserieCodigo = this.toUpperValue(this.filtroSubserieCodigo);
+  }
+
+  onFiltroSubserieNombreInput(): void {
+    this.filtroSubserieNombre = this.toUpperValue(this.filtroSubserieNombre);
+  }
+
+  onFiltroSubserieSerieInput(): void {
+    this.filtroSubserieSerie = this.toUpperValue(this.filtroSubserieSerie);
+  }
+
+  onFiltroExpedienteCodigoInput(): void {
+    this.filtroExpedienteCodigo = this.toUpperValue(this.filtroExpedienteCodigo);
+  }
+
+  onFiltroExpedienteNombreInput(): void {
+    this.filtroExpedienteNombre = this.toUpperValue(this.filtroExpedienteNombre);
+  }
+
+  onFiltroExpedienteUnidadInput(): void {
+    this.filtroExpedienteUnidad = this.toUpperValue(this.filtroExpedienteUnidad);
+  }
+
+  onFiltroExpedienteSerieInput(): void {
+    this.filtroExpedienteSerie = this.toUpperValue(this.filtroExpedienteSerie);
+  }
+
+  onFiltroExpedienteSubserieInput(): void {
+    this.filtroExpedienteSubserie = this.toUpperValue(this.filtroExpedienteSubserie);
+  }
+
+  onFiltroExpedienteEstadoInput(): void {
+    this.filtroExpedienteEstado = this.toUpperValue(this.filtroExpedienteEstado);
+  }
+
   cargarSeries(): void {
     this.loadingSeries = true;
     this.errorSeries = '';
@@ -253,6 +301,10 @@ export class ArchivistaClasificacionComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.expedienteDialogOpen = true;
     }, 0);
+  }
+
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
   }
 
   aplicarFiltroSeries(): void {

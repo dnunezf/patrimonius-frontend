@@ -185,7 +185,7 @@
           [attr.aria-invalid]="showErr('unidadId')"
           [attr.aria-describedby]="'err-u'"
         >
-          <option *ngIf="unitsLoading" [ngValue]="null">Loading units…</option>
+          <option *ngIf="unitsLoading" [ngValue]="null">Cargando unidades…</option>
           <option
             *ngFor="let u of units; trackBy: trackByUnidad"
             [ngValue]="u.id"

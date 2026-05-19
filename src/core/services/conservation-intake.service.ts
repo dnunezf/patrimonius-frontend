@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
-import { Observable, EMPTY, map } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable, EMPTY, of, map } from 'rxjs';
+import { catchError, mergeMap } from 'rxjs/operators';
 import {
   ArchivalExpediente,
   ArchivalSeries,
@@ -63,6 +63,19 @@ export type DispatchEmailResponse = {
   message: string;
   dispatchId?: number;
   documentId: number;
+};
+
+/**
+ * Filtro opcional para series / subseries / expedientes archivísticos.
+ * Sin `unitId`, el API mantiene el alcance del usuario autenticado (comportamiento previo).
+ */
+export type ArchivalCatalogFilter = {
+  unitId?: number | null;
+  /**
+   * IDs de series ya filtradas por unidad; evita un segundo GET de series en `getSubseries`.
+   * Implica petición `GET /subseries?all=1` y filtrado en cliente.
+   */
+  allowedSerieIds?: number[] | null;
 };
 
 function extractArray<T = any>(raw: any): T[] {
@@ -156,6 +169,9 @@ function isSelectableExpedienteRow(item: any): boolean {
     String(aperturaRaw).trim() !== ''
   ) {
     const apertura = normalizeText(aperturaRaw);
+    if (['CERRADO', 'CERRADA', 'CLOSED'].includes(apertura)) {
+      return false;
+    }
     return (
       isActive &&
       isOpenByCloseDate &&
@@ -237,8 +253,24 @@ export class ConservationIntakeService {
     }>(`${this.base}/intakes`, payload);
   }
 
-  getSeries(): Observable<ArchivalSeries[]> {
-    return this.http.get<any>(`${this.apiRoot}/api/series`).pipe(
+  getSeries(
+    filter?: ArchivalCatalogFilter,
+  ): Observable<ArchivalSeries[]> {
+    const unitId = filter?.unitId;
+    const scopedByUnit =
+      unitId != null &&
+      unitId !== undefined &&
+      Number.isFinite(Number(unitId));
+
+    const url = scopedByUnit
+      ? `${this.apiRoot}/api/series/activas`
+      : `${this.apiRoot}/api/series`;
+
+    const params = scopedByUnit
+      ? new HttpParams().set('unidad_id', String(unitId))
+      : undefined;
+
+    return this.http.get<any>(url, params ? { params } : {}).pipe(
       map((raw) =>
         extractArray(raw)
           .filter((item: any) => isActiveCatalogRow(item))
@@ -262,7 +294,54 @@ export class ConservationIntakeService {
     );
   }
 
-  getSubseries(): Observable<ArchivalSubseries[]> {
+  getSubseries(
+    filter?: ArchivalCatalogFilter,
+  ): Observable<ArchivalSubseries[]> {
+    const unitId = filter?.unitId;
+    const allowedSerieIds = filter?.allowedSerieIds;
+
+    if (Array.isArray(allowedSerieIds) && allowedSerieIds.length === 0) {
+      return of([]);
+    }
+
+    if (Array.isArray(allowedSerieIds) && allowedSerieIds.length > 0) {
+      const allowed = new Set(allowedSerieIds.map((id) => Number(id)));
+      const params = new HttpParams().set('all', '1');
+
+      return this.http
+        .get<any>(`${this.apiRoot}/subseries`, { params })
+        .pipe(
+          map((raw) =>
+            extractArray(raw)
+              .filter((item: any) => isActiveCatalogRow(item))
+              .map((item: any) => ({
+                id: Number(item.id),
+                code: String(item.codigo ?? item.code ?? ''),
+                name: String(item.nombre ?? item.name ?? ''),
+                serieId: Number(item.serie_id ?? item.serieId ?? 0),
+                active: true,
+              }))
+              .filter((row: ArchivalSubseries) =>
+                allowed.has(Number(row.serieId)),
+              ),
+          ),
+        );
+    }
+
+    if (
+      unitId != null &&
+      unitId !== undefined &&
+      Number.isFinite(Number(unitId))
+    ) {
+      return this.getSeries({ unitId }).pipe(
+        mergeMap((series) => {
+          const ids = series.map((s) => s.id);
+          if (!ids.length) return of([]);
+          return this.getSubseries({ allowedSerieIds: ids });
+        }),
+      );
+    }
+
     return this.http.get<any>(`${this.apiRoot}/subseries`).pipe(
       map((raw) =>
         extractArray(raw)
@@ -278,8 +357,19 @@ export class ConservationIntakeService {
     );
   }
 
-  getExpedientes(): Observable<ArchivalExpediente[]> {
-    const params = new HttpParams().set('estado', 'ACTIVO');
+  getExpedientes(
+    filter?: ArchivalCatalogFilter,
+  ): Observable<ArchivalExpediente[]> {
+    let params = new HttpParams().set('estado', 'ACTIVO');
+
+    const unitId = filter?.unitId;
+    if (
+      unitId != null &&
+      unitId !== undefined &&
+      Number.isFinite(Number(unitId))
+    ) {
+      params = params.set('all', '1').set('unidad_id', String(unitId));
+    }
 
     return this.http
       .get<any>(`${this.apiRoot}/api/expedientes`, { params })
@@ -287,36 +377,39 @@ export class ConservationIntakeService {
         map((raw) =>
           extractArray(raw)
             .filter((item: any) => isSelectableExpedienteRow(item))
-            .map((item: any) => ({
-              id: Number(item.id),
-              code: String(item.codigo ?? item.code ?? ''),
-              name: String(item.nombre ?? item.name ?? ''),
-              serieId: Number(item.serie_id ?? item.serieId ?? 0),
-              subserieId:
-                item.subserie_id != null
-                  ? Number(item.subserie_id)
-                  : item.subserieId != null
-                    ? Number(item.subserieId)
-                    : null,
-              unitId:
-                item.unidad_id != null
-                  ? Number(item.unidad_id)
-                  : item.unitId != null
-                    ? Number(item.unitId)
-                    : null,
-              state: String(item.estado ?? item.state ?? 'ACTIVO'),
-              fechaCierreISO:
-                item.fecha_cierre ??
-                item.fechaCierre ??
-                item.fechaCierreISO ??
-                null,
-              open: true,
-              latestDocumentDateISO:
-                item.latestDocumentDateISO ??
-                item.latest_document_date_iso ??
-                item.latest_document_date ??
-                null,
-            })),
+            .map((item: any) => {
+              const selectable = isSelectableExpedienteRow(item);
+              return {
+                id: Number(item.id),
+                code: String(item.codigo ?? item.code ?? ''),
+                name: String(item.nombre ?? item.name ?? ''),
+                serieId: Number(item.serie_id ?? item.serieId ?? 0),
+                subserieId:
+                  item.subserie_id != null
+                    ? Number(item.subserie_id)
+                    : item.subserieId != null
+                      ? Number(item.subserieId)
+                      : null,
+                unitId:
+                  item.unidad_id != null
+                    ? Number(item.unidad_id)
+                    : item.unitId != null
+                      ? Number(item.unitId)
+                      : null,
+                state: String(item.estado ?? item.state ?? 'ACTIVO'),
+                fechaCierreISO:
+                  item.fecha_cierre ??
+                  item.fechaCierre ??
+                  item.fechaCierreISO ??
+                  null,
+                open: selectable,
+                latestDocumentDateISO:
+                  item.latestDocumentDateISO ??
+                  item.latest_document_date_iso ??
+                  item.latest_document_date ??
+                  null,
+              };
+            }),
         ),
       );
   }
@@ -340,6 +433,16 @@ export class ConservationIntakeService {
           state: String(item.state ?? item.estado ?? ''),
           accessLevel:
             item.accessLevel ?? item.access_level ?? item.confid_level ?? null,
+          unitId:
+            item.unitId != null
+              ? Number(item.unitId)
+              : item.unit_id != null
+                ? Number(item.unit_id)
+                : null,
+          unitName:
+            item.unitName ?? item.unit_name ?? item.unidad_nombre ?? null,
+          documentDate:
+            item.documentDate ?? item.document_date ?? null,
 
           serieId:
             item.serieId != null

@@ -52,15 +52,32 @@ export class ConsultaFavoritosComponent implements OnInit {
         /* categorías opcionales */
       },
     });
+
     this.loadFavorites();
+  }
+
+  private toUpperValue(value: string | null | undefined): string {
+    return String(value || '').toUpperCase();
+  }
+
+  onBusquedaInput(): void {
+    this.q = this.toUpperValue(this.q);
+  }
+
+  onFiltroFavoritosInput(): void {
+    this.filtroFav = this.toUpperValue(this.filtroFav);
+    this.favPage = 1;
   }
 
   buscarParaFavoritos(): void {
     this.searchError = '';
     this.searchLoading = true;
+
+    this.q = this.toUpperValue(this.q).trim();
+
     this.api
       .searchInterno({
-        q: this.q.trim() || undefined,
+        q: this.q || undefined,
         categoriaId: this.categoriaId || undefined,
         page: 1,
         pageSize: 30,
@@ -85,12 +102,16 @@ export class ConsultaFavoritosComponent implements OnInit {
       this.favRows = [];
       return;
     }
+
     const ids = this.fav.getIds(this.usuarioId);
+
     if (!ids.length) {
       this.favRows = [];
       return;
     }
+
     this.loadingFav = true;
+
     this.dash.documentosPorIds(ids).subscribe({
       next: (r) => {
         this.favRows = r.items ?? [];
@@ -109,13 +130,16 @@ export class ConsultaFavoritosComponent implements OnInit {
 
   toggleStar(row: ConsultaDocumentoRow): void {
     if (!this.usuarioId) return;
+
     this.fav.toggle(this.usuarioId, row.id);
     this.loadFavorites();
   }
 
   get favoritosFiltrados(): ConsultaDocumentoRow[] {
     const t = this.filtroFav.trim().toLowerCase();
+
     if (!t) return this.favRows;
+
     return this.favRows.filter((r) =>
       [r.codigo, r.titulo, r.categoria_nombre, r.unidad_nombre]
         .filter(Boolean)
@@ -128,6 +152,7 @@ export class ConsultaFavoritosComponent implements OnInit {
   get favoritosPagina(): ConsultaDocumentoRow[] {
     const all = this.favoritosFiltrados;
     const start = (this.favPage - 1) * this.favPageSize;
+
     return all.slice(start, start + this.favPageSize);
   }
 
@@ -140,12 +165,15 @@ export class ConsultaFavoritosComponent implements OnInit {
 
   async limpiarFavoritos(): Promise<void> {
     if (!this.usuarioId) return;
+
     const ok = await this.confirm.ask(
       '¿Quitar todos los favoritos guardados en este navegador? Esta acción no se puede deshacer.',
       'Quitar favoritos',
       { confirmLabel: 'Aceptar', cancelLabel: 'Cancelar' },
     );
+
     if (!ok) return;
+
     this.fav.clearAll(this.usuarioId);
     this.favPage = 1;
     this.loadFavorites();
@@ -161,8 +189,11 @@ export class ConsultaFavoritosComponent implements OnInit {
 
   formatDate(iso: string | null | undefined): string {
     if (!iso) return '—';
+
     const d = new Date(iso);
+
     if (Number.isNaN(d.getTime())) return String(iso);
+
     return d.toLocaleDateString('es-CR', {
       day: 'numeric',
       month: 'short',

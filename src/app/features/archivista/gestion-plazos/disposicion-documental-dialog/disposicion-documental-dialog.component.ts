@@ -30,6 +30,7 @@ export type WizardStepDisposicion =
   selector: 'app-disposicion-documental-dialog',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  providers: [ToastService],
   templateUrl: './disposicion-documental-dialog.component.html',
   styleUrls: ['./disposicion-documental-dialog.component.css'],
 })

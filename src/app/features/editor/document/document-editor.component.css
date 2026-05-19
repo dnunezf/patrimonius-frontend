@@ -4,7 +4,10 @@
    ========================================================= */
 
 :host{
-  display:block;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  box-sizing: border-box;
   background:#f6f7fb;
   color:#111827;
 }
@@ -21,9 +24,215 @@
 .editor-grid,
 .layout{
   display:grid;
-  grid-template-columns: 1fr 320px;
-  gap: 14px;
-  align-items:start;
+  grid-template-columns: 1fr 400px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 12px 12px;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: calc(100dvh - 16px);
+}
+
+.editor-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.editor-main > .page-layout-panel {
+  flex: 0 0 auto;
+}
+
+.editor-main > .sheet {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editor-sidebar {
+  min-width: 0;
+  max-height: calc(100dvh - 20px);
+  overflow-y: auto;
+  align-self: start;
+  position: sticky;
+  top: 10px;
+}
+
+.editor-sidebar .sidebar-quick {
+  margin-bottom: 12px;
+}
+
+/* Panel derecho: tamaño cómodo */
+.editor-sidebar > .card {
+  padding: 14px 18px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+
+.editor-sidebar .sidebar-quick {
+  gap: 11px;
+}
+
+.editor-sidebar .card--sticky {
+  padding: 14px 18px;
+}
+
+.sidebar-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-back--sidebar {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 14px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border-radius: 11px;
+  border: 1px solid #dbe5ff;
+  background: #f8fafc;
+  color: #1e3a8a;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-back--sidebar:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.sidebar-doc-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-full {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.editor-sidebar .sidebar-doc-actions .btn-secondary {
+  padding: 9px 12px;
+  font-size: 0.88rem;
+}
+
+.editor-sidebar .toolbar {
+  gap: 10px;
+  padding: 10px 11px;
+  margin-bottom: 0;
+}
+
+.editor-sidebar .font-selector {
+  padding: 10px 12px;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.editor-sidebar .font-selector .section-title {
+  width: 100%;
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+}
+
+.editor-sidebar .font-selector .field {
+  min-width: 0;
+  flex: 1 1 120px;
+  gap: 5px;
+}
+
+.editor-sidebar .font-select {
+  padding: 7px 10px;
+  font-size: 0.92rem;
+}
+
+.editor-sidebar .card-title {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+  line-height: 1.35;
+}
+
+.editor-sidebar .card-title img {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.editor-sidebar .buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.editor-sidebar .buttons > .btn-save,
+.editor-sidebar .buttons > .btn-secondary,
+.editor-sidebar .buttons > .btn-accent,
+.editor-sidebar .buttons > .btn-outline {
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.editor-sidebar .buttons > label.btn-primary {
+  grid-column: 1 / -1;
+  padding: 11px 12px;
+  font-size: 0.92rem;
+}
+
+.editor-sidebar .status {
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.editor-sidebar .user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-sidebar .user-card {
+  padding: 8px 0;
+}
+
+.editor-sidebar .user-card .avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 0.88rem;
+}
+
+.editor-sidebar .notif-card .btn-outline {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+}
+
+.editor-sidebar .page-current-indicator {
+  font-size: 13px;
+  padding: 5px 12px;
+}
+
+.editor-sidebar .page-scroll-hint {
+  font-size: 12px;
+}
+
+.card--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  box-shadow: 0 10px 28px rgba(17, 24, 39, 0.1);
 }
 
 /* Responsive */
@@ -45,7 +254,7 @@
 }
 
 /* --- Barra superior (donde están Importar/Guardar/etc) --- */
-.topbar, .editor-topbar, .toolbar, .header-actions, .actions-bar{
+.topbar, .editor-topbar, .header-actions, .actions-bar{
   display:flex;
   align-items:flex-end;
   justify-content:space-between;
@@ -58,14 +267,92 @@
   margin-bottom: 12px;
 }
 
+/* --- Toolbar específica para Editor Colaborativo (layout vertical) --- */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #fbfbfe);
+  border: 1px solid #eef2f7;
+  box-shadow: 0 8px 18px rgba(17,24,39,.05);
+  margin-bottom: 12px;
+}
+
+/* --- Font selector styles --- */
+.font-selector {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #dbe5ff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.font-selector .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.font-select, .scope-select {
+  padding: 6px 8px;
+  border: 1px solid #dbe5ff;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.font-select:focus, .scope-select:focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+
+/* --- Títulos de la toolbar --- */
+.toolbar__title h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.toolbar__subtitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.3;
+}
+
 .topbar__left, .topbar__right,
 .toolbar-left, .toolbar-right,
-.actions, .action-group,
+.actions, .action-group{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
 .toolbar .buttons{
   display:flex;
   align-items:center;
   gap:10px;
   flex-wrap:wrap;
+  width: 100%;
 }
 
 /* --- Botón "Importar DOCX" (label + input file): mismo estilo que el resto --- */
@@ -117,20 +404,27 @@
   border-radius:16px;
   box-shadow: 0 12px 30px rgba(17,24,39,.06);
   padding: 12px;
-  overflow: hidden; /* <- clave: no deja que crezca por contenido */
+  overflow: hidden;
 }
 
-/*
-  Ajuste de altura: la hoja ocupará la pantalla.
-  Si te queda muy alto/bajo, cambia el 230px.
-*/
+/* Otras vistas: alto fijo conservador */
 .editor-sheet,
 .document-sheet,
 .paper,
-.sheet,
-.editor-canvas{
+.editor-canvas,
+.sheet:not(.sheet--word){
   height: calc(100vh - 230px);
   min-height: 520px;
+}
+
+/* Vista Word: llena el panel central (estilo “pantalla completa” tipo Docs/Word) */
+.sheet.sheet--word {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
 }
 
 /* Sidebar (editores/comentarios) también con altura “bonita” */
@@ -143,31 +437,56 @@
   height: fit-content;
 }
 
-/* --- Quill: forzar scroll dentro del editor --- */
-:host ::ng-deep .ql-container{
-  height: calc(100% - 44px); /* toolbar quill */
+/* Quill: barra de formato encima del editor + scroll en .ql-editor */
+:host ::ng-deep .quill-host .ql-toolbar {
+  flex: 0 0 auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px 10px 0 0;
+  background: #f8fafc;
+  padding: 9px 11px;
+  flex-wrap: wrap;
+}
+
+:host ::ng-deep .quill-host .ql-toolbar .ql-picker-label,
+:host ::ng-deep .quill-host .ql-toolbar button {
+  font-size: 15px;
+}
+
+:host ::ng-deep .quill-host .ql-container{
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
   overflow: hidden;
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
 }
 
 :host ::ng-deep .ql-editor{
   height: 100%;
-  overflow-y: auto;           /* ✅ scroll interno */
-  padding: 18px 22px;
+  min-height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  scroll-snap-type: y proximity;
+  padding: 24px 28px;
   --word-page-height: 1122px;
-  --word-page-gap: 0px;
-  background-color: #fff;
+  --word-page-gap: 6px;
+  background-color: #f1f5f9;
   background-image:
     repeating-linear-gradient(
       to bottom,
       #ffffff 0,
-      #ffffff var(--word-page-height),
-      #e2e8f0 var(--word-page-height),
-      #e2e8f0 calc(var(--word-page-height) + var(--word-page-gap))
+      #ffffff calc(var(--word-page-height) - var(--word-page-gap)),
+      transparent calc(var(--word-page-height) - var(--word-page-gap)),
+      transparent var(--word-page-height)
     );
-  background-size: 100% calc(var(--word-page-height) + var(--word-page-gap));
+  background-size: 100% var(--word-page-height);
   background-attachment: local;
+}
+
+:host ::ng-deep .ql-editor > * {
+  scroll-snap-align: start;
+  scroll-margin-top: 6px;
 }
 
 /* Toolbar de quill: que se vea más “Notion” */
@@ -556,12 +875,7 @@ button:disabled, .btn:disabled{
   margin: 0 0 4px;
 }
 
-/* Vista tipo Word con encabezado/pie fijos */
-.sheet.sheet--word {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+/* Vista tipo Word con encabezado/pie fijos (bloque base en .sheet.sheet--word arriba) */
 
 .sheet.sheet--word .quill-host {
   flex: 1 1 auto;
@@ -572,12 +886,18 @@ button:disabled, .btn:disabled{
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-page-shell .quill-host {
   position: relative;
   z-index: 2;
   background: transparent;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-break-overlay {
@@ -842,8 +1162,36 @@ button:disabled, .btn:disabled{
   margin-bottom: 4px;
 }
 
-.page-current-indicator {
+.page-indicators {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* Sidebar: anula el layout horizontal de .page-indicators */
+.page-indicators.page-indicators--sidebar {
+  margin-left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.page-indicators.page-indicators--sidebar .page-current-indicator {
+  text-align: center;
+  width: 100%;
+}
+
+.page-indicators.page-indicators--sidebar .page-scroll-hint {
+  text-align: center;
+  white-space: normal;
+}
+
+.page-current-indicator {
   font-size: 12px;
   font-weight: 800;
   color: #1e3a8a;
@@ -853,45 +1201,15 @@ button:disabled, .btn:disabled{
   padding: 4px 12px;
 }
 
-
-/* =========================================================
-  dar más espacio al área editable del documento
-   ========================================================= */
-
-.sheet.sheet--word {
-  height: calc(100vh - 130px);
-  min-height: 760px;
+.page-scroll-hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
 }
 
-/* El área que contiene Quill debe ocupar más espacio */
-.editor-page-shell {
-  flex: 1 1 auto;
-  min-height: 440px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* El host de Quill debe estirarse dentro del espacio disponible */
-.editor-page-shell .quill-host {
-  flex: 1 1 auto;
-  min-height: 440px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Toolbar arriba, contenido editable debajo */
-:host ::ng-deep .quill-host .ql-toolbar {
-  flex: 0 0 auto;
-}
-
-/* Contenedor del editor más alto */
-:host ::ng-deep .quill-host .ql-container {
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 380px;
-}
-
-/* Área real donde se escribe */
-:host ::ng-deep .quill-host .ql-editor {
-  min-height: 380px;
+@media (max-width: 1100px) {
+  .page-scroll-hint {
+    display: none;
+  }
 }

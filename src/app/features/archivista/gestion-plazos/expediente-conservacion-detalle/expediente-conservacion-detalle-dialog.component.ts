@@ -22,6 +22,7 @@ import { ToastService } from '../../../../shared/ui/toast.service';
   selector: 'app-expediente-conservacion-detalle-dialog',
   standalone: true,
   imports: [CommonModule],
+  providers: [ToastService],
   templateUrl: './expediente-conservacion-detalle-dialog.component.html',
   styleUrls: ['./expediente-conservacion-detalle-dialog.component.css'],
 })
@@ -34,6 +35,8 @@ export class ExpedienteConservacionDetalleDialogComponent
   @Output() closed = new EventEmitter<void>();
 
   readonly sinDato = '—';
+
+  mostrarBitacora = false;
 
   documentos: ExpedienteDocumentoListRow[] = [];
   documentosLoading = false;
@@ -74,6 +77,15 @@ export class ExpedienteConservacionDetalleDialogComponent
 
   cerrar(): void {
     this.closed.emit();
+  }
+
+  toggleHistorial(): void {
+    if (!this.mostrarBitacora && this.expediente?.id) {
+      if (this.bitacora.length === 0) {
+        this.cargarBitacoraYDisposicion();
+      }
+    }
+    this.mostrarBitacora = !this.mostrarBitacora;
   }
 
   fechaCreacionFormateada(): string {
@@ -180,6 +192,8 @@ export class ExpedienteConservacionDetalleDialogComponent
     this.bitacora = [];
     this.bitacoraLoading = false;
     this.bitacoraError = '';
+
+    this.mostrarBitacora = false;
 
     this.politicaDisposicion = null;
     this.disposicionEstado = null;

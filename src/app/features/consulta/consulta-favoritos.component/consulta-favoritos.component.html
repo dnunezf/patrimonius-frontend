@@ -21,59 +21,61 @@
         <input
           type="search"
           [(ngModel)]="q"
-          placeholder="Título, código, categoría…"
+          (input)="onBusquedaInput()"
+          placeholder="Título, código…"
           (keyup.enter)="buscarParaFavoritos()"
         />
       </div>
-      <div>
-        <label>Categoría</label>
-        <select [(ngModel)]="categoriaId">
-          <option value="">Todas</option>
-          <option *ngFor="let c of filtros?.categorias" [value]="c.id">{{ c.nombre }}</option>
-        </select>
-      </div>
       <div class="filtros__btn">
-        <button type="button" class="btn primary" (click)="buscarParaFavoritos()" [disabled]="searchLoading">
+        <button
+          type="button"
+          class="btn primary"
+          (click)="buscarParaFavoritos()"
+          [disabled]="searchLoading"
+        >
           Buscar
         </button>
       </div>
     </div>
+
     <p class="error" *ngIf="searchError">{{ searchError }}</p>
+
     <div class="table-scroll" *ngIf="searchRows.length > 0 && !searchLoading">
       <table class="data-table data-table--favoritos">
         <thead>
-          <tr>
-            <th class="data-table__star-head" scope="col"><span class="visually-hidden">Favorito</span></th>
-            <th>Código</th>
-            <th>Título</th>
-            <th>Categoría</th>
-            <th>Fecha</th>
-          </tr>
+        <tr>
+          <th class="data-table__star-head" scope="col">
+            <span class="visually-hidden">Favorito</span>
+          </th>
+          <th>Código</th>
+          <th>Título</th>
+          <th>Fecha</th>
+        </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of searchRows">
-            <td class="data-table__star-cell">
-              <button
-                type="button"
-                class="star star--fav"
-                [class.star--on]="isStarred(row.id)"
-                [class.star--off]="!isStarred(row.id)"
-                (click)="toggleStar(row)"
-                [attr.aria-label]="isStarred(row.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'"
-                [attr.title]="isStarred(row.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'"
-              >
-                ★
-              </button>
-            </td>
-            <td class="mono">{{ row.codigo }}</td>
-            <td>{{ row.titulo }}</td>
-            <td>{{ row.categoria_nombre || '—' }}</td>
-            <td>{{ formatDate(row.fecha_aprobacion) }}</td>
-          </tr>
+        <tr *ngFor="let row of searchRows">
+          <td class="data-table__star-cell">
+            <button
+              type="button"
+              class="star star--fav"
+              [class.star--on]="isStarred(row.id)"
+              [class.star--off]="!isStarred(row.id)"
+              (click)="toggleStar(row)"
+              [attr.aria-label]="isStarred(row.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+              [attr.title]="isStarred(row.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+            >
+              ★
+            </button>
+          </td>
+          <td class="mono">{{ row.codigo }}</td>
+          <td>{{ row.titulo }}</td>
+          <td>{{ formatDate(row.fecha_aprobacion) }}</td>
+        </tr>
         </tbody>
       </table>
     </div>
-    <p class="muted" *ngIf="!searchLoading && searchRows.length === 0 && (q || categoriaId)">
+
+    <p class="muted" *ngIf="!searchLoading && searchRows.length === 0 && q">
       Sin resultados. Ajuste la búsqueda.
     </p>
   </section>
@@ -90,59 +92,74 @@
         Limpiar favoritos
       </button>
     </div>
+
     <div class="fav-filter">
       <label>Filtrar en favoritos</label>
       <input
         type="search"
         [(ngModel)]="filtroFav"
-        (ngModelChange)="favPage = 1"
-        placeholder="Filtrar por código, título, categoría o unidad…"
+        (input)="onFiltroFavoritosInput()"
+        placeholder="Filtrar por código, título…"
       />
     </div>
+
     <p class="muted" *ngIf="!loadingFav && favRows.length === 0">
       Aún no tiene favoritos. Use la búsqueda de arriba y pulse ★ en un documento.
     </p>
+
     <div class="table-scroll" *ngIf="favoritosFiltrados.length > 0">
       <table class="data-table data-table--favoritos">
         <thead>
-          <tr>
-            <th class="data-table__star-head" scope="col"><span class="visually-hidden">Favorito</span></th>
-            <th>Código</th>
-            <th>Título</th>
-            <th>Unidad</th>
-            <th>Fecha</th>
-          </tr>
+        <tr>
+          <th class="data-table__star-head" scope="col">
+            <span class="visually-hidden">Favorito</span>
+          </th>
+          <th>Código</th>
+          <th>Título</th>
+          <th>Fecha</th>
+        </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of favoritosPagina">
-            <td class="data-table__star-cell">
-              <button
-                type="button"
-                class="star star--fav star--on"
-                (click)="toggleStar(row)"
-                title="Quitar de favoritos"
-                aria-label="Quitar de favoritos"
-              >
-                ★
-              </button>
-            </td>
-            <td class="mono">{{ row.codigo }}</td>
-            <td>{{ row.titulo }}</td>
-            <td>{{ row.unidad_nombre || '—' }}</td>
-            <td>{{ formatDate(row.fecha_aprobacion) }}</td>
-          </tr>
+        <tr *ngFor="let row of favoritosPagina">
+          <td class="data-table__star-cell">
+            <button
+              type="button"
+              class="star star--fav star--on"
+              (click)="toggleStar(row)"
+              title="Quitar de favoritos"
+              aria-label="Quitar de favoritos"
+            >
+              ★
+            </button>
+          </td>
+          <td class="mono">{{ row.codigo }}</td>
+          <td>{{ row.titulo }}</td>
+          <td>{{ formatDate(row.fecha_aprobacion) }}</td>
+        </tr>
         </tbody>
       </table>
     </div>
+
     <div class="pager" *ngIf="favoritosFiltrados.length > 0 && favTotalPages > 1">
-      <button type="button" class="btn ghost" (click)="prevFavPage()" [disabled]="favPage <= 1">
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="prevFavPage()"
+        [disabled]="favPage <= 1"
+      >
         Anterior
       </button>
       <span class="muted">Página {{ favPage }} / {{ favTotalPages }}</span>
-      <button type="button" class="btn ghost" (click)="nextFavPage()" [disabled]="favPage >= favTotalPages">
+      <button
+        type="button"
+        class="btn ghost"
+        (click)="nextFavPage()"
+        [disabled]="favPage >= favTotalPages"
+      >
         Siguiente
       </button>
     </div>
+
     <p class="muted" *ngIf="favRows.length > 0 && favoritosFiltrados.length === 0">
       Ningún favorito coincide con el filtro.
     </p>

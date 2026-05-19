@@ -14,7 +14,8 @@ import {
 } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription, interval } from 'rxjs';
+import { Subscription, forkJoin, interval, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
   DocumentService,
   UnidadOption,
@@ -23,6 +24,12 @@ import {
   ExpedienteOption,
   NivelAccesoOption,
 } from '../../../core/services/document.service';
+import { ConservationIntakeService } from '../../../core/services/conservation-intake.service';
+import type {
+  ArchivalSeries,
+  ArchivalSubseries,
+  ArchivalExpediente,
+} from '../conservation/intake/models';
 import { AuthService } from '../../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -67,6 +74,7 @@ type DocumentEntry = {
 export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient);
   private documentService = inject(DocumentService);
+  private conservationIntake = inject(ConservationIntakeService);
   private auth = inject(AuthService);
 
   currentStep = 1;
@@ -88,6 +96,8 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
 
   unidadesProductoras: UnidadOption[] = [];
   series: SerieOption[] = [];
+  private archivalSubseries: ArchivalSubseries[] = [];
+  private archivalExpedientes: ArchivalExpediente[] = [];
   nivelesAcceso: NivelAccesoOption[] = [];
 
   uploadStartedAt: number | null = null;
@@ -208,12 +218,22 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
       },
     });
 
-    this.documentService.getSeriesCatalogo().subscribe({
-      next: (rows) => {
-        this.series = rows || [];
-      },
-      error: () => {
-        this.series = [];
+    forkJoin({
+      series: this.conservationIntake
+        .getSeries()
+        .pipe(catchError(() => of<ArchivalSeries[]>([]))),
+      subseries: this.conservationIntake
+        .getSubseries()
+        .pipe(catchError(() => of<ArchivalSubseries[]>([]))),
+      expedientes: this.conservationIntake
+        .getExpedientes()
+        .pipe(catchError(() => of<ArchivalExpediente[]>([]))),
+    }).subscribe({
+      next: ({ series, subseries, expedientes }) => {
+        this.series = (series || []).map((s) => this.toSerieOption(s));
+        this.archivalSubseries = subseries || [];
+        this.archivalExpedientes = expedientes || [];
+        this.refreshAllEntriesArchivalLists();
       },
     });
 
@@ -227,6 +247,87 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
         this.nivelesAcceso = [];
       },
     });
+  }
+
+  private toSerieOption(s: ArchivalSeries): SerieOption {
+    return {
+      id: s.id,
+      codigo: s.code,
+      nombre: s.name,
+      unidad_id: s.unitId ?? undefined,
+      plazo_conservacion_anios: s.plazo_conservacion_anios ?? null,
+    };
+  }
+
+  private toSubserieOption(s: ArchivalSubseries): SubserieOption {
+    return {
+      id: s.id,
+      codigo: s.code,
+      nombre: s.name,
+      serie_id: s.serieId,
+    };
+  }
+
+  private toExpedienteOption(e: ArchivalExpediente): ExpedienteOption {
+    return {
+      id: e.id,
+      codigo: e.code,
+      nombre: e.name,
+      unidad_id: e.unitId ?? 0,
+      serie_id: e.serieId,
+      subserie_id: e.subserieId ?? null,
+    };
+  }
+
+  private subseriesOptionsForSerie(serieId: number | null): SubserieOption[] {
+    if (!serieId) return [];
+
+    return this.archivalSubseries
+      .filter(
+        (s) =>
+          s.active !== false && Number(s.serieId) === Number(serieId),
+      )
+      .map((s) => this.toSubserieOption(s));
+  }
+
+  private filterArchivalExpedientes(
+    unitId: number | null,
+    serieId: number | null,
+    subserieId: number | null,
+  ): ArchivalExpediente[] {
+    return this.archivalExpedientes.filter((e) => {
+      if (serieId && Number(e.serieId) !== Number(serieId)) return false;
+
+      if (unitId != null) {
+        if (e.unitId == null || Number(e.unitId) !== Number(unitId)) {
+          return false;
+        }
+      }
+
+      if (subserieId != null) {
+        return Number(e.subserieId ?? 0) === Number(subserieId);
+      }
+
+      return true;
+    });
+  }
+
+  private refreshAllEntriesArchivalLists(): void {
+    for (const entry of this.documentEntries) {
+      if (entry.metadata.serieId) {
+        entry.subseriesDisponibles = this.subseriesOptionsForSerie(
+          entry.metadata.serieId,
+        );
+      } else {
+        entry.subseriesDisponibles = [];
+      }
+
+      entry.expedientesDisponibles = this.filterArchivalExpedientes(
+        entry.metadata.unidadProductoraId,
+        entry.metadata.serieId,
+        entry.metadata.subserieId,
+      ).map((e) => this.toExpedienteOption(e));
+    }
   }
 
   private getToday(): string {
@@ -938,15 +1039,10 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
 
     if (!entry.metadata.serieId) return;
 
-    this.documentService.getSubseriesCatalogo(entry.metadata.serieId).subscribe({
-      next: (rows) => {
-        entry.subseriesDisponibles = rows || [];
-        this.loadExpedientes(entry);
-      },
-      error: () => {
-        entry.subseriesDisponibles = [];
-      },
-    });
+    entry.subseriesDisponibles = this.subseriesOptionsForSerie(
+      entry.metadata.serieId,
+    );
+    this.loadExpedientes(entry);
   }
 
   onSubserieChange(entry: DocumentEntry): void {
@@ -969,21 +1065,11 @@ export class CargaMasivaPageComponent implements OnInit, OnDestroy {
   }
 
   private loadExpedientes(entry: DocumentEntry): void {
-    this.documentService
-      .getExpedientesCatalogo({
-        unidad_id: entry.metadata.unidadProductoraId,
-        serie_id: entry.metadata.serieId,
-        subserie_id: entry.metadata.subserieId,
-        estado: 'ACTIVO',
-      })
-      .subscribe({
-        next: (rows) => {
-          entry.expedientesDisponibles = rows || [];
-        },
-        error: () => {
-          entry.expedientesDisponibles = [];
-        },
-      });
+    entry.expedientesDisponibles = this.filterArchivalExpedientes(
+      entry.metadata.unidadProductoraId,
+      entry.metadata.serieId,
+      entry.metadata.subserieId,
+    ).map((e) => this.toExpedienteOption(e));
   }
 
   private updateCargaMasivaProtection(): void {
