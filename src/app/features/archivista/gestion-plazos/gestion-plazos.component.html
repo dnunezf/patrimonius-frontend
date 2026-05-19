@@ -132,8 +132,8 @@
           <input
             id="gp-buscar"
             type="text"
-            [(ngModel)]="filtroTexto"
-            (ngModelChange)="onFiltroTextoChange()"
+            [ngModel]="filtroTexto"
+            (ngModelChange)="onFiltroTextoChange($event)"
             placeholder="Código, nombre, unidad..."
             autocomplete="off"
           />
@@ -224,138 +224,138 @@
     >
       <table class="data-table">
         <thead>
-          <tr>
-            <th>Código</th>
-            <th>Nombre</th>
-            <th>Unidad</th>
-            <th>Serie</th>
-            <th>Subserie</th>
-            <th>Estado</th>
-            <th>Fecha de creación</th>
-            <th>Inicio vigencia</th>
-            <th>Vencimiento</th>
-            <th class="th-actions">Acciones</th>
-          </tr>
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Unidad</th>
+          <th>Serie</th>
+          <th>Subserie</th>
+          <th>Estado</th>
+          <th>Fecha de creación</th>
+          <th>Inicio vigencia</th>
+          <th>Vencimiento</th>
+          <th class="th-actions">Acciones</th>
+        </tr>
         </thead>
 
         <tbody>
-          <tr *ngIf="expedientesListaActiva.length === 0">
-            <td colspan="10" class="empty">
-              {{
-                vistaPlazos === "alertas"
-                  ? "No hay expedientes con vencimiento anterior a la fecha de hoy."
-                  : "No hay expedientes para mostrar."
-              }}
-            </td>
-          </tr>
+        <tr *ngIf="expedientesListaActiva.length === 0">
+          <td colspan="10" class="empty">
+            {{
+              vistaPlazos === "alertas"
+                ? "No hay expedientes con vencimiento anterior a la fecha de hoy."
+                : "No hay expedientes para mostrar."
+            }}
+          </td>
+        </tr>
 
-          <tr *ngFor="let ex of expedientesPagina">
-            <td>{{ ex.codigo }}</td>
-            <td>{{ ex.nombre }}</td>
-            <td>{{ ex.unidad_nombre || "—" }}</td>
-            <td>{{ ex.serie_nombre || "—" }}</td>
-            <td>{{ ex.subserie_nombre || "—" }}</td>
-            <td>
+        <tr *ngFor="let ex of expedientesPagina">
+          <td>{{ ex.codigo }}</td>
+          <td>{{ ex.nombre }}</td>
+          <td>{{ ex.unidad_nombre || "—" }}</td>
+          <td>{{ ex.serie_nombre || "—" }}</td>
+          <td>{{ ex.subserie_nombre || "—" }}</td>
+          <td>
               <span [class]="getEstadoExpedienteClass(ex.estado)">
                 {{ ex.estado }}
               </span>
-            </td>
-            <td>
-              {{
-                ex.fecha_creacion
-                  ? (ex.fecha_creacion | date: "yyyy-MM-dd")
-                  : "—"
-              }}
-            </td>
-            <td>
-              {{
-                ex.fecha_inicio_vigencia
-                  ? (ex.fecha_inicio_vigencia | date: "yyyy-MM-dd")
-                  : "—"
-              }}
-            </td>
-            <td>
-              {{
-                ex.fecha_vencimiento
-                  ? (ex.fecha_vencimiento | date: "yyyy-MM-dd")
-                  : "—"
-              }}
-            </td>
-            <td class="td-actions">
-              <div class="td-actions-inner">
-                <button
-                  type="button"
-                  class="btn primary sm"
-                  (click)="abrirDetalle(ex)"
-                >
-                  Detalle
-                </button>
+          </td>
+          <td>
+            {{
+              ex.fecha_creacion
+                ? (ex.fecha_creacion | date: "yyyy-MM-dd")
+                : "—"
+            }}
+          </td>
+          <td>
+            {{
+              ex.fecha_inicio_vigencia
+                ? (ex.fecha_inicio_vigencia | date: "yyyy-MM-dd")
+                : "—"
+            }}
+          </td>
+          <td>
+            {{
+              ex.fecha_vencimiento
+                ? (ex.fecha_vencimiento | date: "yyyy-MM-dd")
+                : "—"
+            }}
+          </td>
+          <td class="td-actions">
+            <div class="td-actions-inner">
+              <button
+                type="button"
+                class="btn primary sm"
+                (click)="abrirDetalle(ex)"
+              >
+                Detalle
+              </button>
 
-                <ng-container
-                  *ngIf="
+              <ng-container
+                *ngIf="
                     vistaPlazos === 'archivados' && muestraBotonExtender(ex)
                   "
-                >
-                  <button
-                    type="button"
-                    class="btn outline sm"
-                    [disabled]="!puedeExtenderVigencia(ex)"
-                    [attr.title]="
+              >
+                <button
+                  type="button"
+                  class="btn outline sm"
+                  [disabled]="!puedeExtenderVigencia(ex)"
+                  [attr.title]="
                       puedeExtenderVigencia(ex)
                         ? null
                         : tituloExtenderDeshabilitada()
                     "
-                    (click)="abrirExtender(ex)"
-                  >
-                    Extender
-                  </button>
-                </ng-container>
-
-                <button
-                  *ngIf="vistaPlazos === 'alertas' && puedeDisposicion(ex)"
-                  type="button"
-                  class="btn primary sm"
-                  (click)="abrirDisposicion(ex)"
-                  title="Iniciar disposición documental"
+                  (click)="abrirExtender(ex)"
                 >
-                  Disposición
+                  Extender
                 </button>
+              </ng-container>
 
-                <button
-                  *ngIf="
+              <button
+                *ngIf="vistaPlazos === 'alertas' && puedeDisposicion(ex)"
+                type="button"
+                class="btn primary sm"
+                (click)="abrirDisposicion(ex)"
+                title="Iniciar disposición documental"
+              >
+                Disposición
+              </button>
+
+              <button
+                *ngIf="
                     vistaPlazos === 'alertas' && puedeRevisionDisposicion(ex)
                   "
-                  type="button"
-                  class="btn outline sm"
-                  (click)="abrirRevision(ex)"
-                >
-                  Revisión
-                </button>
+                type="button"
+                class="btn outline sm"
+                (click)="abrirRevision(ex)"
+              >
+                Revisión
+              </button>
 
-                <button
-                  *ngIf="
+              <button
+                *ngIf="
                     vistaPlazos === 'alertas' && puedeAprobarDisposicion(ex)
                   "
-                  type="button"
-                  class="btn primary sm"
-                  (click)="abrirAprobar(ex)"
-                >
-                  Aprobar
-                </button>
+                type="button"
+                class="btn primary sm"
+                (click)="abrirAprobar(ex)"
+              >
+                Aprobar
+              </button>
 
-                <button
-                  *ngIf="
+              <button
+                *ngIf="
                     vistaPlazos === 'alertas' && puedeRechazarDisposicion(ex)
                   "
-                  type="button"
-                  class="btn outline sm danger-text"
-                  (click)="abrirRechazar(ex)"
-                >
-                  Rechazar
-                </button>
-              </div>
-            </td>
-          </tr>
+                type="button"
+                class="btn outline sm danger-text"
+                (click)="abrirRechazar(ex)"
+              >
+                Rechazar
+              </button>
+            </div>
+          </td>
+        </tr>
         </tbody>
       </table>
     </div>
@@ -508,7 +508,7 @@
     >
       <p class="pagination-bar__info">
         Mostrando <strong>{{ rangoDesde }}</strong
-        >–<strong>{{ rangoHasta }}</strong> de
+      >–<strong>{{ rangoHasta }}</strong> de
         <strong>{{ expedientesListaActiva.length }}</strong> expedientes
       </p>
 

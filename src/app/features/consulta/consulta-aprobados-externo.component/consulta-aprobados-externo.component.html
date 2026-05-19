@@ -72,12 +72,12 @@
           </button>
 
           <span class="muted small" *ngIf="!loadingHistorial && historialVisible.length > 0">
-        Últimas {{ historialVisible.length }} búsquedas guardadas
-      </span>
+            Últimas {{ historialVisible.length }} búsquedas guardadas
+          </span>
 
           <span class="muted small" *ngIf="!loadingHistorial && historialVisible.length === 0">
-        Aún no hay búsquedas recientes
-      </span>
+            Aún no hay búsquedas recientes
+          </span>
         </div>
 
         <div
@@ -94,8 +94,8 @@
               <div>
                 <strong>{{ item.texto_busqueda }}</strong>
                 <span class="pill ok sm" style="margin-left: 0.5rem;">
-              {{ labelVistaHistorial(item) }}
-            </span>
+                  {{ labelVistaHistorial(item) }}
+                </span>
               </div>
 
               <div class="muted small" *ngIf="resumenBusquedaHistorial(item)">
@@ -104,8 +104,8 @@
             </div>
 
             <span class="search-history-date">
-          {{ formatDateTime(item.fecha_consulta) }}
-        </span>
+              {{ formatDateTime(item.fecha_consulta) }}
+            </span>
           </button>
 
           <div class="search-history-footer">
@@ -127,6 +127,7 @@
         <input
           type="search"
           [(ngModel)]="codigoDocumentoFiltro"
+          (input)="onCodigoDocumentoFiltroInput()"
           placeholder="Ej. OFI_MNCR-DAF-AC-15-2026"
           (keyup.enter)="aplicarFiltrosConsulta()"
         />
@@ -137,6 +138,7 @@
         <input
           type="search"
           [(ngModel)]="nombreDocumentoFiltro"
+          (input)="onNombreDocumentoFiltroInput()"
           placeholder="Título o parte del nombre"
           (keyup.enter)="aplicarFiltrosConsulta()"
         />
@@ -165,7 +167,8 @@
         <input
           type="search"
           [(ngModel)]="codigoExpedienteFiltro"
-          placeholder="Ej. expediente_prueba1"
+          (input)="onCodigoExpedienteFiltroInput()"
+          placeholder="Ej. EXPEDIENTE_PRUEBA1"
           (keyup.enter)="aplicarFiltrosConsulta()"
         />
       </div>
@@ -175,6 +178,7 @@
         <input
           type="search"
           [(ngModel)]="nombreExpedienteFiltro"
+          (input)="onNombreExpedienteFiltroInput()"
           placeholder="Nombre o parte del nombre"
           (keyup.enter)="aplicarFiltrosConsulta()"
         />
@@ -305,6 +309,7 @@
       </button>
     </div>
   </section>
+
   <section
     class="panel tabla"
     *ngIf="!loading && vistaActual === 'expedientes'"
