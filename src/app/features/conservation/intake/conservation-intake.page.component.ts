@@ -15,7 +15,7 @@ import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { ConservationIntakeService } from '../../../../core/services/conservation-intake.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { UnidadService, OrgUnit } from '../../../../core/services/unidad.service';
+import { DocumentService, UnidadOption } from '../../../../core/services/document.service';
 import { EDITOR_ID } from '../../../shared/data/catalogs';
 
 import {
@@ -115,7 +115,7 @@ export class ConservationIntakePageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
-  private readonly unidadService = inject(UnidadService);
+  private readonly documentService = inject(DocumentService);
 
   readonly loading = signal(false);
   readonly referenceCodeLoading = signal(false);
@@ -134,7 +134,7 @@ export class ConservationIntakePageComponent {
   readonly series = signal<ArchivalSeries[]>([]);
   readonly subseries = signal<ArchivalSubseries[]>([]);
   readonly expedientes = signal<ArchivalExpediente[]>([]);
-  readonly producingUnits = signal<OrgUnit[]>([]);
+  readonly producingUnits = signal<UnidadOption[]>([]);
   private lastKnownUnitIdForCatalog: number | null = null;
 
   readonly duplicateState =
@@ -658,16 +658,16 @@ export class ConservationIntakePageComponent {
     
     // Buscar coincidencia exacta primero
     const exactMatch = this.producingUnits().find(unit => 
-      unit.name.toUpperCase() === docUnitUpper
+      unit.nombre.toUpperCase() === docUnitUpper
     );
-    if (exactMatch) return exactMatch.name;
+    if (exactMatch) return exactMatch.nombre;
     
     // Buscar coincidencia parcial (contiene)
     const partialMatch = this.producingUnits().find(unit => 
-      unit.name.toUpperCase().includes(docUnitUpper) || 
-      docUnitUpper.includes(unit.name.toUpperCase())
+      unit.nombre.toUpperCase().includes(docUnitUpper) || 
+      docUnitUpper.includes(unit.nombre.toUpperCase())
     );
-    if (partialMatch) return partialMatch.name;
+    if (partialMatch) return partialMatch.nombre;
     
     // Si no hay coincidencia, devolver el valor original (el select lo mostrará como vacío)
     return '';
@@ -904,13 +904,13 @@ export class ConservationIntakePageComponent {
 
     const docUnitUpper = raw.toUpperCase();
     const units = this.producingUnits();
-    const exact = units.find((u) => u.name.toUpperCase() === docUnitUpper);
+    const exact = units.find((u) => u.nombre.toUpperCase() === docUnitUpper);
     if (exact) return exact.id;
 
     const partial = units.find(
       (u) =>
-        u.name.toUpperCase().includes(docUnitUpper) ||
-        docUnitUpper.includes(u.name.toUpperCase()),
+        u.nombre.toUpperCase().includes(docUnitUpper) ||
+        docUnitUpper.includes(u.nombre.toUpperCase()),
     );
     return partial?.id ?? null;
   }
@@ -944,7 +944,7 @@ export class ConservationIntakePageComponent {
   }
 
   private loadProducingUnits(): void {
-    this.unidadService.list().subscribe({
+    this.documentService.getUnidadesCatalogo().subscribe({
       next: (rows) => {
         this.producingUnits.set(rows);
         const next = this.resolveSelectedUnitId();

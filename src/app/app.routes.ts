@@ -90,7 +90,7 @@ export const routes: Routes = [
     path: 'archivista/gestion-plazos',
     component: GestionPlazosComponent,
     canActivate: [AuthGuard, RoleGuard],
-    data: { allowedRoles: [3] },
+    data: { allowedRoles: [ 2, 3] },
   },
 
   // ✅ HU-21: Carga masiva de documentos

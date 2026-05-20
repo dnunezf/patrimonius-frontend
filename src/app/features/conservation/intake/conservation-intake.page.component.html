@@ -88,9 +88,9 @@
               <option value="">Todas las unidades</option>
               <option 
                 *ngFor="let unit of producingUnits()" 
-                [value]="unit.name"
+                [value]="unit.nombre"
               >
-                {{ unit.name }}
+                {{ unit.nombre }}
               </option>
             </select>
           </label>
@@ -438,9 +438,9 @@
                   <option value="">Seleccione una unidad...</option>
                   <option 
                     *ngFor="let unit of producingUnits()" 
-                    [value]="unit.name"
+                    [value]="unit.nombre"
                   >
-                    {{ unit.name }}
+                    {{ unit.nombre }}
                   </option>
                 </select>
                 <div class="err" *ngIf="fieldErr('producingUnit')">
